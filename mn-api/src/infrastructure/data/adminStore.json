@@ -1,0 +1,220 @@
+{
+  "vendors": [
+    {
+      "id": 1,
+      "name": "Zara Wedding Photography",
+      "category": "Photography",
+      "location": "Malappuram",
+      "contact": "+91 9900112233",
+      "status": "APPROVED",
+      "commission_rate": 12,
+      "rating": 4.8,
+      "revenue": 154000
+    },
+    {
+      "id": 2,
+      "name": "Kozhikode Caterers",
+      "category": "Catering",
+      "location": "Kozhikode",
+      "contact": "+91 9944556677",
+      "status": "APPROVED",
+      "commission_rate": 10,
+      "rating": 4.6,
+      "revenue": 320000
+    },
+    {
+      "id": 3,
+      "name": "Royal Stage Decorators",
+      "category": "Decoration",
+      "location": "Manjeri",
+      "contact": "+91 9988998811",
+      "status": "PENDING",
+      "commission_rate": 15,
+      "rating": 4.2,
+      "revenue": 0
+    },
+    {
+      "id": 4,
+      "name": "Oppana & DJ Beats",
+      "category": "Entertainment",
+      "location": "Perinthalmanna",
+      "contact": "+91 9911223344",
+      "status": "APPROVED",
+      "commission_rate": 8,
+      "rating": 4.9,
+      "revenue": 84000
+    },
+    {
+      "id": 5,
+      "name": "Mehndi Queen Nabeela",
+      "category": "Mehndi",
+      "location": "Kottakkal",
+      "contact": "+91 9595959591",
+      "status": "PENDING",
+      "commission_rate": 10,
+      "rating": 4.5,
+      "revenue": 0
+    }
+  ],
+  "bookings": [
+    {
+      "id": 101,
+      "user": "Sinan",
+      "vendor": "Zara Wedding Photography",
+      "date": "2026-06-15",
+      "amount": 45000,
+      "commission": 5400,
+      "status": "COMPLETED"
+    },
+    {
+      "id": 102,
+      "user": "Aysha K.",
+      "vendor": "Kozhikode Caterers",
+      "date": "2026-07-02",
+      "amount": 180000,
+      "commission": 18000,
+      "status": "PENDING"
+    },
+    {
+      "id": 103,
+      "user": "Fathima R.",
+      "vendor": "Oppana & DJ Beats",
+      "date": "2026-06-28",
+      "amount": 28000,
+      "commission": 2240,
+      "status": "PENDING"
+    }
+  ],
+  "templates_save_the_date": [
+    {
+      "id": 1,
+      "name": "Emerald Islamic Vintage",
+      "theme": "Traditional Arabic",
+      "usage": 148,
+      "active": true
+    },
+    {
+      "id": 2,
+      "name": "Royal Gold Calligraphy",
+      "theme": "Minimalist Arabic",
+      "usage": 286,
+      "active": true
+    },
+    {
+      "id": 3,
+      "name": "Blossom Pastel Floral",
+      "theme": "Modern Watercolor",
+      "usage": 92,
+      "active": true
+    },
+    {
+      "id": 4,
+      "name": "Crimson Sand Dunes",
+      "theme": "Sunset Desert",
+      "usage": 53,
+      "active": false
+    }
+  ],
+  "templates_wedding_invitation": [
+    {
+      "id": 1,
+      "name": "Golden Gatefold Palace",
+      "theme": "Regal Gold",
+      "usage": 124,
+      "active": true
+    },
+    {
+      "id": 2,
+      "name": "Botanical Leaf Garland",
+      "theme": "Eco Watercolor",
+      "usage": 89,
+      "active": true
+    },
+    {
+      "id": 3,
+      "name": "Starry Night Arabesque",
+      "theme": "Islamic Geometric",
+      "usage": 215,
+      "active": true
+    }
+  ],
+  "reports": [
+    {
+      "id": 1,
+      "reported_user": "Test User (id: 4)",
+      "reason": "Spamming matches with advertisements",
+      "reporter": "Aysha K.",
+      "date": "2026-05-28",
+      "status": "PENDING"
+    },
+    {
+      "id": 2,
+      "reported_user": "htfhf (id: 3)",
+      "reason": "Inappropriate bio description",
+      "reporter": "Sinan",
+      "date": "2026-05-30",
+      "status": "RESOLVED"
+    }
+  ],
+  "subscriptions": [
+    {
+      "id": "basic",
+      "name": "Basic Match",
+      "price": 0,
+      "duration": "Lifetime",
+      "interest_limit": 10,
+      "chat_unlocked": false
+    },
+    {
+      "id": "gold",
+      "name": "Gold Premium",
+      "price": 1999,
+      "duration": "3 Months",
+      "interest_limit": 50,
+      "chat_unlocked": true
+    },
+    {
+      "id": "royal",
+      "name": "Royal Diamond Elite",
+      "price": 4999,
+      "duration": "1 Year",
+      "interest_limit": 500,
+      "chat_unlocked": true
+    }
+  ],
+  "cms": {
+    "banner_message": "Welcome to Malappuram's Most Trusted Pious Muslim Matrimony Platform.",
+    "faqs": [
+      {
+        "q": "How do I express interest?",
+        "a": "Find any profile on AI Matches or Search, and click the 'Interest' heart button."
+      },
+      {
+        "q": "When is chatting unlocked?",
+        "a": "Chatting is unlocked automatically when a mutual interest is established (both users accept each other)."
+      }
+    ],
+    "stories": [
+      {
+        "id": 1,
+        "couple": "Anas & Dilsha",
+        "year": "2025",
+        "story": "Met through Malappuram Nikah matches in 2025. Married within 6 months!"
+      }
+    ]
+  },
+  "activity_logs": [
+    {
+      "id": 1,
+      "admin": "Super Admin",
+      "action": "Approved vendor Zara Wedding Photography",
+      "time": "2026-06-01 10:12:00"
+    },
+    {
+      "id": 2,
+      "admin": "Super Admin",
+      "action": "Resolved complaint ticket #2 against user htfhf",
+      "time": "2026-06-01 11:45:00"
+    }
+  ]
+}
