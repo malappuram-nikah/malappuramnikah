@@ -22,9 +22,12 @@ model User {
   is_premium     Boolean   @default(false)
   is_new_user    Boolean   @default(true)
   last_login     DateTime?
+  profile_details Json?
   created_at     DateTime  @default(now())
   updated_at     DateTime  @updatedAt
   verify         Verify[]
+  sent_interests     Interest[] @relation("SentInterests")
+  received_interests Interest[] @relation("ReceivedInterests")
 
   @@map("user")
 }
@@ -40,4 +43,43 @@ model Verify {
   user          User      @relation(fields: [user_id], references: [id])
 
   @@map("verify") // Maps the model to the "verify" table
+}
+
+model Interest {
+  id          Int      @id @default(autoincrement())
+  sender_id   Int
+  receiver_id Int
+  status      String   @default("PENDING") // PENDING, ACCEPTED, REJECTED
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  sender      User     @relation("SentInterests", fields: [sender_id], references: [id], onDelete: Cascade)
+  receiver    User     @relation("ReceivedInterests", fields: [receiver_id], references: [id], onDelete: Cascade)
+
+  @@unique([sender_id, receiver_id])
+  @@map("interest")
+}
+
+model Message {
+  id          Int      @id @default(autoincrement())
+  sender_id   Int
+  receiver_id Int
+  content     String
+  is_read     Boolean  @default(false)
+  created_at  DateTime @default(now())
+
+  @@map("message")
+}
+
+model Notification {
+  id          Int      @id @default(autoincrement())
+  user_id     Int
+  sender_id   Int
+  type        String   // INTEREST_SENT, INTEREST_ACCEPTED, NEW_MESSAGE
+  title       String
+  message     String
+  is_read     Boolean  @default(false)
+  created_at  DateTime @default(now())
+
+  @@map("notification")
 }

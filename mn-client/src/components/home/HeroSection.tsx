@@ -77,7 +77,7 @@ export default function HeroSection() {
             </motion.div>
 
             {/* Trust Metrics */}
-            <div className="mt-10 flex items-center gap-8 text-sm text-gray-500">
+            <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4 text-sm text-gray-500">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-brand-500" />
                 <span>10k+ Success Stories</span>
@@ -98,7 +98,7 @@ export default function HeroSection() {
           >
             <div className="relative w-full max-w-lg aspect-[4/5] rounded-[2.5rem] overflow-hidden shadow-2xl bg-brand-100 border-4 border-white">
               <img 
-                src="https://images.unsplash.com/photo-1544078755-9ee8b193504d?q=80&w=1000&auto=format&fit=crop" 
+                src="https://images.unsplash.com/photo-1607190074257-dd4b7af0309f?q=80&w=1000&auto=format&fit=crop" 
                 alt="Elegant Couple" 
                 className="w-full h-full object-cover object-top"
               />

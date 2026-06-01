@@ -76,7 +76,7 @@ export default function LoginPage() {
           {/* Decorative couple image */}
           <div className="mt-12 w-64 h-72 mx-auto rounded-3xl overflow-hidden border-4 border-white/20 shadow-2xl">
             <img
-              src="https://images.unsplash.com/photo-1547592180-85f173990554?q=80&w=600&auto=format&fit=crop"
+              src="https://images.unsplash.com/photo-1583939003579-730e3918a45a?q=80&w=600&auto=format&fit=crop"
               alt="Happy couple"
               className="w-full h-full object-cover"
             />

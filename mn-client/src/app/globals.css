@@ -23,6 +23,9 @@
   --radius-xl: 1rem;
   --radius-2xl: 1.5rem;
   --radius-3xl: 2rem;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-playfair: var(--font-playfair), Georgia, serif;
 }
 
 @layer base {

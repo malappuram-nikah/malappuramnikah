@@ -13,4 +13,5 @@ export interface User {
   is_premium: boolean;
   is_new_user: boolean;
   last_login?: Date | null;
+  profile_details?: any;
 }

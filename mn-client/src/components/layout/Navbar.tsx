@@ -28,7 +28,7 @@ export default function Navbar() {
           "fixed top-0 left-0 right-0 z-40 transition-all duration-300 border-b",
           isScrolled
             ? "bg-white/90 backdrop-blur-md border-gray-200/50 shadow-sm py-3"
-            : "bg-white border-transparent py-4"
+            : "bg-transparent border-transparent py-5"
         )}
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl flex items-center justify-between">

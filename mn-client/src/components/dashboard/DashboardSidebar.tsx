@@ -14,6 +14,7 @@ const navItems = [
   { href: "/dashboard",          icon: LayoutDashboard, label: "Dashboard" },
   { href: "/dashboard/matches",  icon: Sparkles,         label: "AI Matches" },
   { href: "/dashboard/search",   icon: Search,           label: "Search"    },
+  { href: "/dashboard/interests",icon: Heart,            label: "Interests" },
   { href: "/dashboard/chat",     icon: MessageCircle,    label: "Chat"      },
   { href: "/dashboard/premium",  icon: Crown,            label: "Premium"   },
   { href: "/dashboard/save-the-date", icon: Calendar,    label: "Save the Date" },

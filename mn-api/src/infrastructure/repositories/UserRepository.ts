@@ -42,4 +42,28 @@ export class UserRepository implements IUserRepository {
             }
         }) as any;
     }
+
+    async updateProfileDetails(id: number, profileDetails: any): Promise<User> {
+        try {
+            const updatedUser = await prisma.user.update({
+                where: { id },
+                data: { profile_details: profileDetails }
+            });
+            return updatedUser as unknown as User;
+        } catch (error) {
+            console.error('Error updating user profile details:', error);
+            throw new Error('Failed to update profile details');
+        }
+    }
+
+    async findById(id: number): Promise<User | null> {
+        try {
+            return await prisma.user.findUnique({
+                where: { id }
+            }) as unknown as User | null;
+        } catch (error) {
+            console.error('Error finding user by ID:', error);
+            throw new Error('Failed to find user');
+        }
+    }
 }
