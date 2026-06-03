@@ -56,7 +56,7 @@ notification_route.put("/:id/read", async (req: Request, res: Response) => {
       return;
     }
 
-    const notifId = parseInt(req.params.id, 10);
+    const notifId = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
     if (isNaN(notifId)) {
       res.status(400).json({ success: false, message: "Invalid notification ID" });
       return;

@@ -91,7 +91,7 @@ export class UserController {
 
   async updateProfile(req: Request, res: Response): Promise<Response> {
     try {
-      const userId = parseInt(req.params.id, 10);
+      const userId = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
       if (isNaN(userId)) {
         return res.status(400).json({ success: false, message: "Invalid user ID" });
       }

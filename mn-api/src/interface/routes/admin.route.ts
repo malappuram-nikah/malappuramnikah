@@ -196,7 +196,7 @@ admin_route.get("/users", adminGuard, async (req: Request, res: Response) => {
 // 3. User verification / Profile approval (POST /user/admin/users/:id/verify)
 admin_route.post("/users/:id/verify", adminGuard, async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
     const { action } = req.body; // "approve" or "reject"
     
     if (isNaN(id)) {
@@ -237,7 +237,7 @@ admin_route.post("/users/:id/verify", adminGuard, async (req: Request, res: Resp
 // 4. Toggle Premium (POST /user/admin/users/:id/toggle-premium)
 admin_route.post("/users/:id/toggle-premium", adminGuard, async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
     if (isNaN(id)) {
       res.status(400).json({ success: false, message: "Invalid user ID" });
       return;

@@ -27,7 +27,7 @@ chat_route.get("/history/:peerId", async (req: Request, res: Response) => {
       return;
     }
 
-    const peerId = parseInt(req.params.peerId, 10);
+    const peerId = parseInt(Array.isArray(req.params.peerId) ? req.params.peerId[0] : req.params.peerId, 10);
     if (isNaN(peerId)) {
       res.status(400).json({ success: false, message: "Invalid peer ID" });
       return;
