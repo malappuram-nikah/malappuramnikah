@@ -145,7 +145,18 @@ export class UserController {
         }
       }
 
-      const updatedUser = await this.updateProfileDetails.execute(userId, profileDetails);
+      const rawCore = req.body.core_fields || req.body;
+      const coreFields: any = {};
+      if (rawCore.first_name !== undefined) coreFields.first_name = rawCore.first_name;
+      if (rawCore.last_name !== undefined) coreFields.last_name = rawCore.last_name;
+      if (rawCore.mobile_number !== undefined) coreFields.mobile_number = rawCore.mobile_number;
+      if (rawCore.location !== undefined) coreFields.location = rawCore.location;
+      if (rawCore.dob !== undefined) coreFields.dob = rawCore.dob;
+      if (rawCore.cast !== undefined) coreFields.cast = rawCore.cast;
+      if (rawCore.gender !== undefined) coreFields.gender = rawCore.gender;
+      if (rawCore.profile_for !== undefined) coreFields.profile_for = rawCore.profile_for;
+
+      const updatedUser = await this.updateProfileDetails.execute(userId, profileDetails, coreFields);
       
       return res.status(200).json({
         success: true,

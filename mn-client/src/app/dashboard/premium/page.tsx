@@ -1,7 +1,9 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Crown, Check, Zap, Shield, Star } from "lucide-react";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Crown, Check, Zap, Shield, Star, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 const plans = [
   {
@@ -56,53 +58,202 @@ const plans = [
 ];
 
 export default function PremiumPage() {
+  const router = useRouter();
+  const [userId, setUserId] = useState<number | null>(null);
+  const [isPremium, setIsPremium] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [upgrading, setUpgrading] = useState<string | null>(null);
+  const [alertMsg, setAlertMsg] = useState<{ text: string; type: "success" | "error" } | null>(null);
+
+  const triggerAlert = (text: string, type: "success" | "error" = "success") => {
+    setAlertMsg({ text, type });
+    setTimeout(() => setAlertMsg(null), 4000);
+  };
+
+  const fetchUserPremiumStatus = async (token: string, uId: number) => {
+    try {
+      const res = await fetch(`http://localhost:3333/user/${uId}`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success && data.user) {
+        setIsPremium(!!data.user.is_premium);
+      }
+    } catch (e) {
+      console.error("Failed to load user premium status:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const token = localStorage.getItem("mn_token");
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      if (payload.userId) {
+        setUserId(payload.userId);
+        fetchUserPremiumStatus(token, payload.userId);
+      } else {
+        setLoading(false);
+      }
+    } catch (e) {
+      console.error("Failed to decode token", e);
+      setLoading(false);
+    }
+  }, []);
+
+  const handleUpgradePlan = async (planName: string) => {
+    if (!userId) {
+      triggerAlert("Please log in to upgrade.", "error");
+      return;
+    }
+    setUpgrading(planName);
+    try {
+      const token = localStorage.getItem("mn_token");
+      const res = await fetch(`http://localhost:3333/user/${userId}/premium`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ is_premium: true })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setIsPremium(true);
+        triggerAlert(`Congratulations! You have successfully upgraded to the ${planName} Plan! 🎉`);
+      } else {
+        triggerAlert(data.message || "Upgrade failed.", "error");
+      }
+    } catch (e) {
+      triggerAlert("Connection failed. Try again.", "error");
+    } finally {
+      setUpgrading(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="py-24 flex flex-col items-center justify-center text-gray-400">
+        <Loader2 className="w-10 h-10 animate-spin mb-3 text-brand-500" />
+        <p className="font-semibold text-sm">Checking subscription state...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 relative">
+      {/* Toast Alert Banner */}
+      <AnimatePresence>
+        {alertMsg && (
+          <motion.div
+            initial={{ opacity: 0, y: -40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -40 }}
+            className={`fixed top-24 left-1/2 -translate-x-1/2 z-50 text-white text-xs font-semibold px-5 py-3 rounded-full shadow-xl flex items-center gap-2 border ${
+              alertMsg.type === "success" ? "bg-gray-900 border-gray-800" : "bg-red-600 border-red-500"
+            }`}
+          >
+            <span>{alertMsg.text}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="text-center max-w-2xl mx-auto">
-        <div className="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center mx-auto mb-5">
-          <Crown className="w-7 h-7 text-brand-600" />
+        <div className="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center mx-auto mb-5 relative">
+          <Crown className={`w-7 h-7 ${isPremium ? "text-amber-500 fill-amber-500" : "text-brand-600"}`} />
+          {isPremium && (
+            <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-amber-500"></span>
+            </span>
+          )}
         </div>
-        <h1 className="text-3xl font-bold font-playfair text-gray-900 mb-3">Upgrade Your Experience</h1>
-        <p className="text-gray-500">Unlock premium features to find your perfect match faster with greater privacy and visibility.</p>
+        <h1 className="text-3xl font-bold font-playfair text-gray-900 mb-3">
+          {isPremium ? "You are a Premium Member! 🌟" : "Upgrade Your Experience"}
+        </h1>
+        <p className="text-gray-500">
+          {isPremium 
+            ? "Your premium benefits are fully active. You have unlimited visibility, premium search options, and matchmaker support." 
+            : "Unlock premium features to find your perfect match faster with greater privacy and visibility."}
+        </p>
       </div>
 
       {/* Plans */}
       <div className="grid md:grid-cols-3 gap-6 items-stretch">
-        {plans.map((plan, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            className={`rounded-2xl border-2 overflow-hidden flex flex-col relative ${plan.color}`}
-          >
-            {plan.badge && (
-              <div className="absolute top-4 right-4 bg-white text-brand-700 text-xs font-bold px-3 py-1 rounded-full shadow-sm">
-                {plan.badge}
+        {plans.map((plan, i) => {
+          // If user is premium, Gold counts as active premium tier
+          const isActivePlan = isPremium && plan.name === "Gold";
+          return (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className={`rounded-2xl border-2 overflow-hidden flex flex-col relative transition-all ${
+                isActivePlan 
+                  ? "border-amber-500 ring-4 ring-amber-500/10 shadow-lg scale-[1.02]" 
+                  : plan.color
+              }`}
+            >
+              {isActivePlan ? (
+                <div className="absolute top-4 right-4 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">
+                  Active Subscription
+                </div>
+              ) : plan.badge ? (
+                <div className="absolute top-4 right-4 bg-white text-brand-700 text-xs font-bold px-3 py-1 rounded-full shadow-sm">
+                  {plan.badge}
+                </div>
+              ) : null}
+              
+              <div className={`px-6 py-7 ${isActivePlan ? "bg-amber-500" : plan.headerColor}`}>
+                <p className={`text-lg font-bold font-playfair mb-2 ${plan.name === "Gold" || isActivePlan ? "text-white" : "text-gray-900"}`}>{plan.name}</p>
+                <div className="flex items-end gap-1">
+                  <span className={`text-4xl font-bold ${plan.name === "Gold" || isActivePlan ? "text-white" : "text-gray-900"}`}>{plan.price}</span>
+                  <span className={`text-sm pb-1 ${plan.name === "Gold" || isActivePlan ? "text-brand-200" : "text-gray-500"}`}>{plan.period}</span>
+                </div>
               </div>
-            )}
-            <div className={`px-6 py-7 ${plan.headerColor}`}>
-              <p className={`text-lg font-bold font-playfair mb-2 ${plan.name === "Gold" ? "text-white" : "text-gray-900"}`}>{plan.name}</p>
-              <div className="flex items-end gap-1">
-                <span className={`text-4xl font-bold ${plan.name === "Gold" ? "text-white" : "text-gray-900"}`}>{plan.price}</span>
-                <span className={`text-sm pb-1 ${plan.name === "Gold" ? "text-brand-200" : "text-gray-500"}`}>{plan.period}</span>
+              
+              <div className="px-6 py-6 flex-1 flex flex-col justify-between">
+                <ul className="space-y-3 flex-1 mb-8">
+                  {plan.features.map((f, j) => (
+                    <li key={j} className={`flex items-start gap-2.5 text-sm ${plan.name === "Gold" && !isActivePlan ? "text-brand-700 font-medium" : "text-gray-600"}`}>
+                      <Check className={`w-4 h-4 shrink-0 mt-0.5 ${plan.name === "Gold" && !isActivePlan ? "text-brand-600" : "text-brand-500"}`} />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                
+                <button
+                  onClick={() => handleUpgradePlan(plan.name)}
+                  disabled={isPremium || upgrading !== null}
+                  className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 ${
+                    isActivePlan 
+                      ? "bg-amber-500 text-white" 
+                      : plan.btnClass
+                  }`}
+                >
+                  {upgrading === plan.name ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Activating...
+                    </>
+                  ) : isActivePlan ? (
+                    "Current Plan"
+                  ) : isPremium ? (
+                    "Premium Enabled"
+                  ) : (
+                    `Choose ${plan.name}`
+                  )}
+                </button>
               </div>
-            </div>
-            <div className="px-6 py-6 flex-1 flex flex-col">
-              <ul className="space-y-3 flex-1">
-                {plan.features.map((f, j) => (
-                  <li key={j} className={`flex items-start gap-2.5 text-sm ${plan.name === "Gold" ? "text-brand-100" : "text-gray-600"}`}>
-                    <Check className={`w-4 h-4 shrink-0 mt-0.5 ${plan.name === "Gold" ? "text-brand-300" : "text-brand-500"}`} />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <button className={`mt-8 w-full py-3.5 rounded-xl font-semibold text-sm transition-all active:scale-[0.98] ${plan.btnClass}`}>
-                Choose {plan.name}
-              </button>
-            </div>
-          </motion.div>
-        ))}
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* Trust badges */}

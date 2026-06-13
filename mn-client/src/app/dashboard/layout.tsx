@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import { CompareProvider } from "@/context/CompareContext";
+import CompareFloatingBar from "@/components/dashboard/CompareFloatingBar";
 
 export const metadata: Metadata = {
   title: "Dashboard | Malappuram Nikah",
@@ -9,16 +11,19 @@ export const metadata: Metadata = {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
-      <DashboardSidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <DashboardHeader />
-        <main className="flex-1 overflow-y-auto pb-20 lg:pb-0">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-6xl">
-            {children}
-          </div>
-        </main>
+    <CompareProvider>
+      <div className="flex h-screen bg-gray-50 overflow-hidden">
+        <DashboardSidebar />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <DashboardHeader />
+          <main className="flex-1 overflow-y-auto pb-20 lg:pb-0">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-6xl">
+              {children}
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+      <CompareFloatingBar />
+    </CompareProvider>
   );
 }

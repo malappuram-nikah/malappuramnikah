@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, MessageCircle, TrendingUp, Sparkles, MapPin, BookOpen, Zap, Info, ChevronRight, X, Loader2, Lock, Unlock } from "lucide-react";
+import { Heart, MessageCircle, TrendingUp, Sparkles, MapPin, BookOpen, Zap, Info, ChevronRight, X, Loader2, Lock, Unlock, Layers } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useCompare } from "@/context/CompareContext";
 
 // Base Mock AI copy to enrich real profiles
 const aiAestheticTemplates = [
@@ -99,6 +100,15 @@ const fallbackMockProfiles = [
 
 export default function AiMatchesPage() {
   const router = useRouter();
+  const { addToCompare, removeFromCompare, isCompared, alertMsg: globalAlert, setAlertMsg: setGlobalAlert } = useCompare();
+  
+  useEffect(() => {
+    if (globalAlert) {
+      setAlertMsg(globalAlert);
+      setGlobalAlert(null);
+    }
+  }, [globalAlert, setGlobalAlert]);
+
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("ai-recommendations");
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
@@ -454,8 +464,26 @@ export default function AiMatchesPage() {
                     <button 
                       onClick={() => setSelectedProfile(bestMatch)}
                       className="px-5 bg-brand-800/50 text-white font-medium py-3 rounded-xl border border-brand-500/30 hover:bg-brand-700/50 transition-colors flex items-center justify-center"
+                      title="View Details"
                     >
                       <Info className="w-5 h-5" />
+                    </button>
+                    <button 
+                      onClick={() => {
+                        if (isCompared(bestMatch.id)) {
+                          removeFromCompare(bestMatch.id);
+                        } else {
+                          addToCompare(bestMatch.id);
+                        }
+                      }}
+                      className={`px-5 font-medium py-3 rounded-xl border transition-colors flex items-center justify-center ${
+                        isCompared(bestMatch.id)
+                          ? "bg-brand-600 text-white border-brand-500 hover:bg-brand-700"
+                          : "bg-brand-800/50 text-white border-brand-500/30 hover:bg-brand-700/50"
+                      }`}
+                      title={isCompared(bestMatch.id) ? "Remove from Compare" : "Compare Profile"}
+                    >
+                      <Layers className="w-5 h-5" />
                     </button>
                   </div>
                 </div>
@@ -488,6 +516,24 @@ export default function AiMatchesPage() {
                       <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-bold text-brand-700 shadow-sm flex items-center gap-1">
                         <Sparkles className="w-3 h-3" /> {profile.matchScore}% Match
                       </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isCompared(profile.id)) {
+                            removeFromCompare(profile.id);
+                          } else {
+                            addToCompare(profile.id);
+                          }
+                        }}
+                        className={`absolute bottom-3 right-3 p-1.5 rounded-lg backdrop-blur-md transition-all shadow-sm z-10 ${
+                          isCompared(profile.id)
+                            ? "bg-brand-600 text-white"
+                            : "bg-white/80 text-gray-700 hover:bg-white"
+                        }`}
+                        title={isCompared(profile.id) ? "Remove from Compare" : "Compare Profile"}
+                      >
+                        <Layers className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                     <div className="p-5">
                       <h3 className="font-bold text-gray-900 text-base">{profile.name}</h3>
@@ -540,9 +586,26 @@ export default function AiMatchesPage() {
                       <p className="text-xs text-gray-500 mt-0.5">{profile.age} yrs • {profile.location}</p>
                       <p className="text-[10px] text-brand-600 mt-1 font-semibold bg-brand-50 w-max px-1.5 py-0.5 rounded">{profile.personality}</p>
                     </div>
-                    <div className="text-right flex items-center gap-1">
+                    <div className="text-right flex items-center gap-2">
                       <div className="text-brand-600 font-bold text-sm">{profile.matchScore}%</div>
-                      <ChevronRight className="w-4 h-4 text-gray-300" />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isCompared(profile.id)) {
+                            removeFromCompare(profile.id);
+                          } else {
+                            addToCompare(profile.id);
+                          }
+                        }}
+                        className={`p-1.5 rounded-lg border transition-colors ${
+                          isCompared(profile.id)
+                            ? "bg-brand-600 text-white border-brand-500"
+                            : "bg-gray-50 text-gray-400 border-gray-150 hover:text-brand-600"
+                        }`}
+                        title="Compare Profile"
+                      >
+                        <Layers className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -570,9 +633,26 @@ export default function AiMatchesPage() {
                         <MapPin className="w-3 h-3 text-gray-400" /> {profile.location}
                       </p>
                     </div>
-                    <div className="text-right flex items-center gap-1">
+                    <div className="text-right flex items-center gap-2">
                       <div className="text-brand-600 font-bold text-sm">{profile.matchScore}%</div>
-                      <ChevronRight className="w-4 h-4 text-gray-300" />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isCompared(profile.id)) {
+                            removeFromCompare(profile.id);
+                          } else {
+                            addToCompare(profile.id);
+                          }
+                        }}
+                        className={`p-1.5 rounded-lg border transition-colors ${
+                          isCompared(profile.id)
+                            ? "bg-brand-600 text-white border-brand-500"
+                            : "bg-gray-50 text-gray-400 border-gray-150 hover:text-brand-600"
+                        }`}
+                        title="Compare Profile"
+                      >
+                        <Layers className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
                 ))}

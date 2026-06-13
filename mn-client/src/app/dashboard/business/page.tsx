@@ -10,6 +10,28 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+const LOCATIONS = [
+  "Malappuram",
+  "Manjeri",
+  "Tirur",
+  "Perinthalmana",
+  "Ponnani",
+  "Kondotty",
+  "Tirurangadi",
+  "Kuttippuram",
+  "Valanchery",
+  "Nilambur",
+  "Kottakkal",
+  "Kottakunnu",
+  "Thirunavaya",
+  "Kadalundi",
+  "Vengara",
+  "Angadippuram",
+  "Edappal",
+  "Tanur",
+  "Parappanagadi"
+];
+
 export default function WeddingBusinessDashboard() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -425,14 +447,16 @@ export default function WeddingBusinessDashboard() {
                         </div>
                         <div className="space-y-1">
                           <label className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Location / City</label>
-                          <input
-                            type="text"
-                            required
-                            placeholder="e.g. Malappuram, Kerala"
+                          <select
                             value={newVendorForm.location}
                             onChange={(e) => setNewVendorForm({...newVendorForm, location: e.target.value})}
-                            className="w-full p-2.5 bg-gray-900 border border-gray-800 rounded-xl text-xs text-white focus:outline-none"
-                          />
+                            className="w-full p-2.5 bg-gray-900 border border-gray-800 rounded-xl text-xs text-white focus:outline-none appearance-none"
+                          >
+                            <option value="" disabled className="bg-gray-900 text-gray-500">Select Location</option>
+                            {LOCATIONS.map((loc) => (
+                              <option key={loc} value={loc} className="bg-gray-900 text-white">{loc}</option>
+                            ))}
+                          </select>
                         </div>
                         <div className="space-y-1">
                           <label className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Contact Number</label>

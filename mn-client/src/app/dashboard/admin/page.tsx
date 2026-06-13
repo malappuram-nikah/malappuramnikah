@@ -12,6 +12,28 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+const LOCATIONS = [
+  "Malappuram",
+  "Manjeri",
+  "Tirur",
+  "Perinthalmana",
+  "Ponnani",
+  "Kondotty",
+  "Tirurangadi",
+  "Kuttippuram",
+  "Valanchery",
+  "Nilambur",
+  "Kottakkal",
+  "Kottakunnu",
+  "Thirunavaya",
+  "Kadalundi",
+  "Vengara",
+  "Angadippuram",
+  "Edappal",
+  "Tanur",
+  "Parappanagadi"
+];
+
 export default function AdminDashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -685,14 +707,16 @@ export default function AdminDashboardPage() {
                         </div>
                         <div className="space-y-1">
                           <label className="text-[10px] font-bold text-gray-500 uppercase">City & Location</label>
-                          <input
-                            type="text"
-                            required
-                            placeholder="e.g. Manjeri, Malappuram"
+                          <select
                             value={newVendorForm.location}
                             onChange={(e) => setNewVendorForm({...newVendorForm, location: e.target.value})}
-                            className="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
-                          />
+                            className="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 appearance-none"
+                          >
+                            <option value="" disabled>Select Location</option>
+                            {LOCATIONS.map((loc) => (
+                              <option key={loc} value={loc}>{loc}</option>
+                            ))}
+                          </select>
                         </div>
                         <div className="space-y-1">
                           <label className="text-[10px] font-bold text-gray-500 uppercase">Contact Number</label>

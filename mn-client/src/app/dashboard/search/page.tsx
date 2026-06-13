@@ -2,12 +2,22 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, SlidersHorizontal, Heart, MessageCircle, TrendingUp, Loader2, Lock, Unlock } from "lucide-react";
+import { Search, SlidersHorizontal, Heart, MessageCircle, TrendingUp, Loader2, Lock, Unlock, Layers } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useCompare } from "@/context/CompareContext";
 
 export default function SearchPage() {
   const router = useRouter();
+  const { addToCompare, removeFromCompare, isCompared, alertMsg: globalAlert, setAlertMsg: setGlobalAlert } = useCompare();
   const [profiles, setProfiles] = useState<any[]>([]);
+  
+  useEffect(() => {
+    if (globalAlert) {
+      setAlertMsg(globalAlert);
+      setGlobalAlert(null);
+    }
+  }, [globalAlert, setGlobalAlert]);
+
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState({ ageMin: "", ageMax: "", location: "", caste: "Any" });
@@ -265,6 +275,24 @@ export default function SearchPage() {
                       Match
                     </div>
                   )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isCompared(p.id)) {
+                        removeFromCompare(p.id);
+                      } else {
+                        addToCompare(p.id);
+                      }
+                    }}
+                    className={`absolute bottom-2 right-2 p-1.5 rounded-lg backdrop-blur-md transition-all shadow-sm z-10 ${
+                      isCompared(p.id)
+                        ? "bg-brand-600 text-white"
+                        : "bg-white/80 text-gray-700 hover:bg-white"
+                    }`}
+                    title={isCompared(p.id) ? "Remove from Compare" : "Compare Profile"}
+                  >
+                    <Layers className="w-3.5 h-3.5" />
+                  </button>
                 </div>
                 <div className="flex-1 p-4 flex flex-col justify-between">
                   <div>

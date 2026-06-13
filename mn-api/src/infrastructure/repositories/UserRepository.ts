@@ -43,11 +43,25 @@ export class UserRepository implements IUserRepository {
         }) as any;
     }
 
-    async updateProfileDetails(id: number, profileDetails: any): Promise<User> {
+    async updateProfileDetails(id: number, profileDetails: any, coreFields?: any): Promise<User> {
         try {
+            const dataToUpdate: any = {};
+            if (profileDetails !== undefined) {
+                dataToUpdate.profile_details = profileDetails;
+            }
+            if (coreFields) {
+                if (coreFields.first_name !== undefined) dataToUpdate.first_name = coreFields.first_name;
+                if (coreFields.last_name !== undefined) dataToUpdate.last_name = coreFields.last_name;
+                if (coreFields.mobile_number !== undefined) dataToUpdate.mobile_number = coreFields.mobile_number;
+                if (coreFields.location !== undefined) dataToUpdate.location = coreFields.location;
+                if (coreFields.dob !== undefined) dataToUpdate.dob = coreFields.dob;
+                if (coreFields.cast !== undefined) dataToUpdate.cast = coreFields.cast;
+                if (coreFields.gender !== undefined) dataToUpdate.gender = coreFields.gender;
+                if (coreFields.profile_for !== undefined) dataToUpdate.profile_for = coreFields.profile_for;
+            }
             const updatedUser = await prisma.user.update({
                 where: { id },
-                data: { profile_details: profileDetails }
+                data: dataToUpdate
             });
             return updatedUser as unknown as User;
         } catch (error) {

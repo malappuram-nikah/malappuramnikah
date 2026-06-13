@@ -7,6 +7,28 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Briefcase, ArrowRight, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
 
+const LOCATIONS = [
+  "Malappuram",
+  "Manjeri",
+  "Tirur",
+  "Perinthalmana",
+  "Ponnani",
+  "Kondotty",
+  "Tirurangadi",
+  "Kuttippuram",
+  "Valanchery",
+  "Nilambur",
+  "Kottakkal",
+  "Kottakunnu",
+  "Thirunavaya",
+  "Kadalundi",
+  "Vengara",
+  "Angadippuram",
+  "Edappal",
+  "Tanur",
+  "Parappanagadi"
+];
+
 export default function BusinessRegisterPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -169,14 +191,16 @@ export default function BusinessRegisterPage() {
 
           <div className="space-y-1">
             <label className="text-[9px] font-bold text-gray-500 uppercase block">Operational City / Location</label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. Kottakkal, Malappuram"
+            <select
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              className="w-full px-4 py-2.5 bg-gray-950/40 border border-gray-800 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all font-semibold text-white placeholder-gray-600"
-            />
+              className="w-full px-4 py-2.5 bg-gray-950/40 border border-gray-800 rounded-xl text-xs focus:outline-none text-white appearance-none"
+            >
+              <option value="" disabled className="bg-gray-900 text-gray-500">Select Location</option>
+              {LOCATIONS.map((loc) => (
+                <option key={loc} value={loc} className="bg-gray-900 text-white">{loc}</option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-1">

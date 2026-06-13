@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Heart, Search, MessageCircle,
   Crown, Settings, LogOut, Menu, X, Bell, Sparkles, Calendar, ShieldCheck, Briefcase,
-  BarChart3, Users, AlertTriangle, CreditCard, LayoutGrid, DollarSign
+  BarChart3, Users, AlertTriangle, CreditCard, LayoutGrid, DollarSign, Layers
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,7 @@ const memberNavItems = [
   { href: "/dashboard",          icon: LayoutDashboard, label: "Dashboard" },
   { href: "/dashboard/matches",  icon: Sparkles,         label: "AI Matches" },
   { href: "/dashboard/search",   icon: Search,           label: "Search"    },
+  { href: "/dashboard/compare",  icon: Layers,           label: "Compare"   },
   { href: "/dashboard/interests",icon: Heart,            label: "Interests" },
   { href: "/dashboard/chat",     icon: MessageCircle,    label: "Chat"      },
   { href: "/dashboard/premium",  icon: Crown,            label: "Premium"   },

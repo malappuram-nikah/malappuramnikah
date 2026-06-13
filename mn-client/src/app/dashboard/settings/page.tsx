@@ -17,6 +17,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("profile");
   const [saved, setSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [userId, setUserId] = useState<number | null>(null);
 
   // User Profile States
   const [firstName, setFirstName] = useState("");
@@ -45,6 +46,7 @@ export default function SettingsPage() {
             const payload = JSON.parse(atob(token.split('.')[1]));
             if (payload.userId) {
               userId = payload.userId;
+              setUserId(payload.userId);
             }
           } catch (e) {
             console.error("Token decoding error", e);
@@ -159,9 +161,79 @@ export default function SettingsPage() {
     calculateCompletion();
   }, []);
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+  const handleSave = async () => {
+    setSaved(false);
+    
+    // Read current drafts from localStorage
+    let profileDetails: any = {};
+    const draftKeys = [
+      "mn_basic_details_draft",
+      "mn_religious_info_draft",
+      "mn_professional_info_draft",
+      "mn_family_details_draft",
+      "mn_interests_draft",
+      "mn_habits_draft",
+      "mn_partner_preferences_draft",
+      "mn_profile_photos_draft",
+      "mn_video_intro_draft",
+      "mn_voice_intro_draft"
+    ];
+
+    draftKeys.forEach(key => {
+      try {
+        const stored = localStorage.getItem(key);
+        if (stored) {
+          profileDetails[key] = JSON.parse(stored);
+        }
+      } catch (e) {
+        console.error(`Error reading draft for ${key}:`, e);
+      }
+    });
+
+    const coreFields = {
+      first_name: firstName,
+      last_name: lastName,
+      mobile_number: mobile,
+      location: location,
+      dob: dob,
+      cast: community,
+      gender: gender,
+      profile_for: profileFor
+    };
+
+    try {
+      const token = localStorage.getItem("mn_token");
+      if (!token || !userId) {
+        console.warn("No authentication details found.");
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2500);
+        return;
+      }
+
+      const res = await fetch(`http://localhost:3333/user/${userId}/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          profile_details: profileDetails,
+          core_fields: coreFields
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2500);
+      } else {
+        console.error("Profile save rejected by API:", data.message);
+      }
+    } catch (err) {
+      console.error("Failed to save profile changes:", err);
+      // Fallback display to ensure user is not stuck on connection errors
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    }
   };
 
   const handleCompleteNextStep = (stepNum: number) => {

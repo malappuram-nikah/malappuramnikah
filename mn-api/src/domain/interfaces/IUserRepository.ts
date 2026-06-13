@@ -5,6 +5,6 @@ export interface IUserRepository{
     findByMobile(mobile:string):Promise<User|null>;
     validatePassword(plainPassword: string, hashedPassword: string): Promise<boolean>;
     findAll(): Promise<User[]>;
-    updateProfileDetails(id: number, profileDetails: any): Promise<User>;
+    updateProfileDetails(id: number, profileDetails: any, coreFields?: any): Promise<User>;
     findById(id: number): Promise<User | null>;
 }

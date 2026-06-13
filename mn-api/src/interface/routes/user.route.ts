@@ -8,6 +8,9 @@ import { OtpRepository } from "../../infrastructure/repositories/OtpRepository";
 import { UpdateProfileDetailsUseCase } from "../../applications/use-cases/user/UpdateProfileDetails.usecase";
 
 
+import prisma from "../../infrastructure/prisma/prisamClient";
+
+
 const user_route = express.Router();
 const userRepository = new UserRepository();
 const otpRepository = new OtpRepository();
@@ -48,5 +51,23 @@ user_route.get('/:id', async (req: Request, res: Response) => {
   }
 });
 
+
+user_route.put('/:id/premium', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ success: false, message: "Invalid user ID" });
+      return;
+    }
+    const { is_premium } = req.body;
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: { is_premium: !!is_premium }
+    });
+    res.status(200).json({ success: true, user: updatedUser });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || "Failed to update premium status" });
+  }
+});
 
 export default user_route;

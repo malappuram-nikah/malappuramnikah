@@ -5,6 +5,28 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ArrowLeft, CheckCircle2, ShieldCheck } from "lucide-react";
 
+const LOCATIONS = [
+  "Malappuram",
+  "Manjeri",
+  "Tirur",
+  "Perinthalmana",
+  "Ponnani",
+  "Kondotty",
+  "Tirurangadi",
+  "Kuttippuram",
+  "Valanchery",
+  "Nilambur",
+  "Kottakkal",
+  "Kottakunnu",
+  "Thirunavaya",
+  "Kadalundi",
+  "Vengara",
+  "Angadippuram",
+  "Edappal",
+  "Tanur",
+  "Parappanagadi"
+];
+
 interface RegisterModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -150,14 +172,17 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
             className="space-y-5"
           >
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Location (City/District)</label>
-              <input
-                type="text"
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Location</label>
+              <select
                 value={formData.location}
                 onChange={(e) => updateForm("location", e.target.value)}
-                placeholder="e.g. Malappuram, Kerala"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
-              />
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+              >
+                <option value="" disabled>Select Location</option>
+                {LOCATIONS.map((loc) => (
+                  <option key={loc} value={loc}>{loc}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Caste / Community</label>
