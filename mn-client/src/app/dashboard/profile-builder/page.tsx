@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import BasicDetailsStep from "@/components/profile-setup/BasicDetailsStep";
 import ReligiousInfoStep from "@/components/profile-setup/ReligiousInfoStep";
@@ -20,6 +20,25 @@ export default function ProfileBuilderPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [user, setUser] = useState<any>(null);
+
+  const basicInitialData = useMemo(() => {
+    if (!user) return undefined;
+    return {
+      name: `${user.first_name || ""} ${user.last_name || ""}`.trim(),
+      profileFor: user.profile_for || "Myself",
+      gender: user.gender || "Male",
+      age: user.dob ? Math.floor((new Date().getTime() - new Date(user.dob).getTime()) / 31557600000).toString() : "24",
+    };
+  }, [user]);
+
+  const religiousInitialData = useMemo(() => {
+    if (!user) return undefined;
+    return {
+      religion: "Islam",
+      community: user.cast || "Sunni",
+    };
+  }, [user]);
 
   const stepNames = [
     "Basic Details",
@@ -68,6 +87,22 @@ export default function ProfileBuilderPage() {
           
           if (data.success && data.user) {
             const user = data.user;
+            setUser(user);
+
+            // Clear all profile builder drafts from localStorage first to prevent stale data
+            const draftKeys = [
+              "mn_basic_details_draft",
+              "mn_religious_info_draft",
+              "mn_professional_info_draft",
+              "mn_family_details_draft",
+              "mn_interests_draft",
+              "mn_habits_draft",
+              "mn_partner_preferences_draft",
+              "mn_profile_photos_draft",
+              "mn_video_intro_draft",
+              "mn_voice_intro_draft"
+            ];
+            draftKeys.forEach((key) => localStorage.removeItem(key));
 
             // 1. Sync saved profile_details drafts from database back into localStorage
             if (user.profile_details) {
@@ -299,13 +334,13 @@ export default function ProfileBuilderPage() {
       <AnimatePresence mode="wait">
         {currentStep === 1 && (
           <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-            <BasicDetailsStep onComplete={handleBasicDetailsComplete} />
+            <BasicDetailsStep initialData={basicInitialData} onComplete={handleBasicDetailsComplete} />
           </motion.div>
         )}
 
         {currentStep === 2 && (
           <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-            <ReligiousInfoStep onComplete={handleReligiousInfoComplete} onBack={() => setCurrentStep(1)} />
+            <ReligiousInfoStep initialData={religiousInitialData} onComplete={handleReligiousInfoComplete} onBack={() => setCurrentStep(1)} />
           </motion.div>
         )}
 

@@ -51,13 +51,35 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
   // Load draft on mount
   useEffect(() => {
     const draft = localStorage.getItem(DRAFT_KEY);
-    if (draft && !initialData) {
+    let mergedData = {
+      aboutMe: "",
+      name: "",
+      age: "",
+      profileFor: "",
+      gender: "",
+      height: "",
+      maritalStatus: "",
+      motherTongue: "",
+      physicalStatus: "",
+      appearance: "",
+      weight: "",
+      languagesSpoken: "",
+    };
+    if (draft) {
       try {
-        setFormData(JSON.parse(draft));
+        mergedData = { ...mergedData, ...JSON.parse(draft) };
       } catch (e) {
         console.error("Failed to parse draft", e);
       }
     }
+    // Always override with registration-stage details
+    if (initialData) {
+      if (initialData.name) mergedData.name = initialData.name;
+      if (initialData.profileFor) mergedData.profileFor = initialData.profileFor;
+      if (initialData.gender) mergedData.gender = initialData.gender;
+      if (initialData.age) mergedData.age = initialData.age;
+    }
+    setFormData(mergedData);
     setIsDraftLoaded(true);
   }, [initialData]);
 

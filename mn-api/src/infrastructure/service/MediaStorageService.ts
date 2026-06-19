@@ -3,18 +3,22 @@ import fs from "fs";
 import path from "path";
 
 // Configure Cloudinary only if credentials exist
+const cloudName = process.env.CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_NAME;
+const apiKey = process.env.CLOUDINARY_API_KEY;
+const apiSecret = process.env.CLOUDINARY_API_SECRET || process.env.CLOUDINARY_SECRET_KEY;
+
 const hasCloudinary = 
-  !!process.env.CLOUDINARY_CLOUD_NAME && 
-  !!process.env.CLOUDINARY_API_KEY && 
-  !!process.env.CLOUDINARY_API_SECRET;
+  !!cloudName && 
+  !!apiKey && 
+  !!apiSecret;
 
 if (hasCloudinary) {
   cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
+    cloud_name: cloudName,
+    api_key: apiKey,
+    api_secret: apiSecret,
   });
-  console.log("Cloudinary Media Storage Service initialized successfully.");
+  console.log("Cloudinary Media Storage Service initialized successfully with cloud name:", cloudName);
 } else {
   console.log("Cloudinary credentials not found in env. Initialized Local Filesystem Storage Fallback.");
 }

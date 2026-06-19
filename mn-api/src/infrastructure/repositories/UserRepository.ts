@@ -11,9 +11,12 @@ export class UserRepository implements IUserRepository {
             const newUser = await prisma.user.create({ data });
             console.log('User successfully stored:', newUser);
             return newUser;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error storing user:', error);
-            throw new Error('Failed to create user');
+            if (error.code === 'P2002' || (error.message && error.message.includes('Unique constraint failed'))) {
+                throw new Error('Mobile number already registered');
+            }
+            throw error;
         }
     }
 
@@ -38,7 +41,12 @@ export class UserRepository implements IUserRepository {
                 location: true,
                 dob: true,
                 status: true,
-                is_premium: true
+                is_premium: true,
+                profile_for: true,
+                mobile_number: true,
+                profile_details: true,
+                created_at: true,
+                updated_at: true
             }
         }) as any;
     }

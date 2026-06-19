@@ -24,7 +24,10 @@ const LOCATIONS = [
   "Angadippuram",
   "Edappal",
   "Tanur",
-  "Parappanagadi"
+  "Parappanagadi",
+  "Wandoor",
+  "Nilamboor",
+  "Parappananghadi"
 ];
 
 interface RegisterModalProps {
@@ -38,7 +41,8 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
   const [formData, setFormData] = useState({
     profileFor: "",
     gender: "",
-    name: "",
+    first_name: "",
+    last_name: "",
     dateOfBirth: "",
     location: "",
     caste: "",
@@ -140,15 +144,27 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
             exit={{ opacity: 0, x: -20 }}
             className="space-y-5"
           >
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => updateForm("name", e.target.value)}
-                placeholder="Enter full name"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">First Name</label>
+                <input
+                  type="text"
+                  value={formData.first_name}
+                  onChange={(e) => updateForm("first_name", e.target.value)}
+                  placeholder="First name"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Last Name</label>
+                <input
+                  type="text"
+                  value={formData.last_name}
+                  onChange={(e) => updateForm("last_name", e.target.value)}
+                  placeholder="Last name"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                />
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Date of Birth</label>
@@ -248,7 +264,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
   const isStepValid = () => {
     switch(step) {
       case 1: return formData.profileFor && formData.gender;
-      case 2: return formData.name.length > 2 && formData.dateOfBirth;
+      case 2: return formData.first_name.trim().length >= 2 && formData.last_name.trim().length >= 1 && formData.dateOfBirth;
       case 3: return formData.location && formData.caste;
       case 4: return formData.mobile.length >= 8 && formData.password.length >= 6;
       default: return false;
@@ -259,15 +275,11 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
     setIsSubmitting(true);
     setError(null);
     try {
-      const nameParts = formData.name.trim().split(" ");
-      const first_name = nameParts[0];
-      const last_name = nameParts.length > 1 ? nameParts.slice(1).join(" ") : " ";
-
       const payload = {
         profile_for: formData.profileFor,
         gender: formData.gender,
-        first_name,
-        last_name,
+        first_name: formData.first_name.trim(),
+        last_name: formData.last_name.trim(),
         mobile_number: formData.countryCode + formData.mobile,
         password: formData.password,
         location: formData.location,
@@ -275,22 +287,21 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
         cast: formData.caste
       };
 
-      try {
-        const response = await fetch("http://localhost:3333/user/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
+      const response = await fetch("http://localhost:3333/user/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
 
-        const data = await response.json();
-        if (data.user?.id) {
-          setRegisteredUserId(data.user.id);
-        }
-      } catch (apiErr) {
-        console.warn("Backend registration failed or offline. Simulating registration success.", apiErr);
+      const data = await response.json();
+      if (!response.ok || data.success === false) {
+        throw new Error(data.message || "Registration failed. Please check your details.");
       }
 
-      // Move to OTP screen regardless of backend success for testing/demo flow
+      if (data.user?.id) {
+        setRegisteredUserId(data.user.id);
+      }
+
       setSuccess(true);
       setResendCooldown(30);
       setTimeout(() => {

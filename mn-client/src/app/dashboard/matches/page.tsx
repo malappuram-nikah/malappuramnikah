@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, MessageCircle, TrendingUp, Sparkles, MapPin, BookOpen, Zap, Info, ChevronRight, X, Loader2, Lock, Unlock, Layers } from "lucide-react";
+import { Heart, MessageCircle, TrendingUp, Sparkles, MapPin, BookOpen, Zap, Info, ChevronRight, X, Loader2, Lock, Unlock, Layers, Play, Pause, Volume2, Video } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCompare } from "@/context/CompareContext";
 
@@ -52,7 +52,14 @@ const fallbackMockProfiles = [
     personality: "Thoughtful & Empathetic (INFJ)",
     conversationStarter: "I noticed you're also passionate about literature. What's the last good book you read?",
     caste: "Sunni",
-    profession: "Educator"
+    profession: "Educator",
+    aboutMe: "A passionate educator who enjoys reading Islamic history and exploring nature. Looking for someone who values family and constant learning.",
+    voice: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+    video: "https://assets.mixkit.co/videos/preview/mixkit-woman-waving-happily-in-front-of-wall-43031-large.mp4",
+    photos: [
+      { id: "1", dataUrl: "https://images.unsplash.com/photo-1599842057874-37393e9342df?w=400&q=80" },
+      { id: "2", dataUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&q=80" }
+    ]
   },
   {
     id: 102,
@@ -66,7 +73,13 @@ const fallbackMockProfiles = [
     personality: "Strategic & Detail-oriented (INTJ)",
     caste: "Mujahid",
     profession: "Software Engineer",
-    matchReason: "Similar career aspirations and tech background."
+    matchReason: "Similar career aspirations and tech background.",
+    aboutMe: "Software developer focused on building meaningful technology. Love coding, volunteering, and travelling.",
+    voice: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+    video: "https://assets.mixkit.co/videos/preview/mixkit-woman-waving-happily-in-front-of-wall-43031-large.mp4",
+    photos: [
+      { id: "1", dataUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80" }
+    ]
   },
   {
     id: 103,
@@ -80,7 +93,13 @@ const fallbackMockProfiles = [
     personality: "Energetic & Aesthetic (ENFP)",
     caste: "Sunni",
     profession: "Architect",
-    matchReason: "Strong alignment in creative interests and lifestyle."
+    matchReason: "Strong alignment in creative interests and lifestyle.",
+    aboutMe: "Architect who loves drawing, exploring historic sites, and building interior designs.",
+    voice: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+    video: "https://assets.mixkit.co/videos/preview/mixkit-woman-waving-happily-in-front-of-wall-43031-large.mp4",
+    photos: [
+      { id: "1", dataUrl: "https://images.unsplash.com/photo-1531123897727-8f129e1bf98a?w=400&q=80" }
+    ]
   },
   {
     id: 104,
@@ -94,7 +113,13 @@ const fallbackMockProfiles = [
     personality: "Warm & Direct (ESFJ)",
     caste: "Sunni",
     profession: "Doctor",
-    matchReason: "Complementary behavioral patterns and family goals."
+    matchReason: "Complementary behavioral patterns and family goals.",
+    aboutMe: "Medical doctor passionate about community healthcare. Enjoys reading and cooking for family.",
+    voice: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+    video: "https://assets.mixkit.co/videos/preview/mixkit-woman-waving-happily-in-front-of-wall-43031-large.mp4",
+    photos: [
+      { id: "1", dataUrl: "https://images.unsplash.com/photo-1554151228-14d9def656e4?w=400&q=80" }
+    ]
   }
 ];
 
@@ -112,7 +137,16 @@ export default function AiMatchesPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("ai-recommendations");
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
+  const [activePhoto, setActivePhoto] = useState<string | null>(null);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (selectedProfile) {
+      setActivePhoto(selectedProfile.img);
+    } else {
+      setActivePhoto(null);
+    }
+  }, [selectedProfile]);
 
   const [aiData, setAiData] = useState<{
     bestMatch: any;
@@ -186,7 +220,12 @@ export default function AiMatchesPage() {
               location: u.location || "Kerala",
               img: avatar,
               caste: u.cast || "Sunni",
-              profession: u.profile_details?.profession || "Professional",
+              profession: u.profile_details?.mn_professional_info_draft?.profession || "Professional",
+              // Media additions
+              photos: photos || [],
+              video: u.profile_details?.mn_video_intro_draft?.video?.dataUrl || null,
+              voice: u.profile_details?.mn_voice_intro_draft?.voice?.dataUrl || null,
+              aboutMe: u.profile_details?.mn_basic_details_draft?.aboutMe || "",
               // Enrich with AI compatible templates
               matchScore: aesthetic.matchScore,
               aiExplanation: aesthetic.aiExplanation,
@@ -693,10 +732,10 @@ export default function AiMatchesPage() {
                 initial={{ opacity: 0, scale: 0.95, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden z-10"
+                className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-y-auto max-h-[90vh] z-10 scrollbar-thin"
               >
-                <div className="h-48 bg-gray-100 relative">
-                  <img src={selectedProfile.img} alt="" className="w-full h-full object-cover" />
+                <div className="h-56 bg-gray-100 relative">
+                  <img src={activePhoto || selectedProfile.img} alt="" className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                   <button 
                     onClick={() => setSelectedProfile(null)}
@@ -708,7 +747,7 @@ export default function AiMatchesPage() {
                     <div className="flex items-end justify-between">
                       <div>
                         <h2 className="text-2xl font-bold text-white drop-shadow-md">{selectedProfile.name}</h2>
-                        <p className="text-gray-200 text-sm mt-1">{selectedProfile.age} yrs • {selectedProfile.location}</p>
+                        <p className="text-gray-200 text-sm mt-1">{selectedProfile.age} yrs • {selectedProfile.location} • {selectedProfile.caste}</p>
                       </div>
                       <div className="bg-brand-600 text-white px-3 py-1.5 rounded-xl font-bold text-sm shadow-lg flex items-center gap-1.5">
                         <Sparkles className="w-3.5 h-3.5" /> {selectedProfile.matchScore}%
@@ -717,7 +756,57 @@ export default function AiMatchesPage() {
                   </div>
                 </div>
 
-                <div className="p-6 space-y-6">
+                <div className="p-6 space-y-5">
+                  {/* Photo Thumbnails */}
+                  {selectedProfile.photos && selectedProfile.photos.length > 1 && (
+                    <div>
+                      <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Photo Gallery</h3>
+                      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
+                        {selectedProfile.photos.map((p: any, idx: number) => (
+                          <button 
+                            key={p.id || idx} 
+                            onClick={() => setActivePhoto(p.dataUrl)}
+                            className={`w-12 h-12 rounded-lg overflow-hidden border-2 shrink-0 transition-all ${activePhoto === p.dataUrl ? 'border-brand-600 scale-95' : 'border-gray-200 opacity-70 hover:opacity-100'}`}
+                          >
+                            <img src={p.dataUrl} className="w-full h-full object-cover" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* About Me bio */}
+                  {selectedProfile.aboutMe && (
+                    <div>
+                      <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">About</h3>
+                      <p className="text-xs text-gray-700 leading-relaxed font-medium">
+                        {selectedProfile.aboutMe}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Voice Introduction Player */}
+                  {selectedProfile.voice && (
+                    <div className="bg-brand-50/40 border border-brand-100/50 p-4 rounded-2xl flex flex-col gap-1.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-brand-700 flex items-center gap-1.5">
+                        <Volume2 className="w-4 h-4" /> Voice Introduction
+                      </span>
+                      <audio src={selectedProfile.voice} controls className="w-full h-8 mt-1 accent-brand-600" />
+                    </div>
+                  )}
+
+                  {/* Video Introduction Player */}
+                  {selectedProfile.video && (
+                    <div className="bg-brand-50/40 border border-brand-100/50 p-4 rounded-2xl flex flex-col gap-1.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-brand-700 flex items-center gap-1.5">
+                        <Video className="w-4 h-4" /> Video Onboarding
+                      </span>
+                      <div className="relative rounded-xl overflow-hidden aspect-video bg-black mt-1">
+                        <video src={selectedProfile.video} controls className="w-full h-full object-contain" />
+                      </div>
+                    </div>
+                  )}
+
                   <div>
                     <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">AI Compatibility Analysis</h3>
                     <p className="text-xs text-gray-700 leading-relaxed bg-brand-50 p-4 rounded-xl border border-brand-100/50">
@@ -752,7 +841,10 @@ export default function AiMatchesPage() {
                       {modalBtnText}
                     </button>
                     <button 
-                      onClick={() => router.push("/dashboard/search")}
+                      onClick={() => {
+                        setSelectedProfile(null);
+                        router.push("/dashboard/search");
+                      }}
                       className="flex-1 py-3 bg-gray-50 text-gray-700 hover:bg-gray-100 text-xs font-bold rounded-xl border border-gray-200 transition-colors"
                     >
                       View Full Profile

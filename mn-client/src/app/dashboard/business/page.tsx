@@ -29,7 +29,10 @@ const LOCATIONS = [
   "Angadippuram",
   "Edappal",
   "Tanur",
-  "Parappanagadi"
+  "Parappanagadi",
+  "Wandoor",
+  "Nilamboor",
+  "Parappananghadi"
 ];
 
 export default function WeddingBusinessDashboard() {

@@ -34,13 +34,23 @@ export default function ReligiousInfoStep({ initialData, onComplete, onBack }: R
   // Load draft on mount
   useEffect(() => {
     const draft = localStorage.getItem(DRAFT_KEY);
-    if (draft && !initialData) {
+    let mergedData = {
+      religion: "Islam",
+      community: "",
+      religiousness: "",
+    };
+    if (draft) {
       try {
-        setFormData(JSON.parse(draft));
+        mergedData = { ...mergedData, ...JSON.parse(draft) };
       } catch (e) {
         console.error("Failed to parse draft", e);
       }
     }
+    if (initialData) {
+      if (initialData.religion) mergedData.religion = initialData.religion;
+      if (initialData.community) mergedData.community = initialData.community;
+    }
+    setFormData(mergedData);
     setIsDraftLoaded(true);
   }, [initialData]);
 

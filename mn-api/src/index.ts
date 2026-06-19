@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import user_route from "./interface/routes/user.route";
 import otp_route from "./interface/routes/otp.route";
