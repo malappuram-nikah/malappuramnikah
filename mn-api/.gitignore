@@ -10,3 +10,8 @@ awscli-bundle/
 yarn.lock
 package-lock.json
 .env
+
+# Agent directories
+.agents
+.skills
+.gemini

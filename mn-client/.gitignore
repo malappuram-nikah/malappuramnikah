@@ -23,3 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 .next
+
+# Agent directories
+.agents
+.skills
+.gemini
