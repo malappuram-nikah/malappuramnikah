@@ -131,7 +131,24 @@ export default function DashboardSidebar() {
         {/* Logout / Switch Out */}
         <div className="px-3 py-4 border-t border-gray-100">
           <button
-            onClick={() => { localStorage.removeItem("mn_token"); window.location.href = "/login"; }}
+            onClick={() => {
+              localStorage.removeItem("mn_token");
+              localStorage.removeItem("mn_logged_in_user_id");
+              const draftKeys = [
+                "mn_basic_details_draft",
+                "mn_religious_info_draft",
+                "mn_professional_info_draft",
+                "mn_family_details_draft",
+                "mn_interests_draft",
+                "mn_habits_draft",
+                "mn_partner_preferences_draft",
+                "mn_profile_photos_draft",
+                "mn_video_intro_draft",
+                "mn_voice_intro_draft"
+              ];
+              draftKeys.forEach((key) => localStorage.removeItem(key));
+              window.location.href = "/login";
+            }}
             className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-gray-500 hover:bg-brand-50 hover:text-brand-700 w-full transition-all group"
           >
             <LogOut className="w-5 h-5 shrink-0 text-gray-400 group-hover:text-brand-600" />

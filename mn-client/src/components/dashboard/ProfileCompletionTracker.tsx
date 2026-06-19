@@ -11,50 +11,94 @@ export default function ProfileCompletionTracker() {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    // Define the sections and their draft keys
-    const sections = [
-      { key: "mn_basic_details_draft", name: "Basic Details", suggestion: "Add your basic details to start matching.", step: 1 },
-      { key: "mn_religious_info_draft", name: "Religious Info", suggestion: "Add your religious background.", step: 2 },
-      { key: "mn_professional_info_draft", name: "Professional Info", suggestion: "Add your education and career details.", step: 3 },
-      { key: "mn_family_details_draft", name: "Family Details", suggestion: "Tell us about your family background.", step: 4 },
-      { key: "mn_interests_draft", name: "Interests & Personality", suggestion: "Complete Interests & Personality to find like-minded people.", step: 5 },
-      { key: "mn_habits_draft", name: "Hobbies & Habits", suggestion: "Add your lifestyle habits.", step: 6 },
-      { key: "mn_partner_preferences_draft", name: "Partner Preferences", suggestion: "Complete Partner Preferences to improve match suggestions.", step: 7 },
-      { key: "mn_profile_photos_draft", name: "Profile Photos", suggestion: "Upload more photos to improve profile visibility.", step: 8 },
-      { key: "mn_video_intro_draft", name: "Video Introduction", suggestion: "Upload a video intro to stand out.", step: 9 },
-      { key: "mn_voice_intro_draft", name: "Voice Introduction", suggestion: "Record a voice intro to boost responses.", step: 10 },
-    ];
+    const syncAndCalculate = async () => {
+      const sections = [
+        { key: "mn_basic_details_draft", name: "Basic Details", suggestion: "Add your basic details to start matching.", step: 1 },
+        { key: "mn_religious_info_draft", name: "Religious Info", suggestion: "Add your religious background.", step: 2 },
+        { key: "mn_professional_info_draft", name: "Professional Info", suggestion: "Add your education and career details.", step: 3 },
+        { key: "mn_family_details_draft", name: "Family Details", suggestion: "Tell us about your family background.", step: 4 },
+        { key: "mn_interests_draft", name: "Interests & Personality", suggestion: "Complete Interests & Personality to find like-minded people.", step: 5 },
+        { key: "mn_habits_draft", name: "Hobbies & Habits", suggestion: "Add your lifestyle habits.", step: 6 },
+        { key: "mn_partner_preferences_draft", name: "Partner Preferences", suggestion: "Complete Partner Preferences to improve match suggestions.", step: 7 },
+        { key: "mn_profile_photos_draft", name: "Profile Photos", suggestion: "Upload more photos to improve profile visibility.", step: 8 },
+        { key: "mn_video_intro_draft", name: "Video Introduction", suggestion: "Upload a video intro to stand out.", step: 9 },
+        { key: "mn_voice_intro_draft", name: "Voice Introduction", suggestion: "Record a voice intro to boost responses.", step: 10 },
+      ];
 
-    let completedCount = 0;
-    const missing: {name: string, suggestion: string, step: number}[] = [];
+      const token = localStorage.getItem("mn_token");
+      let userId = null;
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          userId = payload.userId;
+        } catch (e) {
+          console.error("Token decoding error", e);
+        }
+      }
 
-    sections.forEach(section => {
-      try {
-        const item = localStorage.getItem(section.key);
-        if (item) {
-          const parsed = JSON.parse(item);
-          // specific checks to ensure it's not empty
-          if (section.key === "mn_profile_photos_draft" && parsed.photos?.length === 0) {
-            missing.push(section);
-          } else if (section.key === "mn_video_intro_draft" && !parsed.video) {
-            missing.push(section);
-          } else if (section.key === "mn_voice_intro_draft" && !parsed.voice) {
-            missing.push(section);
-          } else {
-            completedCount++;
+      if (userId) {
+        const cachedUserId = localStorage.getItem("mn_logged_in_user_id");
+        if (cachedUserId !== String(userId)) {
+          try {
+            const res = await fetch(`http://localhost:3333/user/${userId}`);
+            const data = await res.json();
+            if (data.success && data.user) {
+              const user = data.user;
+              
+              // Clear old draft keys first to prevent stale cache
+              sections.forEach(sec => localStorage.removeItem(sec.key));
+              
+              // Sync backend profile details to localStorage
+              if (user.profile_details) {
+                Object.entries(user.profile_details).forEach(([key, value]) => {
+                  if (value) {
+                    localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+                  }
+                });
+              }
+              
+              // Mark as synced for this user ID
+              localStorage.setItem("mn_logged_in_user_id", String(userId));
+            }
+          } catch (err) {
+            console.error("Failed to sync profile details in tracker:", err);
           }
-        } else {
+        }
+      }
+
+      let completedCount = 0;
+      const missing: {name: string, suggestion: string, step: number}[] = [];
+
+      sections.forEach(section => {
+        try {
+          const item = localStorage.getItem(section.key);
+          if (item) {
+            const parsed = JSON.parse(item);
+            // specific checks to ensure it's not empty
+            if (section.key === "mn_profile_photos_draft" && (!parsed.photos || parsed.photos.length === 0)) {
+              missing.push(section);
+            } else if (section.key === "mn_video_intro_draft" && !parsed.video) {
+              missing.push(section);
+            } else if (section.key === "mn_voice_intro_draft" && !parsed.voice) {
+              missing.push(section);
+            } else {
+              completedCount++;
+            }
+          } else {
+            missing.push(section);
+          }
+        } catch (e) {
           missing.push(section);
         }
-      } catch (e) {
-        missing.push(section);
-      }
-    });
+      });
 
-    const percent = Math.round((completedCount / sections.length) * 100);
-    setCompletionPercent(percent);
-    setMissingSections(missing);
-    setIsLoaded(true);
+      const percent = Math.round((completedCount / sections.length) * 100);
+      setCompletionPercent(percent);
+      setMissingSections(missing);
+      setIsLoaded(true);
+    };
+
+    syncAndCalculate();
   }, []);
 
   if (!isLoaded) return null;
