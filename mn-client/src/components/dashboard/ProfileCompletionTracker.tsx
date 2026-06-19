@@ -183,9 +183,14 @@ export default function ProfileCompletionTracker() {
           <p className="text-sm text-gray-500 mt-1">
             Your profile is 100% complete. You are now fully visible to your best matches.
           </p>
-          <Link href="/dashboard/matches" className="inline-flex items-center gap-1 mt-4 text-sm font-semibold text-brand-600 hover:text-brand-700 hover:underline">
-            View your matches <ArrowRight className="w-4 h-4" />
-          </Link>
+          <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
+            <Link href="/dashboard/profile-builder" className="inline-flex items-center gap-1 text-xs font-semibold px-4 py-2 bg-gray-50 border border-gray-200 text-gray-700 rounded-xl hover:bg-brand-50 hover:text-brand-700 hover:border-brand-200 transition-colors shadow-sm">
+              Edit Full Profile
+            </Link>
+            <Link href="/dashboard/matches" className="inline-flex items-center gap-1 text-xs font-semibold px-4 py-2 bg-brand-600 text-white rounded-xl hover:bg-brand-700 transition-colors shadow-sm">
+              View AI Matches <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         </div>
       )}
     </div>

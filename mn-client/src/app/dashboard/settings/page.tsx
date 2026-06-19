@@ -315,6 +315,26 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
+                {/* Advanced Profile Builder redirect card */}
+                <div className="bg-brand-50 rounded-2xl p-5 border border-brand-100/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+                  <div className="flex items-start gap-2.5">
+                    <Sparkles className="w-5 h-5 text-brand-600 shrink-0 mt-0.5 animate-pulse" />
+                    <div>
+                      <h4 className="font-bold text-sm text-brand-900">Advanced Profile Settings</h4>
+                      <p className="text-xs text-brand-600 mt-0.5 max-w-md leading-relaxed">
+                        Update your Religious Info, Career & Education, Family Details, Hobbies, Partner Preferences, and upload Photos/Videos.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => router.push("/dashboard/profile-builder")}
+                    className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all shrink-0 flex items-center justify-center gap-1.5 active:scale-95 text-center font-medium"
+                  >
+                    Open Profile Builder
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
                 {/* Micro Completion Interactive Card */}
                 {completionPercent < 100 && missingSections.length > 0 && (
                   <div className="bg-gradient-to-br from-brand-900 to-brand-700 rounded-2xl p-5 text-white shadow-md relative overflow-hidden">

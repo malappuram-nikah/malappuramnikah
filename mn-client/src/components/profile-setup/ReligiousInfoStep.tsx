@@ -153,7 +153,6 @@ export default function ReligiousInfoStep({ initialData, onComplete, onBack }: R
                 <option value="" disabled>Select Religion</option>
                 <option value="Islam">Islam</option>
                 <option value="Christianity">Christianity</option>
-                <option value="Hinduism">Hinduism</option>
                 <option value="Other">Other</option>
               </select>
               {errors.religion && <p className="text-red-500 text-xs mt-1">{errors.religion}</p>}
