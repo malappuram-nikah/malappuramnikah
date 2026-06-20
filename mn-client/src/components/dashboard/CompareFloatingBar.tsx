@@ -20,7 +20,10 @@ export default function CompareFloatingBar() {
 
     const fetchProfiles = async () => {
       try {
-        const res = await fetch("http://localhost:3333/user/profiles");
+        const storedToken = localStorage.getItem("mn_token");
+        const res = await fetch("http://localhost:3333/user/profiles", {
+          headers: storedToken ? { "Authorization": `Bearer ${storedToken}` } : {}
+        });
         const data = await res.json();
         if (data.success && data.users) {
           const matched = data.users.filter((u: any) => compareIds.includes(u.id));

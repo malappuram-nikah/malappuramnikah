@@ -51,6 +51,13 @@ interest_route.post("/", async (req: Request, res: Response) => {
       return;
     }
 
+    const senderGender = (senderUser.gender || "").toLowerCase();
+    const receiverGender = (receiverUser.gender || "").toLowerCase();
+    if (senderGender && receiverGender && senderGender === receiverGender) {
+      res.status(403).json({ success: false, message: "Access forbidden. Cannot express interest in same-gender profiles." });
+      return;
+    }
+
     // Check if interest already exists
     const existingInterest = await prisma.interest.findUnique({
       where: {

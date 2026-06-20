@@ -8,6 +8,7 @@ import { OtpRepository } from "../../infrastructure/repositories/OtpRepository";
 import { UpdateProfileDetailsUseCase } from "../../applications/use-cases/user/UpdateProfileDetails.usecase";
 
 
+import { getUserIdFromRequest } from "./interest.route";
 import prisma from "../../infrastructure/prisma/prisamClient";
 
 
@@ -38,11 +39,32 @@ user_route.get('/:id', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: "Invalid user ID" });
       return;
     }
+
+    const requesterId = getUserIdFromRequest(req);
+    if (!requesterId) {
+      res.status(401).json({ success: false, message: "Unauthorized. Missing or invalid token." });
+      return;
+    }
+
     const user = await userRepository.findById(id);
     if (!user) {
       res.status(404).json({ success: false, message: "User not found" });
       return;
     }
+
+    const requester = await userRepository.findById(requesterId);
+    if (requester) {
+      const reqIsAdmin = (requester.profile_details as any)?.isAdmin === true || requester.mobile_number === "+911212121212" || requester.mobile_number === "+919876543210";
+      if (!reqIsAdmin && requesterId !== id) {
+        const reqGender = (requester.gender || "").toLowerCase();
+        const targetGender = (user.gender || "").toLowerCase();
+        if (reqGender && targetGender && reqGender === targetGender) {
+          res.status(403).json({ success: false, message: "Access forbidden. Same-gender profile visibility is restricted." });
+          return;
+        }
+      }
+    }
+
     // Remove password hash from response for security
     const { password, ...safeUser } = user as any;
     res.status(200).json({ success: true, user: safeUser });

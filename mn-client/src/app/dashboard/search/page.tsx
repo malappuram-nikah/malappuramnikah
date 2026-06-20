@@ -55,14 +55,38 @@ export default function SearchPage() {
           await fetchInterests(storedToken);
         }
 
-        const res = await fetch("http://localhost:3333/user/profiles");
+        const res = await fetch("http://localhost:3333/user/profiles", {
+          headers: storedToken ? { "Authorization": `Bearer ${storedToken}` } : {}
+        });
         const data = await res.json();
         if (data.success && data.users) {
           const tokenPayload = storedToken ? JSON.parse(atob(storedToken.split(".")[1])) : {};
           const loggedInId = tokenPayload.userId || null;
 
-          // Filter out the logged-in user from the list
-          const otherUsers = data.users.filter((u: any) => u.id !== loggedInId);
+          let loggedInGender = "";
+          if (loggedInId && storedToken) {
+            try {
+              const meRes = await fetch(`http://localhost:3333/user/${loggedInId}`, {
+                headers: { "Authorization": `Bearer ${storedToken}` }
+              });
+              const meData = await meRes.json();
+              if (meData.success && meData.user) {
+                loggedInGender = (meData.user.gender || "").toLowerCase();
+              }
+            } catch (meErr) {
+              console.error("Failed to load logged-in user details in search", meErr);
+            }
+          }
+
+          // Filter out the logged-in user and any same-gender profiles
+          const otherUsers = data.users.filter((u: any) => {
+            if (u.id === loggedInId) return false;
+            if (loggedInGender) {
+              const targetGender = (u.gender || "").toLowerCase();
+              if (targetGender && loggedInGender === targetGender) return false;
+            }
+            return true;
+          });
 
           const mapped = otherUsers.map((u: any, i: number) => {
             // Resolve avatar photo from profile details JSON

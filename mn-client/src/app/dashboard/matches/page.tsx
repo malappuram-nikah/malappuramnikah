@@ -123,6 +123,87 @@ const fallbackMockProfiles = [
   }
 ];
 
+// Fallback high-quality male mock data when DB profiles are scarce and requester is female
+const fallbackMockMaleProfiles = [
+  {
+    id: 201,
+    name: "Mohammed Bilal",
+    age: 26,
+    location: "Malappuram",
+    img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80",
+    matchScore: 95,
+    aiExplanation: "Strong compatibility based on professional aspirations, shared community background in Malappuram, and balanced family expectations.",
+    strengths: ["Caste Alignment", "Locational Proximity", "Career Stability"],
+    personality: "Calm & Resilient (ISTJ)",
+    conversationStarter: "Hello! I noticed you are interested in software development. What project are you working on right now?",
+    caste: "Sunni",
+    profession: "Software Professional",
+    aboutMe: "A software engineer working in Ernakulam, originally from Malappuram. Value family traditions and personal growth.",
+    voice: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+    video: "https://assets.mixkit.co/videos/preview/mixkit-man-holding-cup-smiling-41804-large.mp4",
+    photos: [
+      { id: "1", dataUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80" }
+    ]
+  },
+  {
+    id: 202,
+    name: "Dr. Anas P.",
+    age: 28,
+    location: "Kozhikode",
+    img: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=400&q=80",
+    matchScore: 90,
+    aiExplanation: "High compatibility score based on shared health interests, community values, and parallel long term goals.",
+    strengths: ["Education Sync", "Family Values", "Lifestyle Harmony"],
+    personality: "Warm & Helpful (ENFJ)",
+    caste: "Sunni",
+    profession: "Doctor",
+    aboutMe: "A medical doctor who loves traveling, reading, and spending quality time with family. Looking for a partner who is also passionate about their profession.",
+    voice: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+    video: "https://assets.mixkit.co/videos/preview/mixkit-man-holding-cup-smiling-41804-large.mp4",
+    photos: [
+      { id: "1", dataUrl: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=400&q=80" }
+    ]
+  },
+  {
+    id: 203,
+    name: "Rayan Khalid",
+    age: 25,
+    location: "Ernakulam",
+    img: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&q=80",
+    matchScore: 87,
+    aiExplanation: "Great match for shared lifestyle goals, digital marketing career alignment, and creative passions.",
+    strengths: ["Creative Harmony", "Modern Values", "Shared Hobbies"],
+    personality: "Outgoing & Creative (ENFP)",
+    caste: "Mujahid",
+    profession: "Digital Marketing Specialist",
+    aboutMe: "Digital marketer who loves photography, playing football, and exploring new cafes. Looking for an open-minded and kind-hearted partner.",
+    voice: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+    video: "https://assets.mixkit.co/videos/preview/mixkit-man-holding-cup-smiling-41804-large.mp4",
+    photos: [
+      { id: "1", dataUrl: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&q=80" }
+    ]
+  },
+  {
+    id: 204,
+    name: "Faheem Shah",
+    age: 27,
+    location: "Kasaragod",
+    img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80",
+    matchScore: 84,
+    aiExplanation: "Aligned lifetime schedules and caregiving values. Strong communication flows and support systems.",
+    strengths: ["Life Vision", "Trust Sync", "Financial Alignment"],
+    personality: "Analytical & Organized (INTJ)",
+    caste: "Sunni",
+    profession: "Chartered Accountant",
+    aboutMe: "Chartered accountant who enjoys reading, playing chess, and outdoor trekking. Looking for a career-minded partner.",
+    voice: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+    video: "https://assets.mixkit.co/videos/preview/mixkit-man-holding-cup-smiling-41804-large.mp4",
+    photos: [
+      { id: "1", dataUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80" }
+    ]
+  }
+];
+
 export default function AiMatchesPage() {
   const router = useRouter();
   const { addToCompare, removeFromCompare, isCompared, alertMsg: globalAlert, setAlertMsg: setGlobalAlert } = useCompare();
@@ -191,15 +272,41 @@ export default function AiMatchesPage() {
         await fetchInterests(storedToken);
       }
 
-      const res = await fetch("http://localhost:3333/user/profiles");
+      const res = await fetch("http://localhost:3333/user/profiles", {
+        headers: storedToken ? { "Authorization": `Bearer ${storedToken}` } : {}
+      });
       const data = await res.json();
       
+      let currentUserGender = "male"; // default fallback
       if (data.success && data.users) {
         const tokenPayload = storedToken ? JSON.parse(atob(storedToken.split(".")[1])) : {};
         const loggedInId = tokenPayload.userId || null;
+
+        if (loggedInId && storedToken) {
+          try {
+            const meRes = await fetch(`http://localhost:3333/user/${loggedInId}`, {
+              headers: { "Authorization": `Bearer ${storedToken}` }
+            });
+            const meData = await meRes.json();
+            if (meData.success && meData.user) {
+              currentUserGender = (meData.user.gender || "male").toLowerCase();
+            }
+          } catch (e) {
+            console.error("Error fetching current user gender", e);
+          }
+        }
+
+        const mocks = currentUserGender === "female" ? fallbackMockMaleProfiles : fallbackMockProfiles;
         
-        // Filter out logged-in user
-        const otherUsers = data.users.filter((u: any) => u.id !== loggedInId);
+        // Filter out logged-in user and any same-gender profiles
+        const otherUsers = data.users.filter((u: any) => {
+          if (u.id === loggedInId) return false;
+          if (currentUserGender) {
+            const targetGender = (u.gender || "").toLowerCase();
+            if (targetGender && currentUserGender === targetGender) return false;
+          }
+          return true;
+        });
         
         if (otherUsers.length > 0) {
           // Map DB users to profiles
@@ -247,18 +354,18 @@ export default function AiMatchesPage() {
 
           // If we ran out of profiles for arrays, supplement with fallbacks
           setAiData({
-            bestMatch: best || fallbackMockProfiles[0],
-            dailyPicks: picks.length > 0 ? picks : fallbackMockProfiles.slice(1, 4),
-            nearby: nearby.length > 0 ? nearby : fallbackMockProfiles.slice(1, 3),
-            similarPersonality: similar.length > 0 ? similar : fallbackMockProfiles.slice(2, 4)
+            bestMatch: best || mocks[0],
+            dailyPicks: picks.length > 0 ? picks : mocks.slice(1, 4),
+            nearby: nearby.length > 0 ? nearby : mocks.slice(1, 3),
+            similarPersonality: similar.length > 0 ? similar : mocks.slice(2, 4)
           });
         } else {
           // Database is empty (only has logged in user), use fallback mock showcase profiles
           setAiData({
-            bestMatch: fallbackMockProfiles[0],
-            dailyPicks: fallbackMockProfiles.slice(1, 4),
-            nearby: fallbackMockProfiles.slice(1, 3),
-            similarPersonality: fallbackMockProfiles.slice(2, 4)
+            bestMatch: mocks[0],
+            dailyPicks: mocks.slice(1, 4),
+            nearby: mocks.slice(1, 3),
+            similarPersonality: mocks.slice(2, 4)
           });
         }
       }

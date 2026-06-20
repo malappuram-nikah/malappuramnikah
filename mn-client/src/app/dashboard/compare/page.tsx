@@ -72,18 +72,35 @@ function CompareContent() {
         }
 
         // Fetch user profiles
-        const res = await fetch("http://localhost:3333/user/profiles");
+        const res = await fetch("http://localhost:3333/user/profiles", {
+          headers: token ? { "Authorization": `Bearer ${token}` } : {}
+        });
         const data = await res.json();
         if (data.success && data.users) {
           setAllUsers(data.users);
           
           // Identify current user preferences
           if (token) {
-            const payload = JSON.parse(atob(token.split(".")[1]));
-            const me = data.users.find((u: any) => u.id === payload.userId);
-            if (me && me.profile_details?.mn_partner_preferences_draft) {
-              setMyPreferences(me.profile_details.mn_partner_preferences_draft);
-            } else {
+            try {
+              const payload = JSON.parse(atob(token.split(".")[1]));
+              const meRes = await fetch(`http://localhost:3333/user/${payload.userId}`, {
+                headers: { "Authorization": `Bearer ${token}` }
+              });
+              const meData = await meRes.json();
+              if (meData.success && meData.user) {
+                const me = meData.user;
+                if (me.profile_details?.mn_partner_preferences_draft) {
+                  setMyPreferences(me.profile_details.mn_partner_preferences_draft);
+                } else {
+                  const localPref = localStorage.getItem("mn_partner_preferences_draft");
+                  if (localPref) setMyPreferences(JSON.parse(localPref));
+                }
+              } else {
+                const localPref = localStorage.getItem("mn_partner_preferences_draft");
+                if (localPref) setMyPreferences(JSON.parse(localPref));
+              }
+            } catch (meErr) {
+              console.error("Failed to load current user for preferences", meErr);
               const localPref = localStorage.getItem("mn_partner_preferences_draft");
               if (localPref) setMyPreferences(JSON.parse(localPref));
             }

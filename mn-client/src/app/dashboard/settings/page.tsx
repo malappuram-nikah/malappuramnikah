@@ -53,14 +53,16 @@ export default function SettingsPage() {
           }
         }
 
-        // Try fetching profiles from backend
+        // Try fetching profile from backend
         let userFetched = false;
         try {
-          const res = await fetch("http://localhost:3333/user/profiles");
-          const data = await res.json();
-          if (data.success && data.users && userId !== null) {
-            const currentUser = data.users.find((u: any) => u.id === userId);
-            if (currentUser) {
+          if (userId !== null) {
+            const res = await fetch(`http://localhost:3333/user/${userId}`, {
+              headers: token ? { "Authorization": `Bearer ${token}` } : {}
+            });
+            const data = await res.json();
+            if (data.success && data.user) {
+              const currentUser = data.user;
               setFirstName(currentUser.first_name || "");
               setLastName(currentUser.last_name || "");
               setMobile(currentUser.mobile_number || "");
