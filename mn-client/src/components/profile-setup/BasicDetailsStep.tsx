@@ -17,6 +17,9 @@ export interface BasicDetailsData {
   appearance: string;
   weight: string;
   languagesSpoken: string;
+  presentLocation?: string;
+  marriageGoalPlan?: string;
+  relocateForPartner?: string;
 }
 
 interface BasicDetailsStepProps {
@@ -40,6 +43,9 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
     appearance: "",
     weight: "",
     languagesSpoken: "",
+    presentLocation: "",
+    marriageGoalPlan: "",
+    relocateForPartner: "",
     ...initialData,
   });
 
@@ -64,6 +70,9 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
       appearance: "",
       weight: "",
       languagesSpoken: "",
+      presentLocation: "",
+      marriageGoalPlan: "",
+      relocateForPartner: "",
     };
     if (draft) {
       try {
@@ -360,6 +369,58 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
                 <option value="Very Fair">Very Fair</option>
                 <option value="Wheatish">Wheatish</option>
                 <option value="Dark">Dark</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        {/* Life Outlook & Location Details */}
+        <section className="space-y-6 pt-6 border-t border-gray-50">
+          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Life Outlook & Location Details</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Present Location</label>
+              <select
+                value={formData.presentLocation}
+                onChange={(e) => updateForm("presentLocation", e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+              >
+                <option value="">Select Location</option>
+                {["Alappuzha", "Ernakulam", "Idukki", "Kannur", "Kasaragod", "Kollam", "Kottayam", "Kozhikode", "Malappuram", "Palakkad", "Pathanamthitta", "Thiruvananthapuram", "Thrissur", "Wayanad", "Outside Kerala", "Outside India"].map(loc => (
+                  <option key={loc} value={loc}>{loc}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Marriage Goal Plan</label>
+              <select
+                value={formData.marriageGoalPlan}
+                onChange={(e) => updateForm("marriageGoalPlan", e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+              >
+                <option value="">Select Goal Plan</option>
+                <option value="Immediate (Within 6 months)">Immediate (Within 6 months)</option>
+                <option value="Short term (Within 1 year)">Short term (Within 1 year)</option>
+                <option value="Medium term (Within 2 years)">Medium term (Within 2 years)</option>
+                <option value="Flexible / No rush">Flexible / No rush</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Willing to Relocate?</label>
+              <select
+                value={formData.relocateForPartner}
+                onChange={(e) => updateForm("relocateForPartner", e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+              >
+                <option value="">Select Relocation Option</option>
+                <option value="Yes, willing to relocate">Yes, willing to relocate</option>
+                <option value="No, cannot relocate">No, cannot relocate</option>
+                <option value="Maybe / Open to discussion">Maybe / Open to discussion</option>
+                <option value="Only within Kerala">Only within Kerala</option>
+                <option value="Only within India">Only within India</option>
               </select>
             </div>
           </div>

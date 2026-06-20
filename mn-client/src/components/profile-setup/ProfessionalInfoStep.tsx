@@ -200,6 +200,7 @@ export default function ProfessionalInfoStep({ initialData, onComplete, onBack }
                 <option value="Self Employed">Self Employed</option>
                 <option value="Not Working">Not Working</option>
                 <option value="Student">Student</option>
+                <option value="Others">Others</option>
               </select>
               {errors.professionType && <p className="text-red-500 text-xs mt-1">{errors.professionType}</p>}
             </div>
@@ -217,6 +218,7 @@ export default function ProfessionalInfoStep({ initialData, onComplete, onBack }
               <datalist id="professionOptions">
                 <option value="Software Engineer" />
                 <option value="Doctor" />
+                <option value="Digital Marketing" />
                 <option value="Teacher / Professor" />
                 <option value="Engineer" />
                 <option value="Chartered Accountant" />
@@ -224,6 +226,7 @@ export default function ProfessionalInfoStep({ initialData, onComplete, onBack }
                 <option value="Nurse" />
                 <option value="Banker" />
                 <option value="Lawyer" />
+                <option value="Others" />
               </datalist>
               {errors.profession && <p className="text-red-500 text-xs mt-1">{errors.profession}</p>}
             </div>

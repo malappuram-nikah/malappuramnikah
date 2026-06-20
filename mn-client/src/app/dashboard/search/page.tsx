@@ -260,6 +260,8 @@ export default function SearchPage() {
               interestStyle = "bg-amber-100 text-amber-800 hover:bg-amber-200 border-2 border-dashed border-amber-300 animate-pulse";
             }
 
+            const isInterested = isMutual || isSent || isReceived;
+
             return (
               <motion.div
                 key={p.id}
@@ -269,7 +271,16 @@ export default function SearchPage() {
                 className="bg-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-lg hover:shadow-brand-900/5 hover:border-brand-100 transition-all duration-300 group flex"
               >
                 <div className="w-28 shrink-0 overflow-hidden bg-gray-100 relative">
-                  <img src={p.img} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <img 
+                    src={p.img} 
+                    alt={p.name} 
+                    className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${!isInterested ? "filter blur-[12px] select-none" : ""}`} 
+                  />
+                  {!isInterested && (
+                    <div className="absolute inset-0 bg-black/10 flex items-center justify-center transition-all">
+                      <Lock className="w-4 h-4 text-white drop-shadow-md" />
+                    </div>
+                  )}
                   {isMutual && (
                     <div className="absolute top-2 left-2 bg-pink-600 text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-sm">
                       Match

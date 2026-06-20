@@ -152,6 +152,9 @@ export default function ReviewStep({ onComplete, onBack, onEditSection }: Review
             <DataRow label="Gender" value={basic.gender} />
             <DataRow label="Marital Status" value={basic.maritalStatus} />
             <DataRow label="Height" value={basic.height} />
+            <DataRow label="Present Location" value={basic.presentLocation} />
+            <DataRow label="Marriage Goal Plan" value={basic.marriageGoalPlan} />
+            <DataRow label="Willing to Relocate" value={basic.relocateForPartner} />
           </div>
         </section>
 

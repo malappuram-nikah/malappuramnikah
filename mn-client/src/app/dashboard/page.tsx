@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, Eye, MessageCircle, Star, ArrowRight, TrendingUp, Loader2, Sparkles } from "lucide-react";
+import { Heart, Eye, MessageCircle, Star, ArrowRight, TrendingUp, Loader2, Sparkles, Lock } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ProfileCompletionTracker from "@/components/dashboard/ProfileCompletionTracker";
@@ -232,6 +232,7 @@ export default function DashboardPage() {
               const isMutual = interests.mutual.includes(match.id);
               const isSent = interests.sent.includes(match.id);
               const isReceived = interests.received.includes(match.id);
+              const isInterested = isMutual || isSent || isReceived;
 
               let interestText = "Interest";
               let interestStyle = "bg-brand-50 text-brand-700 hover:bg-brand-100 border border-transparent";
@@ -259,8 +260,20 @@ export default function DashboardPage() {
                   className="bg-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-lg hover:shadow-brand-900/5 hover:border-brand-100 transition-all duration-300 group flex flex-col justify-between"
                 >
                   <div className="relative h-44 overflow-hidden bg-gray-50">
-                    <img src={match.img} alt={match.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm text-brand-700 text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm">
+                    <img 
+                      src={match.img} 
+                      alt={match.name} 
+                      className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${!isInterested ? "filter blur-[12px] select-none" : ""}`} 
+                    />
+                    {!isInterested && (
+                      <div className="absolute inset-0 bg-black/15 flex items-center justify-center transition-all">
+                        <div className="bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full shadow-sm border border-white/20 flex items-center gap-1">
+                          <Lock className="w-3 h-3 text-brand-600" />
+                          <span className="text-[9px] font-bold text-gray-700">Connect to view photo</span>
+                        </div>
+                      </div>
+                    )}
+                    <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm text-brand-700 text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm z-10">
                       <TrendingUp className="w-3 h-3" />
                       {match.match}% match
                     </div>

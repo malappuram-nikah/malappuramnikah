@@ -150,10 +150,7 @@ export default function ReligiousInfoStep({ initialData, onComplete, onBack }: R
                 onChange={(e) => updateForm("religion", e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
-                <option value="" disabled>Select Religion</option>
                 <option value="Islam">Islam</option>
-                <option value="Christianity">Christianity</option>
-                <option value="Other">Other</option>
               </select>
               {errors.religion && <p className="text-red-500 text-xs mt-1">{errors.religion}</p>}
             </div>

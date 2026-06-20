@@ -433,9 +433,28 @@ export default function AiMatchesPage() {
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] bg-[size:24px_24px] opacity-10" />
               
               <div className="flex flex-col md:flex-row relative z-10">
-                <div className="md:w-2/5 h-64 md:h-auto relative bg-gray-900/10">
-                  <img src={bestMatch.img} alt={bestMatch.name} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-brand-900/90 via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-brand-900" />
+                <div className="md:w-2/5 h-64 md:h-auto relative bg-gray-900/10 overflow-hidden">
+                  {(() => {
+                    const isBestInterested = isBestMutual || isBestSent || isBestReceived;
+                    return (
+                      <>
+                        <img 
+                          src={bestMatch.img} 
+                          alt={bestMatch.name} 
+                          className={`w-full h-full object-cover ${!isBestInterested ? "filter blur-[16px] select-none" : ""}`} 
+                        />
+                        {!isBestInterested && (
+                          <div className="absolute inset-0 bg-black/20 flex items-center justify-center transition-all z-10">
+                            <div className="bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-md border border-white/20 flex items-center gap-1.5">
+                              <Lock className="w-3.5 h-3.5 text-brand-600" />
+                              <span className="text-[10px] font-bold text-gray-700">Connect to view photo</span>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                  <div className="absolute inset-0 bg-gradient-to-t from-brand-900/90 via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-brand-900 z-10" />
                   
                   <div className="absolute bottom-4 left-4 md:hidden">
                     <h3 className="text-2xl font-bold text-white">{bestMatch.name}</h3>
@@ -540,40 +559,58 @@ export default function AiMatchesPage() {
               <button onClick={() => router.push("/dashboard/search")} className="text-sm text-brand-600 font-medium hover:underline">View All</button>
             </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {aiData.dailyPicks.map((profile, i) => (
-                <motion.div
-                  key={profile.id}
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg hover:border-brand-200 transition-all group cursor-pointer flex flex-col justify-between"
-                  onClick={() => setSelectedProfile(profile)}
-                >
-                  <div>
-                    <div className="h-48 overflow-hidden relative bg-gray-50">
-                      <img src={profile.img} alt={profile.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                      <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-bold text-brand-700 shadow-sm flex items-center gap-1">
-                        <Sparkles className="w-3 h-3" /> {profile.matchScore}% Match
+              {aiData.dailyPicks.map((profile, i) => {
+                const isMutual = interests.mutual.includes(profile.id);
+                const isSent = interests.sent.includes(profile.id);
+                const isReceived = interests.received.includes(profile.id);
+                const isInterested = isMutual || isSent || isReceived;
+
+                return (
+                  <motion.div
+                    key={profile.id}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg hover:border-brand-200 transition-all group cursor-pointer flex flex-col justify-between"
+                    onClick={() => setSelectedProfile(profile)}
+                  >
+                    <div>
+                      <div className="h-48 overflow-hidden relative bg-gray-50">
+                        <img 
+                          src={profile.img} 
+                          alt={profile.name} 
+                          className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${!isInterested ? "filter blur-[12px] select-none" : ""}`} 
+                        />
+                        {!isInterested && (
+                          <div className="absolute inset-0 bg-black/15 flex items-center justify-center transition-all">
+                            <div className="bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full shadow-sm border border-white/20 flex items-center gap-1">
+                              <Lock className="w-3 h-3 text-brand-600" />
+                              <span className="text-[9px] font-bold text-gray-700">Connect to view photo</span>
+                            </div>
+                          </div>
+                        )}
+                        <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-bold text-brand-700 shadow-sm flex items-center gap-1 z-10">
+                          <Sparkles className="w-3 h-3" /> {profile.matchScore}% Match
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isCompared(profile.id)) {
+                              removeFromCompare(profile.id);
+                            } else {
+                              addToCompare(profile.id);
+                            }
+                          }}
+                          className={`absolute bottom-3 right-3 p-1.5 rounded-lg backdrop-blur-md transition-all shadow-sm z-10 ${
+                            isCompared(profile.id)
+                              ? "bg-brand-600 text-white"
+                              : "bg-white/80 text-gray-700 hover:bg-white"
+                          }`}
+                          title={isCompared(profile.id) ? "Remove from Compare" : "Compare Profile"}
+                        >
+                          <Layers className="w-3.5 h-3.5" />
+                        </button>
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (isCompared(profile.id)) {
-                            removeFromCompare(profile.id);
-                          } else {
-                            addToCompare(profile.id);
-                          }
-                        }}
-                        className={`absolute bottom-3 right-3 p-1.5 rounded-lg backdrop-blur-md transition-all shadow-sm z-10 ${
-                          isCompared(profile.id)
-                            ? "bg-brand-600 text-white"
-                            : "bg-white/80 text-gray-700 hover:bg-white"
-                        }`}
-                        title={isCompared(profile.id) ? "Remove from Compare" : "Compare Profile"}
-                      >
-                        <Layers className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
                     <div className="p-5">
                       <h3 className="font-bold text-gray-900 text-base">{profile.name}</h3>
                       <p className="text-xs text-gray-500 mt-1">{profile.age} yrs • {profile.location}</p>
@@ -600,7 +637,7 @@ export default function AiMatchesPage() {
                     </button>
                   </div>
                 </motion.div>
-              ))}
+              )})}
             </div>
           </section>
 
@@ -613,41 +650,58 @@ export default function AiMatchesPage() {
                 Similar Personalities
               </h2>
               <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-4 shadow-sm">
-                {aiData.similarPersonality.map(profile => (
-                  <div 
-                    key={profile.id} 
-                    className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer border border-transparent hover:border-gray-100"
-                    onClick={() => setSelectedProfile(profile)}
-                  >
-                    <img src={profile.img} className="w-14 h-14 rounded-full object-cover shadow-sm bg-gray-50" />
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-gray-900 text-sm truncate">{profile.name}</h4>
-                      <p className="text-xs text-gray-500 mt-0.5">{profile.age} yrs • {profile.location}</p>
-                      <p className="text-[10px] text-brand-600 mt-1 font-semibold bg-brand-50 w-max px-1.5 py-0.5 rounded">{profile.personality}</p>
+                {aiData.similarPersonality.map(profile => {
+                  const isMutual = interests.mutual.includes(profile.id);
+                  const isSent = interests.sent.includes(profile.id);
+                  const isReceived = interests.received.includes(profile.id);
+                  const isInterested = isMutual || isSent || isReceived;
+
+                  return (
+                    <div 
+                      key={profile.id} 
+                      className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer border border-transparent hover:border-gray-100"
+                      onClick={() => setSelectedProfile(profile)}
+                    >
+                      <div className="relative w-14 h-14 shrink-0 rounded-full overflow-hidden shadow-sm bg-gray-50">
+                        <img 
+                          src={profile.img} 
+                          className={`w-full h-full object-cover ${!isInterested ? "filter blur-[8px] select-none" : ""}`} 
+                        />
+                        {!isInterested && (
+                          <div className="absolute inset-0 bg-black/5 flex items-center justify-center">
+                            <Lock className="w-3.5 h-3.5 text-white drop-shadow-sm" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-gray-900 text-sm truncate">{profile.name}</h4>
+                        <p className="text-xs text-gray-500 mt-0.5">{profile.age} yrs • {profile.location}</p>
+                        <p className="text-[10px] text-brand-600 mt-1 font-semibold bg-brand-50 w-max px-1.5 py-0.5 rounded">{profile.personality}</p>
+                      </div>
+                      <div className="text-right flex items-center gap-2">
+                        <div className="text-brand-600 font-bold text-sm">{profile.matchScore}%</div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isCompared(profile.id)) {
+                              removeFromCompare(profile.id);
+                            } else {
+                              addToCompare(profile.id);
+                            }
+                          }}
+                          className={`p-1.5 rounded-lg border transition-colors ${
+                            isCompared(profile.id)
+                              ? "bg-brand-600 text-white border-brand-500"
+                              : "bg-gray-50 text-gray-400 border-gray-150 hover:text-brand-600"
+                          }`}
+                          title="Compare Profile"
+                        >
+                          <Layers className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
-                    <div className="text-right flex items-center gap-2">
-                      <div className="text-brand-600 font-bold text-sm">{profile.matchScore}%</div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (isCompared(profile.id)) {
-                            removeFromCompare(profile.id);
-                          } else {
-                            addToCompare(profile.id);
-                          }
-                        }}
-                        className={`p-1.5 rounded-lg border transition-colors ${
-                          isCompared(profile.id)
-                            ? "bg-brand-600 text-white border-brand-500"
-                            : "bg-gray-50 text-gray-400 border-gray-150 hover:text-brand-600"
-                        }`}
-                        title="Compare Profile"
-                      >
-                        <Layers className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
 
@@ -658,43 +712,60 @@ export default function AiMatchesPage() {
                 Nearby Compatible Profiles
               </h2>
               <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-4 shadow-sm">
-                {aiData.nearby.map(profile => (
-                  <div 
-                    key={profile.id} 
-                    className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer border border-transparent hover:border-gray-100"
-                    onClick={() => setSelectedProfile(profile)}
-                  >
-                    <img src={profile.img} className="w-14 h-14 rounded-full object-cover shadow-sm bg-gray-50" />
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-gray-900 text-sm truncate">{profile.name}</h4>
-                      <p className="text-xs text-gray-500 mt-0.5">{profile.caste}</p>
-                      <p className="text-xs text-gray-600 mt-1 flex items-center gap-1 font-medium">
-                        <MapPin className="w-3 h-3 text-gray-400" /> {profile.location}
-                      </p>
+                {aiData.nearby.map(profile => {
+                  const isMutual = interests.mutual.includes(profile.id);
+                  const isSent = interests.sent.includes(profile.id);
+                  const isReceived = interests.received.includes(profile.id);
+                  const isInterested = isMutual || isSent || isReceived;
+
+                  return (
+                    <div 
+                      key={profile.id} 
+                      className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer border border-transparent hover:border-gray-100"
+                      onClick={() => setSelectedProfile(profile)}
+                    >
+                      <div className="relative w-14 h-14 shrink-0 rounded-full overflow-hidden shadow-sm bg-gray-50">
+                        <img 
+                          src={profile.img} 
+                          className={`w-full h-full object-cover ${!isInterested ? "filter blur-[8px] select-none" : ""}`} 
+                        />
+                        {!isInterested && (
+                          <div className="absolute inset-0 bg-black/5 flex items-center justify-center">
+                            <Lock className="w-3.5 h-3.5 text-white drop-shadow-sm" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-gray-900 text-sm truncate">{profile.name}</h4>
+                        <p className="text-xs text-gray-500 mt-0.5">{profile.caste}</p>
+                        <p className="text-xs text-gray-600 mt-1 flex items-center gap-1 font-medium">
+                          <MapPin className="w-3 h-3 text-gray-400" /> {profile.location}
+                        </p>
+                      </div>
+                      <div className="text-right flex items-center gap-2">
+                        <div className="text-brand-600 font-bold text-sm">{profile.matchScore}%</div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isCompared(profile.id)) {
+                              removeFromCompare(profile.id);
+                            } else {
+                              addToCompare(profile.id);
+                            }
+                          }}
+                          className={`p-1.5 rounded-lg border transition-colors ${
+                            isCompared(profile.id)
+                              ? "bg-brand-600 text-white border-brand-500"
+                              : "bg-gray-50 text-gray-400 border-gray-150 hover:text-brand-600"
+                          }`}
+                          title="Compare Profile"
+                        >
+                          <Layers className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
-                    <div className="text-right flex items-center gap-2">
-                      <div className="text-brand-600 font-bold text-sm">{profile.matchScore}%</div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (isCompared(profile.id)) {
-                            removeFromCompare(profile.id);
-                          } else {
-                            addToCompare(profile.id);
-                          }
-                        }}
-                        className={`p-1.5 rounded-lg border transition-colors ${
-                          isCompared(profile.id)
-                            ? "bg-brand-600 text-white border-brand-500"
-                            : "bg-gray-50 text-gray-400 border-gray-150 hover:text-brand-600"
-                        }`}
-                        title="Compare Profile"
-                      >
-                        <Layers className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
           </div>
@@ -734,9 +805,28 @@ export default function AiMatchesPage() {
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
                 className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-y-auto max-h-[90vh] z-10 scrollbar-thin"
               >
-                <div className="h-56 bg-gray-100 relative">
-                  <img src={activePhoto || selectedProfile.img} alt="" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                <div className="h-56 bg-gray-100 relative overflow-hidden">
+                  {(() => {
+                    const isInterested = isMutual || isSent || isReceived;
+                    return (
+                      <>
+                        <img 
+                          src={activePhoto || selectedProfile.img} 
+                          alt="" 
+                          className={`w-full h-full object-cover ${!isInterested ? "filter blur-[16px] select-none" : ""}`} 
+                        />
+                        {!isInterested && (
+                          <div className="absolute inset-0 bg-black/20 flex items-center justify-center z-10">
+                            <div className="bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-md border border-white/20 flex items-center gap-1.5">
+                              <Lock className="w-3.5 h-3.5 text-brand-600" />
+                              <span className="text-[10px] font-bold text-gray-700">Connect to view photo</span>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
                   <button 
                     onClick={() => setSelectedProfile(null)}
                     className="absolute top-4 right-4 p-2 bg-black/25 hover:bg-black/45 backdrop-blur-md rounded-full text-white transition-colors"
@@ -762,15 +852,18 @@ export default function AiMatchesPage() {
                     <div>
                       <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Photo Gallery</h3>
                       <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
-                        {selectedProfile.photos.map((p: any, idx: number) => (
-                          <button 
-                            key={p.id || idx} 
-                            onClick={() => setActivePhoto(p.dataUrl)}
-                            className={`w-12 h-12 rounded-lg overflow-hidden border-2 shrink-0 transition-all ${activePhoto === p.dataUrl ? 'border-brand-600 scale-95' : 'border-gray-200 opacity-70 hover:opacity-100'}`}
-                          >
-                            <img src={p.dataUrl} className="w-full h-full object-cover" />
-                          </button>
-                        ))}
+                        {selectedProfile.photos.map((p: any, idx: number) => {
+                          const isInterested = isMutual || isSent || isReceived;
+                          return (
+                            <button 
+                              key={p.id || idx} 
+                              onClick={() => setActivePhoto(p.dataUrl)}
+                              className={`w-12 h-12 rounded-lg overflow-hidden border-2 shrink-0 transition-all ${activePhoto === p.dataUrl ? 'border-brand-600 scale-95' : 'border-gray-200 opacity-70 hover:opacity-100'}`}
+                            >
+                              <img src={p.dataUrl} className={`w-full h-full object-cover ${!isInterested ? "filter blur-[6px] select-none" : ""}`} />
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   )}

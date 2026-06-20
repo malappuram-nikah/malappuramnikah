@@ -7,6 +7,15 @@ export function getEnrichedProfile(u: any) {
   const interests = profileDetails.mn_interests_draft || {};
   const habits = profileDetails.mn_habits_draft || {};
   const partner = profileDetails.mn_partner_preferences_draft || {};
+
+  const parseHobbies = (val: any, fallback: string[]) => {
+    if (!val) return fallback;
+    if (Array.isArray(val)) return val;
+    if (typeof val === "string") {
+      return val.split(",").map(s => s.trim()).filter(Boolean);
+    }
+    return fallback;
+  };
   
   // Resolve avatar photo
   let avatar = `https://i.pravatar.cc/200?img=${45 + (u.id % 20)}`;
@@ -24,7 +33,7 @@ export function getEnrichedProfile(u: any) {
     name: `${u.first_name} ${u.last_name}`,
     photo: avatar,
     gender: u.gender || "Female",
-    location: u.location || "Malappuram",
+    location: basic.presentLocation || u.location || "Malappuram",
     
     // Core Header fields
     profileId: `MN-${100000 + u.id}`,
@@ -42,6 +51,9 @@ export function getEnrichedProfile(u: any) {
     appearance: basic.appearance || "Fair",
     weight: basic.weight || "58 kg",
     languagesSpoken: basic.languagesSpoken || "Malayalam, English",
+    presentLocation: basic.presentLocation || u.location || "Malappuram",
+    marriageGoalPlan: basic.marriageGoalPlan || "Flexible / No rush",
+    relocateForPartner: basic.relocateForPartner || "Maybe / Open to discussion",
 
     // Section 2: Religious Info
     religiousness: religious.religiousness || "Moderately Religious",
@@ -65,8 +77,8 @@ export function getEnrichedProfile(u: any) {
     personalityDescription: interests.aboutMe || "A balance of modern outlook and Islamic values. Looking for a partner who is family-oriented and respectful.",
 
     // Section 6: Hobbies & Habits
-    favouriteSports: habits.favouriteSports || ["Badminton"],
-    favouritePlaces: habits.favouritePlaces || ["Munnar", "Wayanad"],
+    favouriteSports: parseHobbies(habits.favouriteSports, ["Badminton"]),
+    favouritePlaces: parseHobbies(habits.favouritePlaces, ["Munnar", "Wayanad"]),
     eatingHabits: habits.eatingHabits || "Non-Vegetarian",
     smokingHabits: habits.smokingHabits || "No",
     drinkingHabits: habits.drinkingHabits || "No",

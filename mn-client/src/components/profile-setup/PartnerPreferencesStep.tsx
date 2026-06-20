@@ -36,6 +36,12 @@ interface PartnerPreferencesStepProps {
 
 const DRAFT_KEY = "mn_partner_preferences_draft";
 
+const KERALA_DISTRICTS = [
+  "Alappuzha", "Ernakulam", "Idukki", "Kannur", "Kasaragod",
+  "Kollam", "Kottayam", "Kozhikode", "Malappuram", "Palakkad",
+  "Pathanamthitta", "Thiruvananthapuram", "Thrissur", "Wayanad"
+];
+
 export default function PartnerPreferencesStep({ initialData, onComplete, onBack }: PartnerPreferencesStepProps) {
   const [formData, setFormData] = useState<PartnerPreferencesData>({
     aboutPartner: "",
@@ -309,8 +315,6 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
               >
                 <option value="Any">Doesn't Matter</option>
                 <option value="Islam">Islam</option>
-                <option value="Christianity">Christianity</option>
-                <option value="Hinduism">Hinduism</option>
               </select>
             </div>
 
@@ -357,6 +361,8 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="Any">Doesn't Matter</option>
+                <option value="Higher Secondary">Higher Secondary</option>
+                <option value="Diploma">Diploma</option>
                 <option value="Bachelors">Bachelors and above</option>
                 <option value="Masters">Masters and above</option>
                 <option value="Doctorate">Doctorate</option>
@@ -410,14 +416,66 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Preferred Locations</label>
-              <input
-                type="text"
-                value={formData.preferredLocations}
-                onChange={(e) => updateForm("preferredLocations", e.target.value)}
-                placeholder="e.g. Kerala, Dubai, Bangalore (Separate with commas)"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
-              />
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">Preferred Locations (Kerala Districts)</label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => updateForm("preferredLocations", "All Kerala")}
+                    className="text-xs text-brand-600 hover:text-brand-700 font-bold"
+                  >
+                    Select All
+                  </button>
+                  <span className="text-gray-300 text-xs">|</span>
+                  <button
+                    type="button"
+                    onClick={() => updateForm("preferredLocations", "")}
+                    className="text-xs text-gray-500 hover:text-gray-700 font-medium"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+              
+              <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                {KERALA_DISTRICTS.map((district) => {
+                  const currentList = formData.preferredLocations
+                    ? formData.preferredLocations.split(",").map((s: string) => s.trim())
+                    : [];
+                  const isAll = formData.preferredLocations === "All Kerala";
+                  const isSelected = isAll || currentList.includes(district);
+
+                  return (
+                    <button
+                      key={district}
+                      type="button"
+                      onClick={() => {
+                        if (isAll) {
+                          const nextList = KERALA_DISTRICTS.filter(d => d !== district);
+                          updateForm("preferredLocations", nextList.join(", "));
+                        } else if (isSelected) {
+                          const nextList = currentList.filter((d: string) => d !== district);
+                          updateForm("preferredLocations", nextList.join(", "));
+                        } else {
+                          const nextList = [...currentList, district];
+                          if (nextList.length === KERALA_DISTRICTS.length) {
+                            updateForm("preferredLocations", "All Kerala");
+                          } else {
+                            updateForm("preferredLocations", nextList.join(", "));
+                          }
+                        }
+                      }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+                        isSelected
+                          ? "bg-brand-600 text-white border-brand-600 shadow-sm"
+                          : "bg-white text-gray-700 border-gray-200 hover:bg-brand-50 hover:border-brand-200"
+                      }`}
+                    >
+                      {district}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div>

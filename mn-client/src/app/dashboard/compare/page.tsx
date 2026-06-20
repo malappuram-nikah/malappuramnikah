@@ -400,6 +400,27 @@ function CompareContent() {
                   highestScoreIdx={highestScoreIdx}
                   getValue={p => p.languagesSpoken}
                 />
+
+                <GridRow
+                  label="Present Location"
+                  profiles={comparedProfiles}
+                  highestScoreIdx={highestScoreIdx}
+                  getValue={p => p.presentLocation || p.location}
+                />
+
+                <GridRow
+                  label="Marriage Goal Plan"
+                  profiles={comparedProfiles}
+                  highestScoreIdx={highestScoreIdx}
+                  getValue={p => p.marriageGoalPlan}
+                />
+
+                <GridRow
+                  label="Willing to Relocate"
+                  profiles={comparedProfiles}
+                  highestScoreIdx={highestScoreIdx}
+                  getValue={p => p.relocateForPartner}
+                />
               </div>
 
               {/* SECTION 2: RELIGIOUS DETAILS */}
@@ -560,14 +581,14 @@ function CompareContent() {
                   label="Favourite Sports"
                   profiles={comparedProfiles}
                   highestScoreIdx={highestScoreIdx}
-                  getValue={p => p.favouriteSports.join(", ")}
+                  getValue={p => Array.isArray(p.favouriteSports) ? p.favouriteSports.join(", ") : (p.favouriteSports || "")}
                 />
 
                 <GridRow
                   label="Favourite Places"
                   profiles={comparedProfiles}
                   highestScoreIdx={highestScoreIdx}
-                  getValue={p => p.favouritePlaces.join(", ")}
+                  getValue={p => Array.isArray(p.favouritePlaces) ? p.favouritePlaces.join(", ") : (p.favouritePlaces || "")}
                 />
 
                 <GridRow
