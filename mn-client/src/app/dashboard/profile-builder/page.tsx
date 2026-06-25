@@ -24,11 +24,19 @@ export default function ProfileBuilderPage() {
 
   const basicInitialData = useMemo(() => {
     if (!user) return undefined;
+    let calculatedAge = "24";
+    if (user.dob) {
+      const birthYear = parseInt(user.dob.split("-")[0], 10);
+      if (!isNaN(birthYear)) {
+        calculatedAge = (new Date().getFullYear() - birthYear).toString();
+      }
+    }
     return {
       name: `${user.first_name || ""} ${user.last_name || ""}`.trim(),
       profileFor: user.profile_for || "Myself",
       gender: user.gender || "Male",
-      age: user.dob ? Math.floor((new Date().getTime() - new Date(user.dob).getTime()) / 31557600000).toString() : "24",
+      age: calculatedAge,
+      presentLocation: user.location || "",
     };
   }, [user]);
 
@@ -89,20 +97,24 @@ export default function ProfileBuilderPage() {
             const user = data.user;
             setUser(user);
 
-            // Clear all profile builder drafts from localStorage first to prevent stale data
-            const draftKeys = [
-              "mn_basic_details_draft",
-              "mn_religious_info_draft",
-              "mn_professional_info_draft",
-              "mn_family_details_draft",
-              "mn_interests_draft",
-              "mn_habits_draft",
-              "mn_partner_preferences_draft",
-              "mn_profile_photos_draft",
-              "mn_video_intro_draft",
-              "mn_voice_intro_draft"
-            ];
-            draftKeys.forEach((key) => localStorage.removeItem(key));
+            // Clear all profile builder drafts from localStorage only if the logged-in user changed
+            const cachedUserId = localStorage.getItem("mn_logged_in_user_id");
+            if (cachedUserId !== String(userId)) {
+              const draftKeys = [
+                "mn_basic_details_draft",
+                "mn_religious_info_draft",
+                "mn_professional_info_draft",
+                "mn_family_details_draft",
+                "mn_interests_draft",
+                "mn_habits_draft",
+                "mn_partner_preferences_draft",
+                "mn_profile_photos_draft",
+                "mn_video_intro_draft",
+                "mn_voice_intro_draft"
+              ];
+              draftKeys.forEach((key) => localStorage.removeItem(key));
+              localStorage.setItem("mn_logged_in_user_id", String(userId));
+            }
 
             // 1. Sync saved profile_details drafts from database back into localStorage
             if (user.profile_details) {
@@ -114,12 +126,20 @@ export default function ProfileBuilderPage() {
             // 2. Pre-populate step 1 draft from core signup details if not already saved
             const basicKey = "mn_basic_details_draft";
             if (!localStorage.getItem(basicKey)) {
+              let calculatedAge = "24";
+              if (user.dob) {
+                const birthYear = parseInt(user.dob.split("-")[0], 10);
+                if (!isNaN(birthYear)) {
+                  calculatedAge = (new Date().getFullYear() - birthYear).toString();
+                }
+              }
               const defaultBasic = {
                 name: `${user.first_name || ""} ${user.last_name || ""}`.trim(),
                 profileFor: user.profile_for || "Myself",
                 gender: user.gender || "Male",
                 location: user.location || "Malappuram, Kerala",
-                age: user.dob ? Math.floor((new Date().getTime() - new Date(user.dob).getTime()) / 31557600000).toString() : "24",
+                presentLocation: user.location || "Malappuram",
+                age: calculatedAge,
                 aboutMe: "Looking for a pious, family-oriented partner with shared values.",
                 height: "",
                 maritalStatus: "Single",

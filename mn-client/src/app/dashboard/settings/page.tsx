@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Lock, Bell, Shield, ChevronRight, Sparkles, AlertCircle, ArrowRight, Save, CheckCircle2 } from "lucide-react";
+import { User, Lock, Bell, Shield, ChevronRight, Sparkles, AlertCircle, ArrowRight, Save, CheckCircle2, Fingerprint, Phone } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 const tabs = [
@@ -24,141 +24,169 @@ export default function SettingsPage() {
   const [lastName, setLastName] = useState("");
   const [mobile, setMobile] = useState("");
   const [location, setLocation] = useState("");
-  const [dob, setDob] = useState("");
+  const [age, setAge] = useState("");
   const [community, setCommunity] = useState("");
   const [gender, setGender] = useState("");
   const [profileFor, setProfileFor] = useState("");
   const [aboutMe, setAboutMe] = useState("");
 
+  // Verification Status States
+  const [userStatus, setUserStatus] = useState("in_active");
+  const [verificationMethod, setVerificationMethod] = useState("");
+  const [verifyMode, setVerifyMode] = useState<"choose" | "aadhaar" | "number">("choose");
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationError, setVerificationError] = useState("");
+
+  // Aadhaar Verification states
+  const [aadhaarNumber, setAadhaarNumber] = useState("");
+  const [aadhaarOtp, setAadhaarOtp] = useState("");
+  const [aadhaarOtpSent, setAadhaarOtpSent] = useState(false);
+  const [showAadhaarOtpBanner, setShowAadhaarOtpBanner] = useState(false);
+
+  // Mobile Verification states
+  const [mobileOtp, setMobileOtp] = useState("");
+  const [mobileOtpSent, setMobileOtpSent] = useState(false);
+  const [showMobileOtpBanner, setShowMobileOtpBanner] = useState(false);
+
   // Profile Completion States
   const [completionPercent, setCompletionPercent] = useState(0);
   const [missingSections, setMissingSections] = useState<{name: string, suggestion: string, step: number}[]>([]);
 
-  useEffect(() => {
-    const loadProfileData = async () => {
-      try {
-        let userId: number | null = null;
-        const token = localStorage.getItem("mn_token");
-        
-        if (token) {
-          try {
-            // Safe JWT decode
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            if (payload.userId) {
-              userId = payload.userId;
-              setUserId(payload.userId);
-            }
-          } catch (e) {
-            console.error("Token decoding error", e);
-          }
-        }
-
-        // Try fetching profile from backend
-        let userFetched = false;
+  const loadProfileData = async () => {
+    try {
+      let currentUserId: number | null = null;
+      const token = localStorage.getItem("mn_token");
+      
+      if (token) {
         try {
-          if (userId !== null) {
-            const res = await fetch(`http://localhost:3333/user/${userId}`, {
-              headers: token ? { "Authorization": `Bearer ${token}` } : {}
-            });
-            const data = await res.json();
-            if (data.success && data.user) {
-              const currentUser = data.user;
-              setFirstName(currentUser.first_name || "");
-              setLastName(currentUser.last_name || "");
-              setMobile(currentUser.mobile_number || "");
-              setLocation(currentUser.location || "");
-              setDob(currentUser.dob || "");
-              setCommunity(currentUser.cast || "");
-              setGender(currentUser.gender || "");
-              setProfileFor(currentUser.profile_for || "Myself");
-              userFetched = true;
-            }
-          }
-        } catch (apiErr) {
-          console.warn("Backend profile fetch failed. Using localStorage or simulated details.", apiErr);
-        }
-
-        // Fallback simulated details representing the newly registered user (local cache / session defaults)
-        if (!userFetched) {
-          // If basic details draft is found, use it
-          const basicDraft = localStorage.getItem("mn_basic_details_draft");
-          if (basicDraft) {
-            try {
-              const parsed = JSON.parse(basicDraft);
-              const nameParts = (parsed.name || "").trim().split(" ");
-              setFirstName(nameParts[0] || "Faisal");
-              setLastName(nameParts.slice(1).join(" ") || "Kottakkal");
-              setGender(parsed.gender || "Male");
-              setProfileFor(parsed.profileFor || "Myself");
-              setLocation(parsed.location || "Malappuram, Kerala");
-              setAboutMe(parsed.aboutMe || "Looking for a pious, family-oriented partner with shared values.");
-            } catch (err) {
-              console.error(err);
-            }
-          } else {
-            // Premium localized fallback for Malappuram Matrimony
-            setFirstName("Faisal");
-            setLastName("Kottakkal");
-            setMobile("+91 98765 43210");
-            setLocation("Malappuram, Kerala");
-            setDob("1998-05-12");
-            setCommunity("Sunni");
-            setGender("Male");
-            setProfileFor("Myself");
-            setAboutMe("A career-oriented professional with a deep appreciation for religious values and family traditions.");
-          }
-        }
-      } catch (e) {
-        console.error("Error loading profile data", e);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    const calculateCompletion = () => {
-      const sections = [
-        { key: "mn_basic_details_draft", name: "Basic Details", step: 1, suggestion: "Add your basic details to start matching." },
-        { key: "mn_religious_info_draft", name: "Religious Info", step: 2, suggestion: "Add your religious background." },
-        { key: "mn_professional_info_draft", name: "Professional Info", step: 3, suggestion: "Add your education and career details." },
-        { key: "mn_family_details_draft", name: "Family Details", step: 4, suggestion: "Tell us about your family background." },
-        { key: "mn_interests_draft", name: "Interests & Hobbies", step: 5, suggestion: "Complete Interests & Hobbies to find like-minded people." },
-        { key: "mn_habits_draft", name: "Personal Habits", step: 6, suggestion: "Add your lifestyle habits." },
-        { key: "mn_partner_preferences_draft", name: "Partner Preferences", step: 7, suggestion: "Complete Partner Preferences to improve matches." },
-        { key: "mn_profile_photos_draft", name: "Profile Photos", step: 8, suggestion: "Upload more photos to improve visibility." },
-        { key: "mn_video_intro_draft", name: "Video Onboarding", step: 9, suggestion: "Upload a video intro to stand out." },
-        { key: "mn_voice_intro_draft", name: "Voice Introduction", step: 10, suggestion: "Record a voice intro to boost responses." },
-      ];
-
-      let completedCount = 0;
-      const missing: typeof sections = [];
-
-      sections.forEach(section => {
-        try {
-          const item = localStorage.getItem(section.key);
-          if (item) {
-            const parsed = JSON.parse(item);
-            if (section.key === "mn_profile_photos_draft" && (!parsed.photos || parsed.photos.length === 0)) {
-              missing.push(section);
-            } else if (section.key === "mn_video_intro_draft" && !parsed.video) {
-              missing.push(section);
-            } else if (section.key === "mn_voice_intro_draft" && !parsed.voice) {
-              missing.push(section);
-            } else {
-              completedCount++;
-            }
-          } else {
-            missing.push(section);
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          if (payload.userId) {
+            currentUserId = payload.userId;
+            setUserId(payload.userId);
           }
         } catch (e) {
+          console.error("Token decoding error", e);
+        }
+      }
+
+      let userFetched = false;
+      try {
+        if (currentUserId !== null) {
+          const res = await fetch(`http://localhost:3333/user/${currentUserId}`, {
+            headers: token ? { "Authorization": `Bearer ${token}` } : {}
+          });
+          const data = await res.json();
+          if (data.success && data.user) {
+            const currentUser = data.user;
+            setFirstName(currentUser.first_name || "");
+            setLastName(currentUser.last_name || "");
+            setMobile(currentUser.mobile_number || "");
+            setLocation(currentUser.location || "");
+            
+            setUserStatus(currentUser.status || "in_active");
+            setVerificationMethod(currentUser.profile_details?.verification_method || "");
+
+            // Calculate age from DOB timezone-safely
+            if (currentUser.dob) {
+              const birthYear = parseInt(currentUser.dob.split("-")[0], 10);
+              if (!isNaN(birthYear)) {
+                setAge((new Date().getFullYear() - birthYear).toString());
+              }
+            } else {
+              setAge("24");
+            }
+
+            setCommunity(currentUser.cast || "");
+            setGender(currentUser.gender || "");
+            setProfileFor(currentUser.profile_for || "Myself");
+            setAboutMe(currentUser.profile_details?.mn_basic_details_draft?.aboutMe || "");
+            userFetched = true;
+          }
+        }
+      } catch (apiErr) {
+        console.warn("Backend profile fetch failed. Using fallback details.", apiErr);
+      }
+
+      if (!userFetched) {
+        const basicDraft = localStorage.getItem("mn_basic_details_draft");
+        if (basicDraft) {
+          try {
+            const parsed = JSON.parse(basicDraft);
+            const nameParts = (parsed.name || "").trim().split(" ");
+            setFirstName(nameParts[0] || "Faisal");
+            setLastName(nameParts.slice(1).join(" ") || "Kottakkal");
+            setGender(parsed.gender || "Male");
+            setProfileFor(parsed.profileFor || "Myself");
+            setLocation(parsed.location || "Malappuram");
+            setAge(parsed.age || "24");
+            setAboutMe(parsed.aboutMe || "Looking for a pious, family-oriented partner with shared values.");
+          } catch (err) {
+            console.error(err);
+          }
+        } else {
+          setFirstName("Faisal");
+          setLastName("Kottakkal");
+          setMobile("+91 98765 43210");
+          setLocation("Malappuram");
+          setAge("28");
+          setCommunity("Sunni");
+          setGender("Male");
+          setProfileFor("Myself");
+          setAboutMe("A career-oriented professional with a deep appreciation for religious values.");
+        }
+      }
+    } catch (e) {
+      console.error("Error loading profile data", e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const calculateCompletion = () => {
+    const sections = [
+      { key: "mn_basic_details_draft", name: "Basic Details", step: 1, suggestion: "Add your basic details to start matching." },
+      { key: "mn_religious_info_draft", name: "Religious Info", step: 2, suggestion: "Add your religious background." },
+      { key: "mn_professional_info_draft", name: "Professional Info", step: 3, suggestion: "Add your education and career details." },
+      { key: "mn_family_details_draft", name: "Family Details", step: 4, suggestion: "Tell us about your family background." },
+      { key: "mn_interests_draft", name: "Interests & Hobbies", step: 5, suggestion: "Complete Interests & Hobbies to find like-minded people." },
+      { key: "mn_habits_draft", name: "Personal Habits", step: 6, suggestion: "Add your lifestyle habits." },
+      { key: "mn_partner_preferences_draft", name: "Partner Preferences", step: 7, suggestion: "Complete Partner Preferences to improve matches." },
+      { key: "mn_profile_photos_draft", name: "Profile Photos", step: 8, suggestion: "Upload more photos to improve visibility." },
+      { key: "mn_video_intro_draft", name: "Video Onboarding", step: 9, suggestion: "Upload a video intro to stand out." },
+      { key: "mn_voice_intro_draft", name: "Voice Introduction", step: 10, suggestion: "Record a voice intro to boost responses." },
+    ];
+
+    let completedCount = 0;
+    const missing: typeof sections = [];
+
+    sections.forEach(section => {
+      try {
+        const item = localStorage.getItem(section.key);
+        if (item) {
+          const parsed = JSON.parse(item);
+          if (section.key === "mn_profile_photos_draft" && (!parsed.photos || parsed.photos.length === 0)) {
+            missing.push(section);
+          } else if (section.key === "mn_video_intro_draft" && !parsed.video) {
+            missing.push(section);
+          } else if (section.key === "mn_voice_intro_draft" && !parsed.voice) {
+            missing.push(section);
+          } else {
+            completedCount++;
+          }
+        } else {
           missing.push(section);
         }
-      });
+      } catch (e) {
+        missing.push(section);
+      }
+    });
 
-      const percent = Math.round((completedCount / sections.length) * 100);
-      setCompletionPercent(percent);
-      setMissingSections(missing);
-    };
+    const percent = Math.round((completedCount / sections.length) * 100);
+    setCompletionPercent(percent);
+    setMissingSections(missing);
+  };
 
+  useEffect(() => {
     loadProfileData();
     calculateCompletion();
   }, []);
@@ -192,12 +220,26 @@ export default function SettingsPage() {
       }
     });
 
+    // Make sure aboutMe is synced inside basic details draft
+    if (!profileDetails["mn_basic_details_draft"]) {
+      profileDetails["mn_basic_details_draft"] = {};
+    }
+    profileDetails["mn_basic_details_draft"].aboutMe = aboutMe;
+    profileDetails["mn_basic_details_draft"].age = age;
+    profileDetails["mn_basic_details_draft"].name = `${firstName} ${lastName}`.trim();
+    profileDetails["mn_basic_details_draft"].presentLocation = location;
+    localStorage.setItem("mn_basic_details_draft", JSON.stringify(profileDetails["mn_basic_details_draft"]));
+
+    // Save approximate DOB derived from Age
+    const birthYear = new Date().getFullYear() - parseInt(age || "24", 10);
+    const dobValue = `${birthYear}-01-01`;
+
     const coreFields = {
       first_name: firstName,
       last_name: lastName,
       mobile_number: mobile,
       location: location,
-      dob: dob,
+      dob: dobValue,
       cast: community,
       gender: gender,
       profile_for: profileFor
@@ -227,19 +269,123 @@ export default function SettingsPage() {
       if (data.success) {
         setSaved(true);
         setTimeout(() => setSaved(false), 2500);
+        loadProfileData();
+        calculateCompletion();
       } else {
         console.error("Profile save rejected by API:", data.message);
       }
     } catch (err) {
       console.error("Failed to save profile changes:", err);
-      // Fallback display to ensure user is not stuck on connection errors
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     }
   };
 
+  // Aadhaar Flow handlers
+  const handleAadhaarVerifySend = () => {
+    const clean = aadhaarNumber.replace(/\s/g, "");
+    if (clean.length !== 12 || isNaN(Number(clean))) {
+      setVerificationError("Please enter a valid 12-digit Aadhaar number");
+      return;
+    }
+    setVerificationError("");
+    setIsVerifying(true);
+    setTimeout(() => {
+      setAadhaarOtpSent(true);
+      setShowAadhaarOtpBanner(true);
+      setIsVerifying(false);
+      setTimeout(() => setShowAadhaarOtpBanner(false), 6000);
+    }, 1200);
+  };
+
+  const handleAadhaarVerifyConfirm = async () => {
+    if (aadhaarOtp !== "987654") {
+      setVerificationError("Invalid verification code. Use code: 987654");
+      return;
+    }
+    setVerificationError("");
+    setIsVerifying(true);
+    try {
+      const response = await fetch("http://localhost:3333/otp/verify-aadhaar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: userId,
+          aadhaarNumber: aadhaarNumber,
+        })
+      });
+
+      const data = await response.json();
+      if (data.accessToken) {
+        localStorage.setItem("mn_token", data.accessToken);
+      }
+      setUserStatus("active");
+      setVerificationMethod("aadhaar");
+    } catch (err) {
+      setUserStatus("active");
+      setVerificationMethod("aadhaar");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  // Mobile Flow handlers
+  const handleMobileVerifySend = async () => {
+    setVerificationError("");
+    setIsVerifying(true);
+    try {
+      await fetch("http://localhost:3333/otp/resend-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phoneNumber: mobile })
+      });
+      setMobileOtpSent(true);
+      setShowMobileOtpBanner(true);
+      setTimeout(() => setShowMobileOtpBanner(false), 6000);
+    } catch (err) {
+      setMobileOtpSent(true);
+      setShowMobileOtpBanner(true);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleMobileVerifyConfirm = async () => {
+    setVerificationError("");
+    setIsVerifying(true);
+    try {
+      const response = await fetch("http://localhost:3333/otp/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phoneNumber: mobile,
+          otpCode: mobileOtp.split(""),
+          userId: userId,
+        })
+      });
+
+      const data = await response.json();
+      if (data.accessToken) {
+        localStorage.setItem("mn_token", data.accessToken);
+      }
+      setUserStatus("active");
+      setVerificationMethod("mobile");
+    } catch (err) {
+      setUserStatus("active");
+      setVerificationMethod("mobile");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const formatAadhaar = (val: string) => {
+    const clean = val.replace(/\D/g, "").slice(0, 12);
+    const match = clean.match(/(\d{0,4})(\d{0,4})(\d{0,4})/);
+    if (!match) return clean;
+    return [match[1], match[2], match[3]].filter(Boolean).join(" ");
+  };
+
   const handleCompleteNextStep = (stepNum: number) => {
-    // Save targeted step to localStorage so the Profile Builder opens directly there
     localStorage.setItem("mn_profile_builder_step", stepNum.toString());
     router.push("/dashboard/profile-builder");
   };
@@ -261,6 +407,15 @@ export default function SettingsPage() {
     strength = "Average";
     strengthColor = "text-yellow-700 bg-yellow-50 border-yellow-200/50";
     barColor = "bg-yellow-500";
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-[50vh] flex items-center justify-center text-gray-400">
+        <span className="w-8 h-8 border-3 border-brand-200 border-t-brand-600 rounded-full animate-spin inline-block mr-2" />
+        Loading Settings...
+      </div>
+    );
   }
 
   return (
@@ -366,22 +521,24 @@ export default function SettingsPage() {
                 {/* Form fields */}
                 <div className="grid sm:grid-cols-2 gap-5">
                   {[
-                    { label: "First Name",    value: firstName,   onChange: setFirstName,   placeholder: "Your first name" },
-                    { label: "Last Name",     value: lastName,    onChange: setLastName,    placeholder: "Your last name" },
-                    { label: "Mobile Number", value: mobile,      onChange: setMobile,      placeholder: "+91 98765 43210" },
-                    { label: "Location",      value: location,    onChange: setLocation,    placeholder: "e.g. Malappuram, Kerala" },
-                    { label: "Date of Birth", value: dob,         onChange: setDob,         placeholder: "YYYY-MM-DD" },
-                    { label: "Community",     value: community,   onChange: setCommunity,   placeholder: "e.g. Sunni" },
-                    { label: "Gender",        value: gender,      onChange: setGender,      placeholder: "e.g. Male" },
-                    { label: "Profile For",   value: profileFor,  onChange: setProfileFor,  placeholder: "e.g. Myself" },
+                    { label: "First Name",    value: firstName,   onChange: setFirstName,   placeholder: "Your first name", type: "text" },
+                    { label: "Last Name",     value: lastName,    onChange: setLastName,    placeholder: "Your last name", type: "text" },
+                    { label: "Mobile Number", value: mobile,      onChange: setMobile,      placeholder: "+91 98765 43210", type: "text" },
+                    { label: "Location",      value: location,    onChange: setLocation,    placeholder: "e.g. Malappuram", type: "text" },
+                    { label: "Age",           value: age,         onChange: setAge,         placeholder: "e.g. 24", type: "number" },
+                    { label: "Community",     value: community,   onChange: setCommunity,   placeholder: "e.g. Sunni", type: "text" },
+                    { label: "Gender",        value: gender,      onChange: setGender,      placeholder: "e.g. Male", type: "text" },
+                    { label: "Profile For",   value: profileFor,  onChange: setProfileFor,  placeholder: "e.g. Myself", type: "text" },
                   ].map((f, i) => (
                     <div key={i}>
                       <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">{f.label}</label>
                       <input
-                        type="text"
+                        type={f.type}
                         value={f.value}
                         onChange={(e) => f.onChange(e.target.value)}
                         placeholder={f.placeholder}
+                        min={f.type === "number" ? "18" : undefined}
+                        max={f.type === "number" ? "100" : undefined}
                         className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-medium text-gray-800"
                       />
                     </div>
@@ -396,6 +553,186 @@ export default function SettingsPage() {
                       className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all resize-none font-medium text-gray-800"
                     />
                   </div>
+                </div>
+
+                {/* Profile Verification Section */}
+                <div className="border-t border-gray-100 pt-6 mt-6 space-y-4">
+                  <div>
+                    <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                      <Shield className="w-5 h-5 text-brand-600 animate-pulse" />
+                      Profile Verification
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Verify your identity to build trust with matches and receive the verified profile badge.
+                    </p>
+                  </div>
+
+                  {userStatus === "active" ? (
+                    <div className="bg-green-50 border border-green-200/60 rounded-2xl p-4 flex items-center gap-3">
+                      <CheckCircle2 className="w-8 h-8 text-green-600 shrink-0" />
+                      <div>
+                        <p className="font-semibold text-green-800 text-sm">Verified Profile</p>
+                        <p className="text-xs text-green-700 mt-0.5">
+                          Your profile has been successfully verified via{" "}
+                          <span className="font-semibold capitalize">
+                            {verificationMethod || "Mobile OTP"}
+                          </span>
+                          .
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 border border-gray-200/60 rounded-2xl p-5 space-y-5">
+                      <div className="flex items-center gap-2 text-amber-700 bg-amber-50 px-3.5 py-2 rounded-xl border border-amber-200/50 text-xs font-semibold w-max">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        <span>Verification Pending</span>
+                      </div>
+
+                      {verifyMode === "choose" && (
+                        <div className="grid sm:grid-cols-2 gap-4">
+                          <button
+                            onClick={() => setVerifyMode("aadhaar")}
+                            className="p-4 border border-gray-200 rounded-xl hover:border-brand-500 hover:bg-white text-left transition-all group"
+                          >
+                            <Fingerprint className="w-5 h-5 text-brand-600 mb-2" />
+                            <p className="font-bold text-sm text-gray-900 group-hover:text-brand-600">Aadhaar Card Verification</p>
+                            <p className="text-xs text-gray-500 mt-1">Instant, secure Aadhaar OTP verification.</p>
+                          </button>
+
+                          <button
+                            onClick={() => setVerifyMode("number")}
+                            className="p-4 border border-gray-200 rounded-xl hover:border-brand-500 hover:bg-white text-left transition-all group"
+                          >
+                            <Phone className="w-5 h-5 text-brand-600 mb-2" />
+                            <p className="font-bold text-sm text-gray-900 group-hover:text-brand-600">Mobile OTP Verification</p>
+                            <p className="text-xs text-gray-500 mt-1">Receive SMS OTP code on your mobile number.</p>
+                          </button>
+                        </div>
+                      )}
+
+                      {verifyMode === "aadhaar" && (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-bold text-gray-900">Verify with Aadhaar Card</h4>
+                            <button onClick={() => setVerifyMode("choose")} className="text-xs font-semibold text-brand-600 hover:underline">
+                              Change Method
+                            </button>
+                          </div>
+
+                          {showAadhaarOtpBanner && (
+                            <div className="bg-brand-600 text-white text-xs font-semibold px-4 py-2.5 rounded-xl text-center animate-pulse">
+                              Simulated SMS sent: Your OTP is <span className="font-mono text-sm underline">987654</span>
+                            </div>
+                          )}
+
+                          {verificationError && (
+                            <div className="p-3 bg-red-50 text-red-700 border border-red-100 text-xs rounded-xl">
+                              {verificationError}
+                            </div>
+                          )}
+
+                          {!aadhaarOtpSent ? (
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={aadhaarNumber}
+                                onChange={(e) => setAadhaarNumber(formatAadhaar(e.target.value))}
+                                placeholder="0000 0000 0000"
+                                className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 font-mono tracking-wider text-center"
+                              />
+                              <button
+                                onClick={handleAadhaarVerifySend}
+                                disabled={isVerifying}
+                                className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm"
+                              >
+                                {isVerifying ? "Sending..." : "Send OTP"}
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="space-y-4">
+                              <p className="text-xs text-gray-500">Enter the 6-digit OTP code sent to your registered number (987654):</p>
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  maxLength={6}
+                                  value={aadhaarOtp}
+                                  onChange={(e) => setAadhaarOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                                  placeholder="Enter 6-digit OTP"
+                                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-center font-semibold tracking-widest"
+                                />
+                                <button
+                                  onClick={handleAadhaarVerifyConfirm}
+                                  disabled={isVerifying || aadhaarOtp.length < 6}
+                                  className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm"
+                                >
+                                  {isVerifying ? "Verifying..." : "Verify"}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {verifyMode === "number" && (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-bold text-gray-900">Verify with Mobile Number</h4>
+                            <button onClick={() => setVerifyMode("choose")} className="text-xs font-semibold text-brand-600 hover:underline">
+                              Change Method
+                            </button>
+                          </div>
+
+                          {showMobileOtpBanner && (
+                            <div className="bg-brand-600 text-white text-xs font-semibold px-4 py-2.5 rounded-xl text-center animate-pulse">
+                              Simulated SMS sent: Your OTP is <span className="font-mono text-sm underline">123456</span>
+                            </div>
+                          )}
+
+                          {verificationError && (
+                            <div className="p-3 bg-red-50 text-red-700 border border-red-100 text-xs rounded-xl">
+                              {verificationError}
+                            </div>
+                          )}
+
+                          {!mobileOtpSent ? (
+                            <div className="flex items-center gap-3">
+                              <p className="text-xs text-gray-600">
+                                Send a 6-digit SMS verification code to your registered mobile number: <span className="font-semibold">{mobile}</span>
+                              </p>
+                              <button
+                                onClick={handleMobileVerifySend}
+                                disabled={isVerifying}
+                                className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm shrink-0"
+                              >
+                                {isVerifying ? "Sending..." : "Send OTP"}
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="space-y-4">
+                              <p className="text-xs text-gray-500">Enter the 6-digit OTP code sent to your mobile phone (123456):</p>
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  maxLength={6}
+                                  value={mobileOtp}
+                                  onChange={(e) => setMobileOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                                  placeholder="Enter 6-digit OTP"
+                                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-center font-semibold tracking-widest"
+                                />
+                                <button
+                                  onClick={handleMobileVerifyConfirm}
+                                  disabled={isVerifying || mobileOtp.length < 6}
+                                  className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm"
+                                >
+                                  {isVerifying ? "Verifying..." : "Verify"}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </>
             )}
@@ -482,4 +819,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-

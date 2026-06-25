@@ -18,15 +18,44 @@ export function CompareProvider({ children }: { children: React.ReactNode }) {
   const [compareIds, setCompareIds] = useState<number[]>([]);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
 
-  useEffect(() => {
-    const stored = localStorage.getItem("mn_compare_ids");
-    if (stored) {
+  const getStorageKey = () => {
+    if (typeof window === "undefined") return "mn_compare_ids_guest";
+    const token = localStorage.getItem("mn_token");
+    if (token) {
       try {
-        setCompareIds(JSON.parse(stored));
-      } catch (e) {
-        console.error("Failed to parse compare ids", e);
-      }
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.userId) {
+          return `mn_compare_ids_${payload.userId}`;
+        }
+      } catch (e) {}
     }
+    return "mn_compare_ids_guest";
+  };
+
+  useEffect(() => {
+    const handleSync = () => {
+      const key = getStorageKey();
+      const stored = localStorage.getItem(key);
+      if (stored) {
+        try {
+          setCompareIds(JSON.parse(stored));
+        } catch (e) {
+          console.error("Failed to parse compare ids", e);
+        }
+      } else {
+        setCompareIds([]);
+      }
+    };
+
+    handleSync();
+
+    window.addEventListener("storage", handleSync);
+    window.addEventListener("focus", handleSync);
+
+    return () => {
+      window.removeEventListener("storage", handleSync);
+      window.removeEventListener("focus", handleSync);
+    };
   }, []);
 
   const addToCompare = (id: number) => {
@@ -37,20 +66,23 @@ export function CompareProvider({ children }: { children: React.ReactNode }) {
     }
     const updated = [...compareIds, id];
     setCompareIds(updated);
-    localStorage.setItem("mn_compare_ids", JSON.stringify(updated));
+    const key = getStorageKey();
+    localStorage.setItem(key, JSON.stringify(updated));
     setAlertMsg("Added to comparison list.");
   };
 
   const removeFromCompare = (id: number) => {
     const updated = compareIds.filter((x) => x !== id);
     setCompareIds(updated);
-    localStorage.setItem("mn_compare_ids", JSON.stringify(updated));
+    const key = getStorageKey();
+    localStorage.setItem(key, JSON.stringify(updated));
     setAlertMsg("Removed from comparison list.");
   };
 
   const clearCompare = () => {
     setCompareIds([]);
-    localStorage.removeItem("mn_compare_ids");
+    const key = getStorageKey();
+    localStorage.removeItem(key);
     setAlertMsg("Cleared comparison list.");
   };
 

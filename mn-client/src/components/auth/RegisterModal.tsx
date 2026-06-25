@@ -21,13 +21,12 @@ const LOCATIONS = [
   "Thirunavaya",
   "Kadalundi",
   "Vengara",
-  "Angadippuram",
+  "Angadipuram",
   "Edappal",
   "Tanur",
-  "Parappanagadi",
+  "Parappanangadi",
   "Wandoor",
-  "Nilamboor",
-  "Parappananghadi"
+  "Nilamboor"
 ];
 
 interface RegisterModalProps {
@@ -103,11 +102,10 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
                   <button
                     key={rel}
                     onClick={() => updateForm("profileFor", rel)}
-                    className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all ${
-                      formData.profileFor === rel
+                    className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all ${formData.profileFor === rel
                         ? "border-brand-600 bg-brand-50 text-brand-700 ring-1 ring-brand-600"
                         : "border-gray-200 hover:border-gray-300 text-gray-600"
-                    }`}
+                      }`}
                   >
                     {rel}
                   </button>
@@ -122,11 +120,10 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
                   <button
                     key={g}
                     onClick={() => updateForm("gender", g)}
-                    className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all ${
-                      formData.gender === g
+                    className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all ${formData.gender === g
                         ? "border-brand-600 bg-brand-50 text-brand-700 ring-1 ring-brand-600"
                         : "border-gray-200 hover:border-gray-300 text-gray-600"
-                    }`}
+                      }`}
                   >
                     {g}
                   </button>
@@ -228,7 +225,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Mobile Number</label>
               <div className="flex gap-2">
-                <select 
+                <select
                   value={formData.countryCode}
                   onChange={(e) => updateForm("countryCode", e.target.value)}
                   className="w-24 px-3 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white text-center"
@@ -262,7 +259,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
   };
 
   const isStepValid = () => {
-    switch(step) {
+    switch (step) {
       case 1: return formData.profileFor && formData.gender;
       case 2: return formData.first_name.trim().length >= 2 && formData.last_name.trim().length >= 1 && formData.dateOfBirth;
       case 3: return formData.location && formData.caste;
@@ -425,15 +422,15 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
           className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
         />
-        
-        <motion.div 
+
+        <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -461,7 +458,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
               </div>
             </motion.div>
 
-          /* ── OTP entry screen ── */
+            /* ── OTP entry screen ── */
           ) : showOtpScreen ? (
             <>
               {/* Header */}
@@ -503,11 +500,10 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
                       value={digit}
                       onChange={(e) => handleOtpChange(i, e.target.value)}
                       onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                      className={`w-12 h-14 text-center text-xl font-semibold rounded-xl border-2 transition-all focus:outline-none ${
-                        digit
+                      className={`w-12 h-14 text-center text-xl font-semibold rounded-xl border-2 transition-all focus:outline-none ${digit
                           ? "border-brand-500 bg-brand-50/50 text-brand-700"
                           : "border-gray-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
-                      }`}
+                        }`}
                     />
                   ))}
                 </div>
@@ -544,7 +540,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
               </div>
             </>
 
-          /* ── Registration success flash ── */
+            /* ── Registration success flash ── */
           ) : success ? (
             <div className="p-8 text-center flex flex-col items-center justify-center min-h-[300px]">
               <motion.div
@@ -562,7 +558,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
               </div>
             </div>
 
-          /* ── Registration form steps ── */
+            /* ── Registration form steps ── */
           ) : (
             <>
               {/* Header */}
@@ -585,7 +581,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
 
               {/* Progress Bar */}
               <div className="w-full h-1 bg-gray-100 shrink-0">
-                <motion.div 
+                <motion.div
                   className="h-full bg-brand-500"
                   initial={{ width: `${((step - 1) / 4) * 100}%` }}
                   animate={{ width: `${(step / 4) * 100}%` }}
@@ -624,7 +620,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
                     className="w-full bg-brand-600 text-white font-medium py-3.5 px-4 rounded-xl hover:bg-brand-700 active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100 shadow-sm flex items-center justify-center gap-2"
                   >
                     {isSubmitting ? (
-                       <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
                       <>
                         <CheckCircle2 className="w-5 h-5" />

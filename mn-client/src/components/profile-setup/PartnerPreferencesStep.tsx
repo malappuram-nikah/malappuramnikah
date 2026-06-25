@@ -254,6 +254,7 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
                 <option value="Any">Doesn't Matter</option>
                 <option value="Never Married">Never Married</option>
                 <option value="Divorced">Divorced</option>
+                <option value="Nikah Divorce">Nikah Divorce</option>
                 <option value="Widowed">Widowed</option>
               </select>
             </div>

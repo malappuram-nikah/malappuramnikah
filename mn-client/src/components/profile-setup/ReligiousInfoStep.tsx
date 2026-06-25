@@ -8,6 +8,8 @@ export interface ReligiousInfoData {
   religion: string;
   community: string;
   religiousness: string;
+  namaz?: string;
+  quranReading?: string;
 }
 
 interface ReligiousInfoStepProps {
@@ -23,6 +25,8 @@ export default function ReligiousInfoStep({ initialData, onComplete, onBack }: R
     religion: "Islam", // Default for this platform
     community: "",
     religiousness: "",
+    namaz: "",
+    quranReading: "",
     ...initialData,
   });
 
@@ -38,6 +42,8 @@ export default function ReligiousInfoStep({ initialData, onComplete, onBack }: R
       religion: "Islam",
       community: "",
       religiousness: "",
+      namaz: "",
+      quranReading: "",
     };
     if (draft) {
       try {
@@ -49,6 +55,8 @@ export default function ReligiousInfoStep({ initialData, onComplete, onBack }: R
     if (initialData) {
       if (initialData.religion) mergedData.religion = initialData.religion;
       if (initialData.community) mergedData.community = initialData.community;
+      if (initialData.namaz) mergedData.namaz = initialData.namaz;
+      if (initialData.quranReading) mergedData.quranReading = initialData.quranReading;
     }
     setFormData(mergedData);
     setIsDraftLoaded(true);
@@ -88,6 +96,8 @@ export default function ReligiousInfoStep({ initialData, onComplete, onBack }: R
     if (!formData.religion) newErrors.religion = "Religion is required";
     if (!formData.community) newErrors.community = "Community is required";
     if (!formData.religiousness) newErrors.religiousness = "Religiousness is required";
+    if (!formData.namaz) newErrors.namaz = "Namaz habit is required";
+    if (!formData.quranReading) newErrors.quranReading = "Quran reading habit is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -103,11 +113,13 @@ export default function ReligiousInfoStep({ initialData, onComplete, onBack }: R
   };
 
   // Progress calculation
-  const totalRequired = 3;
+  const totalRequired = 5;
   const completedRequired = [
     formData.religion,
     formData.community,
     formData.religiousness,
+    formData.namaz,
+    formData.quranReading,
   ].filter((v) => !!v).length;
   const progressPercent = Math.round((completedRequired / totalRequired) * 100);
 
@@ -175,6 +187,36 @@ export default function ReligiousInfoStep({ initialData, onComplete, onBack }: R
                 )}
               </select>
               {errors.community && <p className="text-red-500 text-xs mt-1">{errors.community}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Namaz Habits *</label>
+              <select
+                value={formData.namaz || ""}
+                onChange={(e) => updateForm("namaz", e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+              >
+                <option value="" disabled>Select Namaz Habits</option>
+                {["5 Times", "4 Times", "3 Times", "2 Times", "1 Times", "Occasional", "No"].map((option) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+              {errors.namaz && <p className="text-red-500 text-xs mt-1">{errors.namaz}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Quran Reading *</label>
+              <select
+                value={formData.quranReading || ""}
+                onChange={(e) => updateForm("quranReading", e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+              >
+                <option value="" disabled>Select Quran Reading Habits</option>
+                {["Daily", "Occasional", "Only in Ramdan", "No"].map((option) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+              {errors.quranReading && <p className="text-red-500 text-xs mt-1">{errors.quranReading}</p>}
             </div>
 
             <div className="md:col-span-2">

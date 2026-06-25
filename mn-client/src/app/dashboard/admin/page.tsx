@@ -28,13 +28,12 @@ const LOCATIONS = [
   "Thirunavaya",
   "Kadalundi",
   "Vengara",
-  "Angadippuram",
+  "Angadipuram",
   "Edappal",
   "Tanur",
-  "Parappanagadi",
+  "Parappanangadi",
   "Wandoor",
-  "Nilamboor",
-  "Parappananghadi"
+  "Nilamboor"
 ];
 
 export default function AdminDashboardPage() {

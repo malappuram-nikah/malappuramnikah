@@ -56,6 +56,46 @@ export default function ProfileCompletionTracker() {
                   }
                 });
               }
+
+              // Pre-populate step 1 draft from core signup details if not already saved
+              const basicKey = "mn_basic_details_draft";
+              if (!localStorage.getItem(basicKey)) {
+                let calculatedAge = "24";
+                if (user.dob) {
+                  const birthYear = parseInt(user.dob.split("-")[0], 10);
+                  if (!isNaN(birthYear)) {
+                    calculatedAge = (new Date().getFullYear() - birthYear).toString();
+                  }
+                }
+                const defaultBasic = {
+                  name: `${user.first_name || ""} ${user.last_name || ""}`.trim(),
+                  profileFor: user.profile_for || "Myself",
+                  gender: user.gender || "Male",
+                  location: user.location || "Malappuram, Kerala",
+                  presentLocation: user.location || "Malappuram",
+                  age: calculatedAge,
+                  aboutMe: "Looking for a pious, family-oriented partner with shared values.",
+                  height: "",
+                  maritalStatus: "Single",
+                  motherTongue: "Malayalam",
+                  physicalStatus: "Normal",
+                  appearance: "",
+                  weight: "",
+                  languagesSpoken: "Malayalam, English"
+                };
+                localStorage.setItem(basicKey, JSON.stringify(defaultBasic));
+              }
+
+              // Pre-populate step 2 draft (Religious) from community column if not already saved
+              const religiousKey = "mn_religious_info_draft";
+              if (!localStorage.getItem(religiousKey)) {
+                const defaultReligious = {
+                  religion: "Islam",
+                  community: user.cast || "Sunni",
+                  religiousness: "Pious"
+                };
+                localStorage.setItem(religiousKey, JSON.stringify(defaultReligious));
+              }
               
               // Mark as synced for this user ID
               localStorage.setItem("mn_logged_in_user_id", String(userId));

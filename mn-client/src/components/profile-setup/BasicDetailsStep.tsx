@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, Save } from "lucide-react";
+import { CheckCircle2, Save, Sparkles } from "lucide-react";
 
 export interface BasicDetailsData {
   aboutMe: string;
@@ -20,6 +20,7 @@ export interface BasicDetailsData {
   presentLocation?: string;
   marriageGoalPlan?: string;
   relocateForPartner?: string;
+  haveChildren?: string;
 }
 
 interface BasicDetailsStepProps {
@@ -46,6 +47,7 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
     presentLocation: "",
     marriageGoalPlan: "",
     relocateForPartner: "",
+    haveChildren: "",
     ...initialData,
   });
 
@@ -73,6 +75,7 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
       presentLocation: "",
       marriageGoalPlan: "",
       relocateForPartner: "",
+      haveChildren: "",
     };
     if (draft) {
       try {
@@ -87,6 +90,8 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
       if (initialData.profileFor) mergedData.profileFor = initialData.profileFor;
       if (initialData.gender) mergedData.gender = initialData.gender;
       if (initialData.age) mergedData.age = initialData.age;
+      if (initialData.presentLocation) mergedData.presentLocation = initialData.presentLocation;
+      if (initialData.haveChildren) mergedData.haveChildren = initialData.haveChildren;
     }
     setFormData(mergedData);
     setIsDraftLoaded(true);
@@ -121,6 +126,41 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
     }
   };
 
+  const selectedLanguages = formData.languagesSpoken
+    ? formData.languagesSpoken.split(",").map((l) => l.trim()).filter(Boolean)
+    : [];
+
+  const handleLanguageChange = (lang: string, checked: boolean) => {
+    let currentLangs = formData.languagesSpoken
+      ? formData.languagesSpoken.split(",").map((l) => l.trim()).filter(Boolean)
+      : [];
+    if (checked) {
+      if (!currentLangs.includes(lang)) {
+        currentLangs.push(lang);
+      }
+    } else {
+      currentLangs = currentLangs.filter((l) => l !== lang);
+    }
+    updateForm("languagesSpoken", currentLangs.join(", "));
+  };
+
+  const generateDescription = () => {
+    const name = formData.name || "Member";
+    const age = formData.age || "25";
+    const gender = formData.gender || "Male";
+    const location = formData.presentLocation || "Malappuram";
+    const status = formData.maritalStatus || "Single";
+    const pronoun = gender.toLowerCase() === "male" ? "He" : "She";
+
+    let text = "";
+    if (formData.profileFor === "Myself") {
+      text = `I am a ${age}-year-old ${status.toLowerCase()} ${gender.toLowerCase()} residing in ${location}. I value traditional family principles while balancing a modern outlook on life. In my free time, I enjoy learning new things and spending time with family. I am looking for a compatible partner who is understanding, caring, and shares similar values.`;
+    } else {
+      text = `This profile is created for my ${formData.profileFor.toLowerCase()}. ${pronoun} is a ${age}-year-old ${status.toLowerCase()} ${gender.toLowerCase()} based in ${location}. ${pronoun} is a family-oriented individual who balances modern perspectives with traditional values. We are seeking a compatible, kind, and responsible partner who respects family and shares a similar vision for the future.`;
+    }
+    updateForm("aboutMe", text);
+  };
+
   const validate = () => {
     const newErrors: Partial<Record<keyof BasicDetailsData, string>> = {};
     if (!formData.name.trim()) newErrors.name = "Name is required";
@@ -130,6 +170,9 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
     if (!formData.profileFor) newErrors.profileFor = "Profile created for is required";
     if (!formData.gender) newErrors.gender = "Gender is required";
     if (!formData.maritalStatus) newErrors.maritalStatus = "Marital status is required";
+    if (["Divorced", "Nikah Divorce", "Widowed", "Awaiting Divorce"].includes(formData.maritalStatus) && !formData.haveChildren) {
+      newErrors.haveChildren = "Please specify if you have children";
+    }
     if (!formData.height) newErrors.height = "Height is required";
     if (!formData.motherTongue) newErrors.motherTongue = "Mother tongue is required";
     if (!formData.aboutMe.trim()) newErrors.aboutMe = "About me is required";
@@ -266,17 +309,41 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Marital Status *</label>
               <select
                 value={formData.maritalStatus}
-                onChange={(e) => updateForm("maritalStatus", e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  updateForm("maritalStatus", val);
+                  if (!["Divorced", "Nikah Divorce", "Widowed", "Awaiting Divorce"].includes(val)) {
+                    updateForm("haveChildren", "");
+                  }
+                }}
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="" disabled>Select Status</option>
                 <option value="Never Married">Never Married</option>
                 <option value="Divorced">Divorced</option>
+                <option value="Nikah Divorce">Nikah Divorce</option>
                 <option value="Widowed">Widowed</option>
                 <option value="Awaiting Divorce">Awaiting Divorce</option>
               </select>
               {errors.maritalStatus && <p className="text-red-500 text-xs mt-1">{errors.maritalStatus}</p>}
             </div>
+
+            {["Divorced", "Nikah Divorce", "Widowed", "Awaiting Divorce"].includes(formData.maritalStatus) && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Have Children? *</label>
+                <select
+                  value={formData.haveChildren}
+                  onChange={(e) => updateForm("haveChildren", e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                >
+                  <option value="" disabled>Select Option</option>
+                  <option value="No">No</option>
+                  <option value="Yes, living with me">Yes, living with me</option>
+                  <option value="Yes, not living with me">Yes, not living with me</option>
+                </select>
+                {errors.haveChildren && <p className="text-red-500 text-xs mt-1">{errors.haveChildren}</p>}
+              </div>
+            )}
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Mother Tongue *</label>
@@ -374,23 +441,20 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
           </div>
         </section>
 
-        {/* Life Outlook & Location Details */}
+        {/* Present Location & Marriage Plans */}
         <section className="space-y-6 pt-6 border-t border-gray-50">
-          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Life Outlook & Location Details</h3>
+          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Present Location & Marriage Plans</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Present Location</label>
-              <select
+              <input
+                type="text"
                 value={formData.presentLocation}
                 onChange={(e) => updateForm("presentLocation", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
-              >
-                <option value="">Select Location</option>
-                {["Alappuzha", "Ernakulam", "Idukki", "Kannur", "Kasaragod", "Kollam", "Kottayam", "Kozhikode", "Malappuram", "Palakkad", "Pathanamthitta", "Thiruvananthapuram", "Thrissur", "Wayanad", "Outside Kerala", "Outside India"].map(loc => (
-                  <option key={loc} value={loc}>{loc}</option>
-                ))}
-              </select>
+                placeholder="e.g. Dubai, Qatar, Kochi, etc."
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm bg-white"
+              />
             </div>
 
             <div>
@@ -432,18 +496,36 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
           
           <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Languages Spoken</label>
-              <input
-                type="text"
-                value={formData.languagesSpoken}
-                onChange={(e) => updateForm("languagesSpoken", e.target.value)}
-                placeholder="e.g. English, Malayalam, Hindi"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-2">Languages Spoken</label>
+              <div className="flex flex-wrap gap-4 py-1.5">
+                {["English", "Malayalam", "Tamil", "Hindi", "Arabic"].map((lang) => {
+                  const isChecked = selectedLanguages.includes(lang);
+                  return (
+                    <label key={lang} className="flex items-center gap-2 text-sm font-medium text-gray-600 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) => handleLanguageChange(lang, e.target.checked)}
+                        className="rounded border-gray-300 text-brand-600 focus:ring-brand-500 w-4 h-4"
+                      />
+                      {lang}
+                    </label>
+                  );
+                })}
+              </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Profile Description / About Me *</label>
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="block text-sm font-medium text-gray-700">Profile Description / About Me *</label>
+                <button
+                  type="button"
+                  onClick={generateDescription}
+                  className="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1 transition-colors bg-brand-50 px-2.5 py-1 rounded-lg"
+                >
+                  <Sparkles className="w-3.5 h-3.5" /> Auto-generate description
+                </button>
+              </div>
               <textarea
                 rows={5}
                 value={formData.aboutMe}
