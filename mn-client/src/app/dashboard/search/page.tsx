@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, SlidersHorizontal, Heart, MessageCircle, TrendingUp, Loader2, Lock, Unlock, Layers, X, Sparkles, Volume2, Video } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -14,6 +15,7 @@ export default function SearchPage() {
   const [profiles, setProfiles] = useState<any[]>([]);
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
   const [activePhoto, setActivePhoto] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     if (selectedProfile) {
@@ -60,6 +62,7 @@ export default function SearchPage() {
   };
 
   useEffect(() => {
+    setMounted(true);
     const fetchProfiles = async () => {
       try {
         const storedToken = localStorage.getItem("mn_token");
@@ -313,13 +316,19 @@ export default function SearchPage() {
               >
                 <div 
                   onClick={() => setSelectedProfile(p)}
-                  className="w-28 shrink-0 overflow-hidden bg-gray-100 relative cursor-pointer"
+                  className="w-28 shrink-0 overflow-hidden bg-gray-100 relative cursor-pointer flex items-center justify-center"
                 >
-                  <img 
-                    src={p.img} 
-                    alt={p.name} 
-                    className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${!isInterested ? "filter blur-[12px] select-none" : ""}`} 
-                  />
+                  {p.img ? (
+                    <img 
+                      src={p.img} 
+                      alt={p.name} 
+                      className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${!isInterested ? "filter blur-[12px] select-none" : ""}`} 
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-brand-50 flex items-center justify-center text-brand-700 font-extrabold text-3xl uppercase">
+                      {p.name.charAt(0)}
+                    </div>
+                  )}
                   {!isInterested && (
                     <div className="absolute inset-0 bg-black/10 flex items-center justify-center transition-all">
                       <Lock className="w-4 h-4 text-white drop-shadow-md" />
@@ -396,255 +405,264 @@ export default function SearchPage() {
       </div>
 
       {/* AI Profile Details Modal */}
-      <AnimatePresence>
-        {selectedProfile && (() => {
-          const isMutual = interests.mutual.includes(selectedProfile.id);
-          const isSent = interests.sent.includes(selectedProfile.id);
-          const isReceived = interests.received.includes(selectedProfile.id);
+      {mounted && typeof document !== "undefined" ? createPortal(
+        <AnimatePresence>
+          {selectedProfile && (() => {
+            const isMutual = interests.mutual.includes(selectedProfile.id);
+            const isSent = interests.sent.includes(selectedProfile.id);
+            const isReceived = interests.received.includes(selectedProfile.id);
 
-          let modalBtnText = "Send Interest";
-          let modalBtnStyle = "bg-brand-600 text-white hover:bg-brand-700 shadow-brand-600/20";
-          if (isMutual) {
-            modalBtnText = "Matched! Chat Now 🎉";
-            modalBtnStyle = "bg-pink-600 text-white hover:bg-pink-700 shadow-pink-600/20";
-          } else if (isSent) {
-            modalBtnText = "Withdrawn Sent Request";
-            modalBtnStyle = "bg-pink-100 text-pink-700 hover:bg-pink-200 border border-pink-200";
-          } else if (isReceived) {
-            modalBtnText = "Accept Request";
-            modalBtnStyle = "bg-amber-500 text-white hover:bg-amber-600 animate-pulse";
-          }
+            let modalBtnText = "Send Interest";
+            let modalBtnStyle = "bg-brand-600 text-white hover:bg-brand-700 shadow-brand-600/20";
+            if (isMutual) {
+              modalBtnText = "Matched! Chat Now 🎉";
+              modalBtnStyle = "bg-pink-600 text-white hover:bg-pink-700 shadow-pink-600/20";
+            } else if (isSent) {
+              modalBtnText = "Withdrawn Sent Request";
+              modalBtnStyle = "bg-pink-100 text-pink-700 hover:bg-pink-200 border border-pink-200";
+            } else if (isReceived) {
+              modalBtnText = "Accept Request";
+              modalBtnStyle = "bg-amber-500 text-white hover:bg-amber-600 animate-pulse";
+            }
 
-          return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              <motion.div 
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
-                onClick={() => setSelectedProfile(null)}
-              />
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-y-auto max-h-[90vh] z-10 scrollbar-thin"
-              >
-                <div className="h-56 bg-gray-100 relative overflow-hidden">
-                  {(() => {
-                    const isInterested = isMutual || isSent || isReceived;
-                    return (
-                      <>
-                        <img 
-                          src={activePhoto || selectedProfile.img} 
-                          alt="" 
-                          className={`w-full h-full object-cover ${!isInterested ? "filter blur-[16px] select-none" : ""}`} 
-                        />
-                        {!isInterested && (
-                          <div className="absolute inset-0 bg-black/20 flex items-center justify-center z-10">
-                            <div className="bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-md border border-white/20 flex items-center gap-1.5">
-                              <Lock className="w-3.5 h-3.5 text-brand-600" />
-                              <span className="text-[10px] font-bold text-gray-700">Connect to view photo</span>
+            return (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <motion.div 
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
+                  onClick={() => setSelectedProfile(null)}
+                />
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                  className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-y-auto max-h-[90vh] z-10 scrollbar-thin"
+                >
+                  <div className="h-56 bg-gray-100 relative overflow-hidden">
+                    {(() => {
+                      const isInterested = isMutual || isSent || isReceived;
+                      return (
+                        <>
+                          {activePhoto || selectedProfile.img ? (
+                            <img 
+                              src={activePhoto || selectedProfile.img} 
+                              alt="" 
+                              className={`w-full h-full object-cover ${!isInterested ? "filter blur-[16px] select-none" : ""}`} 
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-brand-50 flex items-center justify-center text-brand-700 font-extrabold text-5xl uppercase">
+                              {selectedProfile.name.charAt(0)}
                             </div>
-                          </div>
-                        )}
-                      </>
-                    );
-                  })()}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
-                  <button 
-                    onClick={() => setSelectedProfile(null)}
-                    className="absolute top-4 right-4 p-2 bg-black/25 hover:bg-black/45 backdrop-blur-md rounded-full text-white transition-colors"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                  <div className="absolute bottom-4 left-6 right-6">
-                    <div className="flex items-end justify-between">
-                      <div>
-                        <h2 className="text-2xl font-bold text-white drop-shadow-md">{selectedProfile.name}</h2>
-                        <p className="text-gray-200 text-sm mt-1">{selectedProfile.age} yrs • {selectedProfile.location} • {selectedProfile.caste}</p>
-                      </div>
-                      <div className="bg-brand-600 text-white px-3 py-1.5 rounded-xl font-bold text-sm shadow-lg flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5" /> {selectedProfile.matchScore}%
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-6 space-y-5">
-                  {/* Photo Thumbnails */}
-                  {selectedProfile.photos && selectedProfile.photos.length > 1 && (
-                    <div>
-                      <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Photo Gallery</h3>
-                      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
-                        {selectedProfile.photos.map((p: any, idx: number) => {
-                          const isInterested = isMutual || isSent || isReceived;
-                          return (
-                            <button 
-                              key={p.id || idx} 
-                              onClick={() => setActivePhoto(p.dataUrl)}
-                              className={`w-12 h-12 rounded-lg overflow-hidden border-2 shrink-0 transition-all ${activePhoto === p.dataUrl ? 'border-brand-600 scale-95' : 'border-gray-200 opacity-70 hover:opacity-100'}`}
-                            >
-                              <img src={p.dataUrl} className={`w-full h-full object-cover ${!isInterested ? "filter blur-[6px] select-none" : ""}`} />
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* About Me bio */}
-                  {selectedProfile.aboutMe && (
-                    <div>
-                      <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">About</h3>
-                      <p className="text-xs text-gray-700 leading-relaxed font-medium">
-                        {selectedProfile.aboutMe}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Profile Info Details Grid */}
-                  <div className="bg-gray-50/80 p-4 rounded-2xl border border-gray-150/80 space-y-2.5">
-                    <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 border-b border-gray-250/60 pb-1.5 mb-1">Profile Info</h3>
-                    <div className="grid grid-cols-2 gap-3 text-[11px]">
-                      <div>
-                        <span className="text-gray-400 font-medium block">Gender</span>
-                        <span className="text-gray-850 font-bold">{selectedProfile.gender || "N/A"}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-400 font-medium block">Marital Status</span>
-                        <span className="text-gray-850 font-bold">{selectedProfile.maritalStatus || "N/A"}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-400 font-medium block">Mother Tongue</span>
-                        <span className="text-gray-850 font-bold">{selectedProfile.motherTongue || "N/A"}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-400 font-medium block">Religion & Sect</span>
-                        <span className="text-gray-850 font-bold">{(selectedProfile.religion || "Islam") + " - " + (selectedProfile.caste || selectedProfile.community || "Sunni")}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-400 font-medium block">Namaz Habits</span>
-                        <span className="text-gray-850 font-bold">{selectedProfile.namaz || "N/A"}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-400 font-medium block">Quran Reading</span>
-                        <span className="text-gray-850 font-bold">{selectedProfile.quranReading || "N/A"}</span>
-                      </div>
-                      <div className="col-span-2">
-                        <span className="text-gray-400 font-medium block">Education</span>
-                        <span className="text-gray-850 font-bold">{selectedProfile.education || "N/A"}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Partner Preferences Grid */}
-                  <div className="bg-brand-50/30 p-4 rounded-2xl border border-brand-100/50 space-y-2.5">
-                    <h3 className="text-[10px] font-bold uppercase tracking-wider text-brand-700 border-b border-brand-100/40 pb-1.5 mb-1">Partner Preferences</h3>
-                    <div className="grid grid-cols-2 gap-3 text-[11px]">
-                      <div>
-                        <span className="text-brand-600/70 font-medium block">Age Preference</span>
-                        <span className="text-brand-950 font-bold">{selectedProfile.prefAge || "N/A"}</span>
-                      </div>
-                      <div>
-                        <span className="text-brand-600/70 font-medium block">Marital Status</span>
-                        <span className="text-brand-950 font-bold">{selectedProfile.prefMaritalStatus || "N/A"}</span>
-                      </div>
-                      <div>
-                        <span className="text-brand-600/70 font-medium block">Preferred Religion</span>
-                        <span className="text-brand-950 font-bold">{selectedProfile.prefReligion || "N/A"}</span>
-                      </div>
-                      <div>
-                        <span className="text-brand-600/70 font-medium block">Preferred Sect</span>
-                        <span className="text-brand-950 font-bold">{selectedProfile.prefCommunity || "N/A"}</span>
-                      </div>
-                      <div>
-                        <span className="text-brand-600/70 font-medium block">Preferred Namaz</span>
-                        <span className="text-brand-950 font-bold">{selectedProfile.prefNamaz || "N/A"}</span>
-                      </div>
-                      <div>
-                        <span className="text-brand-600/70 font-medium block">Preferred Quran</span>
-                        <span className="text-brand-950 font-bold">{selectedProfile.prefQuranReading || "N/A"}</span>
-                      </div>
-                      <div className="col-span-2">
-                        <span className="text-brand-600/70 font-medium block">Preferred Education</span>
-                        <span className="text-brand-950 font-bold">{selectedProfile.prefEducation || "N/A"}</span>
-                      </div>
-                      <div className="col-span-2">
-                        <span className="text-brand-600/70 font-medium block">Preferred Locations</span>
-                        <span className="text-brand-950 font-bold">{selectedProfile.prefLocations || "N/A"}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Voice Introduction Player */}
-                  {selectedProfile.voice && (
-                    <div className="bg-brand-50/40 border border-brand-100/50 p-4 rounded-2xl flex flex-col gap-1.5">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-brand-700 flex items-center gap-1.5">
-                        <Volume2 className="w-4 h-4" /> Voice Introduction
-                      </span>
-                      <audio src={selectedProfile.voice} controls className="w-full h-8 mt-1 accent-brand-600" />
-                    </div>
-                  )}
-
-                  {/* Video Introduction Player */}
-                  {selectedProfile.video && (
-                    <div className="bg-brand-50/40 border border-brand-100/50 p-4 rounded-2xl flex flex-col gap-1.5">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-brand-700 flex items-center gap-1.5">
-                        <Video className="w-4 h-4" /> Video Onboarding
-                      </span>
-                      <div className="relative rounded-xl overflow-hidden aspect-video bg-black mt-1">
-                        <video src={selectedProfile.video} controls className="w-full h-full object-contain" />
-                      </div>
-                    </div>
-                  )}
-
-                  <div>
-                    <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">AI Compatibility Analysis</h3>
-                    <p className="text-xs text-gray-700 leading-relaxed bg-brand-50 p-4 rounded-xl border border-brand-100/50">
-                      {selectedProfile.aiExplanation || selectedProfile.matchReason || "Highly compatible profile based on your preferences."}
-                    </p>
-                  </div>
-
-                  {selectedProfile.conversationStarter && (
-                    <div>
-                      <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-1.5">
-                        <MessageCircle className="w-4 h-4 text-brand-500" /> Smart Icebreaker
-                      </h3>
-                      <p className="text-xs text-gray-700 italic bg-gray-50 p-4 rounded-xl border border-gray-100/50">
-                        "{selectedProfile.conversationStarter}"
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="flex gap-3 pt-2">
+                          )}
+                          {!isInterested && (
+                            <div className="absolute inset-0 bg-black/20 flex items-center justify-center z-10">
+                              <div className="bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-md border border-white/20 flex items-center gap-1.5">
+                                <Lock className="w-3.5 h-3.5 text-brand-600" />
+                                <span className="text-[10px] font-bold text-gray-700">Connect to view photo</span>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
                     <button 
-                      onClick={() => {
-                        if (isMutual) {
+                      onClick={() => setSelectedProfile(null)}
+                      className="absolute top-4 right-4 p-2 bg-black/25 hover:bg-black/45 backdrop-blur-md rounded-full text-white transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                    <div className="absolute bottom-4 left-6 right-6">
+                      <div className="flex items-end justify-between">
+                        <div>
+                          <h2 className="text-2xl font-bold text-white drop-shadow-md">{selectedProfile.name}</h2>
+                          <p className="text-gray-200 text-sm mt-1">{selectedProfile.age} yrs • {selectedProfile.location} • {selectedProfile.caste}</p>
+                        </div>
+                        <div className="bg-brand-600 text-white px-3 py-1.5 rounded-xl font-bold text-sm shadow-lg flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5" /> {selectedProfile.matchScore}%
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-6 space-y-5">
+                    {/* Photo Thumbnails */}
+                    {selectedProfile.photos && selectedProfile.photos.length > 1 && (
+                      <div>
+                        <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Photo Gallery</h3>
+                        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
+                          {selectedProfile.photos.map((p: any, idx: number) => {
+                            const isInterested = isMutual || isSent || isReceived;
+                            return (
+                              <button 
+                                key={p.id || idx} 
+                                onClick={() => setActivePhoto(p.dataUrl)}
+                                className={`w-12 h-12 rounded-lg overflow-hidden border-2 shrink-0 transition-all ${activePhoto === p.dataUrl ? 'border-brand-600 scale-95' : 'border-gray-200 opacity-70 hover:opacity-100'}`}
+                              >
+                                <img src={p.dataUrl} className={`w-full h-full object-cover ${!isInterested ? "filter blur-[6px] select-none" : ""}`} />
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* About Me bio */}
+                    {selectedProfile.aboutMe && (
+                      <div>
+                        <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">About</h3>
+                        <p className="text-xs text-gray-700 leading-relaxed font-medium">
+                          {selectedProfile.aboutMe}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Profile Info Details Grid */}
+                    <div className="bg-gray-50/80 p-4 rounded-2xl border border-gray-150/80 space-y-2.5">
+                      <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 border-b border-gray-250/60 pb-1.5 mb-1">Profile Info</h3>
+                      <div className="grid grid-cols-2 gap-3 text-[11px]">
+                        <div>
+                          <span className="text-gray-400 font-medium block">Gender</span>
+                          <span className="text-gray-850 font-bold">{selectedProfile.gender || "N/A"}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400 font-medium block">Marital Status</span>
+                          <span className="text-gray-850 font-bold">{selectedProfile.maritalStatus || "N/A"}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400 font-medium block">Mother Tongue</span>
+                          <span className="text-gray-850 font-bold">{selectedProfile.motherTongue || "N/A"}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400 font-medium block">Religion & Sect</span>
+                          <span className="text-gray-850 font-bold">{(selectedProfile.religion || "Islam") + " - " + (selectedProfile.caste || selectedProfile.community || "Sunni")}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400 font-medium block">Namaz Habits</span>
+                          <span className="text-gray-850 font-bold">{selectedProfile.namaz || "N/A"}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400 font-medium block">Quran Reading</span>
+                          <span className="text-gray-850 font-bold">{selectedProfile.quranReading || "N/A"}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-gray-400 font-medium block">Education</span>
+                          <span className="text-gray-850 font-bold">{selectedProfile.education || "N/A"}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Partner Preferences Grid */}
+                    <div className="bg-brand-50/30 p-4 rounded-2xl border border-brand-100/50 space-y-2.5">
+                      <h3 className="text-[10px] font-bold uppercase tracking-wider text-brand-700 border-b border-brand-100/40 pb-1.5 mb-1">Partner Preferences</h3>
+                      <div className="grid grid-cols-2 gap-3 text-[11px]">
+                        <div>
+                          <span className="text-brand-600/70 font-medium block">Age Preference</span>
+                          <span className="text-brand-950 font-bold">{selectedProfile.prefAge || "N/A"}</span>
+                        </div>
+                        <div>
+                          <span className="text-brand-600/70 font-medium block">Marital Status</span>
+                          <span className="text-brand-950 font-bold">{selectedProfile.prefMaritalStatus || "N/A"}</span>
+                        </div>
+                        <div>
+                          <span className="text-brand-600/70 font-medium block">Preferred Religion</span>
+                          <span className="text-brand-950 font-bold">{selectedProfile.prefReligion || "N/A"}</span>
+                        </div>
+                        <div>
+                          <span className="text-brand-600/70 font-medium block">Preferred Sect</span>
+                          <span className="text-brand-950 font-bold">{selectedProfile.prefCommunity || "N/A"}</span>
+                        </div>
+                        <div>
+                          <span className="text-brand-600/70 font-medium block">Preferred Namaz</span>
+                          <span className="text-brand-950 font-bold">{selectedProfile.prefNamaz || "N/A"}</span>
+                        </div>
+                        <div>
+                          <span className="text-brand-600/70 font-medium block">Preferred Quran</span>
+                          <span className="text-brand-950 font-bold">{selectedProfile.prefQuranReading || "N/A"}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-brand-600/70 font-medium block">Preferred Education</span>
+                          <span className="text-brand-950 font-bold">{selectedProfile.prefEducation || "N/A"}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-brand-600/70 font-medium block">Preferred Locations</span>
+                          <span className="text-brand-950 font-bold">{selectedProfile.prefLocations || "N/A"}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Voice Introduction Player */}
+                    {selectedProfile.voice && (
+                      <div className="bg-brand-50/40 border border-brand-100/50 p-4 rounded-2xl flex flex-col gap-1.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-brand-700 flex items-center gap-1.5">
+                          <Volume2 className="w-4 h-4" /> Voice Introduction
+                        </span>
+                        <audio src={selectedProfile.voice} controls className="w-full h-8 mt-1 accent-brand-600" />
+                      </div>
+                    )}
+
+                    {/* Video Introduction Player */}
+                    {selectedProfile.video && (
+                      <div className="bg-brand-50/40 border border-brand-100/50 p-4 rounded-2xl flex flex-col gap-1.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-brand-700 flex items-center gap-1.5">
+                          <Video className="w-4 h-4" /> Video Onboarding
+                        </span>
+                        <div className="relative rounded-xl overflow-hidden aspect-video bg-black mt-1">
+                          <video src={selectedProfile.video} controls className="w-full h-full object-contain" />
+                        </div>
+                      </div>
+                    )}
+
+                    <div>
+                      <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">AI Compatibility Analysis</h3>
+                      <p className="text-xs text-gray-700 leading-relaxed bg-brand-50 p-4 rounded-xl border border-brand-100/50">
+                        {selectedProfile.aiExplanation || selectedProfile.matchReason || "Highly compatible profile based on your preferences."}
+                      </p>
+                    </div>
+
+                    {selectedProfile.conversationStarter && (
+                      <div>
+                        <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-1.5">
+                          <MessageCircle className="w-4 h-4 text-brand-500" /> Smart Icebreaker
+                        </h3>
+                        <p className="text-xs text-gray-700 italic bg-gray-50 p-4 rounded-xl border border-gray-100/50">
+                          "{selectedProfile.conversationStarter}"
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="flex gap-3 pt-2">
+                      <button 
+                        onClick={() => {
+                          if (isMutual) {
+                            setSelectedProfile(null);
+                            router.push("/dashboard/chat");
+                          } else {
+                            handleToggleInterest(selectedProfile.id);
+                          }
+                        }}
+                        className={`flex-1 py-3 bg-brand-600 text-white text-xs font-bold rounded-xl transition-colors shadow-md flex items-center justify-center gap-1.5 active:scale-[0.98] ${modalBtnStyle}`}
+                      >
+                        <Heart className={`w-3.5 h-3.5 ${(isMutual || isSent) ? "fill-current" : ""}`} />
+                        {modalBtnText}
+                      </button>
+                      <button 
+                        onClick={() => {
                           setSelectedProfile(null);
-                          router.push("/dashboard/chat");
-                        } else {
-                          handleToggleInterest(selectedProfile.id);
-                        }
-                      }}
-                      className={`flex-1 py-3 bg-brand-600 text-white text-xs font-bold rounded-xl transition-colors shadow-md flex items-center justify-center gap-1.5 active:scale-[0.98] ${modalBtnStyle}`}
-                    >
-                      <Heart className={`w-3.5 h-3.5 ${(isMutual || isSent) ? "fill-current" : ""}`} />
-                      {modalBtnText}
-                    </button>
-                    <button 
-                      onClick={() => {
-                        setSelectedProfile(null);
-                      }}
-                      className="flex-1 py-3 bg-gray-50 text-gray-700 hover:bg-gray-100 text-xs font-bold rounded-xl border border-gray-200 transition-colors"
-                    >
-                      Close Profile
-                    </button>
+                        }}
+                        className="flex-1 py-3 bg-gray-50 text-gray-700 hover:bg-gray-100 text-xs font-bold rounded-xl border border-gray-200 transition-colors"
+                      >
+                        Close Profile
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            </div>
-          );
-        })()}
-      </AnimatePresence>
+                </motion.div>
+              </div>
+            );
+          })()}
+        </AnimatePresence>,
+        document.body
+      ) : null}
     </div>
   );
 }

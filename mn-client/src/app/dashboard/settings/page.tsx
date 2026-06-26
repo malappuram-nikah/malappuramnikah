@@ -108,7 +108,7 @@ export default function SettingsPage() {
             // 2. Pre-populate step 1 draft from core signup details if not already saved
             const basicKey = "mn_basic_details_draft";
             if (!localStorage.getItem(basicKey)) {
-              let calculatedAge = "24";
+              let calculatedAge = "";
               if (currentUser.dob) {
                 const birthYear = parseInt(currentUser.dob.split("-")[0], 10);
                 if (!isNaN(birthYear)) {
@@ -117,19 +117,19 @@ export default function SettingsPage() {
               }
               const defaultBasic = {
                 name: `${currentUser.first_name || ""} ${currentUser.last_name || ""}`.trim(),
-                profileFor: currentUser.profile_for || "Myself",
-                gender: currentUser.gender || "Male",
-                location: currentUser.location || "Malappuram, Kerala",
-                presentLocation: currentUser.location || "Malappuram",
+                profileFor: currentUser.profile_for || "",
+                gender: currentUser.gender || "",
+                location: currentUser.location || "",
+                presentLocation: currentUser.location || "",
                 age: calculatedAge,
-                aboutMe: "Looking for a pious, family-oriented partner with shared values.",
+                aboutMe: "",
                 height: "",
-                maritalStatus: "Single",
-                motherTongue: "Malayalam",
-                physicalStatus: "Normal",
+                maritalStatus: "",
+                motherTongue: "",
+                physicalStatus: "",
                 appearance: "",
                 weight: "",
-                languagesSpoken: "Malayalam, English"
+                languagesSpoken: ""
               };
               localStorage.setItem(basicKey, JSON.stringify(defaultBasic));
             }
@@ -138,9 +138,9 @@ export default function SettingsPage() {
             const religiousKey = "mn_religious_info_draft";
             if (!localStorage.getItem(religiousKey)) {
               const defaultReligious = {
-                religion: "Islam",
-                community: currentUser.cast || "Sunni",
-                religiousness: "Pious"
+                religion: "",
+                community: currentUser.cast || "",
+                religiousness: ""
               };
               localStorage.setItem(religiousKey, JSON.stringify(defaultReligious));
             }
@@ -160,12 +160,12 @@ export default function SettingsPage() {
                 setAge((new Date().getFullYear() - birthYear).toString());
               }
             } else {
-              setAge("24");
+              setAge("");
             }
 
              setCommunity(currentUser.cast || "");
             setGender(currentUser.gender || "");
-            setProfileFor(currentUser.profile_for || "Myself");
+            setProfileFor(currentUser.profile_for || "");
             setAboutMe(currentUser.profile_details?.mn_basic_details_draft?.aboutMe || "");
 
             const religiousDraft = currentUser.profile_details?.mn_religious_info_draft || {};
@@ -185,26 +185,26 @@ export default function SettingsPage() {
           try {
             const parsed = JSON.parse(basicDraft);
             const nameParts = (parsed.name || "").trim().split(" ");
-            setFirstName(nameParts[0] || "Faisal");
-            setLastName(nameParts.slice(1).join(" ") || "Kottakkal");
-            setGender(parsed.gender || "Male");
-            setProfileFor(parsed.profileFor || "Myself");
-            setLocation(parsed.location || "Malappuram");
-            setAge(parsed.age || "24");
-            setAboutMe(parsed.aboutMe || "Looking for a pious, family-oriented partner with shared values.");
+            setFirstName(nameParts[0] || "");
+            setLastName(nameParts.slice(1).join(" ") || "");
+            setGender(parsed.gender || "");
+            setProfileFor(parsed.profileFor || "");
+            setLocation(parsed.location || "");
+            setAge(parsed.age || "");
+            setAboutMe(parsed.aboutMe || "");
           } catch (err) {
             console.error(err);
           }
         } else {
-          setFirstName("Faisal");
-          setLastName("Kottakkal");
-          setMobile("+91 98765 43210");
-          setLocation("Malappuram");
-          setAge("28");
-          setCommunity("Sunni");
-          setGender("Male");
-          setProfileFor("Myself");
-          setAboutMe("A career-oriented professional with a deep appreciation for religious values.");
+          setFirstName("");
+          setLastName("");
+          setMobile("");
+          setLocation("");
+          setAge("");
+          setCommunity("");
+          setGender("");
+          setProfileFor("");
+          setAboutMe("");
         }
       }
 

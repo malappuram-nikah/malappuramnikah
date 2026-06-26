@@ -205,9 +205,7 @@ export default function ChatPage() {
       if (primary) return primary.dataUrl;
       return photos[0].dataUrl;
     }
-    return peer.gender === "Female" 
-      ? "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=120&auto=format&fit=crop&q=60"
-      : "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=60";
+    return "";
   };
 
   // Filter matches based on search query
@@ -280,11 +278,17 @@ export default function ChatPage() {
                 }`}
               >
                 <div className="relative shrink-0">
-                  <img
-                    src={getAvatarUrl(peer)}
-                    alt=""
-                    className="w-11 h-11 rounded-full object-cover border border-gray-100"
-                  />
+                  {getAvatarUrl(peer) ? (
+                    <img
+                      src={getAvatarUrl(peer)}
+                      alt=""
+                      className="w-11 h-11 rounded-full object-cover border border-gray-100"
+                    />
+                  ) : (
+                    <div className="w-11 h-11 rounded-full bg-brand-100 border border-brand-200 flex items-center justify-center text-brand-700 font-extrabold text-sm uppercase">
+                      {peer.first_name.charAt(0)}
+                    </div>
+                  )}
                   {unread > 0 && (
                     <span className="absolute -top-1 -right-1 w-5 h-5 bg-brand-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
                       {unread}
@@ -315,11 +319,17 @@ export default function ChatPage() {
             {/* Chat header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-white">
               <div className="flex items-center gap-3">
-                <img
-                  src={getAvatarUrl(selectedPeer)}
-                  alt=""
-                  className="w-10 h-10 rounded-full object-cover border border-gray-100"
-                />
+                {getAvatarUrl(selectedPeer) ? (
+                  <img
+                    src={getAvatarUrl(selectedPeer)}
+                    alt=""
+                    className="w-10 h-10 rounded-full object-cover border border-gray-100"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-brand-100 border border-brand-200 flex items-center justify-center text-brand-700 font-extrabold text-sm uppercase shrink-0">
+                    {selectedPeer.first_name.charAt(0)}
+                  </div>
+                )}
                 <div>
                   <p className="font-semibold text-gray-900 text-sm">
                     {selectedPeer.first_name} {selectedPeer.last_name}

@@ -291,11 +291,17 @@ function CompareContent() {
                       </button>
 
                       <div className="flex gap-3 items-center">
-                        <img
-                          src={p.photo}
-                          alt={p.name}
-                          className="w-14 h-14 rounded-2xl object-cover border-2 border-white shadow-md bg-gray-100 hover:scale-105 transition-transform"
-                        />
+                        {p.photo ? (
+                          <img
+                            src={p.photo}
+                            alt={p.name}
+                            className="w-14 h-14 rounded-2xl object-cover border-2 border-white shadow-md bg-gray-100 hover:scale-105 transition-transform"
+                          />
+                        ) : (
+                          <div className="w-14 h-14 rounded-2xl bg-brand-50 border-2 border-white shadow-md flex items-center justify-center text-brand-700 font-extrabold text-sm uppercase">
+                            {p.name.charAt(0)}
+                          </div>
+                        )}
                         <div className="min-w-0">
                           <span className="text-[10px] font-extrabold text-brand-600 block tracking-wider">{p.profileId}</span>
                           <span className="font-extrabold text-sm text-gray-950 truncate block mt-0.5">{p.name}</span>

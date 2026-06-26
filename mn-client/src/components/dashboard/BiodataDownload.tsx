@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Download, Printer, Share2, X, FileText, CheckCircle2, Lock } from "lucide-react";
 
@@ -17,9 +18,11 @@ export default function BiodataDownload({ profile, enriched }: BiodataDownloadPr
   const [downloadEnabled, setDownloadEnabled] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [done, setDone] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   // Fetch admin setting on mount
   useEffect(() => {
+    setMounted(true);
     fetch(`${API_BASE}/user/admin/biodata/settings`)
       .then((r) => r.json())
       .then((data) => {
@@ -336,103 +339,106 @@ ${forPrint ? `<div class="actions no-print">
       </button>
 
       {/* Modal */}
-      <AnimatePresence>
-        {open && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.92, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.92, y: 20 }}
-              transition={{ duration: 0.25 }}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
-            >
-              {/* Modal header */}
-              <div className="bg-gradient-to-r from-amber-50 to-orange-50 px-6 py-5 border-b border-amber-100 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-amber-700" />
+      {mounted && typeof document !== "undefined" ? createPortal(
+        <AnimatePresence>
+          {open && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50 backdrop-blur-sm">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.92, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.92, y: 20 }}
+                transition={{ duration: 0.25 }}
+                className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
+              >
+                {/* Modal header */}
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 px-6 py-5 border-b border-amber-100 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-amber-700" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-gray-900 text-base">Download Biodata</h3>
+                      <p className="text-xs text-gray-500">Professional matrimonial biodata</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-gray-900 text-base">Download Biodata</h3>
-                    <p className="text-xs text-gray-500">Professional matrimonial biodata</p>
-                  </div>
+                  <button onClick={() => setOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-amber-100 transition-colors">
+                    <X className="w-4 h-4 text-gray-500" />
+                  </button>
                 </div>
-                <button onClick={() => setOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-amber-100 transition-colors">
-                  <X className="w-4 h-4 text-gray-500" />
-                </button>
-              </div>
 
-              {/* Body */}
-              <div className="p-6 space-y-4">
-                {!downloadEnabled ? (
-                  <div className="flex flex-col items-center gap-3 py-6 text-center">
-                    <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center">
-                      <Lock className="w-7 h-7 text-red-500" />
+                {/* Body */}
+                <div className="p-6 space-y-4">
+                  {!downloadEnabled ? (
+                    <div className="flex flex-col items-center gap-3 py-6 text-center">
+                      <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center">
+                        <Lock className="w-7 h-7 text-red-500" />
+                      </div>
+                      <p className="font-semibold text-gray-800">Downloads Disabled</p>
+                      <p className="text-sm text-gray-500">The administrator has temporarily disabled biodata downloads. Please check back later.</p>
                     </div>
-                    <p className="font-semibold text-gray-800">Downloads Disabled</p>
-                    <p className="text-sm text-gray-500">The administrator has temporarily disabled biodata downloads. Please check back later.</p>
-                  </div>
-                ) : done ? (
-                  <div className="flex flex-col items-center gap-3 py-6 text-center">
-                    <div className="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center">
-                      <CheckCircle2 className="w-7 h-7 text-green-500" />
+                  ) : done ? (
+                    <div className="flex flex-col items-center gap-3 py-6 text-center">
+                      <div className="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center">
+                        <CheckCircle2 className="w-7 h-7 text-green-500" />
+                      </div>
+                      <p className="font-semibold text-gray-800">Done!</p>
+                      <p className="text-sm text-gray-500">Your biodata has been generated successfully.</p>
                     </div>
-                    <p className="font-semibold text-gray-800">Done!</p>
-                    <p className="text-sm text-gray-500">Your biodata has been generated successfully.</p>
-                  </div>
-                ) : (
-                  <>
-                    <p className="text-sm text-gray-600 leading-relaxed">
-                      Generate a clean, professional biodata PDF for <span className="font-semibold text-gray-800">{profile?.first_name || "this profile"}</span> that includes all sections, platform branding, and is formatted for printing or digital sharing.
-                    </p>
+                  ) : (
+                    <>
+                      <p className="text-sm text-gray-600 leading-relaxed">
+                        Generate a clean, professional biodata PDF for <span className="font-semibold text-gray-800">{profile?.first_name || "this profile"}</span> that includes all sections, platform branding, and is formatted for printing or digital sharing.
+                      </p>
 
-                    <div className="bg-gray-50 rounded-2xl p-4 space-y-1 text-xs text-gray-500">
-                      <p className="font-semibold text-gray-700 mb-2">Included in Biodata:</p>
-                      {["Personal Details", "Religious Background", "Education & Career", "Family Details", "Interests & Personality", "Partner Preferences"].map(s => (
-                        <div key={s} className="flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                          {s}
-                        </div>
-                      ))}
-                    </div>
+                      <div className="bg-gray-50 rounded-2xl p-4 space-y-1 text-xs text-gray-500">
+                        <p className="font-semibold text-gray-700 mb-2">Included in Biodata:</p>
+                        {["Personal Details", "Religious Background", "Education & Career", "Family Details", "Interests & Personality", "Partner Preferences"].map(s => (
+                          <div key={s} className="flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                            {s}
+                          </div>
+                        ))}
+                      </div>
 
-                    <div className="grid grid-cols-3 gap-3 pt-2">
-                      <button
-                        onClick={openPrintWindow}
-                        disabled={isGenerating}
-                        className="flex flex-col items-center gap-2 py-4 px-3 bg-amber-600 hover:bg-amber-700 text-white rounded-2xl transition-all active:scale-[0.97] disabled:opacity-60"
-                      >
-                        <Printer className="w-5 h-5" />
-                        <span className="text-xs font-semibold">Print / PDF</span>
-                      </button>
-                      <button
-                        onClick={downloadHTML}
-                        disabled={isGenerating}
-                        className="flex flex-col items-center gap-2 py-4 px-3 bg-gray-800 hover:bg-gray-900 text-white rounded-2xl transition-all active:scale-[0.97] disabled:opacity-60"
-                      >
-                        <Download className="w-5 h-5" />
-                        <span className="text-xs font-semibold">Download</span>
-                      </button>
-                      <button
-                        onClick={handleShare}
-                        disabled={isGenerating}
-                        className="flex flex-col items-center gap-2 py-4 px-3 bg-brand-600 hover:bg-brand-700 text-white rounded-2xl transition-all active:scale-[0.97] disabled:opacity-60"
-                      >
-                        <Share2 className="w-5 h-5" />
-                        <span className="text-xs font-semibold">Share</span>
-                      </button>
-                    </div>
+                      <div className="grid grid-cols-3 gap-3 pt-2">
+                        <button
+                          onClick={openPrintWindow}
+                          disabled={isGenerating}
+                          className="flex flex-col items-center gap-2 py-4 px-3 bg-amber-600 hover:bg-amber-700 text-white rounded-2xl transition-all active:scale-[0.97] disabled:opacity-60"
+                        >
+                          <Printer className="w-5 h-5" />
+                          <span className="text-xs font-semibold">Print / PDF</span>
+                        </button>
+                        <button
+                          onClick={downloadHTML}
+                          disabled={isGenerating}
+                          className="flex flex-col items-center gap-2 py-4 px-3 bg-gray-800 hover:bg-gray-900 text-white rounded-2xl transition-all active:scale-[0.97] disabled:opacity-60"
+                        >
+                          <Download className="w-5 h-5" />
+                          <span className="text-xs font-semibold">Download</span>
+                        </button>
+                        <button
+                          onClick={handleShare}
+                          disabled={isGenerating}
+                          className="flex flex-col items-center gap-2 py-4 px-3 bg-brand-600 hover:bg-brand-700 text-white rounded-2xl transition-all active:scale-[0.97] disabled:opacity-60"
+                        >
+                          <Share2 className="w-5 h-5" />
+                          <span className="text-xs font-semibold">Share</span>
+                        </button>
+                      </div>
 
-                    <p className="text-center text-xs text-gray-400">
-                      Use <strong>Print</strong> → Save as PDF in your browser for best results.
-                    </p>
-                  </>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+                      <p className="text-center text-xs text-gray-400">
+                        Use <strong>Print</strong> → Save as PDF in your browser for best results.
+                      </p>
+                    </>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      ) : null}
     </>
   );
 }
