@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { User, Lock, Bell, Shield, ChevronRight, Sparkles, AlertCircle, ArrowRight, Save, CheckCircle2, Fingerprint, Phone } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { LOCATIONS } from "@/lib/constants";
 
 const tabs = [
   { id: "profile", label: "Profile", icon: User },
@@ -562,18 +561,7 @@ export default function SettingsPage() {
                   ].map((f, i) => (
                     <div key={i}>
                       <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">{f.label}</label>
-                      {f.label === "Location" ? (
-                        <select
-                          value={f.value}
-                          onChange={(e) => f.onChange(e.target.value)}
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-medium text-gray-800 appearance-none bg-white"
-                        >
-                          <option value="" disabled>Select Location</option>
-                          {LOCATIONS.map((loc) => (
-                            <option key={loc} value={loc}>{loc}</option>
-                          ))}
-                        </select>
-                      ) : f.type === "select" ? (
+                      {f.type === "select" ? (
                         <select
                           value={f.value}
                           onChange={(e) => f.onChange(e.target.value)}

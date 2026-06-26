@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Save, Sparkles } from "lucide-react";
-import { LOCATIONS } from "@/lib/constants";
 
 export interface BasicDetailsData {
   aboutMe: string;
@@ -460,16 +459,13 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Present Location</label>
-              <select
+              <input
+                type="text"
                 value={formData.presentLocation || ""}
                 onChange={(e) => updateForm("presentLocation", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm bg-white appearance-none"
-              >
-                <option value="" disabled>Select Location</option>
-                {LOCATIONS.map((loc) => (
-                  <option key={loc} value={loc}>{loc}</option>
-                ))}
-              </select>
+                placeholder="e.g. Malappuram"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm bg-white"
+              />
             </div>
 
             <div>

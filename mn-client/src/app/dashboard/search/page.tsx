@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, SlidersHorizontal, Heart, MessageCircle, TrendingUp, Loader2, Lock, Unlock, Layers, X, Sparkles, Volume2, Video } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCompare } from "@/context/CompareContext";
-import { LOCATIONS } from "@/lib/constants";
 import { getEnrichedProfile } from "@/lib/profile-utils";
 
 export default function SearchPage() {
@@ -240,16 +239,13 @@ export default function SearchPage() {
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1.5">Location</label>
-            <select
+            <input
+              type="text"
               value={filters.location}
               onChange={(e) => setFilters({...filters, location: e.target.value})}
-              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 bg-gray-50 appearance-none text-gray-700 font-medium"
-            >
-              <option value="">Any Location</option>
-              {LOCATIONS.map((loc) => (
-                <option key={loc} value={loc}>{loc}</option>
-              ))}
-            </select>
+              placeholder="e.g. Malappuram"
+              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 bg-gray-50 text-gray-700 font-medium"
+            />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1.5">Community</label>
