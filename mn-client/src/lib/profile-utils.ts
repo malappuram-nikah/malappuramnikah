@@ -30,74 +30,75 @@ export function getEnrichedProfile(u: any) {
 
   return {
     id: u.id,
-    name: `${u.first_name} ${u.last_name}`,
+    name: `${u.first_name || ""} ${u.last_name || ""}`.trim() || "Member",
     photo: avatar,
-    gender: u.gender || "Female",
+    gender: basic.gender || u.gender || "Female",
     location: basic.presentLocation || u.location || "Malappuram",
     aboutMe: basic.aboutMe || "Looking for a pious, family-oriented partner with shared values.",
     
     // Core Header fields
     profileId: `MN-${100000 + u.id}`,
     age: basic.age ? parseInt(basic.age) : age,
-    height: basic.height || "5 ft 4 in (162 cm)",
-    education: (professional.education === "Others" && professional.customEducation) ? professional.customEducation : (professional.education || "Bachelor's Degree"),
-    profession: professional.profession || "Software Professional",
+    height: basic.height || "Not Specified",
+    education: (professional.education === "Others" && professional.customEducation) ? professional.customEducation : (professional.education || "Not Specified"),
+    profession: professional.profession || "Not Specified",
     religion: religious.religion || "Islam",
     community: religious.community || caste,
     maritalStatus: basic.maritalStatus || "Never Married",
+    profileFor: basic.profileFor || u.profile_for || "Myself",
 
     // Section 1: Basic Details
     motherTongue: basic.motherTongue || "Malayalam",
     physicalStatus: basic.physicalStatus || "Normal",
-    appearance: basic.appearance || "Fair",
-    weight: basic.weight || "58 kg",
-    languagesSpoken: basic.languagesSpoken || "Malayalam, English",
+    appearance: basic.appearance || "Not Specified",
+    weight: basic.weight ? (String(basic.weight).includes("kg") ? basic.weight : `${basic.weight} kg`) : "Not Specified",
+    languagesSpoken: basic.languagesSpoken || "Not Specified",
     presentLocation: basic.presentLocation || u.location || "Malappuram",
-    marriageGoalPlan: basic.marriageGoalPlan || "Flexible / No rush",
-    relocateForPartner: basic.relocateForPartner || "Maybe / Open to discussion",
+    marriageGoalPlan: basic.marriageGoalPlan || "Not Specified",
+    relocateForPartner: basic.relocateForPartner || "Not Specified",
 
     // Section 2: Religious Info
-    religiousness: religious.religiousness || "Moderately Religious",
-    namaz: religious.namaz || "Five Times Daily",
-    quranReading: religious.quranReading || "Daily",
+    religiousness: religious.religiousness || "Not Specified",
+    namaz: religious.namaz || "Not Specified",
+    quranReading: religious.quranReading || "Not Specified",
 
     // Section 3: Professional Info
-    educationalInstitution: professional.educationalInstitution || "Calicut University",
-    companyName: professional.companyName || "Tech Solutions",
-    professionType: professional.professionType || "Private Sector",
-    annualIncome: professional.annualIncome || "INR 8,00,000",
+    educationalInstitution: professional.educationalInstitution || "Not Specified",
+    companyName: professional.companyName || "Not Specified",
+    professionType: professional.professionType || "Not Specified",
+    annualIncome: professional.annualIncome || "Not Specified",
 
     // Section 4: Family Details
-    familyType: family.familyType || "Nuclear Family",
-    financialStatus: family.financialStatus || "Middle Class",
-    familyValues: family.familyValues || "Moderate",
-    fatherOccupation: family.fatherOccupation || "Businessman",
-    motherOccupation: family.motherOccupation || "Homemaker",
-    siblingsCount: family.siblingsCount || "2",
+    familyType: family.familyType || "Not Specified",
+    financialStatus: family.financialStatus || "Not Specified",
+    familyValues: family.familyValues || "Not Specified",
+    fatherOccupation: family.fatherOccupation || "Not Specified",
+    motherOccupation: family.motherOccupation || "Not Specified",
+    siblingsCount: family.siblingsCount || "Not Specified",
 
     // Section 5: Interests & Personality
-    interestsList: interests.interests || ["Reading", "Cooking", "Islamic Lectures"],
-    personalityDescription: interests.aboutMe || "A balance of modern outlook and Islamic values. Looking for a partner who is family-oriented and respectful.",
+    interestsList: interests.interests || [],
+    personalityDescription: interests.aboutMe || "Not Specified",
 
     // Section 6: Hobbies & Habits
-    favouriteSports: parseHobbies(habits.favouriteSports, ["Badminton"]),
-    favouritePlaces: parseHobbies(habits.favouritePlaces, ["Munnar", "Wayanad"]),
-    eatingHabits: habits.eatingHabits || "Non-Vegetarian",
-    smokingHabits: habits.smokingHabits || "No",
-    drinkingHabits: habits.drinkingHabits || "No",
+    favouriteSports: parseHobbies(habits.favouriteSports, []),
+    favouritePlaces: parseHobbies(habits.favouritePlaces, []),
+    eatingHabits: habits.eatingHabits || "Not Specified",
+    smokingHabits: habits.smokingHabits || "Not Specified",
+    drinkingHabits: habits.drinkingHabits || "Not Specified",
 
     // Section 7: Partner Preferences
-    aboutPartner: partner.aboutPartner || "Looking for an educated, religious partner with good family values.",
-    prefAge: (partner.minAge && partner.maxAge) ? `${partner.minAge} to ${partner.maxAge} Yrs` : "22 to 28 Yrs",
-    prefHeight: partner.preferredHeight || "5 ft 2 in to 5 ft 8 in",
-    prefMaritalStatus: partner.preferredMaritalStatus || "Never Married",
-    prefReligion: partner.preferredReligion || "Islam",
-    prefCommunity: partner.preferredCommunity || "Sunni",
-    prefEducation: partner.preferredEducation || "Graduation / Post Graduation",
-    prefOccupation: partner.preferredOccupation || "Any Profession",
-    prefLocations: partner.preferredLocations || "Malappuram, Manjeri, Calicut",
-    prefNamaz: partner.prefNamaz || "Any",
-    prefQuranReading: partner.prefQuranReading || "Any"
+    aboutPartner: partner.aboutPartner || "Not Specified",
+    prefAge: (partner.minAge && partner.maxAge) ? `${partner.minAge} to ${partner.maxAge} Yrs` : "Not Specified",
+    prefHeight: (partner.minHeight && partner.maxHeight) ? `${partner.minHeight} to ${partner.maxHeight}` : (partner.preferredHeight || "Not Specified"),
+    prefMaritalStatus: partner.maritalStatus || partner.preferredMaritalStatus || "Not Specified",
+    prefReligion: partner.religion || partner.preferredReligion || "Not Specified",
+    prefCommunity: partner.community || partner.preferredCommunity || "Not Specified",
+    prefEducation: partner.education || partner.preferredEducation || "Not Specified",
+    prefOccupation: partner.occupation || partner.preferredOccupation || "Not Specified",
+    prefLocations: partner.preferredLocations || "Not Specified",
+    prefNamaz: partner.prefNamaz || "Not Specified",
+    prefQuranReading: partner.prefQuranReading || "Not Specified"
   };
 }
 

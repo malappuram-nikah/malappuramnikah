@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { User, Lock, Bell, Shield, ChevronRight, Sparkles, AlertCircle, ArrowRight, Save, CheckCircle2, Fingerprint, Phone } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { LOCATIONS } from "@/lib/constants";
 
 const tabs = [
   { id: "profile", label: "Profile", icon: User },
@@ -74,12 +75,76 @@ export default function SettingsPage() {
       let userFetched = false;
       try {
         if (currentUserId !== null) {
-          const res = await fetch(`http://localhost:3333/user/${currentUserId}`, {
-            headers: token ? { "Authorization": `Bearer ${token}` } : {}
+          const res = await fetch(`http://localhost:3333/user/${currentUserId}?t=${Date.now()}`, {
+            headers: token ? { "Authorization": `Bearer ${token}` } : {},
+            cache: "no-store"
           });
           const data = await res.json();
           if (data.success && data.user) {
             const currentUser = data.user;
+
+            // Clear old draft keys first to prevent stale cache
+            const draftKeys = [
+              "mn_basic_details_draft",
+              "mn_religious_info_draft",
+              "mn_professional_info_draft",
+              "mn_family_details_draft",
+              "mn_interests_draft",
+              "mn_habits_draft",
+              "mn_partner_preferences_draft",
+              "mn_profile_photos_draft",
+              "mn_video_intro_draft",
+              "mn_voice_intro_draft"
+            ];
+            draftKeys.forEach((key) => localStorage.removeItem(key));
+
+            // 1. Sync saved profile_details drafts from database back into localStorage
+            if (currentUser.profile_details) {
+              Object.entries(currentUser.profile_details).forEach(([key, value]) => {
+                localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+              });
+            }
+
+            // 2. Pre-populate step 1 draft from core signup details if not already saved
+            const basicKey = "mn_basic_details_draft";
+            if (!localStorage.getItem(basicKey)) {
+              let calculatedAge = "24";
+              if (currentUser.dob) {
+                const birthYear = parseInt(currentUser.dob.split("-")[0], 10);
+                if (!isNaN(birthYear)) {
+                  calculatedAge = (new Date().getFullYear() - birthYear).toString();
+                }
+              }
+              const defaultBasic = {
+                name: `${currentUser.first_name || ""} ${currentUser.last_name || ""}`.trim(),
+                profileFor: currentUser.profile_for || "Myself",
+                gender: currentUser.gender || "Male",
+                location: currentUser.location || "Malappuram, Kerala",
+                presentLocation: currentUser.location || "Malappuram",
+                age: calculatedAge,
+                aboutMe: "Looking for a pious, family-oriented partner with shared values.",
+                height: "",
+                maritalStatus: "Single",
+                motherTongue: "Malayalam",
+                physicalStatus: "Normal",
+                appearance: "",
+                weight: "",
+                languagesSpoken: "Malayalam, English"
+              };
+              localStorage.setItem(basicKey, JSON.stringify(defaultBasic));
+            }
+
+            // 3. Pre-populate step 2 draft (Religious) from community column if not already saved
+            const religiousKey = "mn_religious_info_draft";
+            if (!localStorage.getItem(religiousKey)) {
+              const defaultReligious = {
+                religion: "Islam",
+                community: currentUser.cast || "Sunni",
+                religiousness: "Pious"
+              };
+              localStorage.setItem(religiousKey, JSON.stringify(defaultReligious));
+            }
+
             setFirstName(currentUser.first_name || "");
             setLastName(currentUser.last_name || "");
             setMobile(currentUser.mobile_number || "");
@@ -551,7 +616,7 @@ export default function SettingsPage() {
                     { label: "First Name",    value: firstName,   onChange: setFirstName,   placeholder: "Your first name", type: "text" },
                     { label: "Last Name",     value: lastName,    onChange: setLastName,    placeholder: "Your last name", type: "text" },
                     { label: "Mobile Number", value: mobile,      onChange: setMobile,      placeholder: "+91 98765 43210", type: "text" },
-                    { label: "Location",      value: location,    onChange: setLocation,    placeholder: "e.g. Malappuram", type: "text" },
+                    { label: "Location",      value: location,    onChange: setLocation,    placeholder: "Select Location", type: "select", options: LOCATIONS },
                     { label: "Age",           value: age,         onChange: setAge,         placeholder: "e.g. 24", type: "number" },
                     { label: "Community",     value: community,   onChange: setCommunity,   placeholder: "e.g. Sunni", type: "text" },
                     { label: "Gender",        value: gender,      onChange: setGender,      placeholder: "e.g. Male", type: "text" },

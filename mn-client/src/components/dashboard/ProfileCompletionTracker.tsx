@@ -40,7 +40,10 @@ export default function ProfileCompletionTracker() {
         const cachedUserId = localStorage.getItem("mn_logged_in_user_id");
         if (cachedUserId !== String(userId)) {
           try {
-            const res = await fetch(`http://localhost:3333/user/${userId}`);
+            const res = await fetch(`http://localhost:3333/user/${userId}?t=${Date.now()}`, {
+              headers: token ? { "Authorization": `Bearer ${token}` } : {},
+              cache: "no-store"
+            });
             const data = await res.json();
             if (data.success && data.user) {
               const user = data.user;

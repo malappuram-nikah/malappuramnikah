@@ -30,7 +30,7 @@ export default function BiodataDownload({ profile, enriched }: BiodataDownloadPr
 
   const trackDownload = async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("mn_token");
       await fetch(`${API_BASE}/user/admin/biodata/track`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -50,6 +50,7 @@ export default function BiodataDownload({ profile, enriched }: BiodataDownloadPr
 
     const e = enriched || {};
     const name = e.name || profile?.name || `${profile?.first_name || ""} ${profile?.last_name || ""}`.trim() || "Member";
+    const photo = e.photo || profile?.photo || "";
     const age = e.age || basic.age || "N/A";
     const gender = e.gender || basic.gender || "N/A";
     const location = e.location || basic.presentLocation || "N/A";
@@ -155,7 +156,7 @@ export default function BiodataDownload({ profile, enriched }: BiodataDownloadPr
 
   <!-- Hero -->
   <div class="hero">
-    <div class="avatar-placeholder">${name.charAt(0).toUpperCase()}</div>
+    ${photo ? `<img class="avatar" src="${photo}" alt="${name}"/>` : `<div class="avatar-placeholder">${name.charAt(0).toUpperCase()}</div>`}
     <div>
       <div class="hero-name">${name}</div>
       <div class="hero-sub">${age} yrs &nbsp;·&nbsp; ${gender} &nbsp;·&nbsp; ${location}</div>

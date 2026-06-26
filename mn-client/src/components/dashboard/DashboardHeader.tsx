@@ -25,6 +25,8 @@ interface Notification {
   };
 }
 
+import AmbientMusicPlayer from "@/components/dashboard/AmbientMusicPlayer";
+
 export default function DashboardHeader() {
   const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
@@ -191,6 +193,7 @@ export default function DashboardHeader() {
 
       {/* Action triggers */}
       <div className="flex items-center gap-4 ml-4 relative" ref={dropdownRef}>
+        <AmbientMusicPlayer />
         
         {/* Notification Bell with counter */}
         <button

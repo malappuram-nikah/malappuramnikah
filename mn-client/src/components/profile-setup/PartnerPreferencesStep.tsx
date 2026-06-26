@@ -50,7 +50,7 @@ export const showPartnerChildrenField = (status: string) => {
 
 const KERALA_DISTRICTS = [
   "Alappuzha", "Ernakulam", "Idukki", "Kannur", "Kasaragod",
-  "Kollam", "Kottayam", "Kozhikode", "Malappuram", "Palakkad",
+  "Kollam", "Kottayam", "Kozhikode", "Palakkad",
   "Pathanamthitta", "Thiruvananthapuram", "Thrissur", "Wayanad"
 ];
 

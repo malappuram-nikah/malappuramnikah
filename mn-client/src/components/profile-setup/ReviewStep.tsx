@@ -149,7 +149,7 @@ export default function ReviewStep({ onComplete, onBack, onEditSection }: Review
           <SectionHeader title="Basic Details" icon={User} step={1} />
           <div className="space-y-1">
             <DataRow label="Name" value={basic.name || "Not provided"} />
-            <DataRow label="Profile Created For" value={basic.profileCreatedFor} />
+            <DataRow label="Profile Created For" value={basic.profileFor} />
             <DataRow label="Age" value={basic.age} />
             <DataRow label="Gender" value={basic.gender} />
             <DataRow label="Marital Status" value={basic.maritalStatus} />

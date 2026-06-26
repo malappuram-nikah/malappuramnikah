@@ -80,6 +80,12 @@ function getAdminStore() {
     if (!store.biodata_downloads) {
       store.biodata_downloads = [];
     }
+    if (!store.music_settings) {
+      store.music_settings = {
+        enable_music: true,
+        default_track: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+      };
+    }
     return store;
   } catch (err) {
     console.error("Failed to read/initialize adminStore.json:", err);
@@ -410,6 +416,37 @@ admin_route.post("/store/update", adminGuard, async (req: Request, res: Response
           time: new Date().toISOString().replace("T", " ").substring(0, 19)
         });
       }
+    } else if (type === "music_settings") {
+      if (action === "update") {
+        if (!store.music_settings) {
+          store.music_settings = { enable_music: true, default_track: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" };
+        }
+        if (payload.enable_music !== undefined) {
+          store.music_settings.enable_music = !!payload.enable_music;
+        }
+        if (payload.default_track !== undefined) {
+          store.music_settings.default_track = payload.default_track;
+        }
+        store.activity_logs.unshift({
+          id: Date.now(),
+          admin: adminName,
+          action: `Updated background music settings (Enabled: ${store.music_settings.enable_music})`,
+          time: new Date().toISOString().replace("T", " ").substring(0, 19)
+        });
+      } else if (action === "upload_track") {
+        if (!store.music_settings) {
+          store.music_settings = { enable_music: true, default_track: "" };
+        }
+        const { MediaStorageService } = require("../../infrastructure/service/MediaStorageService");
+        const uploadedUrl = await MediaStorageService.uploadMedia(payload.fileData, "music");
+        store.music_settings.default_track = uploadedUrl;
+        store.activity_logs.unshift({
+          id: Date.now(),
+          admin: adminName,
+          action: `Uploaded new default background music track`,
+          time: new Date().toISOString().replace("T", " ").substring(0, 19)
+        });
+      }
     }
 
     saveAdminStore(store);
@@ -471,6 +508,23 @@ admin_route.get("/biodata/settings", async (_req: Request, res: Response) => {
     });
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message || "Failed to load biodata settings." });
+  }
+});
+
+// 9. GET Public Music Settings (GET /user/admin/music/settings)
+// Public endpoint – no admin guard required, used by client to fetch track and check status
+admin_route.get("/music/settings", async (_req: Request, res: Response) => {
+  try {
+    const store = getAdminStore();
+    res.status(200).json({
+      success: true,
+      settings: store.music_settings || {
+        enable_music: true,
+        default_track: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+      }
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || "Failed to load music settings." });
   }
 });
 

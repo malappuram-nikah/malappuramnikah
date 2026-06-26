@@ -205,6 +205,24 @@
   },
   "activity_logs": [
     {
+      "id": 1782499540623,
+      "admin": "Super Admin",
+      "action": "Updated background music settings (Enabled: true)",
+      "time": "2026-06-26 18:45:40"
+    },
+    {
+      "id": 1782499532280,
+      "admin": "Super Admin",
+      "action": "Updated background music settings (Enabled: false)",
+      "time": "2026-06-26 18:45:32"
+    },
+    {
+      "id": 1782499495304,
+      "admin": "Super Admin",
+      "action": "Updated background music settings (Enabled: false)",
+      "time": "2026-06-26 18:44:55"
+    },
+    {
       "id": 1,
       "admin": "Super Admin",
       "action": "Approved vendor Zara Wedding Photography",
@@ -216,5 +234,13 @@
       "action": "Resolved complaint ticket #2 against user htfhf",
       "time": "2026-06-01 11:45:00"
     }
-  ]
+  ],
+  "biodata_settings": {
+    "enable_download": true
+  },
+  "biodata_downloads": [],
+  "music_settings": {
+    "enable_music": true,
+    "default_track": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
+  }
 }

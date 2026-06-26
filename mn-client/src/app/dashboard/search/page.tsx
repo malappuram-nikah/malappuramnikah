@@ -6,6 +6,7 @@ import { Search, SlidersHorizontal, Heart, MessageCircle, TrendingUp, Loader2, L
 import { useRouter } from "next/navigation";
 import { useCompare } from "@/context/CompareContext";
 import { getEnrichedProfile } from "@/lib/profile-utils";
+import { LOCATIONS } from "@/lib/constants";
 
 export default function SearchPage() {
   const router = useRouter();
@@ -239,13 +240,16 @@ export default function SearchPage() {
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1.5">Location</label>
-            <input
-              type="text"
+            <select
               value={filters.location}
               onChange={(e) => setFilters({...filters, location: e.target.value})}
-              placeholder="e.g. Malappuram"
-              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 bg-gray-50 text-gray-700 font-medium"
-            />
+              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 bg-gray-50 text-gray-700 font-medium appearance-none"
+            >
+              <option value="">Any</option>
+              {LOCATIONS.map((loc) => (
+                <option key={loc} value={loc}>{loc}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1.5">Community</label>

@@ -8,7 +8,7 @@ import {
   AlertTriangle, CreditCard, LayoutGrid, BarChart3,
   TrendingUp, Download, Plus, Check, X, Search,
   Lock, Unlock, Award, Settings, Layers, Megaphone,
-  Briefcase, Star, MapPin, ChevronRight, HelpCircle
+  Briefcase, Star, MapPin, ChevronRight, HelpCircle, Music
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { LOCATIONS } from "@/lib/constants";
@@ -48,6 +48,9 @@ export default function AdminDashboardPage() {
     biodata_downloads: []
   });
   const [biodataEnabled, setBiodataEnabled] = useState(true);
+  const [musicEnabled, setMusicEnabled] = useState(true);
+  const [defaultTrackUrl, setDefaultTrackUrl] = useState("");
+  const [uploadingTrack, setUploadingTrack] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [newVendorForm, setNewVendorForm] = useState({ name: "", category: "Photography", location: "", contact: "", commission_rate: 10 });
@@ -57,6 +60,34 @@ export default function AdminDashboardPage() {
   const triggerAlert = (text: string, type: "success" | "error" = "success") => {
     setAlertMsg({ text, type });
     setTimeout(() => setAlertMsg(null), 4000);
+  };
+
+  const handleTrackUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("audio/")) {
+      triggerAlert("Please select a valid audio file (MP3, WAV, etc.)", "error");
+      return;
+    }
+
+    setUploadingTrack(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = reader.result as string;
+        await handleStoreUpdate("music_settings", "upload_track", { fileData: base64 });
+        setUploadingTrack(false);
+      };
+      reader.onerror = () => {
+        triggerAlert("Failed to read the audio file.", "error");
+        setUploadingTrack(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      triggerAlert("Failed to upload music track.", "error");
+      setUploadingTrack(false);
+    }
   };
 
   const loadAdminData = async () => {
@@ -91,6 +122,8 @@ export default function AdminDashboardPage() {
         setStoreData(storeDataJson.store);
         setCmsBanner(storeDataJson.store.cms.banner_message || "");
         setBiodataEnabled(storeDataJson.store.biodata_settings?.enable_download !== false);
+        setMusicEnabled(storeDataJson.store.music_settings?.enable_music !== false);
+        setDefaultTrackUrl(storeDataJson.store.music_settings?.default_track || "");
       }
 
       // 3. Fetch Database Users List
@@ -241,7 +274,8 @@ export default function AdminDashboardPage() {
     { id: "reports",       icon: AlertTriangle,  label: "Complaints Grid",     color: "border-red-500/20 text-red-600" },
     { id: "subscriptions", icon: CreditCard,     label: "Premium Plans",       color: "border-indigo-500/20 text-indigo-600" },
     { id: "cms",           icon: Megaphone,      label: "CMS & Story Sliders", color: "border-cyan-500/20 text-cyan-600" },
-    { id: "biodata",       icon: FileText,       label: "Biodata Downloads",   color: "border-amber-500/20 text-amber-600" }
+    { id: "biodata",       icon: FileText,       label: "Biodata Downloads",   color: "border-amber-500/20 text-amber-600" },
+    { id: "music",         icon: Music,          label: "Ambient Music",       color: "border-purple-500/20 text-purple-600" }
   ];
 
   if (loading) {
@@ -1160,6 +1194,112 @@ export default function AdminDashboardPage() {
                             </div>
                           </div>
                         ))}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ===== AMBIENT MUSIC TAB ===== */}
+              {activeTab === "music" && (
+                <motion.div
+                  key="music"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="space-y-6"
+                >
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                    <div>
+                      <h2 className="text-base font-bold text-gray-900 flex items-center gap-1.5">
+                        <Music className="w-5 h-5 text-purple-600" /> Ambient Music Controls
+                      </h2>
+                      <p className="text-xs text-gray-500 mt-0.5 font-medium">Configure global ambient wedding instrumental track settings for the user dashboard.</p>
+                    </div>
+                  </div>
+
+                  {/* Toggle Card */}
+                  <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${musicEnabled ? "bg-purple-50" : "bg-red-50"}`}>
+                        <Music className={`w-6 h-6 ${musicEnabled ? "text-purple-600 animate-pulse" : "text-red-400"}`} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-900 text-sm">Dashboard Ambient Music Player</p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          Currently <span className={`font-semibold ${musicEnabled ? "text-purple-600" : "text-red-500"}`}>{musicEnabled ? "ENABLED" : "DISABLED"}</span> — background instrumental will play for users if active.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        const newVal = !musicEnabled;
+                        setMusicEnabled(newVal);
+                        await handleStoreUpdate("music_settings", "update", { enable_music: newVal });
+                      }}
+                      className={`w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-[0.97] border ${
+                        musicEnabled 
+                          ? "bg-red-50 text-red-600 hover:bg-red-100 border-red-200" 
+                          : "bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200"
+                      }`}
+                    >
+                      {musicEnabled ? "Disable Ambient Music" : "Enable Ambient Music"}
+                    </button>
+                  </div>
+
+                  {/* Track Config Section */}
+                  <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm space-y-4">
+                    <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Default Background Track Configuration</h3>
+                    
+                    <div className="grid md:grid-cols-2 gap-6">
+                      {/* URL input */}
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-gray-500 uppercase">Default Track URL</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={defaultTrackUrl}
+                            onChange={(e) => setDefaultTrackUrl(e.target.value)}
+                            placeholder="e.g. https://www.soundhelix.com/...mp3"
+                            className="flex-1 p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+                          />
+                          <button
+                            onClick={async () => {
+                              await handleStoreUpdate("music_settings", "update", { default_track: defaultTrackUrl });
+                            }}
+                            className="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-[0.98]"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* File Upload input */}
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-gray-500 uppercase">Upload Audio File (MP3/WAV)</label>
+                        <div className="relative">
+                          <input
+                            type="file"
+                            accept="audio/*"
+                            onChange={handleTrackUpload}
+                            disabled={uploadingTrack}
+                            className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 cursor-pointer disabled:opacity-50"
+                          />
+                          {uploadingTrack && (
+                            <div className="absolute inset-0 bg-white/80 flex items-center justify-center text-xs font-semibold text-purple-700">
+                              Uploading to media storage...
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Simple Audio Preview */}
+                    {defaultTrackUrl && (
+                      <div className="bg-gray-50 p-4 border border-gray-100 rounded-xl space-y-2 mt-4">
+                        <p className="text-[10px] font-bold text-gray-500 uppercase">Track Audio Preview</p>
+                        <audio src={defaultTrackUrl} controls className="w-full h-10" />
+                        <p className="text-[9px] text-gray-400 break-all font-mono">Source: {defaultTrackUrl}</p>
                       </div>
                     )}
                   </div>

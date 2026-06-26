@@ -95,31 +95,31 @@ export default function ProfileBuilderPage() {
         }
 
         if (userId !== null) {
-          const res = await fetch(`http://localhost:3333/user/${userId}`);
+          const res = await fetch(`http://localhost:3333/user/${userId}?t=${Date.now()}`, {
+            headers: token ? { "Authorization": `Bearer ${token}` } : {},
+            cache: "no-store"
+          });
           const data = await res.json();
           
           if (data.success && data.user) {
             const user = data.user;
             setUser(user);
 
-            // Clear all profile builder drafts from localStorage only if the logged-in user changed
-            const cachedUserId = localStorage.getItem("mn_logged_in_user_id");
-            if (cachedUserId !== String(userId)) {
-              const draftKeys = [
-                "mn_basic_details_draft",
-                "mn_religious_info_draft",
-                "mn_professional_info_draft",
-                "mn_family_details_draft",
-                "mn_interests_draft",
-                "mn_habits_draft",
-                "mn_partner_preferences_draft",
-                "mn_profile_photos_draft",
-                "mn_video_intro_draft",
-                "mn_voice_intro_draft"
-              ];
-              draftKeys.forEach((key) => localStorage.removeItem(key));
-              localStorage.setItem("mn_logged_in_user_id", String(userId));
-            }
+            // Always clear all profile builder draft keys to prevent stale cached/outdated values
+            const draftKeys = [
+              "mn_basic_details_draft",
+              "mn_religious_info_draft",
+              "mn_professional_info_draft",
+              "mn_family_details_draft",
+              "mn_interests_draft",
+              "mn_habits_draft",
+              "mn_partner_preferences_draft",
+              "mn_profile_photos_draft",
+              "mn_video_intro_draft",
+              "mn_voice_intro_draft"
+            ];
+            draftKeys.forEach((key) => localStorage.removeItem(key));
+            localStorage.setItem("mn_logged_in_user_id", String(userId));
 
             // 1. Sync saved profile_details drafts from database back into localStorage
             if (user.profile_details) {
