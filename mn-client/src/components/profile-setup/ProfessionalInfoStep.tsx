@@ -6,6 +6,7 @@ import { CheckCircle2, Save } from "lucide-react";
 
 export interface ProfessionalInfoData {
   education: string;
+  customEducation?: string;
   educationInstitution: string;
   profession: string;
   companyName: string;
@@ -25,6 +26,7 @@ const DRAFT_KEY = "mn_professional_info_draft";
 export default function ProfessionalInfoStep({ initialData, onComplete, onBack }: ProfessionalInfoStepProps) {
   const [formData, setFormData] = useState<ProfessionalInfoData>({
     education: "",
+    customEducation: "",
     educationInstitution: "",
     profession: "",
     companyName: "",
@@ -84,6 +86,9 @@ export default function ProfessionalInfoStep({ initialData, onComplete, onBack }
   const validate = () => {
     const newErrors: Partial<Record<keyof ProfessionalInfoData, string>> = {};
     if (!formData.education) newErrors.education = "Education is required";
+    if (formData.education === "Others" && !formData.customEducation?.trim()) {
+      newErrors.customEducation = "Custom education value is required";
+    }
     if (!formData.profession) newErrors.profession = "Profession is required";
     if (!formData.professionType) newErrors.professionType = "Profession Type is required";
 
@@ -101,9 +106,11 @@ export default function ProfessionalInfoStep({ initialData, onComplete, onBack }
   };
 
   // Progress calculation
-  const totalRequired = 3; // Education, Profession, Profession Type are strictly required
+  const isCustomEducationRequired = formData.education === "Others";
+  const totalRequired = isCustomEducationRequired ? 4 : 3;
   const completedRequired = [
     formData.education,
+    isCustomEducationRequired ? formData.customEducation : null,
     formData.profession,
     formData.professionType,
   ].filter((v) => !!v).length;
@@ -144,29 +151,47 @@ export default function ProfessionalInfoStep({ initialData, onComplete, onBack }
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Highest Education *</label>
-              <input
-                type="text"
-                list="educationOptions"
+              <select
                 value={formData.education}
-                onChange={(e) => updateForm("education", e.target.value)}
-                placeholder="e.g. B.Tech, MBBS, MBA"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
-              />
-              <datalist id="educationOptions">
-                <option value="B.Tech" />
-                <option value="MBBS" />
-                <option value="MBA" />
-                <option value="B.Sc" />
-                <option value="B.Com" />
-                <option value="B.A" />
-                <option value="M.Tech" />
-                <option value="M.Sc" />
-                <option value="Ph.D" />
-                <option value="Diploma" />
-                <option value="High School" />
-              </datalist>
+                onChange={(e) => {
+                  const val = e.target.value;
+                  updateForm("education", val);
+                  if (val !== "Others") {
+                    updateForm("customEducation", "");
+                  }
+                }}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+              >
+                <option value="" disabled>Select Education</option>
+                <option value="B.Tech">B.Tech</option>
+                <option value="MBBS">MBBS</option>
+                <option value="MBA">MBA</option>
+                <option value="B.Sc">B.Sc</option>
+                <option value="B.Com">B.Com</option>
+                <option value="B.A">B.A</option>
+                <option value="M.Tech">M.Tech</option>
+                <option value="M.Sc">M.Sc</option>
+                <option value="Ph.D">Ph.D</option>
+                <option value="Diploma">Diploma</option>
+                <option value="High School">High School</option>
+                <option value="Others">Others</option>
+              </select>
               {errors.education && <p className="text-red-500 text-xs mt-1">{errors.education}</p>}
             </div>
+
+            {formData.education === "Others" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Custom Education *</label>
+                <input
+                  type="text"
+                  value={formData.customEducation || ""}
+                  onChange={(e) => updateForm("customEducation", e.target.value)}
+                  placeholder="e.g. Islamic Studies, Diploma in Design"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                />
+                {errors.customEducation && <p className="text-red-500 text-xs mt-1">{errors.customEducation}</p>}
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Education Institution</label>

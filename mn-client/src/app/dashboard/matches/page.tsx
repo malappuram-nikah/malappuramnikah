@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Heart, MessageCircle, TrendingUp, Sparkles, MapPin, BookOpen, Zap, Info, ChevronRight, X, Loader2, Lock, Unlock, Layers, Play, Pause, Volume2, Video } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCompare } from "@/context/CompareContext";
+import { getEnrichedProfile } from "@/lib/profile-utils";
 
 // Base Mock AI copy to enrich real profiles
 const aiAestheticTemplates = [
@@ -311,28 +312,19 @@ export default function AiMatchesPage() {
         if (otherUsers.length > 0) {
           // Map DB users to profiles
           const mappedUsers = otherUsers.map((u: any, i: number) => {
-            let avatar = `https://i.pravatar.cc/200?img=${40 + (i % 20)}`;
-            const photos = u.profile_details?.mn_profile_photos_draft?.photos;
-            if (photos && photos.length > 0) {
-              const primary = photos.find((p: any) => p.isPrimary);
-              avatar = primary ? primary.dataUrl : photos[0].dataUrl;
-            }
-
+            const enriched = getEnrichedProfile(u);
             const aesthetic = aiAestheticTemplates[i % aiAestheticTemplates.length];
 
             return {
-              id: u.id,
-              name: `${u.first_name} ${u.last_name}`,
-              age: u.dob ? Math.floor((new Date().getTime() - new Date(u.dob).getTime()) / 31557600000) : 25,
-              location: u.location || "Kerala",
-              img: avatar,
-              caste: u.cast || "Sunni",
-              profession: u.profile_details?.mn_professional_info_draft?.profession || "Professional",
+              ...enriched,
+              img: enriched.photo,
+              caste: enriched.community,
+              profession: enriched.profession,
               // Media additions
-              photos: photos || [],
+              photos: u.profile_details?.mn_profile_photos_draft?.photos || [],
               video: u.profile_details?.mn_video_intro_draft?.video?.dataUrl || null,
               voice: u.profile_details?.mn_voice_intro_draft?.voice?.dataUrl || null,
-              aboutMe: u.profile_details?.mn_basic_details_draft?.aboutMe || "",
+              aboutMe: enriched.aboutMe || enriched.personalityDescription,
               // Enrich with AI compatible templates
               matchScore: aesthetic.matchScore,
               aiExplanation: aesthetic.aiExplanation,
@@ -984,6 +976,80 @@ export default function AiMatchesPage() {
                       </p>
                     </div>
                   )}
+
+                  {/* Profile Info Details Grid */}
+                  <div className="bg-gray-50/80 p-4 rounded-2xl border border-gray-150/80 space-y-2.5">
+                    <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 border-b border-gray-250/60 pb-1.5 mb-1">Profile Info</h3>
+                    <div className="grid grid-cols-2 gap-3 text-[11px]">
+                      <div>
+                        <span className="text-gray-400 font-medium block">Gender</span>
+                        <span className="text-gray-850 font-bold">{selectedProfile.gender || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 font-medium block">Marital Status</span>
+                        <span className="text-gray-850 font-bold">{selectedProfile.maritalStatus || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 font-medium block">Mother Tongue</span>
+                        <span className="text-gray-850 font-bold">{selectedProfile.motherTongue || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 font-medium block">Religion & Sect</span>
+                        <span className="text-gray-850 font-bold">{(selectedProfile.religion || "Islam") + " - " + (selectedProfile.caste || selectedProfile.community || "Sunni")}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 font-medium block">Namaz Habits</span>
+                        <span className="text-gray-850 font-bold">{selectedProfile.namaz || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 font-medium block">Quran Reading</span>
+                        <span className="text-gray-850 font-bold">{selectedProfile.quranReading || "N/A"}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-gray-400 font-medium block">Education</span>
+                        <span className="text-gray-850 font-bold">{selectedProfile.education || "N/A"}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Partner Preferences Grid */}
+                  <div className="bg-brand-50/30 p-4 rounded-2xl border border-brand-100/50 space-y-2.5">
+                    <h3 className="text-[10px] font-bold uppercase tracking-wider text-brand-700 border-b border-brand-100/40 pb-1.5 mb-1">Partner Preferences</h3>
+                    <div className="grid grid-cols-2 gap-3 text-[11px]">
+                      <div>
+                        <span className="text-brand-600/70 font-medium block">Age Preference</span>
+                        <span className="text-brand-950 font-bold">{selectedProfile.prefAge || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-brand-600/70 font-medium block">Marital Status</span>
+                        <span className="text-brand-950 font-bold">{selectedProfile.prefMaritalStatus || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-brand-600/70 font-medium block">Preferred Religion</span>
+                        <span className="text-brand-950 font-bold">{selectedProfile.prefReligion || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-brand-600/70 font-medium block">Preferred Sect</span>
+                        <span className="text-brand-950 font-bold">{selectedProfile.prefCommunity || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-brand-600/70 font-medium block">Preferred Namaz</span>
+                        <span className="text-brand-950 font-bold">{selectedProfile.prefNamaz || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-brand-600/70 font-medium block">Preferred Quran</span>
+                        <span className="text-brand-950 font-bold">{selectedProfile.prefQuranReading || "N/A"}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-brand-600/70 font-medium block">Preferred Education</span>
+                        <span className="text-brand-950 font-bold">{selectedProfile.prefEducation || "N/A"}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-brand-600/70 font-medium block">Preferred Locations</span>
+                        <span className="text-brand-950 font-bold">{selectedProfile.prefLocations || "N/A"}</span>
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Voice Introduction Player */}
                   {selectedProfile.voice && (

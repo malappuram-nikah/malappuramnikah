@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, ChevronRight, Edit3, User, Heart, BookOpen, Users, MapPin, Briefcase, Camera, Video, Mic } from "lucide-react";
+import { showChildrenField } from "./BasicDetailsStep";
+import { showPartnerChildrenField } from "./PartnerPreferencesStep";
 
 interface ReviewStepProps {
   onComplete?: () => void;
@@ -151,6 +153,9 @@ export default function ReviewStep({ onComplete, onBack, onEditSection }: Review
             <DataRow label="Age" value={basic.age} />
             <DataRow label="Gender" value={basic.gender} />
             <DataRow label="Marital Status" value={basic.maritalStatus} />
+            {showChildrenField(basic.maritalStatus) && (
+              <DataRow label="Have Children" value={basic.haveChildren} />
+            )}
             <DataRow label="Height" value={basic.height} />
             <DataRow label="Present Location" value={basic.presentLocation} />
             <DataRow label="Marriage Goal Plan" value={basic.marriageGoalPlan} />
@@ -166,6 +171,8 @@ export default function ReviewStep({ onComplete, onBack, onEditSection }: Review
               <DataRow label="Religion" value={religious.religion} />
               <DataRow label="Community" value={religious.community} />
               <DataRow label="Religiousness" value={religious.religiousness} />
+              <DataRow label="Namaz Habits" value={religious.namaz} />
+              <DataRow label="Quran Reading" value={religious.quranReading} />
             </div>
           </section>
 
@@ -173,7 +180,7 @@ export default function ReviewStep({ onComplete, onBack, onEditSection }: Review
           <section className="bg-gray-50/50 p-5 rounded-2xl border border-gray-100">
             <SectionHeader title="Career Info" icon={Briefcase} step={3} />
             <div className="space-y-1">
-              <DataRow label="Education" value={professional.education} />
+              <DataRow label="Education" value={professional.education === "Others" ? `Others (${professional.customEducation || ''})` : professional.education} />
               <DataRow label="Profession" value={professional.profession} />
               <DataRow label="Annual Income" value={professional.annualIncome} />
             </div>
@@ -209,9 +216,14 @@ export default function ReviewStep({ onComplete, onBack, onEditSection }: Review
           <div className="space-y-1">
             <DataRow label="Age Range" value={`${partner.minAge || ''} to ${partner.maxAge || ''} Years`} />
             <DataRow label="Marital Status" value={partner.maritalStatus} />
+            {showPartnerChildrenField(partner.maritalStatus) && (
+              <DataRow label="Have Children Preference" value={partner.haveChildren} />
+            )}
             <DataRow label="Religion" value={partner.religion} />
             <DataRow label="Education" value={partner.education} />
             <DataRow label="Locations" value={partner.preferredLocations} />
+            <DataRow label="Preferred Namaz" value={partner.prefNamaz} />
+            <DataRow label="Preferred Quran" value={partner.prefQuranReading} />
           </div>
         </section>
 

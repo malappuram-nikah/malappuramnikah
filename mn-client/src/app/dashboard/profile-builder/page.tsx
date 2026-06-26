@@ -42,9 +42,14 @@ export default function ProfileBuilderPage() {
 
   const religiousInitialData = useMemo(() => {
     if (!user) return undefined;
+    const details = user.profile_details || {};
+    const religiousDraft = details.mn_religious_info_draft || {};
     return {
       religion: "Islam",
-      community: user.cast || "Sunni",
+      community: user.cast || religiousDraft.community || "Sunni",
+      namaz: religiousDraft.namaz || "",
+      quranReading: religiousDraft.quranReading || "",
+      religiousness: religiousDraft.religiousness || "",
     };
   }, [user]);
 

@@ -11,30 +11,7 @@ import {
   Briefcase, Star, MapPin, ChevronRight, HelpCircle
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-
-const LOCATIONS = [
-  "Malappuram",
-  "Manjeri",
-  "Tirur",
-  "Perinthalmana",
-  "Ponnani",
-  "Kondotty",
-  "Tirurangadi",
-  "Kuttippuram",
-  "Valanchery",
-  "Nilambur",
-  "Kottakkal",
-  "Kottakunnu",
-  "Thirunavaya",
-  "Kadalundi",
-  "Vengara",
-  "Angadipuram",
-  "Edappal",
-  "Tanur",
-  "Parappanangadi",
-  "Wandoor",
-  "Nilamboor"
-];
+import { LOCATIONS } from "@/lib/constants";
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -66,8 +43,11 @@ export default function AdminDashboardPage() {
     reports: [],
     subscriptions: [],
     cms: { banner_message: "", faqs: [], stories: [] },
-    activity_logs: []
+    activity_logs: [],
+    biodata_settings: { enable_download: true },
+    biodata_downloads: []
   });
+  const [biodataEnabled, setBiodataEnabled] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [newVendorForm, setNewVendorForm] = useState({ name: "", category: "Photography", location: "", contact: "", commission_rate: 10 });
@@ -110,6 +90,7 @@ export default function AdminDashboardPage() {
       if (storeDataJson.success) {
         setStoreData(storeDataJson.store);
         setCmsBanner(storeDataJson.store.cms.banner_message || "");
+        setBiodataEnabled(storeDataJson.store.biodata_settings?.enable_download !== false);
       }
 
       // 3. Fetch Database Users List
@@ -259,7 +240,8 @@ export default function AdminDashboardPage() {
     { id: "profiles",      icon: Heart,          label: "Matrimony Profiles",  color: "border-pink-500/20 text-pink-600" },
     { id: "reports",       icon: AlertTriangle,  label: "Complaints Grid",     color: "border-red-500/20 text-red-600" },
     { id: "subscriptions", icon: CreditCard,     label: "Premium Plans",       color: "border-indigo-500/20 text-indigo-600" },
-    { id: "cms",           icon: Megaphone,      label: "CMS & Story Sliders", color: "border-cyan-500/20 text-cyan-600" }
+    { id: "cms",           icon: Megaphone,      label: "CMS & Story Sliders", color: "border-cyan-500/20 text-cyan-600" },
+    { id: "biodata",       icon: FileText,       label: "Biodata Downloads",   color: "border-amber-500/20 text-amber-600" }
   ];
 
   if (loading) {
@@ -1098,6 +1080,88 @@ export default function AdminDashboardPage() {
                         </div>
                       ))}
                     </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ===== BIODATA DOWNLOADS TAB ===== */}
+              {activeTab === "biodata" && (
+                <motion.div
+                  key="biodata"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="space-y-6"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-lg font-bold text-gray-900">Biodata Download Control</h2>
+                      <p className="text-xs text-gray-500 mt-0.5">Enable or disable biodata PDF downloads platform-wide. Track all user download activity.</p>
+                    </div>
+                    <div className="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-3 text-center">
+                      <div className="text-2xl font-bold text-amber-700">{(storeData.biodata_downloads || []).length}</div>
+                      <div className="text-xs text-amber-600 font-medium">Total Downloads</div>
+                    </div>
+                  </div>
+
+                  {/* Toggle card */}
+                  <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm flex items-center justify-between gap-6">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${biodataEnabled ? "bg-green-50" : "bg-red-50"}`}>
+                        <FileText className={`w-6 h-6 ${biodataEnabled ? "text-green-600" : "text-red-400"}`} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-900 text-sm">Biodata PDF Downloads</p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          Currently <span className={`font-semibold ${biodataEnabled ? "text-green-600" : "text-red-500"}`}>{biodataEnabled ? "ENABLED" : "DISABLED"}</span> — users {biodataEnabled ? "can" : "cannot"} download their biodata.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        const newVal = !biodataEnabled;
+                        setBiodataEnabled(newVal);
+                        await handleStoreUpdate("biodata_settings", "update", { enable_download: newVal });
+                      }}
+                      className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-[0.97] ${biodataEnabled ? "bg-red-50 text-red-600 hover:bg-red-100 border border-red-200" : "bg-green-50 text-green-700 hover:bg-green-100 border border-green-200"}`}
+                    >
+                      {biodataEnabled ? "Disable Downloads" : "Enable Downloads"}
+                    </button>
+                  </div>
+
+                  {/* Download log table */}
+                  <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+                    <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                      <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Download Activity Log</h3>
+                      <span className="text-xs text-gray-400">{(storeData.biodata_downloads || []).length} records</span>
+                    </div>
+                    {(storeData.biodata_downloads || []).length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                        <Download className="w-10 h-10 mb-3 opacity-30" />
+                        <p className="text-sm font-medium">No downloads yet</p>
+                        <p className="text-xs mt-1">Download events will appear here once users generate biodatas.</p>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-gray-50">
+                        {(storeData.biodata_downloads || []).slice(0, 50).map((dl: any) => (
+                          <div key={dl.id} className="px-6 py-3 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-xs">
+                                {dl.user_name?.charAt(0) || "?"}
+                              </div>
+                              <div>
+                                <p className="text-xs font-semibold text-gray-800">{dl.user_name}</p>
+                                <p className="text-[10px] text-gray-400">User ID: {dl.user_id}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-[10px] text-gray-500">{dl.downloaded_at}</p>
+                              <span className="text-[9px] bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded-full font-semibold">PDF Download</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               )}

@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, SlidersHorizontal, Heart, MessageCircle, TrendingUp, Loader2, Lock, Unlock, Layers, X, Sparkles, Volume2, Video } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCompare } from "@/context/CompareContext";
+import { LOCATIONS } from "@/lib/constants";
+import { getEnrichedProfile } from "@/lib/profile-utils";
 
 export default function SearchPage() {
   const router = useRouter();
@@ -99,27 +101,17 @@ export default function SearchPage() {
           });
 
           const mapped = otherUsers.map((u: any, i: number) => {
-            // Resolve avatar photo from profile details JSON
-            let avatar = `https://i.pravatar.cc/200?img=${40 + (i % 20)}`;
-            const photos = u.profile_details?.mn_profile_photos_draft?.photos;
-            if (photos && photos.length > 0) {
-              const primary = photos.find((p: any) => p.isPrimary);
-              avatar = primary ? primary.dataUrl : photos[0].dataUrl;
-            }
-
+            const enriched = getEnrichedProfile(u);
             return {
-              id: u.id,
-              name: `${u.first_name} ${u.last_name}`,
-              age: u.dob ? Math.floor((new Date().getTime() - new Date(u.dob).getTime()) / 31557600000) : 25,
-              location: u.location || "Kerala",
-              img: avatar,
-              caste: u.cast || "Unknown",
+              ...enriched,
+              img: enriched.photo,
+              caste: enriched.community,
               match: 80 + Math.floor(Math.random() * 15),
               matchScore: 80 + Math.floor(Math.random() * 15),
-              photos: photos || [],
+              photos: u.profile_details?.mn_profile_photos_draft?.photos || [],
               video: u.profile_details?.mn_video_intro_draft?.video?.dataUrl || null,
               voice: u.profile_details?.mn_voice_intro_draft?.voice?.dataUrl || null,
-              aboutMe: u.profile_details?.mn_basic_details_draft?.aboutMe || "",
+              aboutMe: enriched.aboutMe || enriched.personalityDescription,
               aiExplanation: u.profile_details?.mn_partner_preferences_draft?.explanation || "Highly compatible profile based on your preferences.",
               conversationStarter: "I would love to learn more about your values and partner goals!"
             };
@@ -248,8 +240,16 @@ export default function SearchPage() {
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1.5">Location</label>
-            <input type="text" placeholder="City or Country" value={filters.location} onChange={(e) => setFilters({...filters, location: e.target.value})}
-              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 bg-gray-50" />
+            <select
+              value={filters.location}
+              onChange={(e) => setFilters({...filters, location: e.target.value})}
+              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 bg-gray-50 appearance-none text-gray-700 font-medium"
+            >
+              <option value="">Any Location</option>
+              {LOCATIONS.map((loc) => (
+                <option key={loc} value={loc}>{loc}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1.5">Community</label>
@@ -500,6 +500,80 @@ export default function SearchPage() {
                       </p>
                     </div>
                   )}
+
+                  {/* Profile Info Details Grid */}
+                  <div className="bg-gray-50/80 p-4 rounded-2xl border border-gray-150/80 space-y-2.5">
+                    <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 border-b border-gray-250/60 pb-1.5 mb-1">Profile Info</h3>
+                    <div className="grid grid-cols-2 gap-3 text-[11px]">
+                      <div>
+                        <span className="text-gray-400 font-medium block">Gender</span>
+                        <span className="text-gray-850 font-bold">{selectedProfile.gender || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 font-medium block">Marital Status</span>
+                        <span className="text-gray-850 font-bold">{selectedProfile.maritalStatus || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 font-medium block">Mother Tongue</span>
+                        <span className="text-gray-850 font-bold">{selectedProfile.motherTongue || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 font-medium block">Religion & Sect</span>
+                        <span className="text-gray-850 font-bold">{(selectedProfile.religion || "Islam") + " - " + (selectedProfile.caste || selectedProfile.community || "Sunni")}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 font-medium block">Namaz Habits</span>
+                        <span className="text-gray-850 font-bold">{selectedProfile.namaz || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 font-medium block">Quran Reading</span>
+                        <span className="text-gray-850 font-bold">{selectedProfile.quranReading || "N/A"}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-gray-400 font-medium block">Education</span>
+                        <span className="text-gray-850 font-bold">{selectedProfile.education || "N/A"}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Partner Preferences Grid */}
+                  <div className="bg-brand-50/30 p-4 rounded-2xl border border-brand-100/50 space-y-2.5">
+                    <h3 className="text-[10px] font-bold uppercase tracking-wider text-brand-700 border-b border-brand-100/40 pb-1.5 mb-1">Partner Preferences</h3>
+                    <div className="grid grid-cols-2 gap-3 text-[11px]">
+                      <div>
+                        <span className="text-brand-600/70 font-medium block">Age Preference</span>
+                        <span className="text-brand-950 font-bold">{selectedProfile.prefAge || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-brand-600/70 font-medium block">Marital Status</span>
+                        <span className="text-brand-950 font-bold">{selectedProfile.prefMaritalStatus || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-brand-600/70 font-medium block">Preferred Religion</span>
+                        <span className="text-brand-950 font-bold">{selectedProfile.prefReligion || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-brand-600/70 font-medium block">Preferred Sect</span>
+                        <span className="text-brand-950 font-bold">{selectedProfile.prefCommunity || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-brand-600/70 font-medium block">Preferred Namaz</span>
+                        <span className="text-brand-950 font-bold">{selectedProfile.prefNamaz || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-brand-600/70 font-medium block">Preferred Quran</span>
+                        <span className="text-brand-950 font-bold">{selectedProfile.prefQuranReading || "N/A"}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-brand-600/70 font-medium block">Preferred Education</span>
+                        <span className="text-brand-950 font-bold">{selectedProfile.prefEducation || "N/A"}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-brand-600/70 font-medium block">Preferred Locations</span>
+                        <span className="text-brand-950 font-bold">{selectedProfile.prefLocations || "N/A"}</span>
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Voice Introduction Player */}
                   {selectedProfile.voice && (

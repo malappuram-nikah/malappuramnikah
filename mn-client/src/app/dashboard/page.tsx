@@ -2,182 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, Eye, MessageCircle, Star, ArrowRight, TrendingUp, Loader2, Sparkles, Lock, X, Volume2, Video, Download } from "lucide-react";
+import { Heart, Eye, MessageCircle, Star, ArrowRight, TrendingUp, Loader2, Sparkles, Lock, X, Volume2, Video } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { getEnrichedProfile } from "@/lib/profile-utils";
 import ProfileCompletionTracker from "@/components/dashboard/ProfileCompletionTracker";
+import BiodataDownload from "@/components/dashboard/BiodataDownload";
 
-const downloadBiodata = (profile: any) => {
-  const printWindow = window.open("", "_blank");
-  if (!printWindow) return;
-
-  const details = profile.profile_details || {};
-  const basic = details.mn_basic_details_draft || {};
-  const religious = details.mn_religious_info_draft || {};
-  const professional = details.mn_professional_info_draft || {};
-  const family = details.mn_family_details_draft || {};
-  
-  const name = profile.name || basic.name || `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || "Member";
-  const age = profile.age || (profile.dob ? Math.floor((new Date().getTime() - new Date(profile.dob).getTime()) / 31557600000) : basic.age || "N/A");
-  const gender = profile.gender || basic.gender || "N/A";
-  const location = profile.location || basic.presentLocation || "N/A";
-  const caste = profile.caste || profile.cast || religious.community || "N/A";
-  const religion = religious.religion || "Islam";
-  const height = basic.height || "N/A";
-  const weight = basic.weight || "N/A";
-  const maritalStatus = basic.maritalStatus || "N/A";
-  const motherTongue = basic.motherTongue || "N/A";
-  const languagesSpoken = basic.languagesSpoken || "N/A";
-  const aboutMe = profile.aboutMe || basic.aboutMe || "N/A";
-  
-  const education = professional.education || "N/A";
-  const occupation = professional.occupation || "N/A";
-  const income = professional.annualIncome || "N/A";
-  
-  const familyType = family.familyType || "N/A";
-  const fatherName = family.fatherName || "N/A";
-  const fatherOccupation = family.fatherOccupation || "N/A";
-  const motherName = family.motherName || "N/A";
-  
-  const namaz = religious.namaz || "N/A";
-  const quran = religious.quranReading || "N/A";
-
-  const htmlContent = `
-    <html>
-    <head>
-      <title>Biodata - ${name}</title>
-      <style>
-        body {
-          font-family: 'Inter', sans-serif;
-          color: #333;
-          line-height: 1.6;
-          margin: 40px;
-        }
-        .header {
-          text-align: center;
-          border-bottom: 2px solid #b45309;
-          padding-bottom: 20px;
-          margin-bottom: 30px;
-        }
-        .header h1 {
-          margin: 0;
-          color: #b45309;
-          font-size: 28px;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-        }
-        .header p {
-          margin: 5px 0 0 0;
-          color: #666;
-          font-size: 14px;
-        }
-        .section-title {
-          font-size: 18px;
-          color: #b45309;
-          border-bottom: 1px solid #f3f4f6;
-          padding-bottom: 5px;
-          margin-top: 25px;
-          margin-bottom: 15px;
-          font-weight: bold;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-        .grid {
-          display: grid;
-          grid-template-cols: 1fr 1fr;
-          gap: 15px 30px;
-        }
-        .field {
-          display: flex;
-          border-bottom: 1px solid #f9fafb;
-          padding-bottom: 5px;
-        }
-        .label {
-          font-weight: 600;
-          width: 150px;
-          color: #4b5563;
-        }
-        .value {
-          color: #111827;
-          flex: 1;
-        }
-        .full-width {
-          grid-column: span 2;
-        }
-        .about-text {
-          background-color: #fffbeb;
-          border-left: 4px solid #b45309;
-          padding: 15px;
-          border-radius: 4px;
-          font-style: italic;
-          color: #451a03;
-        }
-        @media print {
-          body { margin: 20px; }
-          .no-print { display: none; }
-        }
-      </style>
-    </head>
-    <body>
-      <div class="header">
-        <h1>MATRIMONIAL BIODATA</h1>
-        <p>Malappuram Nikah Matrimony Services</p>
-      </div>
-
-      <div class="section-title">Personal Details</div>
-      <div class="grid">
-        <div class="field"><div class="label">Name</div><div class="value">${name}</div></div>
-        <div class="field"><div class="label">Age</div><div class="value">${age} years</div></div>
-        <div class="field"><div class="label">Gender</div><div class="value">${gender}</div></div>
-        <div class="field"><div class="label">Marital Status</div><div class="value">${maritalStatus}</div></div>
-        <div class="field"><div class="label">Height</div><div class="value">${height}</div></div>
-        <div class="field"><div class="label">Weight</div><div class="value">${weight}</div></div>
-        <div class="field"><div class="label">Mother Tongue</div><div class="value">${motherTongue}</div></div>
-        <div class="field"><div class="label">Languages</div><div class="value">${languagesSpoken}</div></div>
-      </div>
-
-      <div class="section-title">Religious Background</div>
-      <div class="grid">
-        <div class="field"><div class="label">Religion</div><div class="value">${religion}</div></div>
-        <div class="field"><div class="label">Community/Sect</div><div class="value">${caste}</div></div>
-        <div class="field"><div class="label">Namaz Habits</div><div class="value">${namaz}</div></div>
-        <div class="field"><div class="label">Quran Reading</div><div class="value">${quran}</div></div>
-      </div>
-
-      <div class="section-title">Education & Occupation</div>
-      <div class="grid">
-        <div class="field"><div class="label">Education</div><div class="value">${education}</div></div>
-        <div class="field"><div class="label">Occupation</div><div class="value">${occupation}</div></div>
-        <div class="field"><div class="label">Annual Income</div><div class="value">${income}</div></div>
-        <div class="field"><div class="label">Present Location</div><div class="value">${location}</div></div>
-      </div>
-
-      <div class="section-title">Family Details</div>
-      <div class="grid">
-        <div class="field"><div class="label">Family Type</div><div class="value">${familyType}</div></div>
-        <div class="field"><div class="label">Father's Name</div><div class="value">${fatherName}</div></div>
-        <div class="field"><div class="label">Father's Job</div><div class="value">${fatherOccupation}</div></div>
-        <div class="field"><div class="label">Mother's Name</div><div class="value">${motherName}</div></div>
-      </div>
-
-      <div class="section-title">About Me</div>
-      <div class="about-text">
-        ${aboutMe}
-      </div>
-
-      <script>
-        window.onload = function() {
-          window.print();
-          setTimeout(function() { window.close(); }, 500);
-        };
-      </script>
-    </body>
-    </html>
-  `;
-
-  printWindow.document.write(htmlContent);
-  printWindow.document.close();
-};
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -284,26 +115,17 @@ export default function DashboardPage() {
         });
 
         const mapped = otherUsers.map((u: any, i: number) => {
-          let avatar = `https://i.pravatar.cc/200?img=${45 + (i % 20)}`;
-          const photos = u.profile_details?.mn_profile_photos_draft?.photos;
-          if (photos && photos.length > 0) {
-            const primary = photos.find((p: any) => p.isPrimary);
-            avatar = primary ? primary.dataUrl : photos[0].dataUrl;
-          }
-
+          const enriched = getEnrichedProfile(u);
           return {
-            id: u.id,
-            name: `${u.first_name} ${u.last_name}`,
-            age: u.dob ? Math.floor((new Date().getTime() - new Date(u.dob).getTime()) / 31557600000) : 25,
-            location: u.location || "Kerala",
-            img: avatar,
-            caste: u.cast || "Sunni",
+            ...enriched,
+            img: enriched.photo,
+            caste: enriched.community,
             match: 82 + (i % 15),
             matchScore: 82 + (i % 15),
-            photos: photos || [],
+            photos: u.profile_details?.mn_profile_photos_draft?.photos || [],
             video: u.profile_details?.mn_video_intro_draft?.video?.dataUrl || null,
             voice: u.profile_details?.mn_voice_intro_draft?.voice?.dataUrl || null,
-            aboutMe: u.profile_details?.mn_basic_details_draft?.aboutMe || "",
+            aboutMe: enriched.aboutMe || enriched.personalityDescription,
             aiExplanation: u.profile_details?.mn_partner_preferences_draft?.explanation || "Highly compatible profile based on your preferences.",
             conversationStarter: "I would love to learn more about your values and partner goals!",
             profile_details: u.profile_details
@@ -401,12 +223,7 @@ export default function DashboardPage() {
               <Heart className="w-4 h-4 fill-pink-500 text-pink-500" /> View Pending Interests
             </Link>
             {currentUser && (
-              <button 
-                onClick={() => downloadBiodata(currentUser)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-xl transition-all shadow-md active:scale-[0.98]"
-              >
-                <Download className="w-4 h-4" /> Download My Biodata
-              </button>
+              <BiodataDownload profile={currentUser} enriched={getEnrichedProfile(currentUser)} />
             )}
           </div>
         </div>
@@ -654,6 +471,80 @@ export default function DashboardPage() {
                     </div>
                   )}
 
+                  {/* Profile Info Details Grid */}
+                  <div className="bg-gray-50/80 p-4 rounded-2xl border border-gray-150/80 space-y-2.5">
+                    <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 border-b border-gray-250/60 pb-1.5 mb-1">Profile Info</h3>
+                    <div className="grid grid-cols-2 gap-3 text-[11px]">
+                      <div>
+                        <span className="text-gray-400 font-medium block">Gender</span>
+                        <span className="text-gray-850 font-bold">{selectedProfile.gender || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 font-medium block">Marital Status</span>
+                        <span className="text-gray-850 font-bold">{selectedProfile.maritalStatus || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 font-medium block">Mother Tongue</span>
+                        <span className="text-gray-850 font-bold">{selectedProfile.motherTongue || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 font-medium block">Religion & Sect</span>
+                        <span className="text-gray-850 font-bold">{(selectedProfile.religion || "Islam") + " - " + (selectedProfile.caste || selectedProfile.community || "Sunni")}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 font-medium block">Namaz Habits</span>
+                        <span className="text-gray-850 font-bold">{selectedProfile.namaz || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 font-medium block">Quran Reading</span>
+                        <span className="text-gray-850 font-bold">{selectedProfile.quranReading || "N/A"}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-gray-400 font-medium block">Education</span>
+                        <span className="text-gray-850 font-bold">{selectedProfile.education || "N/A"}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Partner Preferences Grid */}
+                  <div className="bg-brand-50/30 p-4 rounded-2xl border border-brand-100/50 space-y-2.5">
+                    <h3 className="text-[10px] font-bold uppercase tracking-wider text-brand-700 border-b border-brand-100/40 pb-1.5 mb-1">Partner Preferences</h3>
+                    <div className="grid grid-cols-2 gap-3 text-[11px]">
+                      <div>
+                        <span className="text-brand-600/70 font-medium block">Age Preference</span>
+                        <span className="text-brand-950 font-bold">{selectedProfile.prefAge || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-brand-600/70 font-medium block">Marital Status</span>
+                        <span className="text-brand-950 font-bold">{selectedProfile.prefMaritalStatus || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-brand-600/70 font-medium block">Preferred Religion</span>
+                        <span className="text-brand-950 font-bold">{selectedProfile.prefReligion || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-brand-600/70 font-medium block">Preferred Sect</span>
+                        <span className="text-brand-950 font-bold">{selectedProfile.prefCommunity || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-brand-600/70 font-medium block">Preferred Namaz</span>
+                        <span className="text-brand-950 font-bold">{selectedProfile.prefNamaz || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-brand-600/70 font-medium block">Preferred Quran</span>
+                        <span className="text-brand-950 font-bold">{selectedProfile.prefQuranReading || "N/A"}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-brand-600/70 font-medium block">Preferred Education</span>
+                        <span className="text-brand-950 font-bold">{selectedProfile.prefEducation || "N/A"}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-brand-600/70 font-medium block">Preferred Locations</span>
+                        <span className="text-brand-950 font-bold">{selectedProfile.prefLocations || "N/A"}</span>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Voice Introduction Player */}
                   {selectedProfile.voice && (
                     <div className="bg-brand-50/40 border border-brand-100/50 p-4 rounded-2xl flex flex-col gap-1.5">
@@ -720,12 +611,9 @@ export default function DashboardPage() {
                         View Full Profile
                       </button>
                     </div>
-                    <button 
-                      onClick={() => downloadBiodata(selectedProfile)}
-                      className="w-full py-3 bg-amber-50 text-amber-700 hover:bg-amber-100 text-xs font-bold rounded-xl border border-amber-200 transition-colors flex items-center justify-center gap-1.5 active:scale-[0.98]"
-                    >
-                      <Download className="w-4 h-4" /> Download Biodata PDF
-                    </button>
+                    <div className="w-full flex justify-center">
+                      <BiodataDownload profile={selectedProfile} enriched={getEnrichedProfile(selectedProfile)} />
+                    </div>
                   </div>
                 </div>
               </motion.div>

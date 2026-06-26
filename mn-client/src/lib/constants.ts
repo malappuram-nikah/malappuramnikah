@@ -1,0 +1,23 @@
+export const LOCATIONS = [
+  "Angadipuram",
+  "Edappal",
+  "Kadalundi",
+  "Kondotty",
+  "Kottakkal",
+  "Kottakunnu",
+  "Kuttippuram",
+  "Malappuram",
+  "Manjeri",
+  "Nilambur",
+  "Parappanangadi",
+  "Perinthalmanna",
+  "Ponnani",
+  "Puthanathani",
+  "Tanur",
+  "Thirunavaya",
+  "Tirur",
+  "Tirurangadi",
+  "Valanchery",
+  "Vengara",
+  "Wandoor"
+];

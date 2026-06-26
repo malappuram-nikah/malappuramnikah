@@ -5,29 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ArrowLeft, CheckCircle2, ShieldCheck } from "lucide-react";
 
-const LOCATIONS = [
-  "Malappuram",
-  "Manjeri",
-  "Tirur",
-  "Perinthalmana",
-  "Ponnani",
-  "Kondotty",
-  "Tirurangadi",
-  "Kuttippuram",
-  "Valanchery",
-  "Nilambur",
-  "Kottakkal",
-  "Kottakunnu",
-  "Thirunavaya",
-  "Kadalundi",
-  "Vengara",
-  "Angadipuram",
-  "Edappal",
-  "Tanur",
-  "Parappanangadi",
-  "Wandoor",
-  "Nilamboor"
-];
+import { LOCATIONS } from "@/lib/constants";
 
 interface RegisterModalProps {
   isOpen: boolean;

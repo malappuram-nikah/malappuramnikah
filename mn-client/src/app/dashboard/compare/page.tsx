@@ -466,6 +466,22 @@ function CompareContent() {
                   highestScoreIdx={highestScoreIdx}
                   getValue={p => p.religiousness}
                 />
+
+                <GridRow
+                  label="Namaz Habits"
+                  profiles={comparedProfiles}
+                  highestScoreIdx={highestScoreIdx}
+                  getValue={p => p.namaz}
+                  getStatus={p => p.matchResult.fields.namaz}
+                />
+
+                <GridRow
+                  label="Quran Reading"
+                  profiles={comparedProfiles}
+                  highestScoreIdx={highestScoreIdx}
+                  getValue={p => p.quranReading}
+                  getStatus={p => p.matchResult.fields.quranReading}
+                />
               </div>
 
               {/* SECTION 3: PROFESSIONAL INFO */}

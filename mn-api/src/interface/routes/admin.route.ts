@@ -62,14 +62,25 @@ function getAdminStore() {
         activity_logs: [
           { id: 1, admin: "Super Admin", action: "Approved vendor Zara Wedding Photography", time: "2026-06-01 10:12:00" },
           { id: 2, admin: "Super Admin", action: "Resolved complaint ticket #2 against user htfhf", time: "2026-06-01 11:45:00" }
-        ]
+        ],
+        biodata_settings: {
+          enable_download: true
+        },
+        biodata_downloads: []
       };
       fs.writeFileSync(STORE_PATH, JSON.stringify(defaultStore, null, 2));
       return defaultStore;
     }
 
     const data = fs.readFileSync(STORE_PATH, "utf8");
-    return JSON.parse(data);
+    const store = JSON.parse(data);
+    if (!store.biodata_settings) {
+      store.biodata_settings = { enable_download: true };
+    }
+    if (!store.biodata_downloads) {
+      store.biodata_downloads = [];
+    }
+    return store;
   } catch (err) {
     console.error("Failed to read/initialize adminStore.json:", err);
     return { vendors: [], bookings: [], templates_save_the_date: [], templates_wedding_invitation: [], reports: [], subscriptions: [], cms: {}, activity_logs: [] };
@@ -386,12 +397,80 @@ admin_route.post("/store/update", adminGuard, async (req: Request, res: Response
           time: new Date().toISOString().replace("T", " ").substring(0, 19)
         });
       }
+    } else if (type === "biodata_settings") {
+      if (action === "update") {
+        if (!store.biodata_settings) {
+          store.biodata_settings = { enable_download: true };
+        }
+        store.biodata_settings.enable_download = !!payload.enable_download;
+        store.activity_logs.unshift({
+          id: Date.now(),
+          admin: adminName,
+          action: `${payload.enable_download ? "Enabled" : "Disabled"} system-wide biodata PDF downloads`,
+          time: new Date().toISOString().replace("T", " ").substring(0, 19)
+        });
+      }
     }
 
     saveAdminStore(store);
     res.status(200).json({ success: true, message: "Store updated successfully!", store });
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message || "Failed to update store data." });
+  }
+});
+
+// 7. POST Track Biodata Download (POST /user/admin/biodata/track)
+// Called without admin guard – any authenticated user can track their own download
+admin_route.post("/biodata/track", async (req: Request, res: Response) => {
+  try {
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized." });
+      return;
+    }
+
+    const store = getAdminStore();
+
+    // Check if downloads are enabled
+    if (!store.biodata_settings?.enable_download) {
+      res.status(403).json({ success: false, message: "Biodata downloads are currently disabled by the administrator." });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const userName = user ? `${user.first_name} ${user.last_name}` : `User #${userId}`;
+
+    store.biodata_downloads.unshift({
+      id: Date.now(),
+      user_id: userId,
+      user_name: userName,
+      downloaded_at: new Date().toISOString().replace("T", " ").substring(0, 19)
+    });
+
+    // Keep last 500 entries
+    if (store.biodata_downloads.length > 500) {
+      store.biodata_downloads = store.biodata_downloads.slice(0, 500);
+    }
+
+    saveAdminStore(store);
+    res.status(200).json({ success: true, message: "Download tracked." });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || "Failed to track download." });
+  }
+});
+
+// 8. GET Public Biodata Settings (GET /user/admin/biodata/settings)
+// Public endpoint – no admin guard required, used by client to check enable status
+admin_route.get("/biodata/settings", async (_req: Request, res: Response) => {
+  try {
+    const store = getAdminStore();
+    res.status(200).json({
+      success: true,
+      settings: store.biodata_settings || { enable_download: true },
+      totalDownloads: (store.biodata_downloads || []).length
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || "Failed to load biodata settings." });
   }
 });
 

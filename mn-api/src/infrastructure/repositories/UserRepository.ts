@@ -56,6 +56,36 @@ export class UserRepository implements IUserRepository {
             const dataToUpdate: any = {};
             if (profileDetails !== undefined) {
                 dataToUpdate.profile_details = profileDetails;
+
+                // Sync core fields from profile details drafts if not explicitly overridden by coreFields
+                if (profileDetails) {
+                    const basic = profileDetails.mn_basic_details_draft || {};
+                    const religious = profileDetails.mn_religious_info_draft || {};
+
+                    if (basic.name) {
+                        const parts = basic.name.trim().split(/\s+/);
+                        dataToUpdate.first_name = parts[0] || "";
+                        dataToUpdate.last_name = parts.slice(1).join(" ") || "";
+                    }
+                    if (basic.gender) {
+                        dataToUpdate.gender = basic.gender;
+                    }
+                    if (basic.presentLocation || basic.location) {
+                        dataToUpdate.location = basic.presentLocation || basic.location;
+                    }
+                    if (basic.age) {
+                        const birthYear = new Date().getFullYear() - parseInt(basic.age, 10);
+                        if (!isNaN(birthYear)) {
+                            dataToUpdate.dob = `${birthYear}-01-01`;
+                        }
+                    }
+                    if (religious.community) {
+                        dataToUpdate.cast = religious.community;
+                    }
+                    if (basic.profileFor) {
+                        dataToUpdate.profile_for = basic.profileFor;
+                    }
+                }
             }
             if (coreFields) {
                 if (coreFields.first_name !== undefined) dataToUpdate.first_name = coreFields.first_name;

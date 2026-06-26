@@ -9,30 +9,7 @@ import {
   Eye, Settings, Layers, Send, ChevronRight, User
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-
-const LOCATIONS = [
-  "Malappuram",
-  "Manjeri",
-  "Tirur",
-  "Perinthalmana",
-  "Ponnani",
-  "Kondotty",
-  "Tirurangadi",
-  "Kuttippuram",
-  "Valanchery",
-  "Nilambur",
-  "Kottakkal",
-  "Kottakunnu",
-  "Thirunavaya",
-  "Kadalundi",
-  "Vengara",
-  "Angadipuram",
-  "Edappal",
-  "Tanur",
-  "Parappanangadi",
-  "Wandoor",
-  "Nilamboor"
-];
+import { LOCATIONS } from "@/lib/constants";
 
 export default function WeddingBusinessDashboard() {
   const router = useRouter();

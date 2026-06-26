@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Save } from "lucide-react";
+import { LOCATIONS } from "@/lib/constants";
 
 export interface PartnerPreferencesData {
   aboutPartner: string;
@@ -26,6 +27,8 @@ export interface PartnerPreferencesData {
   eatingHabits: string;
   smokingHabits: string;
   drinkingHabits: string;
+  prefNamaz?: string;
+  prefQuranReading?: string;
 }
 
 interface PartnerPreferencesStepProps {
@@ -35,6 +38,15 @@ interface PartnerPreferencesStepProps {
 }
 
 const DRAFT_KEY = "mn_partner_preferences_draft";
+
+export const showPartnerChildrenField = (status: string) => {
+  if (!status) return true;
+  const s = status.toLowerCase();
+  if (["never married", "single", "unmarried"].includes(s)) {
+    return false;
+  }
+  return true;
+};
 
 const KERALA_DISTRICTS = [
   "Alappuzha", "Ernakulam", "Idukki", "Kannur", "Kasaragod",
@@ -65,6 +77,8 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
     eatingHabits: "Any",
     smokingHabits: "Any",
     drinkingHabits: "Any",
+    prefNamaz: "Any",
+    prefQuranReading: "Any",
     ...initialData,
   });
 
@@ -248,7 +262,13 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Marital Status</label>
               <select
                 value={formData.maritalStatus}
-                onChange={(e) => updateForm("maritalStatus", e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  updateForm("maritalStatus", val);
+                  if (!showPartnerChildrenField(val)) {
+                    updateForm("haveChildren", "Any");
+                  }
+                }}
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="Any">Doesn't Matter</option>
@@ -273,19 +293,21 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Have Children</label>
-              <select
-                value={formData.haveChildren}
-                onChange={(e) => updateForm("haveChildren", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
-              >
-                <option value="Any">Doesn't Matter</option>
-                <option value="No">No</option>
-                <option value="Yes, living together">Yes, living together</option>
-                <option value="Yes, not living together">Yes, not living together</option>
-              </select>
-            </div>
+            {showPartnerChildrenField(formData.maritalStatus) && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Have Children</label>
+                <select
+                  value={formData.haveChildren}
+                  onChange={(e) => updateForm("haveChildren", e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                >
+                  <option value="Any">Doesn't Matter</option>
+                  <option value="No">No</option>
+                  <option value="Yes, living together">Yes, living together</option>
+                  <option value="Yes, not living together">Yes, not living together</option>
+                </select>
+              </div>
+            )}
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Physical Status</label>
@@ -344,6 +366,34 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
                 <option value="Very Religious">Very Religious</option>
                 <option value="Religious">Religious</option>
                 <option value="Moderately Religious">Moderately Religious</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Preferred Namaz Habits</label>
+              <select
+                value={formData.prefNamaz || "Any"}
+                onChange={(e) => updateForm("prefNamaz", e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+              >
+                <option value="Any">Doesn't Matter</option>
+                {["Five Times Daily", "Most Prayers", "Occasionally", "Rarely"].map((option) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Preferred Quran Reading</label>
+              <select
+                value={formData.prefQuranReading || "Any"}
+                onChange={(e) => updateForm("prefQuranReading", e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+              >
+                <option value="Any">Doesn't Matter</option>
+                {["Daily", "Weekly", "Occasionally", "Rarely"].map((option) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -418,14 +468,14 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-gray-700">Preferred Locations (Kerala Districts)</label>
+                <label className="block text-sm font-medium text-gray-700">Preferred Locations (Kerala Districts & Towns)</label>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => updateForm("preferredLocations", "All Kerala")}
                     className="text-xs text-brand-600 hover:text-brand-700 font-bold"
                   >
-                    Select All
+                    Select All Districts
                   </button>
                   <span className="text-gray-300 text-xs">|</span>
                   <button
@@ -433,49 +483,93 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
                     onClick={() => updateForm("preferredLocations", "")}
                     className="text-xs text-gray-500 hover:text-gray-700 font-medium"
                   >
-                    Clear
+                    Clear All
                   </button>
                 </div>
               </div>
               
-              <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-2xl border border-gray-100">
-                {KERALA_DISTRICTS.map((district) => {
-                  const currentList = formData.preferredLocations
-                    ? formData.preferredLocations.split(",").map((s: string) => s.trim())
-                    : [];
-                  const isAll = formData.preferredLocations === "All Kerala";
-                  const isSelected = isAll || currentList.includes(district);
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Districts</h4>
+                  <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                    {KERALA_DISTRICTS.map((district) => {
+                      const currentList = formData.preferredLocations
+                        ? formData.preferredLocations.split(",").map((s: string) => s.trim())
+                        : [];
+                      const isAll = formData.preferredLocations === "All Kerala";
+                      const isSelected = isAll || currentList.includes(district);
 
-                  return (
-                    <button
-                      key={district}
-                      type="button"
-                      onClick={() => {
-                        if (isAll) {
-                          const nextList = KERALA_DISTRICTS.filter(d => d !== district);
-                          updateForm("preferredLocations", nextList.join(", "));
-                        } else if (isSelected) {
-                          const nextList = currentList.filter((d: string) => d !== district);
-                          updateForm("preferredLocations", nextList.join(", "));
-                        } else {
-                          const nextList = [...currentList, district];
-                          if (nextList.length === KERALA_DISTRICTS.length) {
-                            updateForm("preferredLocations", "All Kerala");
-                          } else {
-                            updateForm("preferredLocations", nextList.join(", "));
-                          }
-                        }
-                      }}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
-                        isSelected
-                          ? "bg-brand-600 text-white border-brand-600 shadow-sm"
-                          : "bg-white text-gray-700 border-gray-200 hover:bg-brand-50 hover:border-brand-200"
-                      }`}
-                    >
-                      {district}
-                    </button>
-                  );
-                })}
+                      return (
+                        <button
+                          key={district}
+                          type="button"
+                          onClick={() => {
+                            if (isAll) {
+                              const nextList = KERALA_DISTRICTS.filter(d => d !== district);
+                              updateForm("preferredLocations", nextList.join(", "));
+                            } else if (isSelected) {
+                              const nextList = currentList.filter((d: string) => d !== district);
+                              updateForm("preferredLocations", nextList.join(", "));
+                            } else {
+                              const nextList = [...currentList, district];
+                              if (nextList.length === KERALA_DISTRICTS.length) {
+                                updateForm("preferredLocations", "All Kerala");
+                              } else {
+                                updateForm("preferredLocations", nextList.join(", "));
+                              }
+                            }
+                          }}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+                            isSelected
+                              ? "bg-brand-600 text-white border-brand-600 shadow-sm"
+                              : "bg-white text-gray-700 border-gray-200 hover:bg-brand-50 hover:border-brand-200"
+                          }`}
+                        >
+                          {district}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Malappuram Towns / Areas</h4>
+                  <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                    {LOCATIONS.map((loc) => {
+                      const currentList = formData.preferredLocations
+                        ? formData.preferredLocations.split(",").map((s: string) => s.trim())
+                        : [];
+                      const isAll = formData.preferredLocations === "All Kerala";
+                      const isSelected = isAll || currentList.includes(loc);
+
+                      return (
+                        <button
+                          key={loc}
+                          type="button"
+                          onClick={() => {
+                            if (isAll) {
+                              const nextList = [...KERALA_DISTRICTS, ...LOCATIONS].filter(d => d !== loc);
+                              updateForm("preferredLocations", nextList.join(", "));
+                            } else if (isSelected) {
+                              const nextList = currentList.filter((d: string) => d !== loc);
+                              updateForm("preferredLocations", nextList.join(", "));
+                            } else {
+                              const nextList = [...currentList, loc];
+                              updateForm("preferredLocations", nextList.join(", "));
+                            }
+                          }}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+                            isSelected
+                              ? "bg-brand-600 text-white border-brand-600 shadow-sm"
+                              : "bg-white text-gray-700 border-gray-200 hover:bg-brand-50 hover:border-brand-200"
+                          }`}
+                        >
+                          {loc}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </div>
 

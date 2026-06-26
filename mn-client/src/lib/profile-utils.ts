@@ -34,12 +34,13 @@ export function getEnrichedProfile(u: any) {
     photo: avatar,
     gender: u.gender || "Female",
     location: basic.presentLocation || u.location || "Malappuram",
+    aboutMe: basic.aboutMe || "Looking for a pious, family-oriented partner with shared values.",
     
     // Core Header fields
     profileId: `MN-${100000 + u.id}`,
     age: basic.age ? parseInt(basic.age) : age,
     height: basic.height || "5 ft 4 in (162 cm)",
-    education: professional.education || "Bachelor's Degree",
+    education: (professional.education === "Others" && professional.customEducation) ? professional.customEducation : (professional.education || "Bachelor's Degree"),
     profession: professional.profession || "Software Professional",
     religion: religious.religion || "Islam",
     community: religious.community || caste,
@@ -57,6 +58,8 @@ export function getEnrichedProfile(u: any) {
 
     // Section 2: Religious Info
     religiousness: religious.religiousness || "Moderately Religious",
+    namaz: religious.namaz || "Five Times Daily",
+    quranReading: religious.quranReading || "Daily",
 
     // Section 3: Professional Info
     educationalInstitution: professional.educationalInstitution || "Calicut University",
@@ -92,7 +95,9 @@ export function getEnrichedProfile(u: any) {
     prefCommunity: partner.preferredCommunity || "Sunni",
     prefEducation: partner.preferredEducation || "Graduation / Post Graduation",
     prefOccupation: partner.preferredOccupation || "Any Profession",
-    prefLocations: partner.preferredLocations || "Malappuram, Manjeri, Calicut"
+    prefLocations: partner.preferredLocations || "Malappuram, Manjeri, Calicut",
+    prefNamaz: partner.prefNamaz || "Any",
+    prefQuranReading: partner.prefQuranReading || "Any"
   };
 }
 
@@ -112,14 +117,20 @@ export function analyzeMatch(profile: any, myPref: any) {
 
   const educationMatch = !myPref?.education || myPref.education === "Any" || profile.education.toLowerCase().includes(myPref.education.toLowerCase()) || myPref.education.toLowerCase().includes(profile.education.toLowerCase());
 
+  const namazMatch = !myPref?.prefNamaz || myPref.prefNamaz === "Any" || myPref.prefNamaz.toLowerCase() === (profile.namaz || "").toLowerCase();
+
+  const quranMatch = !myPref?.prefQuranReading || myPref.prefQuranReading === "Any" || myPref.prefQuranReading.toLowerCase() === (profile.quranReading || "").toLowerCase();
+
   // Calculate score
   let score = 50; // base score
-  if (ageMatch) score += 10;
-  if (maritalMatch) score += 10;
-  if (religionMatch) score += 8;
-  if (communityMatch) score += 8;
-  if (locationMatch) score += 7;
-  if (educationMatch) score += 7;
+  if (ageMatch) score += 8;
+  if (maritalMatch) score += 8;
+  if (religionMatch) score += 7;
+  if (communityMatch) score += 7;
+  if (locationMatch) score += 6;
+  if (educationMatch) score += 6;
+  if (namazMatch) score += 4;
+  if (quranMatch) score += 4;
 
   // Let's ensure there's some realistic variance
   score = Math.min(Math.max(score + (profile.id % 7), 40), 98);
@@ -139,7 +150,9 @@ export function analyzeMatch(profile: any, myPref: any) {
       religion: religionMatch ? "strong" : "mismatch",
       community: communityMatch ? "strong" : "mismatch",
       location: locationMatch ? "strong" : "acceptable",
-      education: educationMatch ? "strong" : "acceptable"
+      education: educationMatch ? "strong" : "acceptable",
+      namaz: namazMatch ? "strong" : "acceptable",
+      quranReading: quranMatch ? "strong" : "acceptable"
     }
   };
 }

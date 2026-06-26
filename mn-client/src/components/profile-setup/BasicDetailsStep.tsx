@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Save, Sparkles } from "lucide-react";
+import { LOCATIONS } from "@/lib/constants";
 
 export interface BasicDetailsData {
   aboutMe: string;
@@ -29,6 +30,15 @@ interface BasicDetailsStepProps {
 }
 
 const DRAFT_KEY = "mn_basic_details_draft";
+
+export const showChildrenField = (status: string) => {
+  if (!status) return false;
+  const s = status.toLowerCase();
+  if (["never married", "single", "unmarried"].includes(s)) {
+    return false;
+  }
+  return ["divorced", "widow", "widower", "widowed", "nikah divorce", "awaiting divorce"].includes(s);
+};
 
 export default function BasicDetailsStep({ initialData, onComplete }: BasicDetailsStepProps) {
   const [formData, setFormData] = useState<BasicDetailsData>({
@@ -170,7 +180,7 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
     if (!formData.profileFor) newErrors.profileFor = "Profile created for is required";
     if (!formData.gender) newErrors.gender = "Gender is required";
     if (!formData.maritalStatus) newErrors.maritalStatus = "Marital status is required";
-    if (["Divorced", "Nikah Divorce", "Widowed", "Awaiting Divorce"].includes(formData.maritalStatus) && !formData.haveChildren) {
+    if (showChildrenField(formData.maritalStatus) && !formData.haveChildren) {
       newErrors.haveChildren = "Please specify if you have children";
     }
     if (!formData.height) newErrors.height = "Height is required";
@@ -191,7 +201,8 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
   };
 
   // Progress calculation
-  const totalRequired = 8;
+  const isChildrenFieldRequired = showChildrenField(formData.maritalStatus);
+  const totalRequired = isChildrenFieldRequired ? 9 : 8;
   const completedRequired = [
     formData.name,
     formData.age,
@@ -201,6 +212,7 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
     formData.height,
     formData.motherTongue,
     formData.aboutMe,
+    isChildrenFieldRequired ? formData.haveChildren : null
   ].filter((v) => !!v).length;
   const progressPercent = Math.round((completedRequired / totalRequired) * 100);
 
@@ -312,7 +324,7 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
                 onChange={(e) => {
                   const val = e.target.value;
                   updateForm("maritalStatus", val);
-                  if (!["Divorced", "Nikah Divorce", "Widowed", "Awaiting Divorce"].includes(val)) {
+                  if (!showChildrenField(val)) {
                     updateForm("haveChildren", "");
                   }
                 }}
@@ -328,7 +340,7 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
               {errors.maritalStatus && <p className="text-red-500 text-xs mt-1">{errors.maritalStatus}</p>}
             </div>
 
-            {["Divorced", "Nikah Divorce", "Widowed", "Awaiting Divorce"].includes(formData.maritalStatus) && (
+            {showChildrenField(formData.maritalStatus) && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Have Children? *</label>
                 <select
@@ -448,13 +460,16 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Present Location</label>
-              <input
-                type="text"
-                value={formData.presentLocation}
+              <select
+                value={formData.presentLocation || ""}
                 onChange={(e) => updateForm("presentLocation", e.target.value)}
-                placeholder="e.g. Dubai, Qatar, Kochi, etc."
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm bg-white"
-              />
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm bg-white appearance-none"
+              >
+                <option value="" disabled>Select Location</option>
+                {LOCATIONS.map((loc) => (
+                  <option key={loc} value={loc}>{loc}</option>
+                ))}
+              </select>
             </div>
 
             <div>

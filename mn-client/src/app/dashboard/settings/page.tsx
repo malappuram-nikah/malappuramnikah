@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { User, Lock, Bell, Shield, ChevronRight, Sparkles, AlertCircle, ArrowRight, Save, CheckCircle2, Fingerprint, Phone } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { LOCATIONS } from "@/lib/constants";
 
 const tabs = [
   { id: "profile", label: "Profile", icon: User },
@@ -29,6 +30,8 @@ export default function SettingsPage() {
   const [gender, setGender] = useState("");
   const [profileFor, setProfileFor] = useState("");
   const [aboutMe, setAboutMe] = useState("");
+  const [namaz, setNamaz] = useState("");
+  const [quranReading, setQuranReading] = useState("");
 
   // Verification Status States
   const [userStatus, setUserStatus] = useState("in_active");
@@ -96,10 +99,15 @@ export default function SettingsPage() {
               setAge("24");
             }
 
-            setCommunity(currentUser.cast || "");
+             setCommunity(currentUser.cast || "");
             setGender(currentUser.gender || "");
             setProfileFor(currentUser.profile_for || "Myself");
             setAboutMe(currentUser.profile_details?.mn_basic_details_draft?.aboutMe || "");
+
+            const religiousDraft = currentUser.profile_details?.mn_religious_info_draft || {};
+            setNamaz(religiousDraft.namaz || "");
+            setQuranReading(religiousDraft.quranReading || "");
+
             userFetched = true;
           }
         }
@@ -133,6 +141,17 @@ export default function SettingsPage() {
           setGender("Male");
           setProfileFor("Myself");
           setAboutMe("A career-oriented professional with a deep appreciation for religious values.");
+        }
+      }
+
+      if (!userFetched) {
+        const religiousDraft = localStorage.getItem("mn_religious_info_draft");
+        if (religiousDraft) {
+          try {
+            const parsed = JSON.parse(religiousDraft);
+            setNamaz(parsed.namaz || "");
+            setQuranReading(parsed.quranReading || "");
+          } catch (err) {}
         }
       }
     } catch (e) {
@@ -229,6 +248,15 @@ export default function SettingsPage() {
     profileDetails["mn_basic_details_draft"].name = `${firstName} ${lastName}`.trim();
     profileDetails["mn_basic_details_draft"].presentLocation = location;
     localStorage.setItem("mn_basic_details_draft", JSON.stringify(profileDetails["mn_basic_details_draft"]));
+
+    // Make sure namaz and quranReading are synced inside religious info draft
+    if (!profileDetails["mn_religious_info_draft"]) {
+      profileDetails["mn_religious_info_draft"] = {};
+    }
+    profileDetails["mn_religious_info_draft"].namaz = namaz;
+    profileDetails["mn_religious_info_draft"].quranReading = quranReading;
+    profileDetails["mn_religious_info_draft"].community = community;
+    localStorage.setItem("mn_religious_info_draft", JSON.stringify(profileDetails["mn_religious_info_draft"]));
 
     // Save approximate DOB derived from Age
     const birthYear = new Date().getFullYear() - parseInt(age || "24", 10);
@@ -529,18 +557,44 @@ export default function SettingsPage() {
                     { label: "Community",     value: community,   onChange: setCommunity,   placeholder: "e.g. Sunni", type: "text" },
                     { label: "Gender",        value: gender,      onChange: setGender,      placeholder: "e.g. Male", type: "text" },
                     { label: "Profile For",   value: profileFor,  onChange: setProfileFor,  placeholder: "e.g. Myself", type: "text" },
+                    { label: "Namaz Habits",  value: namaz,       onChange: setNamaz,       placeholder: "Select Namaz Habits", type: "select", options: ["Five Times Daily", "Most Prayers", "Occasionally", "Rarely"] },
+                    { label: "Quran Reading Habits", value: quranReading, onChange: setQuranReading, placeholder: "Select Quran Reading Habits", type: "select", options: ["Daily", "Weekly", "Occasionally", "Rarely"] },
                   ].map((f, i) => (
                     <div key={i}>
                       <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">{f.label}</label>
-                      <input
-                        type={f.type}
-                        value={f.value}
-                        onChange={(e) => f.onChange(e.target.value)}
-                        placeholder={f.placeholder}
-                        min={f.type === "number" ? "18" : undefined}
-                        max={f.type === "number" ? "100" : undefined}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-medium text-gray-800"
-                      />
+                      {f.label === "Location" ? (
+                        <select
+                          value={f.value}
+                          onChange={(e) => f.onChange(e.target.value)}
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-medium text-gray-800 appearance-none bg-white"
+                        >
+                          <option value="" disabled>Select Location</option>
+                          {LOCATIONS.map((loc) => (
+                            <option key={loc} value={loc}>{loc}</option>
+                          ))}
+                        </select>
+                      ) : f.type === "select" ? (
+                        <select
+                          value={f.value}
+                          onChange={(e) => f.onChange(e.target.value)}
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-medium text-gray-800 appearance-none bg-white"
+                        >
+                          <option value="">{f.placeholder}</option>
+                          {f.options?.map((opt) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type={f.type}
+                          value={f.value}
+                          onChange={(e) => f.onChange(e.target.value)}
+                          placeholder={f.placeholder}
+                          min={f.type === "number" ? "18" : undefined}
+                          max={f.type === "number" ? "100" : undefined}
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-medium text-gray-800"
+                        />
+                      )}
                     </div>
                   ))}
                   <div className="sm:col-span-2">
