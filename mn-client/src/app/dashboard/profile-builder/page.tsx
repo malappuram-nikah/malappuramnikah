@@ -13,6 +13,7 @@ import ProfilePhotosStep from "@/components/profile-setup/ProfilePhotosStep";
 import VideoIntroStep from "@/components/profile-setup/VideoIntroStep";
 import VoiceIntroStep from "@/components/profile-setup/VoiceIntroStep";
 import ReviewStep from "@/components/profile-setup/ReviewStep";
+import IdentityVerificationForm from "@/components/dashboard/IdentityVerificationForm";
 import { CheckCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -64,6 +65,7 @@ export default function ProfileBuilderPage() {
     "Profile Photos",
     "Video Onboarding",
     "Voice Introduction",
+    "Identity Verification",
     "Final Review",
     "Completion"
   ];
@@ -219,8 +221,12 @@ export default function ProfileBuilderPage() {
     setCurrentStep(11);
   };
 
+  const handleKycComplete = () => {
+    setCurrentStep(12);
+  };
+
   const handleReviewComplete = () => {
-    setCurrentStep(12); // Go to success screen
+    setCurrentStep(13); // Go to success screen
   };
 
   const handleFinish = () => {
@@ -257,14 +263,14 @@ export default function ProfileBuilderPage() {
         {/* Sleek Mobile Step Tracker */}
         <div className="block sm:hidden mt-6 bg-white p-4 rounded-2xl border border-gray-200/60 shadow-sm">
           <div className="flex items-center justify-between text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-            <span>Step {currentStep} of 12</span>
+            <span>Step {currentStep} of 13</span>
             <span className="text-brand-600 font-bold">{stepNames[currentStep - 1] || "Review"}</span>
           </div>
           <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
             <motion.div 
               className="h-full bg-brand-600 rounded-full" 
               initial={{ width: 0 }} 
-              animate={{ width: `${(currentStep / 12) * 100}%` }} 
+              animate={{ width: `${(currentStep / 13) * 100}%` }} 
               transition={{ duration: 0.3 }} 
             />
           </div>
@@ -344,7 +350,7 @@ export default function ProfileBuilderPage() {
 
           <div className={`flex items-center gap-1.5 ${currentStep >= 11 ? 'text-brand-600' : 'text-gray-400'}`}>
             <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${currentStep >= 11 ? 'bg-brand-600 text-white' : 'bg-gray-200'}`}>11</div>
-            <span className="hidden lg:block text-xs font-medium whitespace-nowrap">Review</span>
+            <span className="hidden lg:block text-xs font-medium whitespace-nowrap">Verification</span>
           </div>
           <div className="w-1.5 sm:w-2 h-0.5 bg-gray-200 shrink-0">
             <motion.div className="h-full bg-brand-600" initial={{ width: 0 }} animate={{ width: currentStep >= 12 ? '100%' : '0%' }} transition={{ duration: 0.3 }} />
@@ -352,9 +358,17 @@ export default function ProfileBuilderPage() {
 
           <div className={`flex items-center gap-1.5 ${currentStep >= 12 ? 'text-brand-600' : 'text-gray-400'}`}>
             <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${currentStep >= 12 ? 'bg-brand-600 text-white' : 'bg-gray-200'}`}>12</div>
+            <span className="hidden lg:block text-xs font-medium whitespace-nowrap">Review</span>
+          </div>
+          <div className="w-1.5 sm:w-2 h-0.5 bg-gray-200 shrink-0">
+            <motion.div className="h-full bg-brand-600" initial={{ width: 0 }} animate={{ width: currentStep >= 13 ? '100%' : '0%' }} transition={{ duration: 0.3 }} />
+          </div>
+
+          <div className={`flex items-center gap-1.5 ${currentStep >= 13 ? 'text-brand-600' : 'text-gray-400'}`}>
+            <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${currentStep >= 13 ? 'bg-brand-600 text-white' : 'bg-gray-200'}`}>13</div>
+          </div>
           </div>
         </div>
-      </div>
 
       <AnimatePresence mode="wait">
         {currentStep === 1 && (
@@ -419,17 +433,29 @@ export default function ProfileBuilderPage() {
 
         {currentStep === 11 && (
           <motion.div key="step11" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+            <div className="max-w-2xl mx-auto bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
+              <IdentityVerificationForm 
+                isWizard={true}
+                onBack={() => setCurrentStep(10)}
+                onNext={handleKycComplete}
+              />
+            </div>
+          </motion.div>
+        )}
+
+        {currentStep === 12 && (
+          <motion.div key="step12" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
             <ReviewStep 
               onComplete={handleReviewComplete} 
-              onBack={() => setCurrentStep(10)} 
+              onBack={() => setCurrentStep(11)} 
               onEditSection={(step) => setCurrentStep(step)} 
             />
           </motion.div>
         )}
 
-        {currentStep === 12 && (
+        {currentStep === 13 && (
           <motion.div
-            key="step12"
+            key="step13"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="max-w-2xl mx-auto bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center"

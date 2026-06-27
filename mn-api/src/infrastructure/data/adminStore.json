@@ -205,6 +205,12 @@
   },
   "activity_logs": [
     {
+      "id": 1782601899259,
+      "admin": "ansal mn",
+      "action": "Approved identity verification for user Lionel Messi (ID: 35)",
+      "time": "2026-06-27 23:11:39"
+    },
+    {
       "id": 1782499540623,
       "admin": "Super Admin",
       "action": "Updated background music settings (Enabled: true)",

@@ -8,9 +8,13 @@ const interest_route = Router();
 // Safely extract user ID from JWT token (supports real verify and base64 decode for dev fallback)
 export function getUserIdFromRequest(req: Request): number | null {
   try {
+    let token: string | undefined;
     const authHeader = req.headers.authorization;
-    if (!authHeader) return null;
-    const token = authHeader.split(" ")[1];
+    if (authHeader) {
+      token = authHeader.split(" ")[1];
+    } else if (req.query.token) {
+      token = req.query.token as string;
+    }
     if (!token) return null;
     
     try {

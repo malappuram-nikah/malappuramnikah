@@ -45,6 +45,13 @@ export class UserRepository implements IUserRepository {
                 profile_for: true,
                 mobile_number: true,
                 profile_details: true,
+                kyc_status: true,
+                kyc_document_type: true,
+                kyc_front_url: true,
+                kyc_back_url: true,
+                kyc_rejected_reason: true,
+                kyc_submitted_at: true,
+                kyc_verified_at: true,
                 created_at: true,
                 updated_at: true
             }

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import prisma from "../../infrastructure/prisma/prisamClient";
 import { getUserIdFromRequest } from "./interest.route";
+import { io } from "../../index";
 import fs from "fs";
 import path from "path";
 
@@ -525,6 +526,205 @@ admin_route.get("/music/settings", async (_req: Request, res: Response) => {
     });
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message || "Failed to load music settings." });
+  }
+});
+
+// KYC 1. GET KYC Requests List (GET /user/admin/kyc/requests)
+admin_route.get("/kyc/requests", adminGuard, async (req: Request, res: Response) => {
+  try {
+    const { search, status } = req.query;
+    
+    const whereClause: any = {};
+
+    if (status) {
+      whereClause.kyc_status = status as string;
+    } else {
+      whereClause.kyc_status = { not: "NOT_SUBMITTED" };
+    }
+
+    if (search) {
+      const searchStr = search as string;
+      whereClause.OR = [
+        { first_name: { contains: searchStr, mode: "insensitive" } },
+        { last_name: { contains: searchStr, mode: "insensitive" } },
+        { mobile_number: { contains: searchStr, mode: "insensitive" } }
+      ];
+    }
+
+    const requests = await prisma.user.findMany({
+      where: whereClause,
+      orderBy: { kyc_submitted_at: "desc" },
+      select: {
+        id: true,
+        first_name: true,
+        last_name: true,
+        gender: true,
+        location: true,
+        mobile_number: true,
+        dob: true,
+        kyc_status: true,
+        kyc_document_type: true,
+        kyc_front_url: true,
+        kyc_back_url: true,
+        kyc_rejected_reason: true,
+        kyc_submitted_at: true,
+        kyc_verified_at: true,
+        profile_details: true
+      }
+    });
+
+    res.status(200).json({ success: true, requests });
+  } catch (err: any) {
+    console.error("Error fetching KYC requests:", err);
+    res.status(500).json({ success: false, message: err.message || "Failed to fetch KYC requests." });
+  }
+});
+
+// KYC 2. Transition request to Under Review (POST /user/admin/kyc/:id/review)
+admin_route.post("/kyc/:id/review", adminGuard, async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ success: false, message: "Invalid user ID" });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
+    }
+
+    if (user.kyc_status === "PENDING") {
+      await prisma.user.update({
+        where: { id },
+        data: { kyc_status: "UNDER_REVIEW" }
+      });
+    }
+
+    res.status(200).json({ success: true, message: "KYC status updated to Under Review" });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || "Failed to update review status." });
+  }
+});
+
+// KYC 3. Approve KYC request (POST /user/admin/kyc/:id/approve)
+admin_route.post("/kyc/:id/approve", adminGuard, async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ success: false, message: "Invalid user ID" });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: {
+        kyc_status: "VERIFIED",
+        kyc_verified_at: new Date(),
+        kyc_rejected_reason: null
+      }
+    });
+
+    // Write audit log
+    const store = getAdminStore();
+    const adminUser = await prisma.user.findUnique({ where: { id: getUserIdFromRequest(req) || 2 } });
+    const adminName = adminUser ? `${adminUser.first_name} ${adminUser.last_name}` : "Super Admin";
+    store.activity_logs.unshift({
+      id: Date.now(),
+      admin: adminName,
+      action: `Approved identity verification for user ${user.first_name} ${user.last_name} (ID: ${id})`,
+      time: new Date().toISOString().replace("T", " ").substring(0, 19)
+    });
+    saveAdminStore(store);
+
+    // Create notification
+    await prisma.notification.create({
+      data: {
+        user_id: id,
+        sender_id: adminUser?.id || 2,
+        type: "KYC_APPROVED",
+        title: "Identity Verified! ✅",
+        message: "Congratulations! Your identity verification has been approved. Your profile now features the 'ID Verified' badge."
+      }
+    });
+    io.to(`user_${id}`).emit("notification", {
+      type: "KYC_APPROVED",
+      title: "Identity Verified! ✅",
+      message: "Congratulations! Your identity verification has been approved. Your profile now features the 'ID Verified' badge."
+    });
+
+    res.status(200).json({ success: true, message: "KYC request approved successfully." });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || "Failed to approve KYC request." });
+  }
+});
+
+// KYC 4. Reject KYC request / Request Resubmission (POST /user/admin/kyc/:id/reject)
+admin_route.post("/kyc/:id/reject", adminGuard, async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { reason } = req.body;
+    if (isNaN(id)) {
+      res.status(400).json({ success: false, message: "Invalid user ID" });
+      return;
+    }
+    if (!reason) {
+      res.status(400).json({ success: false, message: "Rejection reason is required." });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
+    }
+
+    await prisma.user.update({
+      where: { id },
+      data: {
+        kyc_status: "REJECTED",
+        kyc_rejected_reason: reason
+      }
+    });
+
+    // Write audit log
+    const store = getAdminStore();
+    const adminUser = await prisma.user.findUnique({ where: { id: getUserIdFromRequest(req) || 2 } });
+    const adminName = adminUser ? `${adminUser.first_name} ${adminUser.last_name}` : "Super Admin";
+    store.activity_logs.unshift({
+      id: Date.now(),
+      admin: adminName,
+      action: `Rejected identity verification for user ${user.first_name} ${user.last_name} (ID: ${id}). Reason: ${reason}`,
+      time: new Date().toISOString().replace("T", " ").substring(0, 19)
+    });
+    saveAdminStore(store);
+
+    // Create notification
+    await prisma.notification.create({
+      data: {
+        user_id: id,
+        sender_id: adminUser?.id || 2,
+        type: "KYC_REJECTED",
+        title: "Identity Verification Rejected ❌",
+        message: `Your identity verification request was rejected. Reason: ${reason}. Please submit a new document.`
+      }
+    });
+    io.to(`user_${id}`).emit("notification", {
+      type: "KYC_REJECTED",
+      title: "Identity Verification Rejected ❌",
+      message: `Your identity verification request was rejected. Reason: ${reason}. Please submit a new document.`
+    });
+
+    res.status(200).json({ success: true, message: "KYC request rejected successfully." });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || "Failed to reject KYC request." });
   }
 });
 

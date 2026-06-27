@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, MessageCircle, TrendingUp, Sparkles, MapPin, BookOpen, Zap, Info, ChevronRight, X, Loader2, Lock, Unlock, Layers, Play, Pause, Volume2, Video } from "lucide-react";
+import { Heart, MessageCircle, TrendingUp, Sparkles, MapPin, BookOpen, Zap, Info, ChevronRight, X, Loader2, Lock, Unlock, Layers, Play, Pause, Volume2, Video, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCompare } from "@/context/CompareContext";
 import { getEnrichedProfile } from "@/lib/profile-utils";
@@ -333,7 +333,8 @@ export default function AiMatchesPage() {
               strengths: aesthetic.strengths,
               personality: aesthetic.personality,
               conversationStarter: aesthetic.conversationStarter,
-              matchReason: aesthetic.aiExplanation
+              matchReason: aesthetic.aiExplanation,
+              kyc_status: u.kyc_status
             };
           });
 
@@ -565,14 +566,24 @@ export default function AiMatchesPage() {
                   <div className="absolute inset-0 bg-gradient-to-t from-brand-900/90 via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-brand-900 z-10" />
                   
                   <div className="absolute bottom-4 left-4 md:hidden">
-                    <h3 className="text-2xl font-bold text-white">{bestMatch.name}</h3>
+                    <h3 className="text-2xl font-bold text-white flex items-center gap-1.5">
+                      {bestMatch.name}
+                      {bestMatch.kyc_status === "VERIFIED" && (
+                        <span title="ID Verified" className="shrink-0"><ShieldCheck className="w-4 h-4 text-blue-400 fill-blue-900/40" /></span>
+                      )}
+                    </h3>
                     <p className="text-brand-100">{bestMatch.age} yrs • {bestMatch.location}</p>
                   </div>
                 </div>
 
                 <div className="md:w-3/5 p-6 md:p-8 flex flex-col justify-center text-white">
                   <div className="hidden md:block mb-4">
-                    <h3 className="text-3xl font-bold font-playfair">{bestMatch.name}</h3>
+                    <h3 className="text-3xl font-bold font-playfair flex items-center gap-2">
+                      {bestMatch.name}
+                      {bestMatch.kyc_status === "VERIFIED" && (
+                        <span title="ID Verified" className="shrink-0"><ShieldCheck className="w-6 h-6 text-blue-400 fill-blue-900/40" /></span>
+                      )}
+                    </h3>
                     <p className="text-brand-100 text-sm mt-1">{bestMatch.age} yrs • {bestMatch.location} • {bestMatch.caste}</p>
                   </div>
 
@@ -726,7 +737,12 @@ export default function AiMatchesPage() {
                         </button>
                       </div>
                     <div className="p-5">
-                      <h3 className="font-bold text-gray-900 text-base">{profile.name}</h3>
+                      <h3 className="font-bold text-gray-900 text-base flex items-center gap-1">
+                        {profile.name}
+                        {profile.kyc_status === "VERIFIED" && (
+                          <span title="ID Verified" className="shrink-0"><ShieldCheck className="w-4 h-4 text-blue-600 fill-blue-100" /></span>
+                        )}
+                      </h3>
                       <p className="text-xs text-gray-500 mt-1">{profile.age} yrs • {profile.location}</p>
                       
                       <div className="mt-3 pt-3 border-t border-gray-50">
@@ -794,7 +810,12 @@ export default function AiMatchesPage() {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-gray-900 text-sm truncate">{profile.name}</h4>
+                        <h4 className="font-bold text-gray-900 text-sm truncate flex items-center gap-1">
+                          {profile.name}
+                          {profile.kyc_status === "VERIFIED" && (
+                            <span title="ID Verified" className="shrink-0"><ShieldCheck className="w-3.5 h-3.5 text-blue-600 fill-blue-100" /></span>
+                          )}
+                        </h4>
                         <p className="text-xs text-gray-500 mt-0.5">{profile.age} yrs • {profile.location}</p>
                         <p className="text-[10px] text-brand-600 mt-1 font-semibold bg-brand-50 w-max px-1.5 py-0.5 rounded">{profile.personality}</p>
                       </div>
@@ -862,7 +883,12 @@ export default function AiMatchesPage() {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-gray-900 text-sm truncate">{profile.name}</h4>
+                        <h4 className="font-bold text-gray-900 text-sm truncate flex items-center gap-1">
+                          {profile.name}
+                          {profile.kyc_status === "VERIFIED" && (
+                            <span title="ID Verified" className="shrink-0"><ShieldCheck className="w-3.5 h-3.5 text-blue-600 fill-blue-100" /></span>
+                          )}
+                        </h4>
                         <p className="text-xs text-gray-500 mt-0.5">{profile.caste}</p>
                         <p className="text-xs text-gray-600 mt-1 flex items-center gap-1 font-medium">
                           <MapPin className="w-3 h-3 text-gray-400" /> {profile.location}
@@ -969,7 +995,12 @@ export default function AiMatchesPage() {
                     <div className="absolute bottom-4 left-6 right-6">
                       <div className="flex items-end justify-between">
                         <div>
-                          <h2 className="text-2xl font-bold text-white drop-shadow-md">{selectedProfile.name}</h2>
+                          <h2 className="text-2xl font-bold text-white drop-shadow-md flex items-center gap-1.5">
+                            {selectedProfile.name}
+                            {selectedProfile.kyc_status === "VERIFIED" && (
+                              <span title="ID Verified" className="shrink-0"><ShieldCheck className="w-5 h-5 text-blue-400 fill-blue-900/40" /></span>
+                            )}
+                          </h2>
                           <p className="text-gray-200 text-sm mt-1">{selectedProfile.age} yrs • {selectedProfile.location} • {selectedProfile.caste}</p>
                         </div>
                         <div className="bg-brand-600 text-white px-3 py-1.5 rounded-xl font-bold text-sm shadow-lg flex items-center gap-1.5">

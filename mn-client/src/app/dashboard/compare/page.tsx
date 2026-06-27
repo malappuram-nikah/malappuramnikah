@@ -200,6 +200,57 @@ function CompareContent() {
 
   return (
     <div className="space-y-6 pb-20 relative">
+      {/* Print override styling to ensure all pages are printable */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          /* Hide sidebar, header, navigation, toast notifications and floating bars */
+          aside,
+          header,
+          nav,
+          footer,
+          .print\\:hidden,
+          [class*="DashboardSidebar"],
+          [class*="DashboardHeader"],
+          [class*="CompareFloatingBar"] {
+            display: none !important;
+          }
+          
+          /* Reset wrapper layout elements for natural print page flow */
+          div.flex.h-screen.bg-gray-50.overflow-hidden,
+          div.flex-1.flex.flex-col.overflow-hidden,
+          main.flex-1.overflow-y-auto {
+            height: auto !important;
+            overflow: visible !important;
+            display: block !important;
+            position: static !important;
+          }
+          
+          html, body {
+            height: auto !important;
+            overflow: visible !important;
+            background-color: white !important;
+          }
+          
+          main {
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          
+          /* Expand comparison container to print on physical pages */
+          .container {
+            max-width: 100% !important;
+            width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          
+          /* Prevent breaks inside comparative rows */
+          .grid {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+        }
+      `}} />
       {/* Toast Alert Banner */}
       <AnimatePresence>
         {alertMsg && (

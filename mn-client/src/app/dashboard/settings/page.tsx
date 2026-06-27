@@ -5,9 +5,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { User, Lock, Bell, Shield, ChevronRight, Sparkles, AlertCircle, ArrowRight, Save, CheckCircle2, Fingerprint, Phone } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { LOCATIONS } from "@/lib/constants";
+import IdentityVerificationForm from "@/components/dashboard/IdentityVerificationForm";
 
 const tabs = [
   { id: "profile", label: "Profile", icon: User },
+  { id: "kyc", label: "Identity Verification", icon: Fingerprint },
   { id: "security", label: "Security", icon: Lock },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "privacy", label: "Privacy", icon: Shield },
@@ -272,6 +274,14 @@ export default function SettingsPage() {
   useEffect(() => {
     loadProfileData();
     calculateCompletion();
+
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get("tab");
+      if (tab && ["profile", "kyc", "security", "notifications", "privacy"].includes(tab)) {
+        setActiveTab(tab);
+      }
+    }
   }, []);
 
   const handleSave = async () => {
@@ -666,7 +676,7 @@ export default function SettingsPage() {
                 <div className="border-t border-gray-100 pt-6 mt-6 space-y-4">
                   <div>
                     <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                      <Shield className="w-5 h-5 text-brand-600 animate-pulse" />
+                      <Shield className="w-5 h-5 text-brand-600" />
                       Profile Verification
                     </h3>
                     <p className="text-xs text-gray-500 mt-0.5">
@@ -674,174 +684,27 @@ export default function SettingsPage() {
                     </p>
                   </div>
 
-                  {userStatus === "active" ? (
-                    <div className="bg-green-50 border border-green-200/60 rounded-2xl p-4 flex items-center gap-3">
-                      <CheckCircle2 className="w-8 h-8 text-green-600 shrink-0" />
-                      <div>
-                        <p className="font-semibold text-green-800 text-sm">Verified Profile</p>
-                        <p className="text-xs text-green-700 mt-0.5">
-                          Your profile has been successfully verified via{" "}
-                          <span className="font-semibold capitalize">
-                            {verificationMethod || "Mobile OTP"}
-                          </span>
-                          .
-                        </p>
-                      </div>
+                  <div className="bg-gray-50 border border-gray-100 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <p className="font-semibold text-gray-900 text-sm">Government-Issued ID Verification</p>
+                      <p className="text-xs text-gray-500 mt-0.5 max-w-md">
+                        Upload your Aadhaar Card, Driving License, Passport, or Voter ID. Our administrators will verify your document.
+                      </p>
                     </div>
-                  ) : (
-                    <div className="bg-gray-50 border border-gray-200/60 rounded-2xl p-5 space-y-5">
-                      <div className="flex items-center gap-2 text-amber-700 bg-amber-50 px-3.5 py-2 rounded-xl border border-amber-200/50 text-xs font-semibold w-max">
-                        <AlertCircle className="w-4 h-4 shrink-0" />
-                        <span>Verification Pending</span>
-                      </div>
-
-                      {verifyMode === "choose" && (
-                        <div className="grid sm:grid-cols-2 gap-4">
-                          <button
-                            onClick={() => setVerifyMode("aadhaar")}
-                            className="p-4 border border-gray-200 rounded-xl hover:border-brand-500 hover:bg-white text-left transition-all group"
-                          >
-                            <Fingerprint className="w-5 h-5 text-brand-600 mb-2" />
-                            <p className="font-bold text-sm text-gray-900 group-hover:text-brand-600">Aadhaar Card Verification</p>
-                            <p className="text-xs text-gray-500 mt-1">Instant, secure Aadhaar OTP verification.</p>
-                          </button>
-
-                          <button
-                            onClick={() => setVerifyMode("number")}
-                            className="p-4 border border-gray-200 rounded-xl hover:border-brand-500 hover:bg-white text-left transition-all group"
-                          >
-                            <Phone className="w-5 h-5 text-brand-600 mb-2" />
-                            <p className="font-bold text-sm text-gray-900 group-hover:text-brand-600">Mobile OTP Verification</p>
-                            <p className="text-xs text-gray-500 mt-1">Receive SMS OTP code on your mobile number.</p>
-                          </button>
-                        </div>
-                      )}
-
-                      {verifyMode === "aadhaar" && (
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-bold text-gray-900">Verify with Aadhaar Card</h4>
-                            <button onClick={() => setVerifyMode("choose")} className="text-xs font-semibold text-brand-600 hover:underline">
-                              Change Method
-                            </button>
-                          </div>
-
-                          {showAadhaarOtpBanner && (
-                            <div className="bg-brand-600 text-white text-xs font-semibold px-4 py-2.5 rounded-xl text-center animate-pulse">
-                              Simulated SMS sent: Your OTP is <span className="font-mono text-sm underline">987654</span>
-                            </div>
-                          )}
-
-                          {verificationError && (
-                            <div className="p-3 bg-red-50 text-red-700 border border-red-100 text-xs rounded-xl">
-                              {verificationError}
-                            </div>
-                          )}
-
-                          {!aadhaarOtpSent ? (
-                            <div className="flex gap-2">
-                              <input
-                                type="text"
-                                value={aadhaarNumber}
-                                onChange={(e) => setAadhaarNumber(formatAadhaar(e.target.value))}
-                                placeholder="0000 0000 0000"
-                                className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 font-mono tracking-wider text-center"
-                              />
-                              <button
-                                onClick={handleAadhaarVerifySend}
-                                disabled={isVerifying}
-                                className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm"
-                              >
-                                {isVerifying ? "Sending..." : "Send OTP"}
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="space-y-4">
-                              <p className="text-xs text-gray-500">Enter the 6-digit OTP code sent to your registered number (987654):</p>
-                              <div className="flex gap-2">
-                                <input
-                                  type="text"
-                                  maxLength={6}
-                                  value={aadhaarOtp}
-                                  onChange={(e) => setAadhaarOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                                  placeholder="Enter 6-digit OTP"
-                                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-center font-semibold tracking-widest"
-                                />
-                                <button
-                                  onClick={handleAadhaarVerifyConfirm}
-                                  disabled={isVerifying || aadhaarOtp.length < 6}
-                                  className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm"
-                                >
-                                  {isVerifying ? "Verifying..." : "Verify"}
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {verifyMode === "number" && (
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-bold text-gray-900">Verify with Mobile Number</h4>
-                            <button onClick={() => setVerifyMode("choose")} className="text-xs font-semibold text-brand-600 hover:underline">
-                              Change Method
-                            </button>
-                          </div>
-
-                          {showMobileOtpBanner && (
-                            <div className="bg-brand-600 text-white text-xs font-semibold px-4 py-2.5 rounded-xl text-center animate-pulse">
-                              Simulated SMS sent: Your OTP is <span className="font-mono text-sm underline">123456</span>
-                            </div>
-                          )}
-
-                          {verificationError && (
-                            <div className="p-3 bg-red-50 text-red-700 border border-red-100 text-xs rounded-xl">
-                              {verificationError}
-                            </div>
-                          )}
-
-                          {!mobileOtpSent ? (
-                            <div className="flex items-center gap-3">
-                              <p className="text-xs text-gray-600">
-                                Send a 6-digit SMS verification code to your registered mobile number: <span className="font-semibold">{mobile}</span>
-                              </p>
-                              <button
-                                onClick={handleMobileVerifySend}
-                                disabled={isVerifying}
-                                className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm shrink-0"
-                              >
-                                {isVerifying ? "Sending..." : "Send OTP"}
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="space-y-4">
-                              <p className="text-xs text-gray-500">Enter the 6-digit OTP code sent to your mobile phone (123456):</p>
-                              <div className="flex gap-2">
-                                <input
-                                  type="text"
-                                  maxLength={6}
-                                  value={mobileOtp}
-                                  onChange={(e) => setMobileOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                                  placeholder="Enter 6-digit OTP"
-                                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-center font-semibold tracking-widest"
-                                />
-                                <button
-                                  onClick={handleMobileVerifyConfirm}
-                                  disabled={isVerifying || mobileOtp.length < 6}
-                                  className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm"
-                                >
-                                  {isVerifying ? "Verifying..." : "Verify"}
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                    <button
+                      onClick={() => setActiveTab("kyc")}
+                      className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm shrink-0 flex items-center gap-1 active:scale-95"
+                    >
+                      Verify Now
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </>
+            )}
+
+            {activeTab === "kyc" && (
+              <IdentityVerificationForm />
             )}
 
             {activeTab === "security" && (

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, Eye, MessageCircle, Star, ArrowRight, TrendingUp, Loader2, Sparkles, Lock, X, Volume2, Video } from "lucide-react";
+import { Heart, Eye, MessageCircle, Star, ArrowRight, TrendingUp, Loader2, Sparkles, Lock, X, Volume2, Video, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getEnrichedProfile } from "@/lib/profile-utils";
@@ -130,7 +130,8 @@ export default function DashboardPage() {
             aboutMe: enriched.aboutMe || enriched.personalityDescription,
             aiExplanation: u.profile_details?.mn_partner_preferences_draft?.explanation || "Highly compatible profile based on your preferences.",
             conversationStarter: "I would love to learn more about your values and partner goals!",
-            profile_details: u.profile_details
+            profile_details: u.profile_details,
+            kyc_status: u.kyc_status
           };
         });
 
@@ -308,11 +309,17 @@ export default function DashboardPage() {
                     onClick={() => setSelectedProfile(match)}
                     className="relative h-44 overflow-hidden bg-gray-50 cursor-pointer"
                   >
-                    <img 
-                      src={match.img} 
-                      alt={match.name} 
-                      className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${!isInterested ? "filter blur-[12px] select-none" : ""}`} 
-                    />
+                    {match.img ? (
+                      <img 
+                        src={match.img} 
+                        alt={match.name} 
+                        className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${!isInterested ? "filter blur-[12px] select-none" : ""}`} 
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-brand-50 flex items-center justify-center text-brand-700 font-extrabold text-4xl uppercase">
+                        {match.name.charAt(0)}
+                      </div>
+                    )}
                     {!isInterested && (
                       <div className="absolute inset-0 bg-black/15 flex items-center justify-center transition-all">
                         <div className="bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full shadow-sm border border-white/20 flex items-center gap-1">
@@ -328,7 +335,12 @@ export default function DashboardPage() {
                   </div>
                   <div className="p-4 flex-1 flex flex-col justify-between">
                     <div onClick={() => setSelectedProfile(match)} className="cursor-pointer">
-                      <p className="font-bold text-gray-900 text-sm truncate group-hover:text-brand-600 transition-colors">{match.name}</p>
+                      <p className="font-bold text-gray-900 text-sm truncate group-hover:text-brand-600 transition-colors flex items-center gap-1">
+                        {match.name}
+                        {match.kyc_status === "VERIFIED" && (
+                          <span title="ID Verified" className="shrink-0"><ShieldCheck className="w-4 h-4 text-blue-600 fill-blue-100" /></span>
+                        )}
+                      </p>
                       <p className="text-[11px] text-gray-500 mt-0.5 truncate">{match.age} yrs · {match.location}</p>
                       <p className="text-[11px] text-brand-600 mt-0.5 font-bold truncate">{match.caste}</p>
                     </div>
@@ -439,7 +451,12 @@ export default function DashboardPage() {
                     <div className="absolute bottom-4 left-6 right-6">
                       <div className="flex items-end justify-between">
                         <div>
-                          <h2 className="text-2xl font-bold text-white drop-shadow-md">{selectedProfile.name}</h2>
+                          <h2 className="text-2xl font-bold text-white drop-shadow-md flex items-center gap-1.5">
+                            {selectedProfile.name}
+                            {selectedProfile.kyc_status === "VERIFIED" && (
+                              <span title="ID Verified" className="shrink-0"><ShieldCheck className="w-5 h-5 text-blue-400 fill-blue-900/40" /></span>
+                            )}
+                          </h2>
                           <p className="text-gray-200 text-sm mt-1">{selectedProfile.age} yrs • {selectedProfile.location} • {selectedProfile.caste}</p>
                         </div>
                         <div className="bg-brand-600 text-white px-3 py-1.5 rounded-xl font-bold text-sm shadow-lg flex items-center gap-1.5">

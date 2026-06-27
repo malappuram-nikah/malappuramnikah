@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, SlidersHorizontal, Heart, MessageCircle, TrendingUp, Loader2, Lock, Unlock, Layers, X, Sparkles, Volume2, Video } from "lucide-react";
+import { Search, SlidersHorizontal, Heart, MessageCircle, TrendingUp, Loader2, Lock, Unlock, Layers, X, Sparkles, Volume2, Video, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCompare } from "@/context/CompareContext";
 import { getEnrichedProfile } from "@/lib/profile-utils";
@@ -116,7 +116,8 @@ export default function SearchPage() {
               voice: u.profile_details?.mn_voice_intro_draft?.voice?.dataUrl || null,
               aboutMe: enriched.aboutMe || enriched.personalityDescription,
               aiExplanation: u.profile_details?.mn_partner_preferences_draft?.explanation || "Highly compatible profile based on your preferences.",
-              conversationStarter: "I would love to learn more about your values and partner goals!"
+              conversationStarter: "I would love to learn more about your values and partner goals!",
+              kyc_status: u.kyc_status
             };
           });
           setProfiles(mapped);
@@ -362,7 +363,12 @@ export default function SearchPage() {
                   <div onClick={() => setSelectedProfile(p)} className="cursor-pointer">
                     <div className="flex items-start justify-between">
                       <div className="min-w-0">
-                        <p className="font-bold text-gray-900 text-sm truncate group-hover:text-brand-600 transition-colors">{p.name}</p>
+                        <p className="font-bold text-gray-900 text-sm truncate group-hover:text-brand-600 transition-colors flex items-center gap-1">
+                          {p.name}
+                          {p.kyc_status === "VERIFIED" && (
+                            <span title="ID Verified" className="shrink-0"><ShieldCheck className="w-4 h-4 text-blue-600 fill-blue-100" /></span>
+                          )}
+                        </p>
                         <p className="text-xs text-gray-500 mt-0.5 truncate">{p.age} yrs · {p.location}</p>
                         <p className="text-xs text-brand-600 mt-0.5 font-medium truncate">{p.caste}</p>
                       </div>
@@ -475,7 +481,12 @@ export default function SearchPage() {
                     <div className="absolute bottom-4 left-6 right-6">
                       <div className="flex items-end justify-between">
                         <div>
-                          <h2 className="text-2xl font-bold text-white drop-shadow-md">{selectedProfile.name}</h2>
+                          <h2 className="text-2xl font-bold text-white drop-shadow-md flex items-center gap-1.5">
+                            {selectedProfile.name}
+                            {selectedProfile.kyc_status === "VERIFIED" && (
+                              <span title="ID Verified" className="shrink-0"><ShieldCheck className="w-5 h-5 text-blue-400 fill-blue-900/40" /></span>
+                            )}
+                          </h2>
                           <p className="text-gray-200 text-sm mt-1">{selectedProfile.age} yrs • {selectedProfile.location} • {selectedProfile.caste}</p>
                         </div>
                         <div className="bg-brand-600 text-white px-3 py-1.5 rounded-xl font-bold text-sm shadow-lg flex items-center gap-1.5">

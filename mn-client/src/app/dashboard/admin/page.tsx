@@ -56,6 +56,11 @@ export default function AdminDashboardPage() {
   const [newVendorForm, setNewVendorForm] = useState({ name: "", category: "Photography", location: "", contact: "", commission_rate: 10 });
   const [showAddVendor, setShowAddVendor] = useState(false);
   const [cmsBanner, setCmsBanner] = useState("");
+  const [kycRequests, setKycRequests] = useState<any[]>([]);
+  const [selectedKycRequest, setSelectedKycRequest] = useState<any | null>(null);
+  const [kycRejectReason, setKycRejectReason] = useState("");
+  const [showKycRejectModal, setShowKycRejectModal] = useState(false);
+  const [kycStatusFilter, setKycStatusFilter] = useState<string>("ALL");
 
   const triggerAlert = (text: string, type: "success" | "error" = "success") => {
     setAlertMsg({ text, type });
@@ -133,6 +138,15 @@ export default function AdminDashboardPage() {
       const usersData = await usersRes.json();
       if (usersData.success) {
         setDbUsers(usersData.users);
+      }
+
+      // 4. Fetch KYC Requests List
+      const kycRes = await fetch("http://localhost:3333/user/admin/kyc/requests", {
+        headers: { "Authorization": `Bearer ${storedToken}` }
+      });
+      const kycData = await kycRes.json();
+      if (kycData.success) {
+        setKycRequests(kycData.requests);
       }
 
     } catch (e) {
@@ -221,6 +235,73 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleKycReview = async (requestId: number) => {
+    try {
+      const storedToken = localStorage.getItem("mn_token");
+      const res = await fetch(`http://localhost:3333/user/admin/kyc/${requestId}/review`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${storedToken}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        await loadAdminData();
+        setSelectedKycRequest((prev: any) => prev && prev.id === requestId ? { ...prev, kyc_status: "UNDER_REVIEW" } : prev);
+      }
+    } catch (e) {
+      console.error("Failed to move request to UNDER_REVIEW", e);
+    }
+  };
+
+  const handleKycApprove = async (requestId: number) => {
+    try {
+      const storedToken = localStorage.getItem("mn_token");
+      const res = await fetch(`http://localhost:3333/user/admin/kyc/${requestId}/approve`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${storedToken}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        triggerAlert("Identity verification approved successfully!");
+        setSelectedKycRequest(null);
+        await loadAdminData();
+      } else {
+        triggerAlert(data.message || "Failed to approve request.", "error");
+      }
+    } catch (e) {
+      triggerAlert("Server error during approval.", "error");
+    }
+  };
+
+  const handleKycReject = async (requestId: number) => {
+    if (!kycRejectReason.trim()) {
+      triggerAlert("Rejection reason is required.", "error");
+      return;
+    }
+    try {
+      const storedToken = localStorage.getItem("mn_token");
+      const res = await fetch(`http://localhost:3333/user/admin/kyc/${requestId}/reject`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${storedToken}`
+        },
+        body: JSON.stringify({ reason: kycRejectReason })
+      });
+      const data = await res.json();
+      if (data.success) {
+        triggerAlert("Identity verification request rejected.");
+        setShowKycRejectModal(false);
+        setKycRejectReason("");
+        setSelectedKycRequest(null);
+        await loadAdminData();
+      } else {
+        triggerAlert(data.message || "Failed to reject request.", "error");
+      }
+    } catch (e) {
+      triggerAlert("Server error during rejection.", "error");
+    }
+  };
+
   const handleCreateVendor = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newVendorForm.name || !newVendorForm.location) {
@@ -271,6 +352,7 @@ export default function AdminDashboardPage() {
     { id: "analytics",     icon: BarChart3,      label: "Analytics Core",      color: "border-brand-500/20 text-brand-600" },
     { id: "users",         icon: Users,          label: "User Accounts",       color: "border-teal-500/20 text-teal-600" },
     { id: "profiles",      icon: Heart,          label: "Matrimony Profiles",  color: "border-pink-500/20 text-pink-600" },
+    { id: "kyc",           icon: ShieldCheck,    label: "Identity KYC",        color: "border-blue-500/20 text-blue-600" },
     { id: "reports",       icon: AlertTriangle,  label: "Complaints Grid",     color: "border-red-500/20 text-red-600" },
     { id: "subscriptions", icon: CreditCard,     label: "Premium Plans",       color: "border-indigo-500/20 text-indigo-600" },
     { id: "cms",           icon: Megaphone,      label: "CMS & Story Sliders", color: "border-cyan-500/20 text-cyan-600" },
@@ -393,6 +475,13 @@ export default function AdminDashboardPage() {
                       isActive ? "bg-white text-brand-700" : "bg-pink-100 text-pink-700"
                     }`}>
                       {stats.pendingApproval} New
+                    </span>
+                  )}
+                  {item.id === "kyc" && kycRequests.filter(r => r.kyc_status === "PENDING" || r.kyc_status === "UNDER_REVIEW").length > 0 && (
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${
+                      isActive ? "bg-white text-blue-700" : "bg-blue-100 text-blue-700"
+                    }`}>
+                      {kycRequests.filter(r => r.kyc_status === "PENDING" || r.kyc_status === "UNDER_REVIEW").length} New
                     </span>
                   )}
                   {item.id === "reports" && storeData.reports.filter((r:any)=>r.status === "PENDING").length > 0 && (
@@ -667,6 +756,283 @@ export default function AdminDashboardPage() {
                           </div>
                         </div>
                       ))
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Tab: Identity KYC Verification Requests */}
+              {activeTab === "kyc" && (
+                <motion.div key="kyc" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+                    <div>
+                      <h2 className="text-base font-bold text-gray-900 flex items-center gap-1.5">
+                        <ShieldCheck className="w-5 h-5 text-blue-600" /> Identity KYC Verification Center
+                      </h2>
+                      <p className="text-[10px] text-gray-400 mt-0.5">
+                        Review official government issued IDs, verify details, and approve/reject trust badges.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={kycStatusFilter}
+                        onChange={(e) => setKycStatusFilter(e.target.value)}
+                        className="p-2 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 bg-gray-50 font-semibold text-gray-700 cursor-pointer"
+                      >
+                        <option value="ALL">All Submissions</option>
+                        <option value="PENDING">Pending (New)</option>
+                        <option value="UNDER_REVIEW">Under Review</option>
+                        <option value="VERIFIED">Verified (Approved)</option>
+                        <option value="REJECTED">Rejected</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid lg:grid-cols-12 gap-6">
+                    {/* Left side: Requests List */}
+                    <div className={`${selectedKycRequest ? "lg:col-span-5" : "lg:col-span-12"} space-y-3`}>
+                      {kycRequests.filter(r => {
+                        if (kycStatusFilter === "ALL") return true;
+                        return r.kyc_status === kycStatusFilter;
+                      }).filter(r => {
+                        const fullName = `${r.first_name || ""} ${r.last_name || ""}`.toLowerCase();
+                        const query = searchQuery.toLowerCase();
+                        return fullName.includes(query) || (r.mobile_number || "").includes(query);
+                      }).length === 0 ? (
+                        <div className="py-16 text-center text-gray-400 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                          <ShieldCheck className="w-10 h-10 mx-auto mb-2 text-blue-500 opacity-60" />
+                          <p className="font-semibold text-sm">No verification requests found</p>
+                          <p className="text-[10px] mt-0.5">There are no submissions matching the selected filters.</p>
+                        </div>
+                      ) : (
+                        kycRequests.filter(r => {
+                          if (kycStatusFilter === "ALL") return true;
+                          return r.kyc_status === kycStatusFilter;
+                        }).filter(r => {
+                          const fullName = `${r.first_name || ""} ${r.last_name || ""}`.toLowerCase();
+                          const query = searchQuery.toLowerCase();
+                          return fullName.includes(query) || (r.mobile_number || "").includes(query);
+                        }).map(req => {
+                          const isSelected = selectedKycRequest?.id === req.id;
+                          return (
+                            <button
+                              key={req.id}
+                              onClick={() => {
+                                setSelectedKycRequest(req);
+                                if (req.kyc_status === "PENDING") {
+                                  handleKycReview(req.id);
+                                }
+                              }}
+                              className={`w-full text-left p-4 rounded-xl border transition-all flex items-start justify-between gap-3 ${
+                                isSelected
+                                  ? "border-blue-500 bg-blue-50/20 shadow-sm"
+                                  : "border-gray-100 hover:border-gray-200 bg-white"
+                              }`}
+                            >
+                              <div className="min-w-0 flex-1">
+                                <p className="font-bold text-gray-900 text-xs truncate">
+                                  {req.first_name} {req.last_name}
+                                </p>
+                                <p className="text-[10px] text-gray-500 font-medium mt-0.5">
+                                  {req.kyc_document_type} • {req.mobile_number}
+                                </p>
+                                <p className="text-[9px] text-gray-400 font-semibold mt-1">
+                                  Submitted: {req.kyc_submitted_at ? new Date(req.kyc_submitted_at).toLocaleDateString() : "N/A"}
+                                </p>
+                              </div>
+
+                              <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full shrink-0 ${
+                                req.kyc_status === "VERIFIED"
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : req.kyc_status === "PENDING"
+                                  ? "bg-blue-100 text-blue-800 animate-pulse"
+                                  : req.kyc_status === "UNDER_REVIEW"
+                                  ? "bg-amber-100 text-amber-800"
+                                  : "bg-red-100 text-red-800"
+                              }`}>
+                                {req.kyc_status.replace("_", " ")}
+                              </span>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    {/* Right side: Detailed inspector */}
+                    {selectedKycRequest && (
+                      <div className="lg:col-span-7 bg-white border border-gray-100 rounded-2xl p-5 space-y-5 shadow-sm">
+                        <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                          <div>
+                            <h3 className="font-bold text-gray-900 text-sm">
+                              {selectedKycRequest.first_name} {selectedKycRequest.last_name}
+                            </h3>
+                            <p className="text-[10px] text-gray-500 font-semibold mt-0.5">
+                              User ID: {selectedKycRequest.id} • {selectedKycRequest.gender} • DOB: {selectedKycRequest.dob || "N/A"}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => setSelectedKycRequest(null)}
+                            className="p-1 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        {/* Document details card */}
+                        <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100 text-xs">
+                          <div>
+                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Document Type</span>
+                            <span className="font-semibold text-gray-800 mt-0.5 block">{selectedKycRequest.kyc_document_type}</span>
+                          </div>
+                          <div>
+                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Current Status</span>
+                            <span className={`inline-block text-[9px] font-bold uppercase px-2 py-0.5 rounded-full mt-1 ${
+                              selectedKycRequest.kyc_status === "VERIFIED"
+                                ? "bg-emerald-100 text-emerald-800"
+                                : selectedKycRequest.kyc_status === "PENDING"
+                                ? "bg-blue-100 text-blue-800"
+                                : selectedKycRequest.kyc_status === "UNDER_REVIEW"
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-red-100 text-red-800"
+                            }`}>
+                              {selectedKycRequest.kyc_status.replace("_", " ")}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Document Images Display */}
+                        <div className="space-y-4">
+                          <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Uploaded Documents</h4>
+                          <div className="grid sm:grid-cols-2 gap-4">
+                            {/* Front Image */}
+                            <div className="border border-gray-200 rounded-xl overflow-hidden bg-gray-50 flex flex-col justify-between h-48">
+                              <div className="bg-gray-100 px-3 py-1.5 text-[9px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 flex justify-between items-center">
+                                <span>Front side</span>
+                                {selectedKycRequest.kyc_front_url && (
+                                  <a
+                                    href={selectedKycRequest.kyc_front_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-blue-600 hover:underline"
+                                  >
+                                    Open Full Size
+                                  </a>
+                                )}
+                              </div>
+                              <div className="flex-1 flex items-center justify-center p-3">
+                                {selectedKycRequest.kyc_front_url ? (
+                                  <img
+                                    src={selectedKycRequest.kyc_front_url}
+                                    alt="Front ID"
+                                    className="max-h-full max-w-full object-contain rounded-md shadow-sm"
+                                  />
+                                ) : (
+                                  <span className="text-[10px] text-gray-400 font-medium">No Front Document Image</span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Back Image */}
+                            <div className="border border-gray-200 rounded-xl overflow-hidden bg-gray-50 flex flex-col justify-between h-48">
+                              <div className="bg-gray-100 px-3 py-1.5 text-[9px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 flex justify-between items-center">
+                                <span>Back side</span>
+                                {selectedKycRequest.kyc_back_url && (
+                                  <a
+                                    href={selectedKycRequest.kyc_back_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-blue-600 hover:underline"
+                                  >
+                                    Open Full Size
+                                  </a>
+                                )}
+                              </div>
+                              <div className="flex-1 flex items-center justify-center p-3">
+                                {selectedKycRequest.kyc_back_url ? (
+                                  <img
+                                    src={selectedKycRequest.kyc_back_url}
+                                    alt="Back ID"
+                                    className="max-h-full max-w-full object-contain rounded-md shadow-sm"
+                                  />
+                                ) : (
+                                  <span className="text-[10px] text-gray-400 font-medium">No Back Document Image</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Action buttons or forms */}
+                        {selectedKycRequest.kyc_status === "REJECTED" && selectedKycRequest.kyc_rejected_reason && (
+                          <div className="bg-red-50 border border-red-100 rounded-xl p-3.5 text-xs text-red-800">
+                            <span className="font-semibold block">Rejection Reason:</span>
+                            "{selectedKycRequest.kyc_rejected_reason}"
+                          </div>
+                        )}
+
+                        {selectedKycRequest.kyc_status === "VERIFIED" && selectedKycRequest.kyc_verified_at && (
+                          <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3.5 text-xs text-emerald-800 flex items-center gap-2">
+                            <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
+                            <div>
+                              <span className="font-semibold block">Approved and Badge Granted!</span>
+                              Verified on: {new Date(selectedKycRequest.kyc_verified_at).toLocaleDateString()}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* If in pending or under review, allow actions */}
+                        {(selectedKycRequest.kyc_status === "PENDING" || selectedKycRequest.kyc_status === "UNDER_REVIEW") && (
+                          <div className="space-y-4 pt-2 border-t border-gray-100">
+                            {showKycRejectModal ? (
+                              <div className="bg-red-50/50 border border-red-100 rounded-xl p-4 space-y-3">
+                                <label className="text-[10px] font-bold text-red-800 uppercase tracking-wider block">
+                                  Specify Rejection Reason
+                                </label>
+                                <textarea
+                                  placeholder="e.g. The uploaded Aadhaar card is blurry and details are unreadable. Please upload a clear scan."
+                                  value={kycRejectReason}
+                                  onChange={(e) => setKycRejectReason(e.target.value)}
+                                  rows={3}
+                                  className="w-full p-3 border border-red-200 rounded-xl text-xs bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500/20"
+                                />
+                                <div className="flex gap-2 justify-end">
+                                  <button
+                                    onClick={() => {
+                                      setShowKycRejectModal(false);
+                                      setKycRejectReason("");
+                                    }}
+                                    className="px-3.5 py-2 bg-white border border-gray-200 text-gray-600 text-[10px] font-bold rounded-lg hover:bg-gray-50 transition-colors"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    onClick={() => handleKycReject(selectedKycRequest.id)}
+                                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1"
+                                  >
+                                    Confirm Rejection & Notify
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex gap-3">
+                                <button
+                                  onClick={() => handleKycApprove(selectedKycRequest.id)}
+                                  className="flex-1 py-3 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center justify-center gap-1 active:scale-[0.98]"
+                                >
+                                  <Check className="w-4 h-4" /> Approve & Grant Badge
+                                </button>
+                                <button
+                                  onClick={() => setShowKycRejectModal(true)}
+                                  className="flex-1 py-3 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold rounded-xl border border-red-100 transition-colors flex items-center justify-center gap-1"
+                                >
+                                  <X className="w-4 h-4" /> Reject Request
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 </motion.div>
