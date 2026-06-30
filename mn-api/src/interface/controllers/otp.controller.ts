@@ -3,6 +3,7 @@ import { SendOtpUseCase } from "../../applications/use-cases/user/SentOtp.usecas
 import { VerifyOtpUseCase } from "../../applications/use-cases/user/VerifyOtp.usecase";
 import { AuthService } from "../../infrastructure/service/AuthService.service";
 import { accessTokenConfig } from "../../infrastructure/config/jwt.config";
+import prisma from "../../infrastructure/prisma/prisamClient";
 
 export class OtpController {
   constructor(
@@ -31,6 +32,19 @@ export class OtpController {
       const isValid = await this.verifyOtpUseCase.execute(phoneNumber, otpCode);
 
       if (isValid) {
+        // Activate the existing user account
+        if (userId) {
+          await prisma.user.update({
+            where: { id: Number(userId) },
+            data: { status: "active" }
+          });
+        } else {
+          await prisma.user.update({
+            where: { mobile_number: phoneNumber },
+            data: { status: "active" }
+          });
+        }
+
         const accessToken = AuthService.generateToken(
           { userId },
           accessTokenConfig

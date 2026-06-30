@@ -2,14 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Lock, Bell, Shield, ChevronRight, Sparkles, AlertCircle, ArrowRight, Save, CheckCircle2, Fingerprint, Phone } from "lucide-react";
+import { User, Lock, Bell, Shield, ChevronRight, Sparkles, AlertCircle, ArrowRight, Save, CheckCircle2, Phone } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { LOCATIONS } from "@/lib/constants";
-import IdentityVerificationForm from "@/components/dashboard/IdentityVerificationForm";
 
 const tabs = [
   { id: "profile", label: "Profile", icon: User },
-  { id: "kyc", label: "Identity Verification", icon: Fingerprint },
   { id: "security", label: "Security", icon: Lock },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "privacy", label: "Privacy", icon: Shield },
@@ -278,7 +276,7 @@ export default function SettingsPage() {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const tab = params.get("tab");
-      if (tab && ["profile", "kyc", "security", "notifications", "privacy"].includes(tab)) {
+      if (tab && ["profile", "security", "notifications", "privacy"].includes(tab)) {
         setActiveTab(tab);
       }
     }
@@ -692,7 +690,7 @@ export default function SettingsPage() {
                       </p>
                     </div>
                     <button
-                      onClick={() => setActiveTab("kyc")}
+                      onClick={() => router.push("/dashboard/profile-builder?step=11")}
                       className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm shrink-0 flex items-center gap-1 active:scale-95"
                     >
                       Verify Now
@@ -701,10 +699,6 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </>
-            )}
-
-            {activeTab === "kyc" && (
-              <IdentityVerificationForm />
             )}
 
             {activeTab === "security" && (

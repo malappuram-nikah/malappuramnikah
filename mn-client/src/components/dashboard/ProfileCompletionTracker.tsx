@@ -218,7 +218,7 @@ export default function ProfileCompletionTracker() {
                 </div>
               </div>
               <Link 
-                href={section.key === "mn_kyc_status" ? "/dashboard/settings?tab=kyc" : "/dashboard/profile-builder"} 
+                href={`/dashboard/profile-builder?step=${section.step}`} 
                 className="shrink-0 px-4 py-1.5 bg-white border border-gray-200 text-xs font-semibold text-gray-700 rounded-lg hover:bg-brand-50 hover:text-brand-700 hover:border-brand-200 transition-colors"
               >
                 Complete

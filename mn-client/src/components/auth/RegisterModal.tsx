@@ -277,12 +277,18 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
         setRegisteredUserId(data.user.id);
       }
 
-      setSuccess(true);
-      setResendCooldown(30);
-      setTimeout(() => {
-        setSuccess(false);
+      if (data.unverified) {
+        setOtpError(data.message);
+        setResendCooldown(30);
         setShowOtpScreen(true);
-      }, 1500);
+      } else {
+        setSuccess(true);
+        setResendCooldown(30);
+        setTimeout(() => {
+          setSuccess(false);
+          setShowOtpScreen(true);
+        }, 1500);
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "An unexpected error occurred";
       setError(msg);

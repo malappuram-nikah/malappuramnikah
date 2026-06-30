@@ -12,6 +12,7 @@ import { UpdateProfileDetailsUseCase } from "../../applications/use-cases/user/U
 
 import { getUserIdFromRequest } from "./interest.route";
 import prisma from "../../infrastructure/prisma/prisamClient";
+import { io } from "../../index";
 
 
 const user_route = express.Router();

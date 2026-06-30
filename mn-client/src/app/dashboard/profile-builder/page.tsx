@@ -71,12 +71,21 @@ export default function ProfileBuilderPage() {
   ];
 
   useEffect(() => {
-    // Determine the initial step target from settings redirect, if any
+    // Determine the initial step target from query params or localStorage redirect
     if (typeof window !== "undefined") {
-      const savedStep = localStorage.getItem("mn_profile_builder_step");
-      if (savedStep) {
-        setCurrentStep(parseInt(savedStep, 10));
-        localStorage.removeItem("mn_profile_builder_step");
+      const params = new URLSearchParams(window.location.search);
+      const stepParam = params.get("step");
+      if (stepParam) {
+        const parsedStep = parseInt(stepParam, 10);
+        if (!isNaN(parsedStep) && parsedStep >= 1 && parsedStep <= 13) {
+          setCurrentStep(parsedStep);
+        }
+      } else {
+        const savedStep = localStorage.getItem("mn_profile_builder_step");
+        if (savedStep) {
+          setCurrentStep(parseInt(savedStep, 10));
+          localStorage.removeItem("mn_profile_builder_step");
+        }
       }
     }
 

@@ -21,11 +21,29 @@ export class UserController {
 
     try {
       console.log("Request body:", req.body);
+      const phoneNumber = req.body.mobile_number;
+
+      // Check if user exists and is unverified (status is 'in_active')
+      const existingUser = await prisma.user.findUnique({
+        where: { mobile_number: phoneNumber }
+      });
+      const isUnverified = existingUser && existingUser.status === "in_active";
+
       const user = await this.registerUser.execute(req.body);
       console.log("User from use case:", user);
 
-      const phoneNumber = req.body.mobile_number;
       await this.sendOtp.execute(phoneNumber);
+
+      if (isUnverified) {
+        return res
+          .status(200)
+          .json({
+            success: true,
+            unverified: true,
+            message: "Your account has already been created but is not yet verified. Please verify your OTP to activate your account.",
+            user
+          });
+      }
 
       return res
         .status(200)
