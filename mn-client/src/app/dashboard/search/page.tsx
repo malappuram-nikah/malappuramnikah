@@ -432,19 +432,21 @@ export default function SearchPage() {
             }
 
             return (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div className="fixed inset-0 z-50 flex justify-end">
                 <motion.div 
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                   className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
                   onClick={() => setSelectedProfile(null)}
                 />
                 <motion.div 
-                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                  className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-y-auto max-h-[90vh] z-10 scrollbar-thin"
+                  initial={{ x: "100%" }}
+                  animate={{ x: 0 }}
+                  exit={{ x: "100%" }}
+                  transition={{ type: "spring", damping: 25, stiffness: 220 }}
+                  className="relative w-full max-w-md sm:max-w-lg bg-white shadow-2xl h-full flex flex-col z-10 rounded-l-3xl overflow-hidden"
                 >
-                  <div className="h-56 bg-gray-100 relative overflow-hidden">
+                  <div className="flex-1 overflow-y-auto scrollbar-thin">
+                    <div className="h-56 bg-gray-100 relative overflow-hidden">
                     {(() => {
                       const isInterested = isMutual || isSent || isReceived;
                       return (
@@ -667,8 +669,9 @@ export default function SearchPage() {
                       </button>
                     </div>
                   </div>
-                </motion.div>
-              </div>
+                </div>
+              </motion.div>
+            </div>
             );
           })()}
         </AnimatePresence>,
