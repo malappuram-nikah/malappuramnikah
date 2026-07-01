@@ -13,6 +13,7 @@ import { UpdateProfileDetailsUseCase } from "../../applications/use-cases/user/U
 import { getUserIdFromRequest } from "./interest.route";
 import prisma from "../../infrastructure/prisma/prisamClient";
 import { io } from "../../index";
+import { MediaStorageService } from "../../infrastructure/service/MediaStorageService";
 
 
 const user_route = express.Router();
@@ -97,13 +98,20 @@ user_route.put('/:id/premium', async (req: Request, res: Response) => {
 
 const KYC_UPLOADS_DIR = path.join(process.cwd(), "kyc-uploads");
 
-function deleteKycFile(fileName: string | null) {
+async function deleteKycFile(fileName: string | null) {
   if (!fileName) return;
   try {
     const filePath = path.join(KYC_UPLOADS_DIR, fileName);
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
-      console.log(`Deleted old KYC file: ${fileName}`);
+      console.log(`Deleted old local KYC file: ${fileName}`);
+    }
+
+    if (MediaStorageService.isCloudinaryConfigured) {
+      const publicId = `malappuram_nikah/kyc/${path.parse(fileName).name}`;
+      const { v2: cloudinary } = require("cloudinary");
+      await cloudinary.uploader.destroy(publicId, { type: "authenticated" });
+      console.log(`Deleted old Cloudinary KYC file: ${publicId}`);
     }
   } catch (err) {
     console.error(`Failed to delete KYC file ${fileName}:`, err);
@@ -181,7 +189,7 @@ user_route.post('/kyc/submit', async (req: Request, res: Response) => {
     }
 
     // Helper function to validate and save base64 document
-    const saveDocument = (base64Data: string, side: "front" | "back"): string => {
+    const saveDocument = async (base64Data: string, side: "front" | "back"): Promise<string> => {
       // Parse base64
       const matches = base64Data.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
       let mimeType = "application/octet-stream";
@@ -209,10 +217,6 @@ user_route.post('/kyc/submit', async (req: Request, res: Response) => {
         throw new Error(`File size for ${side} side exceeds 5MB limit.`);
       }
 
-      if (!fs.existsSync(KYC_UPLOADS_DIR)) {
-        fs.mkdirSync(KYC_UPLOADS_DIR, { recursive: true });
-      }
-
       const extMap: Record<string, string> = {
         "image/jpeg": "jpg",
         "image/jpg": "jpg",
@@ -221,9 +225,8 @@ user_route.post('/kyc/submit', async (req: Request, res: Response) => {
       };
       const extension = extMap[mimeType] || "bin";
       const fileName = `kyc_${userId}_${side}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${extension}`;
-      const filePath = path.join(KYC_UPLOADS_DIR, fileName);
 
-      fs.writeFileSync(filePath, buffer);
+      await MediaStorageService.uploadPrivateMedia(base64Data, fileName);
       return fileName;
     };
 
@@ -231,9 +234,9 @@ user_route.post('/kyc/submit', async (req: Request, res: Response) => {
     let backFileName: string | null = null;
 
     try {
-      frontFileName = saveDocument(front_base64, "front");
+      frontFileName = await saveDocument(front_base64, "front");
       if (back_base64) {
-        backFileName = saveDocument(back_base64, "back");
+        backFileName = await saveDocument(back_base64, "back");
       }
     } catch (err: any) {
       res.status(400).json({ success: false, message: err.message });
@@ -241,8 +244,8 @@ user_route.post('/kyc/submit', async (req: Request, res: Response) => {
     }
 
     // Clean up previous documents if they exist
-    deleteKycFile(user.kyc_front_url);
-    deleteKycFile(user.kyc_back_url);
+    await deleteKycFile(user.kyc_front_url);
+    await deleteKycFile(user.kyc_back_url);
 
     // Update User KYC Info in database
     const updatedUser = await prisma.user.update({
@@ -299,22 +302,28 @@ user_route.get('/kyc/document/:fileName', async (req: Request, res: Response) =>
     }
 
     const filePath = path.join(KYC_UPLOADS_DIR, fileName);
-    if (!fs.existsSync(filePath)) {
-      res.status(404).json({ success: false, message: "File not found." });
+    if (fs.existsSync(filePath)) {
+      const ext = path.extname(filePath).toLowerCase();
+      let contentType = "application/octet-stream";
+      if (ext === ".jpg" || ext === ".jpeg") contentType = "image/jpeg";
+      else if (ext === ".png") contentType = "image/png";
+      else if (ext === ".pdf") contentType = "application/pdf";
+
+      res.setHeader("Content-Type", contentType);
+      res.setHeader("Content-Disposition", `inline; filename="${fileName}"`);
+
+      const fileStream = fs.createReadStream(filePath);
+      fileStream.pipe(res);
       return;
     }
 
-    const ext = path.extname(filePath).toLowerCase();
-    let contentType = "application/octet-stream";
-    if (ext === ".jpg" || ext === ".jpeg") contentType = "image/jpeg";
-    else if (ext === ".png") contentType = "image/png";
-    else if (ext === ".pdf") contentType = "application/pdf";
+    if (MediaStorageService.isCloudinaryConfigured) {
+      const signedUrl = MediaStorageService.getPrivateMediaUrl(fileName);
+      res.redirect(signedUrl);
+      return;
+    }
 
-    res.setHeader("Content-Type", contentType);
-    res.setHeader("Content-Disposition", `inline; filename="${fileName}"`);
-
-    const fileStream = fs.createReadStream(filePath);
-    fileStream.pipe(res);
+    res.status(404).json({ success: false, message: "File not found." });
   } catch (error: any) {
     console.error("KYC document fetch error:", error);
     res.status(500).json({ success: false, message: error.message || "Failed to fetch KYC document." });

@@ -106,4 +106,69 @@ export class MediaStorageService {
       throw new Error(`Media storage failed: ${err.message}`);
     }
   }
+
+  static get isCloudinaryConfigured(): boolean {
+    return hasCloudinary;
+  }
+
+  static async uploadPrivateMedia(base64Data: string, fileName: string): Promise<string> {
+    if (!base64Data) {
+      throw new Error("No media data provided for upload");
+    }
+
+    if (hasCloudinary) {
+      try {
+        const publicId = path.parse(fileName).name;
+        await cloudinary.uploader.upload(base64Data, {
+          folder: "malappuram_nikah/kyc",
+          public_id: publicId,
+          resource_type: "auto",
+          type: "authenticated",
+          access_mode: "authenticated"
+        });
+        return fileName;
+      } catch (err) {
+        console.error("Cloudinary private upload failed, falling back to local storage:", err);
+      }
+    }
+
+    try {
+      const matches = base64Data.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
+      let base64Body = base64Data;
+
+      if (matches && matches.length === 3) {
+        base64Body = matches[2];
+      } else {
+        if (base64Data.includes(";base64,")) {
+          base64Body = base64Data.split(";base64,")[1];
+        }
+      }
+
+      const publicUploadsDir = path.join(process.cwd(), "public", "uploads", "kyc");
+      if (!fs.existsSync(publicUploadsDir)) {
+        fs.mkdirSync(publicUploadsDir, { recursive: true });
+      }
+
+      const filePath = path.join(publicUploadsDir, fileName);
+      const buffer = Buffer.from(base64Body, "base64");
+      fs.writeFileSync(filePath, buffer);
+
+      return fileName;
+    } catch (err: any) {
+      console.error("Local private file upload failed:", err);
+      throw new Error(`Private media storage failed: ${err.message}`);
+    }
+  }
+
+  static getPrivateMediaUrl(fileName: string): string {
+    if (hasCloudinary) {
+      const publicId = `malappuram_nikah/kyc/${path.parse(fileName).name}`;
+      const ext = path.extname(fileName).replace(".", "") || "jpg";
+      return cloudinary.utils.private_download_url(publicId, ext, {
+        expires_at: Math.floor(Date.now() / 1000) + 3600, // 1 hour
+        type: "authenticated"
+      });
+    }
+    return path.join(process.cwd(), "public", "uploads", "kyc", fileName);
+  }
 }

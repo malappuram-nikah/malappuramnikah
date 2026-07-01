@@ -4,6 +4,7 @@ import { getUserIdFromRequest } from "./interest.route";
 import { io } from "../../index";
 import fs from "fs";
 import path from "path";
+import { MediaStorageService } from "../../infrastructure/service/MediaStorageService";
 
 const admin_route = Router();
 const STORE_PATH = path.join(__dirname, "../../../src/infrastructure/data/adminStore.json");
@@ -573,7 +574,37 @@ admin_route.get("/kyc/requests", adminGuard, async (req: Request, res: Response)
       }
     });
 
-    res.status(200).json({ success: true, requests });
+    const token = req.headers.authorization?.split(" ")[1] || (req.query.token as string);
+    const mappedRequests = requests.map((request) => {
+      let frontUrl = request.kyc_front_url;
+      let backUrl = request.kyc_back_url;
+
+      if (frontUrl) {
+        const localFilePath = path.join(process.cwd(), "kyc-uploads", frontUrl);
+        if (fs.existsSync(localFilePath)) {
+          frontUrl = `http://localhost:3333/user/kyc/document/${frontUrl}${token ? `?token=${token}` : ""}`;
+        } else if (MediaStorageService.isCloudinaryConfigured) {
+          frontUrl = MediaStorageService.getPrivateMediaUrl(frontUrl);
+        }
+      }
+
+      if (backUrl) {
+        const localFilePath = path.join(process.cwd(), "kyc-uploads", backUrl);
+        if (fs.existsSync(localFilePath)) {
+          backUrl = `http://localhost:3333/user/kyc/document/${backUrl}${token ? `?token=${token}` : ""}`;
+        } else if (MediaStorageService.isCloudinaryConfigured) {
+          backUrl = MediaStorageService.getPrivateMediaUrl(backUrl);
+        }
+      }
+
+      return {
+        ...request,
+        kyc_front_url: frontUrl,
+        kyc_back_url: backUrl
+      };
+    });
+
+    res.status(200).json({ success: true, requests: mappedRequests });
   } catch (err: any) {
     console.error("Error fetching KYC requests:", err);
     res.status(500).json({ success: false, message: err.message || "Failed to fetch KYC requests." });
