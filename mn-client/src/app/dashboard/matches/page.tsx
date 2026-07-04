@@ -211,6 +211,7 @@ export default function AiMatchesPage() {
   const router = useRouter();
   const { addToCompare, removeFromCompare, isCompared, alertMsg: globalAlert, setAlertMsg: setGlobalAlert } = useCompare();
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState("ai-recommendations");
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
   const [activePhoto, setActivePhoto] = useState<string | null>(null);

@@ -279,7 +279,7 @@ export default function SettingsPage() {
     setSaved(false);
     
     // Read current drafts from localStorage
-    const profileDetails: Record<string, unknown> = {};
+    const profileDetails: Record<string, any> = {};
     const draftKeys = [
       "mn_basic_details_draft",
       "mn_religious_info_draft",
