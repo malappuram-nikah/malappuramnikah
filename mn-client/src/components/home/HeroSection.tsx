@@ -164,7 +164,7 @@ export default function HeroSection() {
               />
             </motion.div>
 
-            {/* Right Card 2: Man in teal jacket */}
+            {/* Right Card 2: Man on beach */}
             <motion.div
               initial={{ opacity: 0, x: 30, rotate: 3 }}
               animate={{ opacity: 0.7, x: 0, rotate: 4 }}
@@ -173,8 +173,8 @@ export default function HeroSection() {
               className="w-32 h-40 sm:w-44 sm:h-56 md:w-48 md:h-60 rounded-[1.8rem] overflow-hidden bg-white shadow-[0_10px_25px_rgba(0,0,0,0.04)] border-4 border-white flex-shrink-0 hidden sm:block transform cursor-pointer"
             >
               <img
-                src="/hero-man-jacket.jpg"
-                alt="Kerala Muslim Bride"
+                src="/hero-man-beach.jpg"
+                alt="Muslim Groom Profile Beach"
                 className="w-full h-full object-cover"
               />
             </motion.div>
