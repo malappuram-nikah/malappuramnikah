@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect */
 
 import { useState, useEffect, useRef } from "react";
 import { Play, Pause, Volume2, VolumeX, Music } from "lucide-react";

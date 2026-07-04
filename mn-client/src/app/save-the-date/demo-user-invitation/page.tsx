@@ -194,7 +194,7 @@ function InvitationContent() {
           transition={{ delay: 0.8 }}
           className="text-center max-w-lg px-6 z-10 leading-relaxed italic text-sm md:text-base opacity-90"
         >
-          "{message}"
+          &quot;{message}&quot;
         </motion.div>
 
         {/* Venue Section */}

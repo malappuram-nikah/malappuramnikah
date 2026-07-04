@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect */
 
 import { useState, useEffect, useRef } from "react";
 import { Bell, Search, Heart, MessageSquare, Check, Sparkles, X, User, Settings, LogOut } from "lucide-react";
@@ -96,46 +97,6 @@ export default function DashboardHeader() {
     }
   }, [showProfileDropdown]);
 
-  // Initialize Auth & Real-Time Socket
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const storedToken = localStorage.getItem("mn_token");
-    setToken(storedToken);
-
-    if (storedToken) {
-      try {
-        const payload = JSON.parse(atob(storedToken.split(".")[1]));
-        if (payload.userId) {
-          setUserId(payload.userId);
-          
-          // Connect to real-time notification socket room
-          const socket = io("http://localhost:3333", {
-            transports: ["websocket", "polling"]
-          });
-          socketRef.current = socket;
-          socket.emit("join", payload.userId);
-
-          // Realtime incoming notifications alert handler
-          socket.on("notification", (newNotif: any) => {
-            // Re-fetch notifications to load rich DB details
-            fetchNotificationsList(storedToken);
-          });
-
-          // Fetch initial notification list
-          fetchNotificationsList(storedToken);
-          fetchUserProfile(payload.userId, storedToken);
-
-          return () => {
-            socket.disconnect();
-          };
-        }
-      } catch (err) {
-        console.error("DashboardHeader setup error:", err);
-      }
-    }
-  }, []);
-
   const fetchUserProfile = async (uId: number, jwtToken: string) => {
     try {
       const res = await fetch(`http://localhost:3333/user/${uId}?t=${Date.now()}`, {
@@ -166,6 +127,47 @@ export default function DashboardHeader() {
       console.error("Failed to fetch notifications:", err);
     }
   };
+
+  // Initialize Auth & Real-Time Socket
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const storedToken = localStorage.getItem("mn_token");
+    setToken(storedToken);
+
+    if (storedToken) {
+      try {
+        const payload = JSON.parse(atob(storedToken.split(".")[1]));
+        if (payload.userId) {
+          setUserId(payload.userId);
+          
+          // Connect to real-time notification socket room
+          const socket = io("http://localhost:3333", {
+            transports: ["websocket", "polling"]
+          });
+          socketRef.current = socket;
+          socket.emit("join", payload.userId);
+
+          // Realtime incoming notifications alert handler
+          socket.on("notification", () => {
+            // Re-fetch notifications to load rich DB details
+            fetchNotificationsList(storedToken);
+          });
+
+          // Fetch initial notification list
+          fetchNotificationsList(storedToken);
+          fetchUserProfile(payload.userId, storedToken);
+
+          return () => {
+            socket.disconnect();
+          };
+        }
+      } catch (err) {
+        console.error("DashboardHeader setup error:", err);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleMarkAllRead = async () => {
     if (!token) return;

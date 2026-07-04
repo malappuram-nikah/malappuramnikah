@@ -76,7 +76,7 @@ user_route.get('/:id', async (req: Request, res: Response) => {
 
 user_route.put('/:id/premium', async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
     if (isNaN(id)) {
       res.status(400).json({ success: false, message: "Invalid user ID" });
       return;

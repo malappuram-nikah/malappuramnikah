@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect */
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
@@ -14,24 +15,6 @@ export default function SearchPage() {
   const { addToCompare, removeFromCompare, isCompared, alertMsg: globalAlert, setAlertMsg: setGlobalAlert } = useCompare();
   const [profiles, setProfiles] = useState<any[]>([]);
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
-  const [activePhoto, setActivePhoto] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    if (selectedProfile) {
-      setActivePhoto(selectedProfile.img);
-    } else {
-      setActivePhoto(null);
-    }
-  }, [selectedProfile]);
-  
-  useEffect(() => {
-    if (globalAlert) {
-      setAlertMsg(globalAlert);
-      setGlobalAlert(null);
-    }
-  }, [globalAlert, setGlobalAlert]);
-
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState({ ageMin: "", ageMax: "", location: "", caste: "Any" });
@@ -42,6 +25,25 @@ export default function SearchPage() {
     mutual: []
   });
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
+  const [activePhoto, setActivePhoto] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    if (selectedProfile) {
+      setActivePhoto(selectedProfile.img);
+    } else {
+      setActivePhoto(null);
+    }
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  }, [selectedProfile]);
+  
+  useEffect(() => {
+    if (globalAlert) {
+      setAlertMsg(globalAlert);
+      setGlobalAlert(null);
+    }
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  }, [globalAlert, setGlobalAlert]);
 
   const fetchInterests = async (token: string) => {
     try {

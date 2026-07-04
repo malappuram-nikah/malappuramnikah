@@ -226,7 +226,7 @@ export default function SaveTheDateCreator() {
             {/* Couple names */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Bride's Name</label>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Bride&apos;s Name</label>
                 <input 
                   type="text" 
                   value={brideName} 
@@ -235,7 +235,7 @@ export default function SaveTheDateCreator() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Groom's Name</label>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Groom&apos;s Name</label>
                 <input 
                   type="text" 
                   value={groomName} 
@@ -500,7 +500,7 @@ export default function SaveTheDateCreator() {
             </div>
 
             <p className="text-xs text-gray-400 mt-3 text-center max-w-xs">
-              Live invitation updates instantly as you edit the fields. Use "Share Link" to view on web.
+              Live invitation updates instantly as you edit the fields. Use &quot;Share Link&quot; to view on web.
             </p>
           </div>
         </div>

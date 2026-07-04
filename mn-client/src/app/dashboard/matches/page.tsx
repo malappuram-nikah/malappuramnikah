@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect */
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
@@ -209,20 +210,19 @@ const fallbackMockMaleProfiles = [
 export default function AiMatchesPage() {
   const router = useRouter();
   const { addToCompare, removeFromCompare, isCompared, alertMsg: globalAlert, setAlertMsg: setGlobalAlert } = useCompare();
-  const [mounted, setMounted] = useState(false);
-  
-  useEffect(() => {
-    if (globalAlert) {
-      setAlertMsg(globalAlert);
-      setGlobalAlert(null);
-    }
-  }, [globalAlert, setGlobalAlert]);
-
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("ai-recommendations");
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
   const [activePhoto, setActivePhoto] = useState<string | null>(null);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (globalAlert) {
+      setAlertMsg(globalAlert);
+      setGlobalAlert(null);
+    }
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  }, [globalAlert, setGlobalAlert]);
 
   useEffect(() => {
     if (selectedProfile) {

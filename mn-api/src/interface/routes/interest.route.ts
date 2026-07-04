@@ -279,7 +279,7 @@ interest_route.get("/", async (req: Request, res: Response) => {
 
     // Deduplicate sent by receiver.id
     const sentMap = new Map<number, any>();
-    sentInterests.forEach(i => {
+    sentInterests.forEach((i: typeof sentInterests[number]) => {
       if (i.receiver) {
         sentMap.set(i.receiver.id, { ...i.receiver, interest_status: i.status });
       }
@@ -287,7 +287,7 @@ interest_route.get("/", async (req: Request, res: Response) => {
 
     // Deduplicate received by sender.id
     const receivedMap = new Map<number, any>();
-    receivedInterests.forEach(i => {
+    receivedInterests.forEach((i: typeof receivedInterests[number]) => {
       if (i.sender) {
         receivedMap.set(i.sender.id, { ...i.sender, interest_status: i.status });
       }
@@ -295,7 +295,7 @@ interest_route.get("/", async (req: Request, res: Response) => {
 
     // Deduplicate mutual by peer.id
     const mutualMap = new Map<number, any>();
-    mutualMatches.forEach(match => {
+    mutualMatches.forEach((match: typeof mutualMatches[number]) => {
       const peer = match.sender_id === userId ? match.receiver : match.sender;
       if (peer) {
         mutualMap.set(peer.id, { ...peer, interest_status: match.status });
