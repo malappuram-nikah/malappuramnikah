@@ -27,13 +27,14 @@ interface Notification {
 }
 
 import AmbientMusicPlayer from "@/components/dashboard/AmbientMusicPlayer";
+import { useUser } from "@/context/UserContext";
 
 export default function DashboardHeader() {
   const router = useRouter();
+  const { currentUser: user } = useUser();
+  const userName = user?.first_name || "User";
   const [token, setToken] = useState<string | null>(null);
   const [userId, setUserId] = useState<number | null>(null);
-  const [userName, setUserName] = useState<string>("User");
-  const [user, setUser] = useState<any>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -130,7 +131,6 @@ export default function DashboardHeader() {
 
           // Fetch initial notification list
           fetchNotificationsList(storedToken);
-          fetchUserProfile(payload.userId, storedToken);
 
           return () => {
             socket.disconnect();
@@ -142,22 +142,11 @@ export default function DashboardHeader() {
     }
   }, []);
 
-  const fetchUserProfile = async (uId: number, jwtToken: string) => {
-    try {
-      const res = await fetch(`http://localhost:3333/user/${uId}?t=${Date.now()}`, {
-        headers: { "Authorization": `Bearer ${jwtToken}` },
-        cache: "no-store"
-      });
-      const data = await res.json();
-      if (data.success && data.user) {
-        setUser(data.user);
-        setUserName(data.user.first_name || "User");
-        calculateCompletionPercent();
-      }
-    } catch (e) {
-      console.error(e);
+  useEffect(() => {
+    if (user) {
+      calculateCompletionPercent();
     }
-  };
+  }, [user]);
 
   const fetchNotificationsList = async (jwtToken: string) => {
     try {

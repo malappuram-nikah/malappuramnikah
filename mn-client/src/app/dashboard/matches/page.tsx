@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Heart, MessageCircle, TrendingUp, Sparkles, MapPin, BookOpen, Zap, Info, ChevronRight, X, Loader2, Lock, Unlock, Layers, Play, Pause, Volume2, Video, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCompare } from "@/context/CompareContext";
+import { useUser } from "@/context/UserContext";
 import { getEnrichedProfile } from "@/lib/profile-utils";
 
 // Base Mock AI copy to enrich real profiles
@@ -16,13 +17,6 @@ const aiAestheticTemplates = [
     strengths: ["Religious Harmony", "Family Values", "Lifestyle Sync"],
     personality: "Thoughtful & Empathetic (INFJ)",
     conversationStarter: "I noticed you're also passionate about literature. What's the last good book you read?"
-  },
-  {
-    matchScore: 91,
-    aiExplanation: "Highly compatible career goals and family values. Shared focus on personal growth and mutual respect for traditional community practices.",
-    strengths: ["Career Synergy", "Mutual Growth", "Value Alignment"],
-    personality: "Strategic & Outgoing (ENFJ)",
-    conversationStarter: "Your career aspirations look inspiring! How do you maintain work-life balance?"
   },
   {
     matchScore: 88,
@@ -209,6 +203,7 @@ const fallbackMockMaleProfiles = [
 export default function AiMatchesPage() {
   const router = useRouter();
   const { addToCompare, removeFromCompare, isCompared, alertMsg: globalAlert, setAlertMsg: setGlobalAlert } = useCompare();
+  const { currentUser } = useUser();
   const [mounted, setMounted] = useState(false);
   
   useEffect(() => {
@@ -252,7 +247,7 @@ export default function AiMatchesPage() {
 
   const fetchInterests = async (token: string) => {
     try {
-      const res = await fetch("http://localhost:3333/user/interest", {
+      const res = await fetch("http://localhost:3333/user/interest?idsOnly=true", {
         headers: { "Authorization": `Bearer ${token}` }
       });
       const data = await res.json();
@@ -280,36 +275,15 @@ export default function AiMatchesPage() {
       });
       const data = await res.json();
       
-      let currentUserGender = "male"; // default fallback
+      const currentUserGender = (currentUser?.gender || "male").toLowerCase();
       if (data.success && data.users) {
         const tokenPayload = storedToken ? JSON.parse(atob(storedToken.split(".")[1])) : {};
         const loggedInId = tokenPayload.userId || null;
 
-        if (loggedInId && storedToken) {
-          try {
-            const meRes = await fetch(`http://localhost:3333/user/${loggedInId}`, {
-              headers: { "Authorization": `Bearer ${storedToken}` }
-            });
-            const meData = await meRes.json();
-            if (meData.success && meData.user) {
-              currentUserGender = (meData.user.gender || "male").toLowerCase();
-            }
-          } catch (e) {
-            console.error("Error fetching current user gender", e);
-          }
-        }
-
         const mocks = currentUserGender === "female" ? fallbackMockMaleProfiles : fallbackMockProfiles;
         
-        // Filter out logged-in user and any same-gender profiles
-        const otherUsers = data.users.filter((u: any) => {
-          if (u.id === loggedInId) return false;
-          if (currentUserGender) {
-            const targetGender = (u.gender || "").toLowerCase();
-            if (targetGender && currentUserGender === targetGender) return false;
-          }
-          return true;
-        });
+        // Filter out logged-in user (backend already filtered by gender)
+        const otherUsers = data.users.filter((u: any) => u.id !== loggedInId);
         
         if (otherUsers.length > 0) {
           // Map DB users to profiles

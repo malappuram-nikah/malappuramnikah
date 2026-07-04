@@ -207,6 +207,45 @@ interest_route.get("/", async (req: Request, res: Response) => {
       return;
     }
 
+    if (req.query.idsOnly === "true") {
+      const allInterests = await prisma.interest.findMany({
+        where: {
+          OR: [
+            { sender_id: userId },
+            { receiver_id: userId }
+          ]
+        },
+        select: {
+          sender_id: true,
+          receiver_id: true,
+          status: true
+        }
+      });
+
+      const sent: { id: number }[] = [];
+      const received: { id: number }[] = [];
+      const mutual: { id: number }[] = [];
+
+      allInterests.forEach(item => {
+        if (item.status === "ACCEPTED") {
+          const peerId = item.sender_id === userId ? item.receiver_id : item.sender_id;
+          mutual.push({ id: peerId });
+        } else if (item.sender_id === userId) {
+          sent.push({ id: item.receiver_id });
+        } else if (item.receiver_id === userId) {
+          received.push({ id: item.sender_id });
+        }
+      });
+
+      res.status(200).json({
+        success: true,
+        sent,
+        received,
+        mutual
+      });
+      return;
+    }
+
     // 1. Sent Interests (Pending + Accepted where sender is user)
     const sentInterests = await prisma.interest.findMany({
       where: { sender_id: userId },

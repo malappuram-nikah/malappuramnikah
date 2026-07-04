@@ -30,8 +30,17 @@ export class UserRepository implements IUserRepository {
         return bcrypt.compare(plainPassword, hashedPassword);
     }
 
-    async findAll(): Promise<User[]> {
+    async findAll(filters?: { gender?: string; status?: string }): Promise<User[]> {
+        const whereClause: any = {};
+        if (filters?.gender) {
+            whereClause.gender = { equals: filters.gender, mode: 'insensitive' };
+        }
+        if (filters?.status) {
+            whereClause.status = filters.status;
+        }
+
         return prisma.user.findMany({
+            where: whereClause,
             select: {
                 id: true,
                 first_name: true,

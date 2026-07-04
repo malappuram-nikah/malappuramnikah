@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { User, Lock, Bell, Shield, ChevronRight, Sparkles, AlertCircle, ArrowRight, Save, CheckCircle2, Phone } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { LOCATIONS } from "@/lib/constants";
+import { useUser } from "@/context/UserContext";
 
 const tabs = [
   { id: "profile", label: "Profile", icon: User },
@@ -15,6 +16,7 @@ const tabs = [
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { currentUser, refreshUser } = useUser();
   const [activeTab, setActiveTab] = useState("profile");
   const [saved, setSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,15 +76,7 @@ export default function SettingsPage() {
 
       let userFetched = false;
       try {
-        if (currentUserId !== null) {
-          const res = await fetch(`http://localhost:3333/user/${currentUserId}?t=${Date.now()}`, {
-            headers: token ? { "Authorization": `Bearer ${token}` } : {},
-            cache: "no-store"
-          });
-          const data = await res.json();
-          if (data.success && data.user) {
-            const currentUser = data.user;
-
+        if (currentUser) {
             // Clear old draft keys first to prevent stale cache
             const draftKeys = [
               "mn_basic_details_draft",
@@ -163,7 +157,7 @@ export default function SettingsPage() {
               setAge("");
             }
 
-             setCommunity(currentUser.cast || "");
+            setCommunity(currentUser.cast || "");
             setGender(currentUser.gender || "");
             setProfileFor(currentUser.profile_for || "");
             setAboutMe(currentUser.profile_details?.mn_basic_details_draft?.aboutMe || "");
@@ -173,10 +167,9 @@ export default function SettingsPage() {
             setQuranReading(religiousDraft.quranReading || "");
 
             userFetched = true;
-          }
         }
       } catch (apiErr) {
-        console.warn("Backend profile fetch failed. Using fallback details.", apiErr);
+        console.warn("Backend profile sync failed in settings. Using fallback details.", apiErr);
       }
 
       if (!userFetched) {
@@ -280,7 +273,7 @@ export default function SettingsPage() {
         setActiveTab(tab);
       }
     }
-  }, []);
+  }, [currentUser]);
 
   const handleSave = async () => {
     setSaved(false);
@@ -369,7 +362,7 @@ export default function SettingsPage() {
       if (data.success) {
         setSaved(true);
         setTimeout(() => setSaved(false), 2500);
-        loadProfileData();
+        await refreshUser();
         calculateCompletion();
       } else {
         console.error("Profile save rejected by API:", data.message);

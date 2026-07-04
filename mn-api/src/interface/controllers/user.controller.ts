@@ -113,21 +113,22 @@ export class UserController {
 
       const reqIsAdmin = (requester.profile_details as any)?.isAdmin === true || requester.mobile_number === "+911212121212" || requester.mobile_number === "+919876543210";
 
-      const users = await this.getAllUsers.execute();
-
       if (reqIsAdmin) {
+        const users = await this.getAllUsers.execute();
         return res.status(200).json({ success: true, users });
       }
 
       const reqGender = (requester.gender || "").toLowerCase();
       const oppositeGender = reqGender === "male" ? "female" : reqGender === "female" ? "male" : null;
 
-      const filteredUsers = users.filter((u: any) => {
-        if (!oppositeGender) return false;
-        return (u.gender || "").toLowerCase() === oppositeGender;
-      });
+      if (!oppositeGender) {
+        return res.status(200).json({ success: true, users: [] });
+      }
 
-      return res.status(200).json({ success: true, users: filteredUsers });
+      // Fetch only users of the opposite gender from the database
+      const users = await this.getAllUsers.execute({ gender: oppositeGender });
+
+      return res.status(200).json({ success: true, users });
     } catch (error: any) {
       console.error("Error fetching users:", error);
       return res.status(500).json({ success: false, message: "Failed to fetch users" });

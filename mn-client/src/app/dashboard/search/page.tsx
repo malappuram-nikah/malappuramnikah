@@ -6,12 +6,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, SlidersHorizontal, Heart, MessageCircle, TrendingUp, Loader2, Lock, Unlock, Layers, X, Sparkles, Volume2, Video, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCompare } from "@/context/CompareContext";
+import { useUser } from "@/context/UserContext";
 import { getEnrichedProfile } from "@/lib/profile-utils";
 import { LOCATIONS } from "@/lib/constants";
 
 export default function SearchPage() {
   const router = useRouter();
   const { addToCompare, removeFromCompare, isCompared, alertMsg: globalAlert, setAlertMsg: setGlobalAlert } = useCompare();
+  const { currentUser } = useUser();
   const [profiles, setProfiles] = useState<any[]>([]);
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
   const [activePhoto, setActivePhoto] = useState<string | null>(null);
@@ -45,7 +47,7 @@ export default function SearchPage() {
 
   const fetchInterests = async (token: string) => {
     try {
-      const res = await fetch("http://localhost:3333/user/interest", {
+      const res = await fetch("http://localhost:3333/user/interest?idsOnly=true", {
         headers: { "Authorization": `Bearer ${token}` }
       });
       const data = await res.json();
@@ -78,30 +80,8 @@ export default function SearchPage() {
           const tokenPayload = storedToken ? JSON.parse(atob(storedToken.split(".")[1])) : {};
           const loggedInId = tokenPayload.userId || null;
 
-          let loggedInGender = "";
-          if (loggedInId && storedToken) {
-            try {
-              const meRes = await fetch(`http://localhost:3333/user/${loggedInId}`, {
-                headers: { "Authorization": `Bearer ${storedToken}` }
-              });
-              const meData = await meRes.json();
-              if (meData.success && meData.user) {
-                loggedInGender = (meData.user.gender || "").toLowerCase();
-              }
-            } catch (meErr) {
-              console.error("Failed to load logged-in user details in search", meErr);
-            }
-          }
-
-          // Filter out the logged-in user and any same-gender profiles
-          const otherUsers = data.users.filter((u: any) => {
-            if (u.id === loggedInId) return false;
-            if (loggedInGender) {
-              const targetGender = (u.gender || "").toLowerCase();
-              if (targetGender && loggedInGender === targetGender) return false;
-            }
-            return true;
-          });
+          // Filter out the logged-in user
+          const otherUsers = data.users.filter((u: any) => u.id !== loggedInId);
 
           const mapped = otherUsers.map((u: any, i: number) => {
             const enriched = getEnrichedProfile(u);

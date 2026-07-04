@@ -9,13 +9,14 @@ import { useRouter } from "next/navigation";
 import { getEnrichedProfile } from "@/lib/profile-utils";
 import ProfileCompletionTracker from "@/components/dashboard/ProfileCompletionTracker";
 import BiodataDownload from "@/components/dashboard/BiodataDownload";
+import { useUser } from "@/context/UserContext";
 
 
 export default function DashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const { currentUser } = useUser();
   const [mounted, setMounted] = useState(false);
   
   // Real Statistics state
@@ -46,7 +47,7 @@ export default function DashboardPage() {
 
   const fetchInterests = async (token: string) => {
     try {
-      const res = await fetch("http://localhost:3333/user/interest", {
+      const res = await fetch("http://localhost:3333/user/interest?idsOnly=true", {
         headers: { "Authorization": `Bearer ${token}` }
       });
       const data = await res.json();
@@ -89,32 +90,9 @@ export default function DashboardPage() {
       if (data.success && data.users) {
         const tokenPayload = storedToken ? JSON.parse(atob(storedToken.split(".")[1])) : {};
         const loggedInId = tokenPayload.userId || null;
-        
-        let loggedInGender = "";
-        if (loggedInId && storedToken) {
-          try {
-            const meRes = await fetch(`http://localhost:3333/user/${loggedInId}`, {
-              headers: { "Authorization": `Bearer ${storedToken}` }
-            });
-            const meData = await meRes.json();
-            if (meData.success && meData.user) {
-              setCurrentUser(meData.user);
-              loggedInGender = (meData.user.gender || "").toLowerCase();
-            }
-          } catch (meErr) {
-            console.error("Failed to load logged-in user details in dashboard", meErr);
-          }
-        }
 
-        // Filter out logged-in user and any same-gender profiles
-        const otherUsers = data.users.filter((u: any) => {
-          if (u.id === loggedInId) return false;
-          if (loggedInGender) {
-            const targetGender = (u.gender || "").toLowerCase();
-            if (targetGender && loggedInGender === targetGender) return false;
-          }
-          return true;
-        });
+        // Filter out logged-in user (backend already filtered by opposite gender)
+        const otherUsers = data.users.filter((u: any) => u.id !== loggedInId);
 
         const mapped = otherUsers.map((u: any, i: number) => {
           const enriched = getEnrichedProfile(u);

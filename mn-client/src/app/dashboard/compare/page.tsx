@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useCompare } from "@/context/CompareContext";
+import { useUser } from "@/context/UserContext";
 import { getEnrichedProfile, analyzeMatch } from "@/lib/profile-utils";
 import { 
   X, Layers, Heart, MessageCircle, Star, User, BookOpen, 
@@ -28,6 +29,7 @@ function CompareContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { compareIds, addToCompare, removeFromCompare, clearCompare } = useCompare();
+  const { currentUser } = useUser();
 
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [comparedProfiles, setComparedProfiles] = useState<any[]>([]);
@@ -80,27 +82,10 @@ function CompareContent() {
           setAllUsers(data.users);
           
           // Identify current user preferences
-          if (token) {
-            try {
-              const payload = JSON.parse(atob(token.split(".")[1]));
-              const meRes = await fetch(`http://localhost:3333/user/${payload.userId}`, {
-                headers: { "Authorization": `Bearer ${token}` }
-              });
-              const meData = await meRes.json();
-              if (meData.success && meData.user) {
-                const me = meData.user;
-                if (me.profile_details?.mn_partner_preferences_draft) {
-                  setMyPreferences(me.profile_details.mn_partner_preferences_draft);
-                } else {
-                  const localPref = localStorage.getItem("mn_partner_preferences_draft");
-                  if (localPref) setMyPreferences(JSON.parse(localPref));
-                }
-              } else {
-                const localPref = localStorage.getItem("mn_partner_preferences_draft");
-                if (localPref) setMyPreferences(JSON.parse(localPref));
-              }
-            } catch (meErr) {
-              console.error("Failed to load current user for preferences", meErr);
+          if (currentUser) {
+            if (currentUser.profile_details?.mn_partner_preferences_draft) {
+              setMyPreferences(currentUser.profile_details.mn_partner_preferences_draft);
+            } else {
               const localPref = localStorage.getItem("mn_partner_preferences_draft");
               if (localPref) setMyPreferences(JSON.parse(localPref));
             }
@@ -116,7 +101,7 @@ function CompareContent() {
       }
     };
     fetchData();
-  }, []);
+  }, [currentUser]);
 
   // Assemble compared profiles lists
   useEffect(() => {

@@ -3,7 +3,7 @@ import { IUserRepository } from "../../../domain/interfaces/IUserRepository";
 export class GetAllUsers {
   constructor(private userRepository: IUserRepository) {}
 
-  async execute() {
-    return this.userRepository.findAll();
+  async execute(filters?: { gender?: string; status?: string }) {
+    return this.userRepository.findAll(filters);
   }
 }
