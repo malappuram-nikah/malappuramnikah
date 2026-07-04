@@ -53,7 +53,22 @@ export default function HeroSection() {
           {/* Cards Row layout */}
           <div className="flex items-center justify-center gap-4 md:gap-6 lg:gap-8 overflow-x-auto no-scrollbar py-6">
             
-            {/* Left Card 1: Man in teal jacket */}
+            {/* Left Card 1: Man with backpack */}
+            <motion.div
+              initial={{ opacity: 0, x: -40, rotate: -5 }}
+              animate={{ opacity: 0.5, x: 0, rotate: -6 }}
+              transition={{ duration: 0.8, delay: 0.5 }}
+              whileHover={{ scale: 1.05, opacity: 0.8, transition: { duration: 0.2 } }}
+              className="w-28 h-36 sm:w-36 sm:h-48 md:w-40 md:h-52 rounded-[1.6rem] overflow-hidden bg-white shadow-[0_8px_20px_rgba(0,0,0,0.03)] border-4 border-white flex-shrink-0 hidden lg:block transform cursor-pointer"
+            >
+              <img
+                src="/hero-man-backpack.jpg"
+                alt="Muslim Groom Backpack"
+                className="w-full h-full object-cover"
+              />
+            </motion.div>
+
+            {/* Left Card 2: Man in teal jacket */}
             <motion.div
               initial={{ opacity: 0, x: -30, rotate: -3 }}
               animate={{ opacity: 0.7, x: 0, rotate: -4 }}
@@ -68,7 +83,7 @@ export default function HeroSection() {
               />
             </motion.div>
 
-            {/* Left Card 2: Girl in green dress / pink hijab */}
+            {/* Left Card 3: Girl in green dress / pink hijab */}
             <motion.div
               initial={{ opacity: 0, x: -20, rotate: -1 }}
               animate={{ opacity: 0.9, x: 0, rotate: -2 }}
@@ -164,7 +179,7 @@ export default function HeroSection() {
               />
             </motion.div>
 
-            {/* Right Card 2: Man on beach */}
+            {/* Right Card 2: Girl with book on beach */}
             <motion.div
               initial={{ opacity: 0, x: 30, rotate: 3 }}
               animate={{ opacity: 0.7, x: 0, rotate: 4 }}
@@ -173,8 +188,23 @@ export default function HeroSection() {
               className="w-32 h-40 sm:w-44 sm:h-56 md:w-48 md:h-60 rounded-[1.8rem] overflow-hidden bg-white shadow-[0_10px_25px_rgba(0,0,0,0.04)] border-4 border-white flex-shrink-0 hidden sm:block transform cursor-pointer"
             >
               <img
+                src="/hero-girl-beach-book.jpg"
+                alt="Muslim Bride Profile Beach Book"
+                className="w-full h-full object-cover"
+              />
+            </motion.div>
+
+            {/* Right Card 3: Man on beach (arms crossed) */}
+            <motion.div
+              initial={{ opacity: 0, x: 40, rotate: 5 }}
+              animate={{ opacity: 0.5, x: 0, rotate: 6 }}
+              transition={{ duration: 0.8, delay: 0.5 }}
+              whileHover={{ scale: 1.05, opacity: 0.8, transition: { duration: 0.2 } }}
+              className="w-28 h-36 sm:w-36 sm:h-48 md:w-40 md:h-52 rounded-[1.6rem] overflow-hidden bg-white shadow-[0_8px_20px_rgba(0,0,0,0.03)] border-4 border-white flex-shrink-0 hidden lg:block transform cursor-pointer"
+            >
+              <img
                 src="/hero-man-beach.jpg"
-                alt="Muslim Groom Profile Beach"
+                alt="Muslim Groom Profile Beach Crossed Arms"
                 className="w-full h-full object-cover"
               />
             </motion.div>
