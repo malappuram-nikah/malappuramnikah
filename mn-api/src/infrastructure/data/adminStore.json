@@ -205,6 +205,12 @@
   },
   "activity_logs": [
     {
+      "id": 1783245848723,
+      "admin": "Super Admin",
+      "action": "Approved identity verification for user harismon p (ID: 45)",
+      "time": "2026-07-05 10:04:08"
+    },
+    {
       "id": 1782601899259,
       "admin": "ansal mn",
       "action": "Approved identity verification for user Lionel Messi (ID: 35)",

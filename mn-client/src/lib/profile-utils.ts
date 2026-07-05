@@ -1,4 +1,6 @@
-export function getEnrichedProfile(u: any) {
+import { User, EnrichedProfile, ProfileDetails } from "@/types";
+
+export function getEnrichedProfile(u: User): EnrichedProfile {
   const profileDetails = u.profile_details || {};
   const basic = profileDetails.mn_basic_details_draft || {};
   const religious = profileDetails.mn_religious_info_draft || {};
@@ -8,7 +10,7 @@ export function getEnrichedProfile(u: any) {
   const habits = profileDetails.mn_habits_draft || {};
   const partner = profileDetails.mn_partner_preferences_draft || {};
 
-  const parseHobbies = (val: any, fallback: string[]) => {
+  const parseHobbies = (val: any, fallback: string[]): string[] => {
     if (!val) return fallback;
     if (Array.isArray(val)) return val;
     if (typeof val === "string") {
@@ -21,7 +23,7 @@ export function getEnrichedProfile(u: any) {
   let avatar = "";
   const photos = profileDetails.mn_profile_photos_draft?.photos;
   if (photos && photos.length > 0) {
-    const primary = photos.find((p: any) => p.isPrimary);
+    const primary = photos.find((p) => p.isPrimary);
     avatar = primary ? primary.dataUrl : photos[0].dataUrl;
   }
 
@@ -38,7 +40,7 @@ export function getEnrichedProfile(u: any) {
     
     // Core Header fields
     profileId: `MN-${100000 + u.id}`,
-    age: basic.age ? parseInt(basic.age) : (age || 0),
+    age: basic.age ? parseInt(basic.age, 10) : (age || 0),
     height: basic.height || "",
     education: (professional.education === "Others" && professional.customEducation) ? professional.customEducation : (professional.education || ""),
     profession: professional.profession || "",
@@ -51,7 +53,7 @@ export function getEnrichedProfile(u: any) {
     motherTongue: basic.motherTongue || "",
     physicalStatus: basic.physicalStatus || "",
     appearance: basic.appearance || "",
-    weight: basic.weight ? (String(basic.weight).includes("kg") ? basic.weight : `${basic.weight} kg`) : "",
+    weight: basic.weight ? (String(basic.weight).includes("kg") ? String(basic.weight) : `${basic.weight} kg`) : "",
     languagesSpoken: basic.languagesSpoken || "",
     presentLocation: basic.presentLocation || u.location || "",
     marriageGoalPlan: basic.marriageGoalPlan || "",
@@ -102,10 +104,10 @@ export function getEnrichedProfile(u: any) {
   };
 }
 
-export function analyzeMatch(profile: any, myPref: any) {
+export function analyzeMatch(profile: EnrichedProfile, myPref: ProfileDetails["mn_partner_preferences_draft"]) {
   const age = profile.age;
-  const prefMinAge = myPref?.minAge ? parseInt(myPref.minAge) : 20;
-  const prefMaxAge = myPref?.maxAge ? parseInt(myPref.maxAge) : 30;
+  const prefMinAge = myPref?.minAge ? parseInt(String(myPref.minAge), 10) : 20;
+  const prefMaxAge = myPref?.maxAge ? parseInt(String(myPref.maxAge), 10) : 30;
   const ageMatch = age >= prefMinAge && age <= prefMaxAge;
   
   const maritalMatch = !myPref?.maritalStatus || myPref.maritalStatus === "Any" || myPref.maritalStatus === profile.maritalStatus;
