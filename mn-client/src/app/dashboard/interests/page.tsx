@@ -207,8 +207,8 @@ export default function InterestsPage() {
           <p className="font-semibold text-sm">Loading your interests...</p>
         </div>
       ) : activeList.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center justify-center max-w-2xl mx-auto">
-          <div className="w-16 h-16 rounded-2xl bg-brand-50 flex items-center justify-center text-brand-500 mb-4 border border-brand-100/50">
+        <div className="text-center py-20 bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col items-center justify-center max-w-2xl mx-auto">
+          <div className="w-16 h-16 rounded-xl bg-brand-50 flex items-center justify-center text-brand-500 mb-4 border border-brand-100/50">
             {activeTab === "mutual" ? (
               <Sparkles className="w-8 h-8" />
             ) : activeTab === "sent" ? (

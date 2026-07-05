@@ -291,12 +291,12 @@ function CompareContent() {
       {compareIds.length === 0 ? (
         <EmptyState allUsers={allUsers} addToCompare={addToCompare} />
       ) : (
-        <div className="bg-white border border-gray-150 rounded-3xl overflow-visible shadow-md">
+        <div className="bg-white border border-gray-150 rounded-xl overflow-visible shadow-md">
           {/* Main Side-by-Side Scrolling Grid */}
           <div className="overflow-x-auto md:overflow-visible print:overflow-visible">
             <div className="min-w-[800px] md:w-full table-fixed">
               {/* Sticky Comparison Header */}
-              <div className="grid grid-cols-4 bg-gray-50/90 border-b border-gray-150 py-6 px-4 items-stretch sticky top-0 z-20 shadow-sm backdrop-blur-md rounded-t-3xl">
+              <div className="grid grid-cols-4 bg-gray-50/90 border-b border-gray-150 py-6 px-4 items-stretch sticky top-0 z-20 shadow-sm backdrop-blur-md rounded-t-xl">
                 <div className="col-span-1 flex flex-col justify-center pr-4">
                   <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">Comparing</span>
                   <span className="text-2xl font-black font-playfair text-gray-900 mt-1">{comparedProfiles.length} Profiles</span>
@@ -962,8 +962,8 @@ function CompareSearchSelector({
 // Empty state view
 function EmptyState({ allUsers, addToCompare }: { allUsers: any[]; addToCompare: (id: number) => void }) {
   return (
-    <div className="bg-white border border-gray-150 rounded-3xl p-8 text-center max-w-xl mx-auto shadow-md space-y-6">
-      <div className="w-16 h-16 bg-brand-50 text-brand-650 rounded-2xl flex items-center justify-center mx-auto shadow-inner border border-brand-100">
+    <div className="bg-white border border-gray-150 rounded-xl p-8 text-center max-w-xl mx-auto shadow-md space-y-6">
+      <div className="w-16 h-16 bg-brand-50 text-brand-650 rounded-xl flex items-center justify-center mx-auto shadow-inner border border-brand-100">
         <Layers className="w-8 h-8" />
       </div>
       

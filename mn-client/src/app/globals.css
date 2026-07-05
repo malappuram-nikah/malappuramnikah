@@ -39,6 +39,12 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+  button, [role="button"] {
+    cursor: pointer;
+  }
+  button:disabled, [role="button"]:disabled {
+    cursor: not-allowed;
+  }
 }
 
 /* Custom Scrollbar */

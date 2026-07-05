@@ -24,11 +24,19 @@ const io = new SocketServer(server, {
   }
 });
 
-io.on("connection", (socket) => {
+import { onlineUsers } from "./infrastructure/onlineTracker";
+
+io.on("connection", (socket: any) => {
   console.log(`Socket connected: ${socket.id}`);
 
   // User joins their personal room for private messages/notifications
   socket.on("join", (userId: number | string) => {
+    const parsedId = typeof userId === "string" ? parseInt(userId, 10) : userId;
+    if (!isNaN(parsedId)) {
+      socket.userId = parsedId;
+      onlineUsers.add(parsedId);
+      console.log(`User ${parsedId} is online. Total online users: ${onlineUsers.size}`);
+    }
     const roomName = `user_${userId}`;
     socket.join(roomName);
     console.log(`Socket ${socket.id} joined personal room: ${roomName}`);
@@ -36,6 +44,10 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     console.log(`Socket disconnected: ${socket.id}`);
+    if (socket.userId) {
+      onlineUsers.delete(socket.userId);
+      console.log(`User ${socket.userId} went offline. Total online users: ${onlineUsers.size}`);
+    }
   });
 });
 

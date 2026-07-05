@@ -134,4 +134,15 @@ export class UserRepository implements IUserRepository {
             throw new Error('Failed to find user');
         }
     }
+
+    async updateLastLogin(id: number): Promise<void> {
+        try {
+            await prisma.user.update({
+                where: { id },
+                data: { last_login: new Date() }
+            });
+        } catch (error) {
+            console.error('Error updating last login:', error);
+        }
+    }
 }

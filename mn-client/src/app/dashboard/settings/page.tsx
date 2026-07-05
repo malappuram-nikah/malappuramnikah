@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Lock, Bell, Shield, ChevronRight, Sparkles, AlertCircle, ArrowRight, Save, CheckCircle2, Phone } from "lucide-react";
+import { User, Lock, Bell, Shield, ChevronRight, Sparkles, AlertCircle, ArrowRight, Save, CheckCircle2, Phone, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { LOCATIONS } from "@/lib/constants";
 import { useUser } from "@/context/UserContext";
@@ -21,6 +21,9 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [userId, setUserId] = useState<number | null>(null);
+  
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // User Profile States
   const [firstName, setFirstName] = useState("");
@@ -483,6 +486,37 @@ export default function SettingsPage() {
     router.push("/dashboard/profile-builder");
   };
 
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      const token = localStorage.getItem("mn_token");
+      if (!token || !userId) {
+        throw new Error("No authentication details found.");
+      }
+
+      const res = await fetch(`http://localhost:3333/user/${userId}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        localStorage.clear();
+        router.push("/login");
+        window.location.reload();
+      } else {
+        alert(data.message || "Failed to delete account.");
+      }
+    } catch (err: any) {
+      console.error("Failed to delete account:", err);
+      alert(err.message || "An error occurred while deleting your account.");
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
+
   // Determine profile strength
   let strength = "Weak";
   let strengthColor = "text-red-600 bg-red-50 border-red-200/50";
@@ -521,7 +555,7 @@ export default function SettingsPage() {
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Tab navigation */}
         <aside className="lg:w-56 shrink-0">
-          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+          <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -548,7 +582,7 @@ export default function SettingsPage() {
             key={activeTab}
             initial={{ opacity: 0, x: 10 }}
             animate={{ opacity: 1, x: 0 }}
-            className="bg-white rounded-2xl border border-gray-100 p-6 space-y-6"
+            className="bg-white rounded-xl border border-gray-100 p-6 space-y-6"
           >
             {activeTab === "profile" && (
               <>
@@ -566,7 +600,7 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Advanced Profile Builder redirect card */}
-                <div className="bg-brand-50 rounded-2xl p-5 border border-brand-100/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+                <div className="bg-brand-50 rounded-xl p-5 border border-brand-100/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
                   <div className="flex items-start gap-2.5">
                     <Sparkles className="w-5 h-5 text-brand-600 shrink-0 mt-0.5 animate-pulse" />
                     <div>
@@ -587,7 +621,7 @@ export default function SettingsPage() {
 
                 {/* Micro Completion Interactive Card */}
                 {completionPercent < 100 && missingSections.length > 0 && (
-                  <div className="bg-gradient-to-br from-brand-900 to-brand-700 rounded-2xl p-5 text-white shadow-md relative overflow-hidden">
+                  <div className="bg-gradient-to-br from-brand-900 to-brand-700 rounded-xl p-5 text-white shadow-md relative overflow-hidden">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] bg-[size:16px_16px] opacity-5 pointer-events-none" />
                     
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
@@ -675,7 +709,7 @@ export default function SettingsPage() {
                     </p>
                   </div>
 
-                  <div className="bg-gray-50 border border-gray-100 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="bg-gray-50 border border-gray-100 rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                       <p className="font-semibold text-gray-900 text-sm">Government-Issued ID Verification</p>
                       <p className="text-xs text-gray-500 mt-0.5 max-w-md">
@@ -757,6 +791,26 @@ export default function SettingsPage() {
                     </div>
                   ))}
                 </div>
+
+                {/* Danger Zone */}
+                <div className="border-t border-red-100 pt-6 mt-6 space-y-4">
+                  <div>
+                    <h3 className="text-base font-bold text-red-650 flex items-center gap-2">
+                      <AlertCircle className="w-5 h-5 text-red-500" />
+                      Danger Zone
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+                      Permanently delete your matrimonial profile and all associated verify documents, message logs, and match lists. This action is irreversible.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteModal(true)}
+                    className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-650 font-bold border border-red-200 text-xs rounded-lg transition-colors active:scale-95"
+                  >
+                    Delete Account
+                  </button>
+                </div>
               </>
             )}
 
@@ -773,6 +827,67 @@ export default function SettingsPage() {
           </motion.div>
         </div>
       </div>
+
+      {/* Account Deletion Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !isDeleting && setShowDeleteModal(false)}
+              className="absolute inset-0 bg-gray-900/40 backdrop-blur-xs"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative w-full max-w-md bg-white rounded-xl p-6 shadow-xl border border-gray-150 space-y-4 z-10"
+            >
+              <div className="flex items-center gap-3 text-red-650">
+                <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-gray-950">Delete Account Permanently?</h4>
+                  <p className="text-xs text-gray-400">This action cannot be undone.</p>
+                </div>
+              </div>
+              
+              <p className="text-xs text-gray-600 leading-relaxed">
+                By deleting your account, you will lose your profile details, KYC verification status, and all matching history. Your active chat messages and expressed interests will be permanently deleted.
+              </p>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={() => setShowDeleteModal(false)}
+                  className="flex-1 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-bold rounded-lg border border-gray-200 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={handleDeleteAccount}
+                  className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    "Delete Permanently"
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

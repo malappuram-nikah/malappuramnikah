@@ -12,6 +12,9 @@ import BiodataDownload from "@/components/dashboard/BiodataDownload";
 import { useUser } from "@/context/UserContext";
 
 
+import ProfileSlideOver from "@/components/dashboard/ProfileSlideOver";
+
+
 export default function DashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -98,6 +101,8 @@ export default function DashboardPage() {
           const enriched = getEnrichedProfile(u);
           return {
             ...enriched,
+            id: u.id,
+            name: `${u.first_name || ""} ${u.last_name || ""}`.trim(),
             img: enriched.photo,
             caste: enriched.community,
             match: 82 + (i % 15),
@@ -109,7 +114,11 @@ export default function DashboardPage() {
             aiExplanation: u.profile_details?.mn_partner_preferences_draft?.explanation || "Highly compatible profile based on your preferences.",
             conversationStarter: "I would love to learn more about your values and partner goals!",
             profile_details: u.profile_details,
-            kyc_status: u.kyc_status
+            kyc_status: u.kyc_status,
+            is_online: u.is_online,
+            is_new_user: u.is_new_user,
+            created_at: u.created_at,
+            last_login: u.last_login
           };
         });
 
@@ -189,7 +198,7 @@ export default function DashboardPage() {
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-br from-brand-700 to-brand-900 rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden shadow-lg"
+        className="bg-gradient-to-br from-brand-700 to-brand-900 rounded-xl p-6 sm:p-8 text-white relative overflow-hidden shadow-lg"
       >
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] bg-[size:24px_24px]" />
         <div className="relative z-10">
@@ -219,7 +228,7 @@ export default function DashboardPage() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.08 }}
-            className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md hover:border-brand-100/50 transition-all duration-300"
+            className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm hover:shadow-md hover:border-brand-100/50 transition-all duration-300"
           >
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${stat.color}`}>
               <stat.icon className="w-5 h-5" />
@@ -246,7 +255,7 @@ export default function DashboardPage() {
             <Loader2 className="w-8 h-8 animate-spin text-brand-500" />
           </div>
         ) : suggestedMatches.length === 0 ? (
-          <div className="py-12 text-center text-gray-400 bg-white rounded-2xl border border-gray-100">
+          <div className="py-12 text-center text-gray-400 bg-white rounded-xl border border-gray-100">
             <p className="text-sm font-semibold">No recommendations found</p>
             <p className="text-xs mt-1">Complete your profile setup to get matches</p>
           </div>
@@ -275,13 +284,17 @@ export default function DashboardPage() {
                 interestStyle = "bg-amber-100 text-amber-800 hover:bg-amber-200 border-2 border-dashed border-amber-300 animate-pulse";
               }
 
+              const isOnline = match.is_online;
+              const isNew = match.is_new_user || (match.created_at ? (Math.abs(new Date().getTime() - new Date(match.created_at).getTime()) / (1000 * 60 * 60 * 24) <= 7) : false);
+              const isRecentlyActive = match.last_login ? (Math.abs(new Date().getTime() - new Date(match.last_login).getTime()) / (1000 * 60 * 60) <= 24) : false;
+
               return (
                 <motion.div
                   key={match.id}
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 + i * 0.08 }}
-                  className="bg-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-lg hover:shadow-brand-900/5 hover:border-brand-100 transition-all duration-300 group flex flex-col justify-between"
+                  className="bg-white rounded-xl overflow-hidden border border-gray-100 hover:shadow-lg hover:shadow-brand-900/5 hover:border-brand-100 transition-all duration-300 group flex flex-col justify-between"
                 >
                   <div 
                     onClick={() => setSelectedProfile(match)}
@@ -301,11 +314,31 @@ export default function DashboardPage() {
                     {!isInterested && (
                       <div className="absolute inset-0 bg-black/15 flex items-center justify-center transition-all">
                         <div className="bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full shadow-sm border border-white/20 flex items-center gap-1">
-                          <Lock className="w-3 h-3 text-brand-600" />
+                          <Lock className="w-3.5 h-3.5 text-brand-600" />
                           <span className="text-[9px] font-bold text-gray-700">Connect to view photo</span>
                         </div>
                       </div>
                     )}
+
+                    {/* Status Badges Overlay */}
+                    <div className="absolute bottom-3 left-3 flex flex-wrap gap-1 z-10">
+                      {isOnline && (
+                        <span className="flex items-center gap-1 bg-green-50/95 backdrop-blur-xs text-green-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-green-200 shadow-xs">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                          Online
+                        </span>
+                      )}
+                      {isNew ? (
+                        <span className="bg-brand-50/95 backdrop-blur-xs text-brand-700 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border border-brand-100 shadow-xs">
+                          New
+                        </span>
+                      ) : isRecentlyActive ? (
+                        <span className="bg-blue-50/95 backdrop-blur-xs text-blue-700 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border border-blue-100 shadow-xs">
+                          Active
+                        </span>
+                      ) : null}
+                    </div>
+
                     <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm text-brand-700 text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm z-10">
                       <TrendingUp className="w-3 h-3" />
                       {match.match}% match
@@ -320,6 +353,7 @@ export default function DashboardPage() {
                         )}
                       </p>
                       <p className="text-[11px] text-gray-500 mt-0.5 truncate">{match.age} yrs · {match.location}</p>
+                      <p className="text-[11px] text-gray-500 truncate">{match.education || "No Higher Education"}</p>
                       <p className="text-[11px] text-brand-600 mt-0.5 font-bold truncate">{match.caste}</p>
                     </div>
                     <div className="flex gap-2 mt-4">
@@ -359,278 +393,16 @@ export default function DashboardPage() {
       <ProfileCompletionTracker />
 
       {/* AI Profile Details Modal */}
-      {mounted && typeof document !== "undefined" ? createPortal(
-        <AnimatePresence>
-          {selectedProfile && (() => {
-            const isMutual = interests.mutual.includes(selectedProfile.id);
-            const isSent = interests.sent.includes(selectedProfile.id);
-            const isReceived = interests.received.includes(selectedProfile.id);
-
-            let modalBtnText = "Send Interest";
-            let modalBtnStyle = "bg-brand-600 text-white hover:bg-brand-700 shadow-brand-600/20";
-            if (isMutual) {
-              modalBtnText = "Matched! Chat Now 🎉";
-              modalBtnStyle = "bg-pink-600 text-white hover:bg-pink-700 shadow-pink-600/20";
-            } else if (isSent) {
-              modalBtnText = "Withdrawn Sent Request";
-              modalBtnStyle = "bg-pink-100 text-pink-700 hover:bg-pink-200 border border-pink-200";
-            } else if (isReceived) {
-              modalBtnText = "Accept Request";
-              modalBtnStyle = "bg-amber-500 text-white hover:bg-amber-600 animate-pulse";
-            }
-
-            return (
-              <div className="fixed inset-0 z-50 flex justify-end">
-                <motion.div 
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                  className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
-                  onClick={() => setSelectedProfile(null)}
-                />
-                <motion.div 
-                  initial={{ x: "100%" }}
-                  animate={{ x: 0 }}
-                  exit={{ x: "100%" }}
-                  transition={{ type: "spring", damping: 25, stiffness: 220 }}
-                  className="relative w-full max-w-md sm:max-w-lg bg-white shadow-2xl h-full flex flex-col z-10 rounded-l-3xl overflow-hidden"
-                >
-                  <div className="flex-1 overflow-y-auto scrollbar-thin">
-                  <div className="h-56 bg-gray-100 relative overflow-hidden">
-                    {(() => {
-                      const isInterested = isMutual || isSent || isReceived;
-                      return (
-                        <>
-                          {activePhoto || selectedProfile.img ? (
-                            <img 
-                              src={activePhoto || selectedProfile.img} 
-                              alt="" 
-                              className={`w-full h-full object-cover ${!isInterested ? "filter blur-[16px] select-none" : ""}`} 
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-brand-50 flex items-center justify-center text-brand-700 font-extrabold text-5xl uppercase">
-                              {selectedProfile.name.charAt(0)}
-                            </div>
-                          )}
-                          {!isInterested && (
-                            <div className="absolute inset-0 bg-black/20 flex items-center justify-center z-10">
-                              <div className="bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-md border border-white/20 flex items-center gap-1.5">
-                                <Lock className="w-3.5 h-3.5 text-brand-600" />
-                                <span className="text-[10px] font-bold text-gray-700">Connect to view photo</span>
-                              </div>
-                            </div>
-                          )}
-                        </>
-                      );
-                    })()}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
-                    <button 
-                      onClick={() => setSelectedProfile(null)}
-                      className="absolute top-4 right-4 p-2 bg-black/25 hover:bg-black/45 backdrop-blur-md rounded-full text-white transition-colors"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                    <div className="absolute bottom-4 left-6 right-6">
-                      <div className="flex items-end justify-between">
-                        <div>
-                          <h2 className="text-2xl font-bold text-white drop-shadow-md flex items-center gap-1.5">
-                            {selectedProfile.name}
-                            {selectedProfile.kyc_status === "VERIFIED" && (
-                              <span title="ID Verified" className="shrink-0"><ShieldCheck className="w-5 h-5 text-blue-400 fill-blue-900/40" /></span>
-                            )}
-                          </h2>
-                          <p className="text-gray-200 text-sm mt-1">{selectedProfile.age} yrs • {selectedProfile.location} • {selectedProfile.caste}</p>
-                        </div>
-                        <div className="bg-brand-600 text-white px-3 py-1.5 rounded-xl font-bold text-sm shadow-lg flex items-center gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5" /> {selectedProfile.matchScore}%
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-6 space-y-5">
-                    {/* Photo Thumbnails */}
-                    {selectedProfile.photos && selectedProfile.photos.length > 1 && (
-                      <div>
-                        <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Photo Gallery</h3>
-                        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
-                          {selectedProfile.photos.map((p: any, idx: number) => {
-                            const isInterested = isMutual || isSent || isReceived;
-                            return (
-                              <button 
-                                key={p.id || idx} 
-                                onClick={() => setActivePhoto(p.dataUrl)}
-                                className={`w-12 h-12 rounded-lg overflow-hidden border-2 shrink-0 transition-all ${activePhoto === p.dataUrl ? 'border-brand-600 scale-95' : 'border-gray-200 opacity-70 hover:opacity-100'}`}
-                              >
-                                <img src={p.dataUrl} className={`w-full h-full object-cover ${!isInterested ? "filter blur-[6px] select-none" : ""}`} />
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* About Me bio */}
-                    {selectedProfile.aboutMe && (
-                      <div>
-                        <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">About</h3>
-                        <p className="text-xs text-gray-700 leading-relaxed font-medium">
-                          {selectedProfile.aboutMe}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Profile Info Details Grid */}
-                    <div className="bg-gray-50/80 p-4 rounded-2xl border border-gray-150/80 space-y-2.5">
-                      <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 border-b border-gray-250/60 pb-1.5 mb-1">Profile Info</h3>
-                      <div className="grid grid-cols-2 gap-3 text-[11px]">
-                        <div>
-                          <span className="text-gray-400 font-medium block">Gender</span>
-                          <span className="text-gray-850 font-bold">{selectedProfile.gender || "N/A"}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-400 font-medium block">Marital Status</span>
-                          <span className="text-gray-850 font-bold">{selectedProfile.maritalStatus || "N/A"}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-400 font-medium block">Mother Tongue</span>
-                          <span className="text-gray-850 font-bold">{selectedProfile.motherTongue || "N/A"}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-400 font-medium block">Religion & Sect</span>
-                          <span className="text-gray-850 font-bold">{(selectedProfile.religion || "Islam") + " - " + (selectedProfile.caste || selectedProfile.community || "Sunni")}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-400 font-medium block">Namaz Habits</span>
-                          <span className="text-gray-850 font-bold">{selectedProfile.namaz || "N/A"}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-400 font-medium block">Quran Reading</span>
-                          <span className="text-gray-850 font-bold">{selectedProfile.quranReading || "N/A"}</span>
-                        </div>
-                        <div className="col-span-2">
-                          <span className="text-gray-400 font-medium block">Education</span>
-                          <span className="text-gray-850 font-bold">{selectedProfile.education || "N/A"}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Partner Preferences Grid */}
-                    <div className="bg-brand-50/30 p-4 rounded-2xl border border-brand-100/50 space-y-2.5">
-                      <h3 className="text-[10px] font-bold uppercase tracking-wider text-brand-700 border-b border-brand-100/40 pb-1.5 mb-1">Partner Preferences</h3>
-                      <div className="grid grid-cols-2 gap-3 text-[11px]">
-                        <div>
-                          <span className="text-brand-600/70 font-medium block">Age Preference</span>
-                          <span className="text-brand-950 font-bold">{selectedProfile.prefAge || "N/A"}</span>
-                        </div>
-                        <div>
-                          <span className="text-brand-600/70 font-medium block">Marital Status</span>
-                          <span className="text-brand-950 font-bold">{selectedProfile.prefMaritalStatus || "N/A"}</span>
-                        </div>
-                        <div>
-                          <span className="text-brand-600/70 font-medium block">Preferred Religion</span>
-                          <span className="text-brand-950 font-bold">{selectedProfile.prefReligion || "N/A"}</span>
-                        </div>
-                        <div>
-                          <span className="text-brand-600/70 font-medium block">Preferred Sect</span>
-                          <span className="text-brand-950 font-bold">{selectedProfile.prefCommunity || "N/A"}</span>
-                        </div>
-                        <div>
-                          <span className="text-brand-600/70 font-medium block">Preferred Namaz</span>
-                          <span className="text-brand-950 font-bold">{selectedProfile.prefNamaz || "N/A"}</span>
-                        </div>
-                        <div>
-                          <span className="text-brand-600/70 font-medium block">Preferred Quran</span>
-                          <span className="text-brand-950 font-bold">{selectedProfile.prefQuranReading || "N/A"}</span>
-                        </div>
-                        <div className="col-span-2">
-                          <span className="text-brand-600/70 font-medium block">Preferred Education</span>
-                          <span className="text-brand-950 font-bold">{selectedProfile.prefEducation || "N/A"}</span>
-                        </div>
-                        <div className="col-span-2">
-                          <span className="text-brand-600/70 font-medium block">Preferred Locations</span>
-                          <span className="text-brand-950 font-bold">{selectedProfile.prefLocations || "N/A"}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Voice Introduction Player */}
-                    {selectedProfile.voice && (
-                      <div className="bg-brand-50/40 border border-brand-100/50 p-4 rounded-2xl flex flex-col gap-1.5">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-brand-700 flex items-center gap-1.5">
-                          <Volume2 className="w-4 h-4" /> Voice Introduction
-                        </span>
-                        <audio src={selectedProfile.voice} controls className="w-full h-8 mt-1 accent-brand-600" />
-                      </div>
-                    )}
-
-                    {/* Video Introduction Player */}
-                    {selectedProfile.video && (
-                      <div className="bg-brand-50/40 border border-brand-100/50 p-4 rounded-2xl flex flex-col gap-1.5">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-brand-700 flex items-center gap-1.5">
-                          <Video className="w-4 h-4" /> Video Onboarding
-                        </span>
-                        <div className="relative rounded-xl overflow-hidden aspect-video bg-black mt-1">
-                          <video src={selectedProfile.video} controls className="w-full h-full object-contain" />
-                        </div>
-                      </div>
-                    )}
-
-                    <div>
-                      <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">AI Compatibility Analysis</h3>
-                      <p className="text-xs text-gray-700 leading-relaxed bg-brand-50 p-4 rounded-xl border border-brand-100/50">
-                        {selectedProfile.aiExplanation || selectedProfile.matchReason || "Highly compatible profile based on your preferences."}
-                      </p>
-                    </div>
-
-                    {selectedProfile.conversationStarter && (
-                      <div>
-                        <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-1.5">
-                          <MessageCircle className="w-4 h-4 text-brand-500" /> Smart Icebreaker
-                        </h3>
-                        <p className="text-xs text-gray-700 italic bg-gray-50 p-4 rounded-xl border border-gray-100/50">
-                          "{selectedProfile.conversationStarter}"
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="flex flex-col gap-3 pt-2">
-                      <div className="flex gap-3">
-                        <button 
-                          onClick={() => {
-                            if (isMutual) {
-                              setSelectedProfile(null);
-                              router.push("/dashboard/chat");
-                            } else {
-                              handleToggleInterest(selectedProfile.id, selectedProfile.name);
-                            }
-                          }}
-                          className={`flex-1 py-3 bg-brand-600 text-white text-xs font-bold rounded-xl transition-colors shadow-md flex items-center justify-center gap-1.5 active:scale-[0.98] ${modalBtnStyle}`}
-                        >
-                          <Heart className={`w-3.5 h-3.5 ${(isMutual || isSent) ? "fill-current" : ""}`} />
-                          {modalBtnText}
-                        </button>
-                        <button 
-                          onClick={() => {
-                            setSelectedProfile(null);
-                            router.push("/dashboard/search");
-                          }}
-                          className="flex-1 py-3 bg-gray-50 text-gray-700 hover:bg-gray-100 text-xs font-bold rounded-xl border border-gray-200 transition-colors"
-                        >
-                          View Full Profile
-                        </button>
-                      </div>
-                      <div className="w-full flex justify-center">
-                        <BiodataDownload profile={selectedProfile} enriched={getEnrichedProfile(selectedProfile)} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-            );
-          })()}
-        </AnimatePresence>,
-        document.body
-      ) : null}
+      <AnimatePresence>
+        {selectedProfile && (
+          <ProfileSlideOver
+            profile={selectedProfile}
+            onClose={() => setSelectedProfile(null)}
+            interests={interests}
+            onToggleInterest={handleToggleInterest}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

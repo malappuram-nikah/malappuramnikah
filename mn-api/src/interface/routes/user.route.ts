@@ -71,7 +71,8 @@ user_route.get('/:id', async (req: Request, res: Response) => {
 
     // Remove password hash from response for security
     const { password, ...safeUser } = user as any;
-    res.status(200).json({ success: true, user: safeUser });
+    const { onlineUsers } = require("../../infrastructure/onlineTracker");
+    res.status(200).json({ success: true, user: { ...safeUser, is_online: onlineUsers.has(id) } });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || "Failed to fetch user" });
   }
@@ -80,7 +81,7 @@ user_route.get('/:id', async (req: Request, res: Response) => {
 
 user_route.put('/:id/premium', async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
     if (isNaN(id)) {
       res.status(400).json({ success: false, message: "Invalid user ID" });
       return;
@@ -284,7 +285,7 @@ user_route.get('/kyc/document/:fileName', async (req: Request, res: Response) =>
       return;
     }
 
-    const { fileName } = req.params;
+    const fileName = (Array.isArray(req.params.fileName) ? req.params.fileName[0] : req.params.fileName) as string;
 
     // Check authorization: must be admin OR the user who owns this document
     const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -327,6 +328,77 @@ user_route.get('/kyc/document/:fileName', async (req: Request, res: Response) =>
   } catch (error: any) {
     console.error("KYC document fetch error:", error);
     res.status(500).json({ success: false, message: error.message || "Failed to fetch KYC document." });
+  }
+});
+
+user_route.delete('/:id', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ success: false, message: "Invalid user ID" });
+      return;
+    }
+
+    const requesterId = getUserIdFromRequest(req);
+    if (!requesterId) {
+      res.status(401).json({ success: false, message: "Unauthorized. Missing or invalid token." });
+      return;
+    }
+
+    // Only allow user to delete their own profile, or if requester is admin
+    const requester = await prisma.user.findUnique({ where: { id: requesterId } });
+    const isAdmin = requester && ((requester.profile_details as any)?.isAdmin === true || requester.mobile_number === "+911212121212" || requester.mobile_number === "+919876543210");
+
+    if (requesterId !== id && !isAdmin) {
+      res.status(403).json({ success: false, message: "Access forbidden. You can only delete your own profile." });
+      return;
+    }
+
+    // Check if user exists
+    const userToDelete = await prisma.user.findUnique({ where: { id } });
+    if (!userToDelete) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
+    }
+
+    // Clean up file uploads (KYC, etc.)
+    await deleteKycFile(userToDelete.kyc_front_url);
+    await deleteKycFile(userToDelete.kyc_back_url);
+
+    // Delete child records manually inside a database transaction to satisfy foreign keys
+    await prisma.$transaction([
+      prisma.verify.deleteMany({ where: { user_id: id } }),
+      prisma.interest.deleteMany({
+        where: {
+          OR: [
+            { sender_id: id },
+            { receiver_id: id }
+          ]
+        }
+      }),
+      prisma.message.deleteMany({
+        where: {
+          OR: [
+            { sender_id: id },
+            { receiver_id: id }
+          ]
+        }
+      }),
+      prisma.notification.deleteMany({
+        where: {
+          OR: [
+            { user_id: id },
+            { sender_id: id }
+          ]
+        }
+      }),
+      prisma.user.delete({ where: { id } })
+    ]);
+
+    res.status(200).json({ success: true, message: "Profile deleted successfully" });
+  } catch (error: any) {
+    console.error("Error deleting user:", error);
+    res.status(500).json({ success: false, message: error.message || "Failed to delete profile" });
   }
 });
 

@@ -7,4 +7,5 @@ export interface IUserRepository{
     findAll(filters?: { gender?: string; status?: string }): Promise<User[]>;
     updateProfileDetails(id: number, profileDetails: any, coreFields?: any): Promise<User>;
     findById(id: number): Promise<User | null>;
+    updateLastLogin(id: number): Promise<void>;
 }

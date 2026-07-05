@@ -29,7 +29,12 @@ export class LoginUser {
       refreshTokenConfig
     );
 
-     return { status: 200, message: 'Login successful', token: accessToken,refreshToken };
+    // Update last login timestamp asynchronously
+    if (user.id !== undefined) {
+      this.userRepository.updateLastLogin(user.id).catch(err => console.error("Last login update failed:", err));
+    }
+
+    return { status: 200, message: 'Login successful', token: accessToken, refreshToken };
   }
 
   private validateInput(data: { mobile_number: string; password: string }): void {

@@ -245,8 +245,8 @@ export default function ProfileBuilderPage() {
   if (isLoadingData) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6">
-        <div className="bg-white rounded-3xl border border-gray-100 p-8 text-center max-w-sm w-full shadow-xl shadow-brand-900/5 flex flex-col items-center">
-          <div className="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center mb-5 relative">
+        <div className="bg-white rounded-xl border border-gray-100 p-8 text-center max-w-sm w-full shadow-xl shadow-brand-900/5 flex flex-col items-center">
+          <div className="w-16 h-16 bg-brand-50 text-brand-600 rounded-xl flex items-center justify-center mb-5 relative">
             <span className="w-8 h-8 border-4 border-brand-200 border-t-brand-600 rounded-full animate-spin" />
           </div>
           <h3 className="text-lg font-bold text-gray-900">Restoring Progress</h3>
