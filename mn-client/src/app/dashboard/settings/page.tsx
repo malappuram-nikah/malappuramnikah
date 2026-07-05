@@ -712,17 +712,45 @@ export default function SettingsPage() {
                   <div className="bg-gray-50 border border-gray-100 rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                       <p className="font-semibold text-gray-900 text-sm">Government-Issued ID Verification</p>
-                      <p className="text-xs text-gray-500 mt-0.5 max-w-md">
-                        Upload your Aadhaar Card, Driving License, Passport, or Voter ID. Our administrators will verify your document.
-                      </p>
+                      {currentUser?.kyc_status === "VERIFIED" ? (
+                        <p className="text-xs text-green-700 mt-1 font-medium flex items-center gap-1">
+                          <CheckCircle2 className="w-4 h-4 text-green-600" />
+                          Your identity has been verified successfully. You have the 'ID Verified' badge.
+                        </p>
+                      ) : (currentUser?.kyc_status === "PENDING" || currentUser?.kyc_status === "UNDER_REVIEW") ? (
+                        <div className="mt-1 space-y-1">
+                          <p className="text-xs text-amber-700 font-medium">
+                            Your profile identity document is currently under verification.
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            If you have any queries, please contact admin: <span className="font-semibold text-gray-700">+91 9961 896886</span>
+                          </p>
+                        </div>
+                      ) : currentUser?.kyc_status === "REJECTED" ? (
+                        <div className="mt-1 space-y-1">
+                          <p className="text-xs text-red-650 font-medium">
+                            Your previous verification request was rejected. Please upload a clear ID document.
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Reason: {currentUser?.kyc_rejected_reason || "Invalid document image."}
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-500 mt-0.5 max-w-md">
+                          Upload your Aadhaar Card, Driving License, Passport, or Voter ID. Our administrators will verify your document.
+                        </p>
+                      )}
                     </div>
-                    <button
-                      onClick={() => router.push("/dashboard/profile-builder?step=11")}
-                      className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm shrink-0 flex items-center gap-1 active:scale-95"
-                    >
-                      Verify Now
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
+                    {(!currentUser?.kyc_status || currentUser?.kyc_status === "NOT_SUBMITTED" || currentUser?.kyc_status === "REJECTED") && (
+                      <button
+                        type="button"
+                        onClick={() => router.push("/dashboard/profile-builder?step=11")}
+                        className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm shrink-0 flex items-center gap-1 active:scale-95 cursor-pointer"
+                      >
+                        Verify Now
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </>

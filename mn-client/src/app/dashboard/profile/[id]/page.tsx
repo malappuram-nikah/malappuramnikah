@@ -11,6 +11,7 @@ import {
 import { getEnrichedProfile } from "@/lib/profile-utils";
 import BiodataDownload from "@/components/dashboard/BiodataDownload";
 import { useCompare } from "@/context/CompareContext";
+import { FullProfileSkeleton } from "@/components/dashboard/Skeleton";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -145,12 +146,7 @@ export default function ProfileDetailPage({ params }: PageProps) {
   }, [alertMsg]);
 
   if (loading) {
-    return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center text-gray-400">
-        <Loader2 className="w-10 h-10 animate-spin mb-3 text-brand-500" />
-        <p className="font-semibold text-sm text-gray-600">Retrieving full profile details...</p>
-      </div>
-    );
+    return <FullProfileSkeleton />;
   }
 
   if (!profile) {

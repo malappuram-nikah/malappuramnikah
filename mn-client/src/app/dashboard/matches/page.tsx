@@ -201,6 +201,7 @@ const fallbackMockMaleProfiles = [
 ];
 
 import ProfileSlideOver from "@/components/dashboard/ProfileSlideOver";
+import { CardGridSkeleton, MatchesPageSkeleton } from "@/components/dashboard/Skeleton";
 
 
 export default function AiMatchesPage() {
@@ -421,12 +422,7 @@ export default function AiMatchesPage() {
   }, [alertMsg]);
 
   if (loading) {
-    return (
-      <div className="py-32 flex flex-col items-center justify-center text-gray-400">
-        <Loader2 className="w-10 h-10 animate-spin mb-3 text-brand-500" />
-        <p className="font-semibold text-sm text-gray-600">Analyzing compatibility points...</p>
-      </div>
-    );
+    return <MatchesPageSkeleton />;
   }
 
   const bestMatch = aiData.bestMatch;

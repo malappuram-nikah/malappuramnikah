@@ -6,6 +6,7 @@ import { X, Heart, MessageCircle, Sparkles, Volume2, Video, ShieldCheck, Lock, L
 import { useRouter } from "next/navigation";
 import { getEnrichedProfile } from "@/lib/profile-utils";
 import BiodataDownload from "./BiodataDownload";
+import { SlideOverSkeleton } from "./Skeleton";
 
 interface ProfileSlideOverProps {
   profile: {
@@ -186,9 +187,8 @@ export default function ProfileSlideOver({
           </div>
 
           {loading ? (
-            <div className="py-20 flex flex-col items-center justify-center text-gray-450 gap-2">
-              <Loader2 className="w-8 h-8 animate-spin text-brand-600" />
-              <span className="text-xs font-semibold">Syncing profile details...</span>
+            <div className="p-4 sm:p-5">
+              <SlideOverSkeleton />
             </div>
           ) : fullUser ? (
             /* Body content with reduced padding and gaps */

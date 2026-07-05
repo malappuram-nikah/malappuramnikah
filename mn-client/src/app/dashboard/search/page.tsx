@@ -11,6 +11,7 @@ import { getEnrichedProfile } from "@/lib/profile-utils";
 import { LOCATIONS } from "@/lib/constants";
 
 import ProfileSlideOver from "@/components/dashboard/ProfileSlideOver";
+import { CardListSkeleton } from "@/components/dashboard/Skeleton";
 
 
 export default function SearchPage() {
@@ -263,9 +264,8 @@ export default function SearchPage() {
       {/* Profile grid */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {loading ? (
-          <div className="sm:col-span-2 lg:col-span-3 py-16 flex flex-col items-center justify-center text-gray-400">
-            <Loader2 className="w-10 h-10 animate-spin mb-3 text-brand-500" />
-            <p className="font-medium">Loading profiles...</p>
+          <div className="sm:col-span-2 lg:col-span-3">
+            <CardListSkeleton count={6} />
           </div>
         ) : filtered.length === 0 ? (
           <div className="sm:col-span-2 lg:col-span-3 py-16 text-center text-gray-400">

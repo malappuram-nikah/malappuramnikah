@@ -26,7 +26,9 @@ export default function ProfileCompletionTracker() {
       { key: "mn_profile_photos_draft", name: "Profile Photos", suggestion: "Upload more photos to improve profile visibility.", step: 8 },
       { key: "mn_video_intro_draft", name: "Video Introduction", suggestion: "Upload a video intro to stand out.", step: 9 },
       { key: "mn_voice_intro_draft", name: "Voice Introduction", suggestion: "Record a voice intro to boost responses.", step: 10 },
-      { key: "mn_kyc_status", name: "Identity Verification", suggestion: "Verify your identity to get the 'ID Verified' badge.", step: 11 }
+      ...(user?.gender?.toLowerCase() === "female" ? [] : [
+        { key: "mn_kyc_status", name: "Identity Verification", suggestion: "Verify your identity to get the 'ID Verified' badge.", step: 11 }
+      ])
     ];
 
     let completedCount = 0;

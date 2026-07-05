@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { CompareTableSkeleton } from "@/components/dashboard/Skeleton";
 
 export default function ComparePage() {
   return (
@@ -177,11 +178,21 @@ function CompareContent() {
     window.print();
   };
 
+  if (loading) {
+    return <CompareTableSkeleton />;
+  }
+
   // Find the index of the profile with the highest compatibility score
-  const highestScoreIdx = comparedProfiles.reduce(
-    (maxIdx, p, idx, arr) => (p.matchResult.score > arr[maxIdx].matchResult.score ? idx : maxIdx),
-    0
-  );
+  const highestScoreIdx = comparedProfiles.length > 0
+    ? comparedProfiles.reduce(
+        (maxIdx, p, idx, arr) => {
+          const currentScore = p?.matchResult?.score ?? 0;
+          const maxScore = arr[maxIdx]?.matchResult?.score ?? 0;
+          return currentScore > maxScore ? idx : maxIdx;
+        },
+        0
+      )
+    : 0;
 
   return (
     <div className="space-y-6 pb-20 relative">

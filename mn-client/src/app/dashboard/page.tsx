@@ -13,6 +13,7 @@ import { useUser } from "@/context/UserContext";
 
 
 import ProfileSlideOver from "@/components/dashboard/ProfileSlideOver";
+import { CardGridSkeleton } from "@/components/dashboard/Skeleton";
 
 
 export default function DashboardPage() {
@@ -251,9 +252,7 @@ export default function DashboardPage() {
         </div>
 
         {loading ? (
-          <div className="py-12 flex justify-center text-gray-400">
-            <Loader2 className="w-8 h-8 animate-spin text-brand-500" />
-          </div>
+          <CardGridSkeleton count={4} />
         ) : suggestedMatches.length === 0 ? (
           <div className="py-12 text-center text-gray-400 bg-white rounded-xl border border-gray-100">
             <p className="text-sm font-semibold">No recommendations found</p>
