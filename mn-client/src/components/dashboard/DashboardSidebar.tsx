@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Heart, Search, MessageCircle,
   Crown, Settings, LogOut, Menu, X, Bell, Sparkles, Calendar, ShieldCheck, Briefcase,
-  BarChart3, Users, AlertTriangle, CreditCard, LayoutGrid, DollarSign, Layers, User
+  BarChart3, Users, AlertTriangle, CreditCard, LayoutGrid, DollarSign, Layers, User, Award
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -20,6 +20,7 @@ const memberNavItems = [
   { href: "/dashboard/interests",icon: Heart,            label: "Interests" },
   { href: "/dashboard/chat",     icon: MessageCircle,    label: "Chat"      },
   { href: "/dashboard/profile-builder", icon: User,      label: "Edit Profile" },
+  { href: "/dashboard/referral", icon: Award,            label: "Referral & Earn" },
   { href: "/dashboard/premium",  icon: Crown,            label: "Premium"   },
   { href: "/dashboard/save-the-date", icon: Calendar,    label: "Save the Date" },
   { href: "/dashboard/settings", icon: Settings,         label: "Settings"  },
@@ -30,6 +31,7 @@ const adminNavItems = [
   { href: "/dashboard/admin?tab=analytics", icon: BarChart3,     label: "Analytics Core" },
   { href: "/dashboard/admin?tab=users",      icon: Users,          label: "User Accounts" },
   { href: "/dashboard/admin?tab=profiles",   icon: ShieldCheck,    label: "Matrimony Profiles" },
+  { href: "/dashboard/admin/referrals",     icon: Award,          label: "Referrals & Wallet" },
   { href: "/dashboard/admin?tab=complaints", icon: AlertTriangle,  label: "Complaints Grid" },
   { href: "/dashboard/admin?tab=plans",      icon: CreditCard,     label: "Premium Plans" },
   { href: "/dashboard/admin?tab=cms",        icon: LayoutGrid,     label: "CMS Management" },

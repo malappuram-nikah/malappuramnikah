@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Bell, Search, Heart, MessageSquare, Check, Sparkles, X, User, Settings, LogOut, ShieldCheck, MapPin } from "lucide-react";
+import { Bell, Search, Heart, MessageSquare, Check, Sparkles, X, User, Settings, LogOut, ShieldCheck, MapPin, Eye, Camera, UploadCloud, Trash2, Plus } from "lucide-react";
 import { io, Socket } from "socket.io-client";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
+import { Photo } from "@/types";
 
 interface Notification {
   id: number;
@@ -31,22 +32,33 @@ import { useUser } from "@/context/UserContext";
 
 export default function DashboardHeader() {
   const router = useRouter();
-  const { currentUser: user } = useUser();
+  const { currentUser: user, refreshUser } = useUser();
   const userName = user?.first_name || "User";
   const [token, setToken] = useState<string | null>(null);
   const [userId, setUserId] = useState<number | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showPhotosModal, setShowPhotosModal] = useState(false);
+  const [localPhotos, setLocalPhotos] = useState<Photo[]>([]);
+  const [isSavingPhotos, setIsSavingPhotos] = useState(false);
   const [completionPercent, setCompletionPercent] = useState(0);
   const [mounted, setMounted] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
+  const photosFileInputRef = useRef<HTMLInputElement>(null);
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (showPhotosModal && user) {
+      const existing = user.profile_details?.mn_profile_photos_draft?.photos || [];
+      setLocalPhotos(existing);
+    }
+  }, [showPhotosModal, user]);
 
   const calculateCompletionPercent = () => {
     const draftKeys = [
@@ -321,13 +333,23 @@ export default function DashboardHeader() {
 
                 {/* Avatar and verification badge */}
                 <div className="px-6 pb-2 relative -mt-8 flex items-end justify-between z-10 shrink-0">
-                  <div className="w-16 h-16 rounded-full border-4 border-white bg-brand-100 flex items-center justify-center text-brand-700 font-extrabold text-2xl uppercase shadow-lg overflow-hidden shrink-0">
+                  <button
+                    onClick={() => {
+                      setShowProfileDropdown(false);
+                      router.push("/dashboard/profile-builder?step=8");
+                    }}
+                    className="w-16 h-16 rounded-full border-4 border-white bg-brand-100 flex items-center justify-center text-brand-700 font-extrabold text-2xl uppercase shadow-lg overflow-hidden shrink-0 cursor-pointer relative group active:scale-95 transition-all"
+                    title="Upload / Edit Photos"
+                  >
                     {userPhotoUrl ? (
-                      <img src={userPhotoUrl} alt={userName} className="w-full h-full object-cover" />
+                      <img src={userPhotoUrl} alt={userName} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                     ) : (
                       userName.charAt(0)
                     )}
-                  </div>
+                    <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[10px] text-white font-bold">
+                      Edit
+                    </div>
+                  </button>
                   {user?.kyc_status === "VERIFIED" && (
                     <div className="bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-sm">
                       <ShieldCheck className="w-3.5 h-3.5 fill-blue-100" />
@@ -397,9 +419,37 @@ export default function DashboardHeader() {
                       <button
                         onClick={() => {
                           setShowProfileDropdown(false);
+                          router.push(`/dashboard/profile/${user?.id}`);
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 hover:bg-brand-50 hover:text-brand-700 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-brand-100 group cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Eye className="w-3.5 h-3.5 text-gray-400 group-hover:text-brand-600 transition-colors" />
+                          <span>Preview Full Profile</span>
+                        </div>
+                        <span className="text-gray-400 group-hover:text-brand-600 group-hover:translate-x-0.5 transition-all">&rarr;</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setShowProfileDropdown(false);
+                          setShowPhotosModal(true);
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 hover:bg-brand-50 hover:text-brand-700 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-brand-100 group cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Camera className="w-3.5 h-3.5 text-gray-400 group-hover:text-brand-600 transition-colors" />
+                          <span>Upload Multiple Photos</span>
+                        </div>
+                        <span className="text-gray-400 group-hover:text-brand-600 group-hover:translate-x-0.5 transition-all">&rarr;</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setShowProfileDropdown(false);
                           router.push("/dashboard/profile-builder");
                         }}
-                        className="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 hover:bg-brand-50 hover:text-brand-700 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-brand-100 group"
+                        className="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 hover:bg-brand-50 hover:text-brand-700 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-brand-100 group cursor-pointer"
                       >
                         <div className="flex items-center gap-2">
                           <User className="w-3.5 h-3.5 text-gray-400 group-hover:text-brand-600 transition-colors" />
@@ -583,6 +633,217 @@ export default function DashboardHeader() {
                       );
                     })
                   )}
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      ) : null}
+
+      {mounted && typeof window !== "undefined" ? createPortal(
+        <AnimatePresence>
+          {showPhotosModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-gray-900/50 backdrop-blur-sm"
+                onClick={() => setShowPhotosModal(false)}
+              />
+              
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                className="relative bg-white rounded-xl border border-gray-150 shadow-2xl w-full max-w-xl overflow-hidden z-10 flex flex-col max-h-[90vh]"
+              >
+                {/* Modal Header */}
+                <div className="p-6 border-b border-gray-100 flex items-center justify-between shrink-0">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 font-playfair">Manage Profile Photos</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">Upload up to 5 portrait photographs. Main photo is marked with primary star.</p>
+                  </div>
+                  <button
+                    onClick={() => setShowPhotosModal(false)}
+                    className="p-1.5 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Modal Body */}
+                <div className="p-6 overflow-y-auto space-y-6">
+                  {/* Photo Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                    {localPhotos.map((photo) => (
+                      <div
+                        key={photo.id}
+                        className="relative rounded-xl overflow-hidden border border-gray-200 aspect-[3/4] group bg-gray-50 shadow-xs"
+                      >
+                        <img
+                          src={photo.dataUrl}
+                          alt="Matrimony Profile Photo"
+                          className="w-full h-full object-cover"
+                        />
+                        {/* Control badges */}
+                        <div className="absolute top-1.5 left-1.5 flex gap-1">
+                          {photo.isPrimary ? (
+                            <span className="bg-amber-500 text-white w-5 h-5 rounded-full text-[11px] font-extrabold shadow-sm flex items-center justify-center">
+                              ★
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setLocalPhotos(
+                                  localPhotos.map((p) => ({
+                                    ...p,
+                                    isPrimary: p.id === photo.id,
+                                  }))
+                                );
+                              }}
+                              className="bg-black/40 hover:bg-black/60 text-white w-5 h-5 rounded-full text-[11px] font-bold shadow-sm opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center"
+                              title="Make Primary"
+                            >
+                              ☆
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Delete button */}
+                        <button
+                          onClick={() => {
+                            const filtered = localPhotos.filter((p) => p.id !== photo.id);
+                            if (filtered.length > 0 && !filtered.some((p) => p.isPrimary)) {
+                              filtered[0].isPrimary = true;
+                            }
+                            setLocalPhotos(filtered);
+                          }}
+                          className="absolute bottom-1.5 right-1.5 bg-red-650 hover:bg-red-705 text-white p-1.5 rounded-full shadow-md transition-all opacity-0 group-hover:opacity-100 active:scale-90 cursor-pointer"
+                          title="Delete Photo"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+
+                    {/* Add Photo Button Slot */}
+                    {localPhotos.length < 5 && (
+                      <button
+                        onClick={() => photosFileInputRef.current?.click()}
+                        className="border-2 border-dashed border-gray-200 hover:border-brand-500 rounded-xl aspect-[3/4] flex flex-col items-center justify-center text-gray-400 hover:text-brand-600 transition-all bg-gray-50/50 hover:bg-brand-50/10 cursor-pointer group"
+                      >
+                        <Plus className="w-6 h-6 mb-1.5 group-hover:scale-110 transition-transform" />
+                        <span className="text-[10px] font-bold">Add Photo</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <input
+                    type="file"
+                    ref={photosFileInputRef}
+                    accept="image/*"
+                    multiple
+                    onChange={async (e) => {
+                      if (e.target.files) {
+                        const files = Array.from(e.target.files);
+                        if (localPhotos.length + files.length > 5) {
+                          alert("You can upload a maximum of 5 photos.");
+                          return;
+                        }
+
+                        const loaded = await Promise.all(
+                          files.map(async (file) => {
+                            return new Promise<Photo>((resolve, reject) => {
+                              const reader = new FileReader();
+                              reader.onload = (ev) => {
+                                resolve({
+                                  id: Math.random().toString(36).substring(2, 9),
+                                  dataUrl: ev.target?.result as string,
+                                  isPrimary: false,
+                                });
+                              };
+                              reader.onerror = reject;
+                              reader.readAsDataURL(file);
+                            });
+                          })
+                        );
+
+                        const merged = [...localPhotos, ...loaded];
+                        if (merged.length > 0 && !merged.some((p) => p.isPrimary)) {
+                          merged[0].isPrimary = true;
+                        }
+                        setLocalPhotos(merged);
+                      }
+                      if (photosFileInputRef.current) {
+                        photosFileInputRef.current.value = "";
+                      }
+                    }}
+                    className="hidden"
+                  />
+
+                  <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-3.5 flex gap-2 text-xs text-amber-800">
+                    <span className="font-extrabold text-sm leading-none">&#9432;</span>
+                    <p className="leading-relaxed">
+                      Please upload high quality vertical portrait photographs (standard matrimonial size). To change your primary profile picture, hover over an image and click the star icon.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Modal Footer */}
+                <div className="px-6 py-4 bg-gray-50/50 border-t border-gray-100 flex items-center justify-end gap-3 shrink-0">
+                  <button
+                    onClick={() => setShowPhotosModal(false)}
+                    className="px-4 py-2 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    disabled={isSavingPhotos}
+                    onClick={async () => {
+                      if (!user) return;
+                      setIsSavingPhotos(true);
+                      try {
+                        const updatedDetails = {
+                          ...(user.profile_details || {}),
+                          mn_profile_photos_draft: {
+                            photos: localPhotos,
+                          },
+                        };
+
+                        const token = localStorage.getItem("mn_token");
+                        const res = await fetch(`http://localhost:3333/user/${user.id}`, {
+                          method: "PUT",
+                          headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${token}`,
+                          },
+                          body: JSON.stringify({
+                            profile_details: updatedDetails,
+                          }),
+                        });
+
+                        const data = await res.json();
+                        if (data.success) {
+                          // Update drafts
+                          localStorage.setItem("mn_profile_photos_draft", JSON.stringify({ photos: localPhotos }));
+                          await refreshUser();
+                          setShowPhotosModal(false);
+                        } else {
+                          alert(data.message || "Failed to save photos");
+                        }
+                      } catch (err) {
+                        console.error(err);
+                        alert("An error occurred while saving photos.");
+                      } finally {
+                        setIsSavingPhotos(false);
+                      }
+                    }}
+                    className="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm shrink-0 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    {isSavingPhotos ? "Saving..." : "Save Gallery"}
+                  </button>
                 </div>
               </motion.div>
             </div>

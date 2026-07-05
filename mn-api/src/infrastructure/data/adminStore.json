@@ -205,6 +205,12 @@
   },
   "activity_logs": [
     {
+      "id": 1783246711363,
+      "admin": "Super Admin",
+      "action": "Approved identity verification for user Mohammed Ansal (ID: 23)",
+      "time": "2026-07-05 10:18:31"
+    },
+    {
       "id": 1783245848723,
       "admin": "Super Admin",
       "action": "Approved identity verification for user harismon p (ID: 45)",

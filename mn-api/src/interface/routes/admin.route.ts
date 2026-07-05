@@ -663,6 +663,65 @@ admin_route.post("/kyc/:id/approve", adminGuard, async (req: Request, res: Respo
       }
     });
 
+    // Process referral reward trigger on KYC approval
+    try {
+      const referral = await prisma.referral.findUnique({
+        where: { referred_user_id: id }
+      });
+      if (referral && !referral.rewarded) {
+        let settings = await prisma.referralSettings.findUnique({ where: { id: 1 } });
+        if (!settings) {
+          settings = await prisma.referralSettings.create({
+            data: {
+              id: 1,
+              points_per_referral: 100,
+              reward_condition: "SIGNUP",
+              enabled: true,
+              max_referral: 100,
+              daily_limit: 10
+            }
+          });
+        }
+        if (settings.enabled && settings.reward_condition === "KYC") {
+          await prisma.$transaction([
+            prisma.referralTransaction.create({
+              data: {
+                user_id: referral.referrer_id,
+                referral_id: referral.id,
+                points: settings.points_per_referral,
+                type: "EARN",
+                reason: "Referral KYC Verification Bonus"
+              }
+            }),
+            prisma.user.update({
+              where: { id: referral.referrer_id },
+              data: {
+                referral_points: { increment: settings.points_per_referral }
+              }
+            }),
+            prisma.referral.update({
+              where: { id: referral.id },
+              data: {
+                status: "SUCCESS",
+                rewarded: true
+              }
+            }),
+            prisma.notification.create({
+              data: {
+                user_id: referral.referrer_id,
+                sender_id: id,
+                type: "REFERRAL_REWARD",
+                title: "Referral Reward Earned! 🎉",
+                message: `Your referred friend ${updatedUser.first_name} completed KYC verification. You earned ${settings.points_per_referral} points.`
+              }
+            })
+          ]);
+        }
+      }
+    } catch (refErr) {
+      console.error("Error processing referral reward on KYC approve:", refErr);
+    }
+
     // Write audit log
     const store = getAdminStore();
     const adminUser = await prisma.user.findUnique({ where: { id: getUserIdFromRequest(req) || 2 } });
@@ -756,6 +815,284 @@ admin_route.post("/kyc/:id/reject", adminGuard, async (req: Request, res: Respon
     res.status(200).json({ success: true, message: "KYC request rejected successfully." });
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message || "Failed to reject KYC request." });
+  }
+});
+
+// REFERRAL 1. GET Referrals List (GET /user/admin/referrals)
+admin_route.get("/referrals", adminGuard, async (req: Request, res: Response) => {
+  try {
+    const page = parseInt(req.query.page as string || "1", 10);
+    const limit = parseInt(req.query.limit as string || "10", 10);
+    const search = req.query.search as string || "";
+    const skip = (page - 1) * limit;
+
+    const whereClause: any = {};
+    if (search) {
+      whereClause.OR = [
+        { first_name: { contains: search, mode: "insensitive" } },
+        { last_name: { contains: search, mode: "insensitive" } },
+        { referral_code: { contains: search, mode: "insensitive" } },
+        { mobile_number: { contains: search, mode: "insensitive" } }
+      ];
+    }
+
+    const users = await prisma.user.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        first_name: true,
+        last_name: true,
+        referral_code: true,
+        referral_points: true,
+        created_at: true,
+        mobile_number: true
+      },
+      orderBy: { id: "desc" },
+      skip,
+      take: limit
+    });
+
+    const total = await prisma.user.count({ where: whereClause });
+
+    const enrichedUsers = await Promise.all(
+      users.map(async (u) => {
+        const totalCount = await prisma.referral.count({ where: { referrer_id: u.id } });
+        const successCount = await prisma.referral.count({ where: { referrer_id: u.id, status: "SUCCESS" } });
+        return {
+          ...u,
+          totalReferrals: totalCount,
+          successfulReferrals: successCount
+        };
+      })
+    );
+
+    const totalUsers = await prisma.user.count();
+    const totalCodes = await prisma.user.count({ where: { referral_code: { not: null } } });
+    const totalSuccess = await prisma.referral.count({ where: { status: "SUCCESS" } });
+    const totalPending = await prisma.referral.count({ where: { status: "PENDING" } });
+    const totalPoints = await prisma.referralTransaction.aggregate({
+      where: { points: { gt: 0 } },
+      _sum: { points: true }
+    });
+    const totalRedeemed = await prisma.referralTransaction.aggregate({
+      where: { points: { lt: 0 } },
+      _sum: { points: true }
+    });
+
+    res.status(200).json({
+      success: true,
+      referrals: enrichedUsers,
+      stats: {
+        totalUsers,
+        totalCodes,
+        totalSuccess,
+        totalPending,
+        totalPointsAwarded: totalPoints._sum.points || 0,
+        totalPointsRedeemed: Math.abs(totalRedeemed._sum.points || 0)
+      },
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Failed to fetch admin referrals" });
+  }
+});
+
+// REFERRAL 2. GET Settings (GET /user/admin/referrals/settings)
+admin_route.get("/referrals/settings", adminGuard, async (req: Request, res: Response) => {
+  try {
+    let settings = await prisma.referralSettings.findUnique({ where: { id: 1 } });
+    if (!settings) {
+      settings = await prisma.referralSettings.create({
+        data: {
+          id: 1,
+          points_per_referral: 100,
+          reward_condition: "SIGNUP",
+          enabled: true,
+          max_referral: 100,
+          daily_limit: 10
+        }
+      });
+    }
+    res.status(200).json({ success: true, settings });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: "Failed to fetch settings" });
+  }
+});
+
+// REFERRAL 3. PATCH Settings (POST /user/admin/referrals/settings)
+admin_route.post("/referrals/settings", adminGuard, async (req: Request, res: Response) => {
+  try {
+    const { points_per_referral, reward_condition, enabled, max_referral, daily_limit } = req.body;
+    const settings = await prisma.referralSettings.upsert({
+      where: { id: 1 },
+      update: {
+        points_per_referral: parseInt(points_per_referral, 10),
+        reward_condition,
+        enabled: enabled === true,
+        max_referral: parseInt(max_referral, 10),
+        daily_limit: parseInt(daily_limit, 10)
+      },
+      create: {
+        id: 1,
+        points_per_referral: parseInt(points_per_referral, 10),
+        reward_condition,
+        enabled: enabled === true,
+        max_referral: parseInt(max_referral, 10),
+        daily_limit: parseInt(daily_limit, 10)
+      }
+    });
+    res.status(200).json({ success: true, settings, message: "Referral settings updated successfully" });
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Failed to update settings" });
+  }
+});
+
+// REFERRAL 4. GET Single User Details (GET /user/admin/referrals/:id)
+admin_route.get("/referrals/:id", adminGuard, async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ success: false, message: "Invalid ID" });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        first_name: true,
+        last_name: true,
+        referral_code: true,
+        referral_points: true,
+        mobile_number: true,
+        created_at: true,
+        kyc_status: true
+      }
+    });
+
+    if (!user) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
+    }
+
+    const referrals = await prisma.referral.findMany({
+      where: { referrer_id: id },
+      include: {
+        referred_user: {
+          select: {
+            id: true,
+            first_name: true,
+            last_name: true,
+            created_at: true,
+            mobile_number: true
+          }
+        }
+      },
+      orderBy: { created_at: "desc" }
+    });
+
+    const transactions = await prisma.referralTransaction.findMany({
+      where: { user_id: id },
+      orderBy: { created_at: "desc" }
+    });
+
+    res.status(200).json({
+      success: true,
+      user,
+      referrals,
+      transactions
+    });
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Failed to load referral details" });
+  }
+});
+
+// REFERRAL 5. PATCH Block Referral (PATCH /user/admin/referrals/block)
+admin_route.patch("/referrals/block", adminGuard, async (req: Request, res: Response) => {
+  try {
+    const { userId, block } = req.body;
+    const user = await prisma.user.findUnique({ where: { id: parseInt(userId, 10) } });
+    if (!user) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
+    }
+
+    const updatedCode = block ? `BLOCKED_${user.referral_code || "CODE"}` : (user.referral_code?.replace("BLOCKED_", "") || null);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { referral_code: updatedCode }
+    });
+
+    res.status(200).json({ success: true, message: block ? "Referral code blocked" : "Referral code unblocked" });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: "Failed to block/unblock code" });
+  }
+});
+
+// REFERRAL 6. PATCH Points (PATCH /user/admin/referrals/points)
+admin_route.patch("/referrals/points", adminGuard, async (req: Request, res: Response) => {
+  try {
+    const { userId, points, reason, type } = req.body;
+    const id = parseInt(userId, 10);
+    const pts = parseInt(points, 10);
+
+    if (isNaN(id) || isNaN(pts) || pts <= 0) {
+      res.status(400).json({ success: false, message: "Invalid parameters" });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
+    }
+
+    const adjustedPoints = type === "BONUS" ? pts : -pts;
+    if (type === "DEDUCT" && user.referral_points < pts) {
+      res.status(400).json({ success: false, message: "Cannot deduct more points than user currently has" });
+      return;
+    }
+
+    await prisma.$transaction([
+      prisma.referralTransaction.create({
+        data: {
+          user_id: id,
+          points: adjustedPoints,
+          type: type === "BONUS" ? "BONUS" : "DEDUCT",
+          reason: reason || (type === "BONUS" ? "Admin Bonus Points" : "Admin Deducted Points")
+        }
+      }),
+      prisma.user.update({
+        where: { id },
+        data: {
+          referral_points: { increment: adjustedPoints }
+        }
+      }),
+      prisma.notification.create({
+        data: {
+          user_id: id,
+          sender_id: 1,
+          type: "REFERRAL_REWARD",
+          title: type === "BONUS" ? "Bonus Points Received! 🎁" : "Points Adjusted ⚙️",
+          message: type === "BONUS" 
+            ? `Admin awarded you ${pts} bonus referral points. Reason: ${reason}` 
+            : `Admin deducted ${pts} points from your wallet. Reason: ${reason}`
+        }
+      })
+    ]);
+
+    res.status(200).json({ success: true, message: "Points adjusted successfully" });
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Failed to adjust points" });
   }
 });
 

@@ -11,6 +11,7 @@ import {
 import { getEnrichedProfile } from "@/lib/profile-utils";
 import BiodataDownload from "@/components/dashboard/BiodataDownload";
 import { useCompare } from "@/context/CompareContext";
+import { useUser } from "@/context/UserContext";
 import { FullProfileSkeleton } from "@/components/dashboard/Skeleton";
 
 interface PageProps {
@@ -22,6 +23,7 @@ export default function ProfileDetailPage({ params }: PageProps) {
   const resolvedParams = use(params);
   const profileId = parseInt(resolvedParams.id, 10);
   
+  const { currentUser } = useUser();
   const { addToCompare, removeFromCompare, isCompared, setAlertMsg: setCompareAlert } = useCompare();
 
   const [loading, setLoading] = useState(true);
@@ -162,10 +164,11 @@ export default function ProfileDetailPage({ params }: PageProps) {
     );
   }
 
+  const isSelf = currentUser && currentUser.id === profile.id;
   const isMutual = interests.mutual.includes(profile.id);
   const isSent = interests.sent.includes(profile.id);
   const isReceived = interests.received.includes(profile.id);
-  const isInterested = isMutual || isSent || isReceived;
+  const isInterested = isMutual || isSent || isReceived || isSelf;
 
   let interestBtnText = "Express Interest";
   let interestBtnStyle = "bg-brand-600 hover:bg-brand-700 text-white shadow-brand-600/10";
@@ -281,50 +284,58 @@ export default function ProfileDetailPage({ params }: PageProps) {
 
             {/* Action buttons */}
             <div className="p-5 space-y-3">
-              <button 
-                onClick={handleToggleInterest}
-                className={`w-full py-3 text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 active:scale-[0.98] ${interestBtnStyle}`}
-              >
-                <Heart className={`w-4 h-4 ${(isMutual || isSent) ? "fill-current" : ""}`} />
-                {interestBtnText}
-              </button>
+              {isSelf ? (
+                <div className="bg-brand-50/50 border border-brand-100 rounded-xl p-3.5 text-center text-xs text-brand-800 font-medium">
+                  This is a preview of your matrimony profile as seen by other members.
+                </div>
+              ) : (
+                <>
+                  <button 
+                    onClick={handleToggleInterest}
+                    className={`w-full py-3 text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 active:scale-[0.98] ${interestBtnStyle}`}
+                  >
+                    <Heart className={`w-4 h-4 ${(isMutual || isSent) ? "fill-current" : ""}`} />
+                    {interestBtnText}
+                  </button>
 
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    if (isMutual) {
-                      router.push("/dashboard/chat");
-                    } else {
-                      setAlertMsg("Chat is locked! Establish a mutual match first.");
-                    }
-                  }}
-                  className={`flex-1 py-3 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 ${
-                    isMutual 
-                      ? "bg-brand-50 text-brand-700 hover:bg-brand-100" 
-                      : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                  }`}
-                >
-                  <MessageCircle className="w-4 h-4" /> Chat
-                </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        if (isMutual) {
+                          router.push("/dashboard/chat");
+                        } else {
+                          setAlertMsg("Chat is locked! Establish a mutual match first.");
+                        }
+                      }}
+                      className={`flex-1 py-3 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 ${
+                        isMutual 
+                          ? "bg-brand-50 text-brand-700 hover:bg-brand-100" 
+                          : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      }`}
+                    >
+                      <MessageCircle className="w-4 h-4" /> Chat
+                    </button>
 
-                <button
-                  onClick={() => {
-                    if (isCompared(profile.id)) {
-                      removeFromCompare(profile.id);
-                    } else {
-                      addToCompare(profile.id);
-                    }
-                  }}
-                  className={`px-4 py-3 rounded-xl border transition-colors flex items-center justify-center ${
-                    isCompared(profile.id)
-                      ? "bg-brand-600 text-white border-brand-500 hover:bg-brand-700"
-                      : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
-                  }`}
-                  title="Compare Profile"
-                >
-                  <Layers className="w-4.5 h-4.5" />
-                </button>
-              </div>
+                    <button
+                      onClick={() => {
+                        if (isCompared(profile.id)) {
+                          removeFromCompare(profile.id);
+                        } else {
+                          addToCompare(profile.id);
+                        }
+                      }}
+                      className={`px-4 py-3 rounded-xl border transition-colors flex items-center justify-center ${
+                        isCompared(profile.id)
+                          ? "bg-brand-600 text-white border-brand-500 hover:bg-brand-700"
+                          : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
+                      }`}
+                      title="Compare Profile"
+                    >
+                      <Layers className="w-4.5 h-4.5" />
+                    </button>
+                  </div>
+                </>
+              )}
 
               <div className="pt-2 border-t border-gray-50 flex justify-center">
                 <BiodataDownload profile={profile} enriched={getEnrichedProfile(profile)} />

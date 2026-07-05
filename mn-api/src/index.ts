@@ -6,6 +6,7 @@ import interest_route from "./interface/routes/interest.route";
 import chat_route from "./interface/routes/chat.route";
 import notification_route from "./interface/routes/notification.route";
 import admin_route from "./interface/routes/admin.route";
+import referral_route from "./interface/routes/referral.route";
 import cors from "cors";
 import path from "path";
 
@@ -79,6 +80,7 @@ app.use("/user/interest", interest_route);
 app.use("/user/chat", chat_route);
 app.use("/user/notifications", notification_route);
 app.use("/user/admin", admin_route);
+app.use("/referral", referral_route);
 app.use("/user", user_route);
 app.use("/otp", otp_route);
 

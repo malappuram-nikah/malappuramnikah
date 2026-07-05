@@ -35,6 +35,11 @@ model User {
   verify         Verify[]
   sent_interests     Interest[] @relation("SentInterests")
   received_interests Interest[] @relation("ReceivedInterests")
+  referral_code      String?    @unique
+  referral_points    Int        @default(0)
+  referrals_sent     Referral[] @relation("Referrer")
+  referrals_received Referral[] @relation("ReferredUser")
+  referral_transactions ReferralTransaction[]
 
   @@map("user")
 }
@@ -89,4 +94,48 @@ model Notification {
   created_at  DateTime @default(now())
 
   @@map("notification")
+}
+
+model Referral {
+  id               Int      @id @default(autoincrement())
+  referrer_id      Int
+  referred_user_id Int      @unique
+  referral_code    String
+  status           String   @default("PENDING") // PENDING, SUCCESS, REJECTED
+  rewarded         Boolean  @default(false)
+  created_at       DateTime @default(now())
+
+  referrer         User     @relation("Referrer", fields: [referrer_id], references: [id], onDelete: Cascade)
+  referred_user    User     @relation("ReferredUser", fields: [referred_user_id], references: [id], onDelete: Cascade)
+  transactions     ReferralTransaction[]
+
+  @@index([referrer_id])
+  @@map("referral")
+}
+
+model ReferralTransaction {
+  id            Int       @id @default(autoincrement())
+  user_id       Int
+  referral_id   Int?
+  points        Int
+  type          String    // EARN, REDEEM, BONUS, DEDUCT, EXPIRE
+  reason        String
+  created_at    DateTime  @default(now())
+
+  user          User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  referral      Referral? @relation(fields: [referral_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id])
+  @@map("referral_transaction")
+}
+
+model ReferralSettings {
+  id                  Int      @id @default(1)
+  points_per_referral Int      @default(100)
+  reward_condition    String   @default("SIGNUP") // SIGNUP, KYC, PAYMENT
+  enabled             Boolean  @default(true)
+  max_referral        Int      @default(100)
+  daily_limit         Int      @default(10)
+
+  @@map("referral_settings")
 }

@@ -26,7 +26,18 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
     countryCode: "+91",
     mobile: "",
     password: "",
+    referralCode: "",
   });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get("ref");
+      if (ref) {
+        setFormData((prev) => ({ ...prev, referralCode: ref.toUpperCase() }));
+      }
+    }
+  }, []);
 
   const updateForm = (key: string, value: string) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -231,6 +242,16 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Referral Code (Optional)</label>
+              <input
+                type="text"
+                value={formData.referralCode}
+                onChange={(e) => updateForm("referralCode", e.target.value)}
+                placeholder="Enter referral code"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm uppercase font-mono tracking-wider"
+              />
+            </div>
           </motion.div>
         );
     }
@@ -259,7 +280,8 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
         password: formData.password,
         location: formData.location,
         dob: formData.dateOfBirth,
-        cast: formData.caste
+        cast: formData.caste,
+        referred_by_code: formData.referralCode || undefined
       };
 
       const response = await fetch("http://localhost:3333/user/register", {

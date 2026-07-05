@@ -21,4 +21,6 @@ export interface User {
   kyc_rejected_reason?: string | null;
   kyc_submitted_at?: Date | string | null;
   kyc_verified_at?: Date | string | null;
+  referral_code?: string | null;
+  referral_points?: number;
 }
