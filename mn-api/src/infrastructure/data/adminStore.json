@@ -205,6 +205,12 @@
   },
   "activity_logs": [
     {
+      "id": 1783270627284,
+      "admin": "Super Admin",
+      "action": "Approved identity verification for user Iwa Mehawish (ID: 19)",
+      "time": "2026-07-05 16:57:07"
+    },
+    {
       "id": 1783263431578,
       "admin": "Super Admin",
       "action": "Updated background music settings (Enabled: true)",

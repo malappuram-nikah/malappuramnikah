@@ -670,7 +670,7 @@ export default function MyProfilePage() {
     } catch (e: any) {
       if (e?.name !== "AbortError") console.error("loadProfile:", e);
     } finally {
-      if (!abortRef.current?.signal.aborted) setLoading(false);
+      if (!ctrl.signal.aborted) setLoading(false);
     }
   }, [router]);
 

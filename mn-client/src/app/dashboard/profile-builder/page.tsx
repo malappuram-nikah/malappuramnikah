@@ -322,16 +322,16 @@ export default function ProfileBuilderPage() {
         </div>
 
         {/* Desktop: Clickable step dots with tooltips */}
-        <div className="hidden sm:flex items-start justify-center mt-8 gap-0 overflow-x-auto pb-4 px-2 w-full max-w-full hide-scrollbar">
+        <div className="hidden sm:flex items-start justify-between mt-8 w-full max-w-full px-2">
           {stepNames.slice(0, 12).map((name, idx) => {
             const step = idx + 1;
             const isDone = currentStep > step;
             const isCurrent = currentStep === step;
             const isLast = step === 12;
             return (
-              <div key={step} className="flex items-center">
+              <div key={step} className={`flex items-start ${isLast ? 'shrink-0' : 'flex-1'}`}>
                 {/* Step dot + label */}
-                <div className="flex flex-col items-center group">
+                <div className="flex flex-col items-center group shrink-0 w-14 md:w-16">
                   <button
                     onClick={() => setCurrentStep(step)}
                     title={name}
@@ -347,7 +347,7 @@ export default function ProfileBuilderPage() {
                       <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                     ) : step}
                   </button>
-                  <span className={`mt-1.5 text-[9px] font-semibold text-center whitespace-nowrap max-w-[56px] leading-tight ${
+                  <span className={`mt-2 text-[9px] md:text-[10px] font-semibold text-center whitespace-normal leading-tight ${
                     isCurrent ? "text-brand-600" : isDone ? "text-brand-400" : "text-gray-400"
                   }`}>
                     {name}
@@ -355,7 +355,7 @@ export default function ProfileBuilderPage() {
                 </div>
                 {/* Connector line */}
                 {!isLast && (
-                  <div className="w-5 sm:w-6 h-0.5 bg-gray-200 shrink-0 mb-5 mx-0.5">
+                  <div className="flex-1 h-0.5 bg-gray-200 mt-4 mx-1 min-w-[4px]">
                     <motion.div
                       className="h-full bg-brand-500 rounded-full"
                       initial={{ width: 0 }}
