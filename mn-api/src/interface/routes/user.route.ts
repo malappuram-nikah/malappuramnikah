@@ -402,4 +402,196 @@ user_route.delete('/:id', async (req: Request, res: Response) => {
   }
 });
 
+
+/* ─── BLOCK / UNBLOCK ─────────────────────────────────────── */
+
+// Toggle block: POST /user/block { target_id }
+user_route.post('/block', async (req: Request, res: Response) => {
+  try {
+    const requesterId = getUserIdFromRequest(req);
+    if (!requesterId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+    const target_id = parseInt(req.body.target_id, 10);
+    if (isNaN(target_id) || target_id === requesterId) {
+      res.status(400).json({ success: false, message: "Invalid target_id" });
+      return;
+    }
+
+    const existing = await prisma.block.findUnique({
+      where: { blocker_id_blocked_id: { blocker_id: requesterId, blocked_id: target_id } }
+    });
+
+    if (existing) {
+      // Unblock
+      await prisma.block.delete({ where: { id: existing.id } });
+      res.status(200).json({ success: true, status: "UNBLOCKED" });
+    } else {
+      // Block (and auto-remove any pending interest between them)
+      await prisma.$transaction([
+        prisma.block.create({ data: { blocker_id: requesterId, blocked_id: target_id } }),
+        prisma.interest.deleteMany({
+          where: {
+            OR: [
+              { sender_id: requesterId, receiver_id: target_id },
+              { sender_id: target_id, receiver_id: requesterId },
+            ]
+          }
+        })
+      ]);
+      res.status(200).json({ success: true, status: "BLOCKED" });
+    }
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || "Failed to toggle block" });
+  }
+});
+
+// Get my blocked list: GET /user/block
+user_route.get('/block', async (req: Request, res: Response) => {
+  try {
+    const requesterId = getUserIdFromRequest(req);
+    if (!requesterId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+    const blocks = await prisma.block.findMany({
+      where: { blocker_id: requesterId },
+      select: { blocked_id: true }
+    });
+    res.status(200).json({ success: true, blocked_ids: blocks.map(b => b.blocked_id) });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || "Failed to fetch blocked list" });
+  }
+});
+
+/* ─── FAVOURITE / UNFAVOURITE ─────────────────────────────── */
+
+// Toggle favourite: POST /user/favourite { target_id }
+user_route.post('/favourite', async (req: Request, res: Response) => {
+  try {
+    const requesterId = getUserIdFromRequest(req);
+    if (!requesterId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+    const target_id = parseInt(req.body.target_id, 10);
+    if (isNaN(target_id) || target_id === requesterId) {
+      res.status(400).json({ success: false, message: "Invalid target_id" });
+      return;
+    }
+
+    const existing = await prisma.favourite.findUnique({
+      where: { favouriter_id_favourited_id: { favouriter_id: requesterId, favourited_id: target_id } }
+    });
+
+    if (existing) {
+      await prisma.favourite.delete({ where: { id: existing.id } });
+      res.status(200).json({ success: true, status: "UNFAVOURITED" });
+    } else {
+      await prisma.favourite.create({ data: { favouriter_id: requesterId, favourited_id: target_id } });
+      res.status(200).json({ success: true, status: "FAVOURITED" });
+    }
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || "Failed to toggle favourite" });
+  }
+});
+
+// Get my favourites + blocks: GET /user/favourite
+user_route.get('/favourite', async (req: Request, res: Response) => {
+  try {
+    const requesterId = getUserIdFromRequest(req);
+    if (!requesterId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+    const [favs, blocks] = await Promise.all([
+      prisma.favourite.findMany({ where: { favouriter_id: requesterId }, select: { favourited_id: true } }),
+      prisma.block.findMany({ where: { blocker_id: requesterId }, select: { blocked_id: true } }),
+    ]);
+    res.status(200).json({
+      success: true,
+      favourite_ids: favs.map(f => f.favourited_id),
+      blocked_ids: blocks.map(b => b.blocked_id),
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || "Failed to fetch favourites" });
+  }
+});
+
+/* ─── FEEDBACK SUBMISSION ─────────────────────────────────── */
+
+// Submit feedback: POST /user/feedback
+user_route.post('/feedback', async (req: Request, res: Response) => {
+  try {
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const { category, rating, subject, message } = req.body;
+
+    // Validate inputs
+    const validCategories = ["SUGGESTION", "BUG", "APPRECIATION", "OTHER"];
+    const normalizedCategory = typeof category === "string" ? category.toUpperCase().trim() : "";
+
+    if (!validCategories.includes(normalizedCategory)) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid category. Must be one of SUGGESTION, BUG, APPRECIATION, or OTHER."
+      });
+      return;
+    }
+
+    const parsedRating = parseInt(rating, 10);
+    if (isNaN(parsedRating) || parsedRating < 1 || parsedRating > 5) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid rating. Rating must be a whole number between 1 and 5."
+      });
+      return;
+    }
+
+    if (!subject || typeof subject !== "string" || subject.trim().length < 3) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid subject. Subject must be at least 3 characters long."
+      });
+      return;
+    }
+
+    if (!message || typeof message !== "string" || message.trim().length < 10) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid message. Message must be at least 10 characters long."
+      });
+      return;
+    }
+
+    // Insert into database
+    const feedback = await prisma.feedback.create({
+      data: {
+        user_id: userId,
+        category: normalizedCategory,
+        rating: parsedRating,
+        subject: subject.trim(),
+        message: message.trim()
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Thank you for your feedback! It has been submitted successfully.",
+      feedback
+    });
+  } catch (error: any) {
+    console.error("Feedback submission error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to submit feedback. Please try again."
+    });
+  }
+});
+
 export default user_route;

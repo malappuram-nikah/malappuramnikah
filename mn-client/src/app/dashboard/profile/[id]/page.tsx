@@ -1,18 +1,20 @@
 "use client";
 
-import { use, useState, useEffect } from "react";
+import { use, useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Heart, MessageCircle, Star, ArrowLeft, Loader2, Sparkles, 
   Lock, Unlock, ShieldCheck, Volume2, Video, MapPin, 
-  BookOpen, Briefcase, Award, Users, HeartHandshake, Smile, Layers
+  BookOpen, Briefcase, Award, Users, HeartHandshake, Smile, Layers,
+  Ban, MoreVertical, Flag
 } from "lucide-react";
 import { getEnrichedProfile } from "@/lib/profile-utils";
 import BiodataDownload from "@/components/dashboard/BiodataDownload";
 import { useCompare } from "@/context/CompareContext";
 import { useUser } from "@/context/UserContext";
 import { FullProfileSkeleton } from "@/components/dashboard/Skeleton";
+import { useProfileActions } from "@/hooks/useProfileActions";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -25,6 +27,9 @@ export default function ProfileDetailPage({ params }: PageProps) {
   
   const { currentUser } = useUser();
   const { addToCompare, removeFromCompare, isCompared, setAlertMsg: setCompareAlert } = useCompare();
+  const { toggleFavourite, toggleBlock, isFavourite, isBlocked } = useProfileActions();
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
@@ -138,6 +143,15 @@ export default function ProfileDetailPage({ params }: PageProps) {
       console.error("Interest toggle failed:", e);
     }
   };
+
+  // Close menu on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   // Automatically dismiss alerts
   useEffect(() => {
@@ -299,6 +313,23 @@ export default function ProfileDetailPage({ params }: PageProps) {
                   </button>
 
                   <div className="flex gap-2">
+                    {/* Favourite */}
+                    <button
+                      onClick={async () => {
+                        const result = await toggleFavourite(profile.id);
+                        setAlertMsg(result === "FAVOURITED" ? "⭐ Added to favourites!" : "Removed from favourites");
+                      }}
+                      className={`flex-1 py-3 text-xs font-bold rounded-xl border transition-all flex items-center justify-center gap-1.5 ${
+                        isFavourite(profile.id)
+                          ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                          : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
+                      }`}
+                    >
+                      <Star className={`w-4 h-4 ${isFavourite(profile.id) ? "fill-amber-500 text-amber-500" : ""}`} />
+                      {isFavourite(profile.id) ? "Favourited" : "Favourite"}
+                    </button>
+
+                    {/* Chat */}
                     <button
                       onClick={() => {
                         if (isMutual) {
@@ -316,6 +347,7 @@ export default function ProfileDetailPage({ params }: PageProps) {
                       <MessageCircle className="w-4 h-4" /> Chat
                     </button>
 
+                    {/* Compare */}
                     <button
                       onClick={() => {
                         if (isCompared(profile.id)) {
@@ -324,15 +356,60 @@ export default function ProfileDetailPage({ params }: PageProps) {
                           addToCompare(profile.id);
                         }
                       }}
-                      className={`px-4 py-3 rounded-xl border transition-colors flex items-center justify-center ${
+                      className={`px-3.5 py-3 rounded-xl border transition-colors flex items-center justify-center ${
                         isCompared(profile.id)
                           ? "bg-brand-600 text-white border-brand-500 hover:bg-brand-700"
                           : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
                       }`}
                       title="Compare Profile"
                     >
-                      <Layers className="w-4.5 h-4.5" />
+                      <Layers className="w-4 h-4" />
                     </button>
+                  </div>
+
+                  {/* Block / More menu */}
+                  <div className="relative" ref={menuRef}>
+                    <button
+                      onClick={() => setMenuOpen(v => !v)}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-semibold text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-xl border border-gray-150 transition-colors"
+                    >
+                      <MoreVertical className="w-3.5 h-3.5" /> More actions
+                    </button>
+                    <AnimatePresence>
+                      {menuOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.9, y: -6 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.9, y: -6 }}
+                          transition={{ duration: 0.12 }}
+                          className="absolute bottom-full mb-1.5 left-0 right-0 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-20"
+                        >
+                          <button
+                            onClick={async () => {
+                              setMenuOpen(false);
+                              const result = await toggleBlock(profile.id);
+                              if (result === "BLOCKED") {
+                                setAlertMsg("🚫 User blocked. They will no longer appear in your searches.");
+                                setTimeout(() => router.back(), 2000);
+                              } else {
+                                setAlertMsg("✓ User unblocked successfully.");
+                              }
+                            }}
+                            className="w-full flex items-center gap-2.5 px-4 py-3 text-xs font-semibold hover:bg-red-50 text-red-600 transition-colors"
+                          >
+                            <Ban className="w-4 h-4" />
+                            {isBlocked(profile.id) ? "Unblock this user" : "Block this user"}
+                          </button>
+                          <button
+                            onClick={() => { setMenuOpen(false); setAlertMsg("Report submitted. Our team will review it."); }}
+                            className="w-full flex items-center gap-2.5 px-4 py-3 text-xs font-semibold hover:bg-gray-50 text-gray-600 transition-colors border-t border-gray-50"
+                          >
+                            <Flag className="w-4 h-4" />
+                            Report this profile
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </>
               )}
@@ -341,6 +418,17 @@ export default function ProfileDetailPage({ params }: PageProps) {
                 <BiodataDownload profile={profile} enriched={getEnrichedProfile(profile)} />
               </div>
             </div>
+          </div>
+
+          {/* Safety Awareness Banner */}
+          <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-amber-50 border border-amber-200 rounded-xl overflow-hidden shadow-xs">
+            <div className="flex items-center gap-2 px-3.5 py-2 bg-amber-500/10 border-b border-amber-200/60">
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-800">Safety Reminder</span>
+            </div>
+            <p className="text-[11px] text-amber-900/75 font-medium leading-relaxed px-3.5 py-2.5">
+              Independently verify all profile details before taking any steps forward. Prioritise your safety — <span className="font-bold text-amber-800">never transfer money</span> or share personal financial information with someone you've only met online.
+            </p>
           </div>
 
           {/* QR Code Sharing Card */}

@@ -1096,4 +1096,90 @@ admin_route.patch("/referrals/points", adminGuard, async (req: Request, res: Res
   }
 });
 
+/* ─── USER FEEDBACK MANAGEMENT ───────────────────────────── */
+
+// 1. GET User Feedbacks (GET /user/admin/feedback)
+admin_route.get("/feedback", adminGuard, async (req: Request, res: Response) => {
+  try {
+    const feedbacks = await prisma.feedback.findMany({
+      include: {
+        user: {
+          select: {
+            id: true,
+            first_name: true,
+            last_name: true,
+            location: true,
+            mobile_number: true,
+          }
+        }
+      },
+      orderBy: {
+        created_at: "desc"
+      }
+    });
+
+    // Calculate quick feedback stats
+    const totalCount = feedbacks.length;
+    const totalRatingSum = feedbacks.reduce((acc, curr) => acc + curr.rating, 0);
+    const averageRating = totalCount > 0 ? parseFloat((totalRatingSum / totalCount).toFixed(1)) : 0;
+
+    const stats = {
+      total: totalCount,
+      averageRating,
+      bugs: feedbacks.filter(f => f.category === "BUG").length,
+      suggestions: feedbacks.filter(f => f.category === "SUGGESTION").length,
+      appreciations: feedbacks.filter(f => f.category === "APPRECIATION").length,
+      others: feedbacks.filter(f => f.category === "OTHER").length,
+    };
+
+    res.status(200).json({
+      success: true,
+      feedbacks,
+      stats
+    });
+  } catch (error: any) {
+    console.error("Fetch feedbacks error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch feedbacks"
+    });
+  }
+});
+
+// 2. DELETE User Feedback (DELETE /user/admin/feedback/:id)
+admin_route.delete("/feedback/:id", adminGuard, async (req: Request, res: Response) => {
+  try {
+    const feedbackId = parseInt(req.params.id as string, 10);
+    if (isNaN(feedbackId)) {
+       res.status(400).json({ success: false, message: "Invalid feedback ID" });
+       return;
+    }
+
+    const existing = await prisma.feedback.findUnique({
+      where: { id: feedbackId }
+    });
+
+    if (!existing) {
+       res.status(404).json({ success: false, message: "Feedback not found" });
+       return;
+    }
+
+    await prisma.feedback.delete({
+      where: { id: feedbackId }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Feedback deleted successfully"
+    });
+  } catch (error: any) {
+    console.error("Delete feedback error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to delete feedback"
+    });
+  }
+});
+
 export default admin_route;
+

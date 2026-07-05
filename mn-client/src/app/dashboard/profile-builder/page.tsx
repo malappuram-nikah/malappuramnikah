@@ -259,125 +259,116 @@ export default function ProfileBuilderPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 font-playfair text-center">
-          Complete Your Profile
+
+        {/* Header row with back link + title */}
+        <div className="flex items-center gap-3 mb-6">
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-brand-600 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            Dashboard
+          </button>
+          <span className="text-gray-300">/</span>
+          <span className="text-sm font-semibold text-gray-800">Manage My Profile</span>
+        </div>
+
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 font-playfair text-center">
+          Manage My Profile
         </h1>
-        <p className="text-gray-500 text-center mt-2">
-          Help us find the perfect match for you by providing these details.
+        <p className="text-gray-500 text-center mt-2 text-sm">
+          Click any step below to jump directly to it and update your details.
         </p>
 
-        {/* Wizard Steps Indicator */}
-        {/* Sleek Mobile Step Tracker */}
+        {/* Mobile Step Tracker */}
         <div className="block sm:hidden mt-6 bg-white p-4 rounded-2xl border border-gray-200/60 shadow-sm">
-          <div className="flex items-center justify-between text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-            <span>Step {currentStep} of 13</span>
+          <div className="flex items-center justify-between text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+            <span>Step {currentStep} of 12</span>
             <span className="text-brand-600 font-bold">{stepNames[currentStep - 1] || "Review"}</span>
           </div>
-          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-            <motion.div 
-              className="h-full bg-brand-600 rounded-full" 
-              initial={{ width: 0 }} 
-              animate={{ width: `${(currentStep / 13) * 100}%` }} 
-              transition={{ duration: 0.3 }} 
+          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
+            <motion.div
+              className="h-full bg-brand-600 rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${((currentStep - 1) / 12) * 100}%` }}
+              transition={{ duration: 0.3 }}
             />
           </div>
-        </div>
-
-        {/* Desktop Dots Tracker */}
-        <div className="hidden sm:flex items-center justify-center mt-8 gap-1.5 overflow-x-auto pb-4 px-2 w-full max-w-full hide-scrollbar">
-          <div className={`flex items-center gap-1.5 ${currentStep >= 1 ? 'text-brand-600' : 'text-gray-400'}`}>
-            <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${currentStep >= 1 ? 'bg-brand-600 text-white' : 'bg-gray-200'}`}>1</div>
-          </div>
-          <div className="w-1.5 sm:w-2 h-0.5 bg-gray-200 shrink-0">
-            <motion.div className="h-full bg-brand-600" initial={{ width: 0 }} animate={{ width: currentStep >= 2 ? '100%' : '0%' }} transition={{ duration: 0.3 }} />
-          </div>
-
-          <div className={`flex items-center gap-1.5 ${currentStep >= 2 ? 'text-brand-600' : 'text-gray-400'}`}>
-            <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${currentStep >= 2 ? 'bg-brand-600 text-white' : 'bg-gray-200'}`}>2</div>
-          </div>
-          <div className="w-1.5 sm:w-2 h-0.5 bg-gray-200 shrink-0">
-            <motion.div className="h-full bg-brand-600" initial={{ width: 0 }} animate={{ width: currentStep >= 3 ? '100%' : '0%' }} transition={{ duration: 0.3 }} />
-          </div>
-
-          <div className={`flex items-center gap-1.5 ${currentStep >= 3 ? 'text-brand-600' : 'text-gray-400'}`}>
-            <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${currentStep >= 3 ? 'bg-brand-600 text-white' : 'bg-gray-200'}`}>3</div>
-          </div>
-          <div className="w-1.5 sm:w-2 h-0.5 bg-gray-200 shrink-0">
-            <motion.div className="h-full bg-brand-600" initial={{ width: 0 }} animate={{ width: currentStep >= 4 ? '100%' : '0%' }} transition={{ duration: 0.3 }} />
-          </div>
-
-          <div className={`flex items-center gap-1.5 ${currentStep >= 4 ? 'text-brand-600' : 'text-gray-400'}`}>
-            <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${currentStep >= 4 ? 'bg-brand-600 text-white' : 'bg-gray-200'}`}>4</div>
-          </div>
-          <div className="w-1.5 sm:w-2 h-0.5 bg-gray-200 shrink-0">
-            <motion.div className="h-full bg-brand-600" initial={{ width: 0 }} animate={{ width: currentStep >= 5 ? '100%' : '0%' }} transition={{ duration: 0.3 }} />
-          </div>
-
-          <div className={`flex items-center gap-1.5 ${currentStep >= 5 ? 'text-brand-600' : 'text-gray-400'}`}>
-            <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${currentStep >= 5 ? 'bg-brand-600 text-white' : 'bg-gray-200'}`}>5</div>
-          </div>
-          <div className="w-1.5 sm:w-2 h-0.5 bg-gray-200 shrink-0">
-            <motion.div className="h-full bg-brand-600" initial={{ width: 0 }} animate={{ width: currentStep >= 6 ? '100%' : '0%' }} transition={{ duration: 0.3 }} />
-          </div>
-
-          <div className={`flex items-center gap-1.5 ${currentStep >= 6 ? 'text-brand-600' : 'text-gray-400'}`}>
-            <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${currentStep >= 6 ? 'bg-brand-600 text-white' : 'bg-gray-200'}`}>6</div>
-          </div>
-          <div className="w-1.5 sm:w-2 h-0.5 bg-gray-200 shrink-0">
-            <motion.div className="h-full bg-brand-600" initial={{ width: 0 }} animate={{ width: currentStep >= 7 ? '100%' : '0%' }} transition={{ duration: 0.3 }} />
-          </div>
-
-          <div className={`flex items-center gap-1.5 ${currentStep >= 7 ? 'text-brand-600' : 'text-gray-400'}`}>
-            <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${currentStep >= 7 ? 'bg-brand-600 text-white' : 'bg-gray-200'}`}>7</div>
-          </div>
-          <div className="w-1.5 sm:w-2 h-0.5 bg-gray-200 shrink-0">
-            <motion.div className="h-full bg-brand-600" initial={{ width: 0 }} animate={{ width: currentStep >= 8 ? '100%' : '0%' }} transition={{ duration: 0.3 }} />
-          </div>
-
-          <div className={`flex items-center gap-1.5 ${currentStep >= 8 ? 'text-brand-600' : 'text-gray-400'}`}>
-            <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${currentStep >= 8 ? 'bg-brand-600 text-white' : 'bg-gray-200'}`}>8</div>
-          </div>
-          <div className="w-1.5 sm:w-2 h-0.5 bg-gray-200 shrink-0">
-            <motion.div className="h-full bg-brand-600" initial={{ width: 0 }} animate={{ width: currentStep >= 9 ? '100%' : '0%' }} transition={{ duration: 0.3 }} />
-          </div>
-
-          <div className={`flex items-center gap-1.5 ${currentStep >= 9 ? 'text-brand-600' : 'text-gray-400'}`}>
-            <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${currentStep >= 9 ? 'bg-brand-600 text-white' : 'bg-gray-200'}`}>9</div>
-          </div>
-          <div className="w-1.5 sm:w-2 h-0.5 bg-gray-200 shrink-0">
-            <motion.div className="h-full bg-brand-600" initial={{ width: 0 }} animate={{ width: currentStep >= 10 ? '100%' : '0%' }} transition={{ duration: 0.3 }} />
-          </div>
-          
-          <div className={`flex items-center gap-1.5 ${currentStep >= 10 ? 'text-brand-600' : 'text-gray-400'}`}>
-            <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${currentStep >= 10 ? 'bg-brand-600 text-white' : 'bg-gray-200'}`}>10</div>
-          </div>
-          <div className="w-1.5 sm:w-2 h-0.5 bg-gray-200 shrink-0">
-            <motion.div className="h-full bg-brand-600" initial={{ width: 0 }} animate={{ width: currentStep >= 11 ? '100%' : '0%' }} transition={{ duration: 0.3 }} />
-          </div>
-
-          <div className={`flex items-center gap-1.5 ${currentStep >= 11 ? 'text-brand-600' : 'text-gray-400'}`}>
-            <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${currentStep >= 11 ? 'bg-brand-600 text-white' : 'bg-gray-200'}`}>11</div>
-            <span className="hidden lg:block text-xs font-medium whitespace-nowrap">Verification</span>
-          </div>
-          <div className="w-1.5 sm:w-2 h-0.5 bg-gray-200 shrink-0">
-            <motion.div className="h-full bg-brand-600" initial={{ width: 0 }} animate={{ width: currentStep >= 12 ? '100%' : '0%' }} transition={{ duration: 0.3 }} />
-          </div>
-
-          <div className={`flex items-center gap-1.5 ${currentStep >= 12 ? 'text-brand-600' : 'text-gray-400'}`}>
-            <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${currentStep >= 12 ? 'bg-brand-600 text-white' : 'bg-gray-200'}`}>12</div>
-            <span className="hidden lg:block text-xs font-medium whitespace-nowrap">Review</span>
-          </div>
-          <div className="w-1.5 sm:w-2 h-0.5 bg-gray-200 shrink-0">
-            <motion.div className="h-full bg-brand-600" initial={{ width: 0 }} animate={{ width: currentStep >= 13 ? '100%' : '0%' }} transition={{ duration: 0.3 }} />
-          </div>
-
-          <div className={`flex items-center gap-1.5 ${currentStep >= 13 ? 'text-brand-600' : 'text-gray-400'}`}>
-            <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${currentStep >= 13 ? 'bg-brand-600 text-white' : 'bg-gray-200'}`}>13</div>
-          </div>
+          {/* Mobile: scrollable step chips */}
+          <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+            {stepNames.slice(0, 12).map((name, idx) => {
+              const step = idx + 1;
+              const isDone = currentStep > step;
+              const isCurrent = currentStep === step;
+              return (
+                <button
+                  key={step}
+                  onClick={() => setCurrentStep(step)}
+                  className={`shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all border ${
+                    isCurrent
+                      ? "bg-brand-600 text-white border-brand-600 shadow-sm"
+                      : isDone
+                      ? "bg-brand-50 text-brand-700 border-brand-200"
+                      : "bg-gray-50 text-gray-500 border-gray-200"
+                  }`}
+                >
+                  {step}. {name}
+                </button>
+              );
+            })}
           </div>
         </div>
+
+        {/* Desktop: Clickable step dots with tooltips */}
+        <div className="hidden sm:flex items-start justify-center mt-8 gap-0 overflow-x-auto pb-4 px-2 w-full max-w-full hide-scrollbar">
+          {stepNames.slice(0, 12).map((name, idx) => {
+            const step = idx + 1;
+            const isDone = currentStep > step;
+            const isCurrent = currentStep === step;
+            const isLast = step === 12;
+            return (
+              <div key={step} className="flex items-center">
+                {/* Step dot + label */}
+                <div className="flex flex-col items-center group">
+                  <button
+                    onClick={() => setCurrentStep(step)}
+                    title={name}
+                    className={`relative w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-[11px] font-bold transition-all ring-2 ring-offset-1 ${
+                      isCurrent
+                        ? "bg-brand-600 text-white ring-brand-400 scale-110 shadow-md shadow-brand-200"
+                        : isDone
+                        ? "bg-brand-500 text-white ring-brand-300 hover:scale-105"
+                        : "bg-gray-100 text-gray-400 ring-transparent hover:bg-brand-50 hover:text-brand-600 hover:ring-brand-200"
+                    }`}
+                  >
+                    {isDone ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    ) : step}
+                  </button>
+                  <span className={`mt-1.5 text-[9px] font-semibold text-center whitespace-nowrap max-w-[56px] leading-tight ${
+                    isCurrent ? "text-brand-600" : isDone ? "text-brand-400" : "text-gray-400"
+                  }`}>
+                    {name}
+                  </span>
+                </div>
+                {/* Connector line */}
+                {!isLast && (
+                  <div className="w-5 sm:w-6 h-0.5 bg-gray-200 shrink-0 mb-5 mx-0.5">
+                    <motion.div
+                      className="h-full bg-brand-500 rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: currentStep > step ? "100%" : "0%" }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       <AnimatePresence mode="wait">
         {currentStep === 1 && (

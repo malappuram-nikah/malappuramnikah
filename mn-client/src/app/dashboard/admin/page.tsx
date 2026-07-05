@@ -8,8 +8,9 @@ import {
   AlertTriangle, CreditCard, LayoutGrid, BarChart3,
   TrendingUp, Download, Plus, Check, X, Search,
   Lock, Unlock, Award, Settings, Layers, Megaphone,
-  Briefcase, Star, MapPin, ChevronRight, HelpCircle, Music
+  Briefcase, Star, MapPin, ChevronRight, HelpCircle, Music, MessageSquarePlus, Loader2
 } from "lucide-react";
+
 import { useRouter } from "next/navigation";
 import { LOCATIONS } from "@/lib/constants";
 
@@ -61,6 +62,15 @@ export default function AdminDashboardPage() {
   const [kycRejectReason, setKycRejectReason] = useState("");
   const [showKycRejectModal, setShowKycRejectModal] = useState(false);
   const [kycStatusFilter, setKycStatusFilter] = useState<string>("ALL");
+
+  // Feedback Management States
+  const [feedbacks, setFeedbacks] = useState<any[]>([]);
+  const [feedbackStats, setFeedbackStats] = useState<any>({ total: 0, averageRating: 0, bugs: 0, suggestions: 0, appreciations: 0, others: 0 });
+  const [selectedFeedback, setSelectedFeedback] = useState<any | null>(null);
+  const [feedbackCategoryFilter, setFeedbackCategoryFilter] = useState<string>("ALL");
+  const [feedbackRatingFilter, setFeedbackRatingFilter] = useState<string>("ALL");
+  const [loadingFeedbacks, setLoadingFeedbacks] = useState(false);
+
 
   const triggerAlert = (text: string, type: "success" | "error" = "success") => {
     setAlertMsg({ text, type });
@@ -149,6 +159,9 @@ export default function AdminDashboardPage() {
         setKycRequests(kycData.requests);
       }
 
+      // 5. Fetch User Feedbacks & Stats
+      await loadFeedbacksData();
+
     } catch (e) {
       console.error("Admin data loading failed:", e);
       triggerAlert("Server communication error.", "error");
@@ -156,6 +169,47 @@ export default function AdminDashboardPage() {
       setLoading(false);
     }
   };
+
+  const loadFeedbacksData = async () => {
+    setLoadingFeedbacks(true);
+    try {
+      const storedToken = localStorage.getItem("mn_token");
+      if (!storedToken) return;
+      const res = await fetch("http://localhost:3333/user/admin/feedback", {
+        headers: { "Authorization": `Bearer ${storedToken}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setFeedbacks(data.feedbacks);
+        setFeedbackStats(data.stats);
+      }
+    } catch (e) {
+      console.error("Failed to load feedbacks:", e);
+    } finally {
+      setLoadingFeedbacks(false);
+    }
+  };
+
+  const handleDeleteFeedback = async (id: number) => {
+    try {
+      const storedToken = localStorage.getItem("mn_token");
+      const res = await fetch(`http://localhost:3333/user/admin/feedback/${id}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${storedToken}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        triggerAlert("Feedback log deleted successfully!");
+        setSelectedFeedback(null);
+        await loadFeedbacksData();
+      } else {
+        triggerAlert(data.message || "Failed to delete feedback.", "error");
+      }
+    } catch (e) {
+      triggerAlert("Failed to delete feedback.", "error");
+    }
+  };
+
 
   useEffect(() => {
     loadAdminData();
@@ -354,11 +408,13 @@ export default function AdminDashboardPage() {
     { id: "profiles",      icon: Heart,          label: "Matrimony Profiles",  color: "border-pink-500/20 text-pink-600" },
     { id: "kyc",           icon: ShieldCheck,    label: "Identity KYC",        color: "border-blue-500/20 text-blue-600" },
     { id: "reports",       icon: AlertTriangle,  label: "Complaints Grid",     color: "border-red-500/20 text-red-600" },
+    { id: "feedbacks",     icon: MessageSquarePlus, label: "User Feedbacks",    color: "border-teal-500/20 text-teal-600" },
     { id: "subscriptions", icon: CreditCard,     label: "Premium Plans",       color: "border-indigo-500/20 text-indigo-600" },
     { id: "cms",           icon: Megaphone,      label: "CMS & Story Sliders", color: "border-cyan-500/20 text-cyan-600" },
     { id: "biodata",       icon: FileText,       label: "Biodata Downloads",   color: "border-amber-500/20 text-amber-600" },
     { id: "music",         icon: Music,          label: "Ambient Music",       color: "border-purple-500/20 text-purple-600" }
   ];
+
 
   if (loading) {
     return (
@@ -1605,7 +1661,7 @@ export default function AdminDashboardPage() {
                       }}
                       className={`w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-[0.97] border ${
                         musicEnabled 
-                          ? "bg-red-50 text-red-600 hover:bg-red-100 border-red-200" 
+                          ? "bg-red-50 text-red-650 hover:bg-red-100 border-red-200" 
                           : "bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200"
                       }`}
                     >
@@ -1671,6 +1727,262 @@ export default function AdminDashboardPage() {
                   </div>
                 </motion.div>
               )}
+
+              {/* ===== USER FEEDBACKS TAB ===== */}
+              {activeTab === "feedbacks" && (
+                <motion.div
+                  key="feedbacks"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="space-y-6"
+                >
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                    <div>
+                      <h2 className="text-base font-bold text-gray-900 flex items-center gap-1.5">
+                        <MessageSquarePlus className="w-5 h-5 text-teal-650" /> User Feedbacks
+                      </h2>
+                      <p className="text-xs text-gray-500 mt-0.5 font-medium">Read, review, search, and manage feedback submitted by platform users.</p>
+                    </div>
+                  </div>
+
+                  {/* Feedback Metrics Summary */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[
+                      { label: "Total Received", value: feedbackStats.total, icon: MessageSquarePlus, color: "bg-teal-50 text-teal-600" },
+                      { label: "Average Experience", value: `${feedbackStats.averageRating || 0} / 5.0`, icon: Star, color: "bg-amber-50 text-amber-500" },
+                      { label: "Bug Reports 🐛", value: feedbackStats.bugs, icon: AlertTriangle, color: "bg-red-50 text-red-600" },
+                      { label: "Appreciations 💖", value: feedbackStats.appreciations, icon: Heart, color: "bg-pink-50 text-pink-600" },
+                    ].map((item, idx) => (
+                      <div key={idx} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-xs flex items-center justify-between animate-fade-in">
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{item.label}</p>
+                          <h3 className="text-lg font-extrabold text-gray-900 mt-1">{item.value}</h3>
+                        </div>
+                        <div className={`p-2 rounded-xl shrink-0 ${item.color}`}>
+                          <item.icon className="w-4 h-4" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Search and Filters bar */}
+                  <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex flex-col md:flex-row gap-3 items-center justify-between">
+                    <div className="relative w-full md:max-w-xs">
+                      <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        placeholder="Search by name, subject..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+                      />
+                    </div>
+
+                    <div className="flex gap-2 w-full md:w-auto justify-end">
+                      {/* Filter by Category */}
+                      <select
+                        value={feedbackCategoryFilter}
+                        onChange={(e) => setFeedbackCategoryFilter(e.target.value)}
+                        className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-650 focus:outline-none"
+                      >
+                        <option value="ALL">All Categories</option>
+                        <option value="SUGGESTION">💡 Suggestions</option>
+                        <option value="BUG">🐛 Bug Reports</option>
+                        <option value="APPRECIATION">💖 Appreciations</option>
+                        <option value="OTHER">✨ Others</option>
+                      </select>
+
+                      {/* Filter by Rating */}
+                      <select
+                        value={feedbackRatingFilter}
+                        onChange={(e) => setFeedbackRatingFilter(e.target.value)}
+                        className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-650 focus:outline-none"
+                      >
+                        <option value="ALL">All Ratings</option>
+                        <option value="5">⭐⭐⭐⭐⭐ (5/5)</option>
+                        <option value="4">⭐⭐⭐⭐ (4/5)</option>
+                        <option value="3">⭐⭐⭐ (3/5)</option>
+                        <option value="2">⭐⭐ (2/5)</option>
+                        <option value="1">⭐ (1/5)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Feedback Logs List */}
+                  {loadingFeedbacks ? (
+                    <div className="p-10 text-center text-xs text-gray-400 font-semibold bg-white border border-gray-100 rounded-2xl">
+                      <Loader2 className="w-5 h-5 animate-spin mx-auto text-brand-550 mb-2" />
+                      Retrieving Feedbacks...
+                    </div>
+                  ) : feedbacks.length === 0 ? (
+                    <div className="p-12 text-center text-xs text-gray-400 font-medium bg-white border border-gray-100 rounded-2xl">
+                      No feedbacks found matching selected filters.
+                    </div>
+                  ) : (
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      {feedbacks
+                        .filter(f => {
+                          const nameMatch = `${f.user?.first_name || ""} ${f.user?.last_name || ""}`.toLowerCase().includes(searchQuery.toLowerCase());
+                          const subjMatch = f.subject.toLowerCase().includes(searchQuery.toLowerCase());
+                          const msgMatch = f.message.toLowerCase().includes(searchQuery.toLowerCase());
+                          const matchesQuery = nameMatch || subjMatch || msgMatch;
+
+                          const matchesCat = feedbackCategoryFilter === "ALL" || f.category === feedbackCategoryFilter;
+                          const matchesRating = feedbackRatingFilter === "ALL" || f.rating === parseInt(feedbackRatingFilter, 10);
+
+                          return matchesQuery && matchesCat && matchesRating;
+                        })
+                        .map((f) => {
+                          let catStyle = "bg-gray-50 text-gray-600 border-gray-200";
+                          if (f.category === "BUG") catStyle = "bg-red-50 text-red-755 border-red-100";
+                          else if (f.category === "SUGGESTION") catStyle = "bg-amber-50 text-amber-755 border-amber-100";
+                          else if (f.category === "APPRECIATION") catStyle = "bg-pink-50 text-pink-700 border-pink-100";
+
+                          return (
+                            <motion.div
+                              key={f.id}
+                              layout
+                              className="bg-white border border-gray-100 rounded-2xl p-4 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-teal-200/50 transition-all duration-200"
+                            >
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold border ${catStyle}`}>
+                                    {f.category}
+                                  </span>
+                                  <div className="flex gap-0.5">
+                                    {[1, 2, 3, 4, 5].map((s) => (
+                                      <Star key={s} className={`w-3 h-3 ${s <= f.rating ? "fill-amber-400 text-amber-400" : "text-gray-200"}`} />
+                                    ))}
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <h4 className="text-xs font-bold text-gray-900 line-clamp-1">{f.subject}</h4>
+                                  <p className="text-[11px] text-gray-500 mt-1 line-clamp-3 leading-relaxed">{f.message}</p>
+                                </div>
+                              </div>
+
+                              <div className="border-t border-gray-55 pt-3 mt-4 flex items-center justify-between gap-2">
+                                <div className="min-w-0">
+                                  <p className="text-[10px] font-bold text-gray-800 truncate">
+                                    {f.user?.first_name} {f.user?.last_name}
+                                  </p>
+                                  <p className="text-[9px] text-gray-400 truncate">
+                                    {f.user?.location || "Malappuram"} · {new Date(f.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                                  </p>
+                                </div>
+                                <div className="flex gap-1 shrink-0">
+                                  <button
+                                    onClick={() => setSelectedFeedback(f)}
+                                    className="px-2.5 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-650 border border-gray-200 text-[10px] font-bold rounded-lg transition-colors"
+                                  >
+                                    View
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      if (confirm("Are you sure you want to delete this feedback log?")) {
+                                        handleDeleteFeedback(f.id);
+                                      }
+                                    }}
+                                    className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-650 border border-red-200 text-[10px] font-bold rounded-lg transition-colors"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                    </div>
+                  )}
+
+                  {/* Feedback Details Modal */}
+                  {selectedFeedback && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                      <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-xs" onClick={() => setSelectedFeedback(null)} />
+                      <div className="bg-white rounded-2xl w-full max-w-lg p-6 border border-gray-150 shadow-2xl relative z-10 flex flex-col gap-4">
+                        <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                          <div>
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold border bg-teal-50 text-teal-700 border-teal-100">
+                              {selectedFeedback.category}
+                            </span>
+                            <h3 className="font-extrabold text-gray-950 text-sm mt-1">{selectedFeedback.subject}</h3>
+                          </div>
+                          <button
+                            onClick={() => setSelectedFeedback(null)}
+                            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        <div className="space-y-4">
+                          {/* Rating and Date */}
+                          <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-1">
+                              <span className="font-semibold text-gray-500">Rating:</span>
+                              <div className="flex gap-0.5">
+                                {[1, 2, 3, 4, 5].map((s) => (
+                                  <Star key={s} className={`w-3.5 h-3.5 ${s <= selectedFeedback.rating ? "fill-amber-400 text-amber-400" : "text-gray-200"}`} />
+                                ))}
+                              </div>
+                            </div>
+                            <span className="text-gray-400">
+                              {new Date(selectedFeedback.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+                            </span>
+                          </div>
+
+                          {/* Message box */}
+                          <div className="bg-gray-50 p-4 border border-gray-100 rounded-xl">
+                            <p className="text-xs font-bold text-gray-450 uppercase tracking-wider mb-2">Message</p>
+                            <p className="text-xs text-gray-800 leading-relaxed whitespace-pre-line">{selectedFeedback.message}</p>
+                          </div>
+
+                          {/* User card info */}
+                          <div className="bg-brand-50/20 border border-brand-100/50 p-4 rounded-xl space-y-2">
+                            <p className="text-[10px] font-bold text-brand-700 uppercase tracking-wider">User Details</p>
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div>
+                                <span className="text-gray-450">Name:</span>
+                                <p className="font-semibold text-gray-900">{selectedFeedback.user?.first_name} {selectedFeedback.user?.last_name}</p>
+                              </div>
+                              <div>
+                                <span className="text-gray-450">Location:</span>
+                                <p className="font-semibold text-gray-900">{selectedFeedback.user?.location || "N/A"}</p>
+                              </div>
+                              <div className="col-span-2">
+                                <span className="text-gray-450">Mobile Contact:</span>
+                                <p className="font-semibold text-gray-950 select-all">{selectedFeedback.user?.mobile_number}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2 border-t border-gray-100 pt-4 mt-2">
+                          <button
+                            onClick={() => setSelectedFeedback(null)}
+                            className="px-4 py-2 bg-gray-50 hover:bg-gray-100 text-gray-750 text-xs font-bold rounded-lg border border-gray-200"
+                          >
+                            Close
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm("Are you sure you want to delete this feedback log?")) {
+                                handleDeleteFeedback(selectedFeedback.id);
+                              }
+                            }}
+                            className="px-4 py-2 bg-red-650 hover:bg-red-750 text-white text-xs font-bold rounded-lg shadow-sm"
+                          >
+                            Delete Log
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+
 
             </AnimatePresence>
           </div>

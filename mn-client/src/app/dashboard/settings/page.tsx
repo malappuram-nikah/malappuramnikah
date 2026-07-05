@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Lock, Bell, Shield, ChevronRight, Sparkles, AlertCircle, ArrowRight, Save, CheckCircle2, Phone, Loader2 } from "lucide-react";
+import { User, Lock, Bell, Shield, ChevronRight, Sparkles, AlertCircle, ArrowRight, Save, CheckCircle2, Phone, Loader2, MessageSquarePlus, Star, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { LOCATIONS } from "@/lib/constants";
 import { useUser } from "@/context/UserContext";
@@ -12,6 +12,7 @@ const tabs = [
   { id: "security", label: "Security", icon: Lock },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "privacy", label: "Privacy", icon: Shield },
+  { id: "feedback", label: "Feedback", icon: MessageSquarePlus },
 ];
 
 export default function SettingsPage() {
@@ -24,6 +25,16 @@ export default function SettingsPage() {
   
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Feedback Form State
+  const [feedbackCategory, setFeedbackCategory] = useState("SUGGESTION");
+  const [feedbackRating, setFeedbackRating] = useState(5);
+  const [feedbackRatingHover, setFeedbackRatingHover] = useState<number | null>(null);
+  const [feedbackSubject, setFeedbackSubject] = useState("");
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [feedbackSuccess, setFeedbackSuccess] = useState(false);
+  const [feedbackError, setFeedbackError] = useState("");
 
   // User Profile States
   const [firstName, setFirstName] = useState("");
@@ -272,11 +283,59 @@ export default function SettingsPage() {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const tab = params.get("tab");
-      if (tab && ["profile", "security", "notifications", "privacy"].includes(tab)) {
+      if (tab && ["profile", "security", "notifications", "privacy", "feedback"].includes(tab)) {
         setActiveTab(tab);
       }
     }
   }, [currentUser]);
+
+  const handleFeedbackSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (feedbackSubject.trim().length < 3) {
+      setFeedbackError("Subject must be at least 3 characters long.");
+      return;
+    }
+    if (feedbackMessage.trim().length < 10) {
+      setFeedbackError("Message must be at least 10 characters long.");
+      return;
+    }
+
+    setFeedbackSubmitting(true);
+    setFeedbackError("");
+    setFeedbackSuccess(false);
+
+    try {
+      const storedToken = localStorage.getItem("mn_token");
+      const res = await fetch("http://localhost:3333/user/feedback", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${storedToken}`
+        },
+        body: JSON.stringify({
+          category: feedbackCategory,
+          rating: feedbackRating,
+          subject: feedbackSubject,
+          message: feedbackMessage
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setFeedbackSuccess(true);
+        setFeedbackSubject("");
+        setFeedbackMessage("");
+        setFeedbackRating(5);
+        setTimeout(() => setFeedbackSuccess(false), 4000);
+      } else {
+        setFeedbackError(data.message || "Failed to submit feedback.");
+      }
+    } catch (err) {
+      setFeedbackError("Connection error. Please check your internet connection.");
+    } finally {
+      setFeedbackSubmitting(false);
+    }
+  };
 
   const handleSave = async () => {
     setSaved(false);
@@ -842,18 +901,180 @@ export default function SettingsPage() {
               </>
             )}
 
+            {activeTab === "feedback" && (
+              <>
+                <div className="border-b border-gray-50 pb-5">
+                  <h2 className="text-lg font-bold text-gray-900">Share Your Feedback</h2>
+                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                    Help us improve Malappuram Nikah! Your suggestions, bug reports, and appreciation help us build a better platform for everyone.
+                  </p>
+                </div>
+
+                <form onSubmit={handleFeedbackSubmit} className="space-y-6">
+                  {feedbackSuccess && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-4 bg-teal-50 border border-teal-200 rounded-xl flex items-center gap-3 text-teal-800"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
+                        <Check className="w-4 h-4 text-teal-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-teal-900">Feedback Submitted!</p>
+                        <p className="text-[10px] text-teal-700 mt-0.5">Thank you for your valuable feedback. Our team will review it.</p>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {feedbackError && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-red-800"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                        <AlertCircle className="w-4 h-4 text-red-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-red-900">Submission Failed</p>
+                        <p className="text-[10px] text-red-700 mt-0.5">{feedbackError}</p>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Category Selector */}
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Feedback Category</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {[
+                        { id: "SUGGESTION", label: "💡 Suggestion" },
+                        { id: "BUG", label: "🐛 Bug Report" },
+                        { id: "APPRECIATION", label: "💖 Appreciation" },
+                        { id: "OTHER", label: "✨ Other" }
+                      ].map((cat) => {
+                        const isSelected = feedbackCategory === cat.id;
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => setFeedbackCategory(cat.id)}
+                            className={`py-3 px-2 text-center text-xs font-bold rounded-xl border transition-all duration-200 ${
+                              isSelected
+                                ? "bg-brand-50 border-brand-500 text-brand-700 shadow-sm"
+                                : "bg-white border-gray-150 text-gray-600 hover:bg-gray-50"
+                            }`}
+                          >
+                            {cat.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Rating Selector */}
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Rate your experience</label>
+                    <div className="flex items-center gap-1.5">
+                      {[1, 2, 3, 4, 5].map((star) => {
+                        const isFilled = (feedbackRatingHover !== null ? feedbackRatingHover : feedbackRating) >= star;
+                        return (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setFeedbackRating(star)}
+                            onMouseEnter={() => setFeedbackRatingHover(star)}
+                            onMouseLeave={() => setFeedbackRatingHover(null)}
+                            className="p-1 transition-transform active:scale-90"
+                          >
+                            <Star
+                              className={`w-8 h-8 transition-colors ${
+                                isFilled
+                                  ? "fill-amber-400 text-amber-400"
+                                  : "text-gray-300"
+                              }`}
+                            />
+                          </button>
+                        );
+                      })}
+                      <span className="text-xs font-semibold text-gray-500 ml-2">
+                        {feedbackRating === 5 && "Excellent! 🌟"}
+                        {feedbackRating === 4 && "Very Good! 👍"}
+                        {feedbackRating === 3 && "Good! 🙂"}
+                        {feedbackRating === 2 && "Fair 😐"}
+                        {feedbackRating === 1 && "Poor 😞"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Subject Input */}
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block" htmlFor="feedback-subject">Subject</label>
+                    <input
+                      id="feedback-subject"
+                      type="text"
+                      required
+                      value={feedbackSubject}
+                      onChange={(e) => setFeedbackSubject(e.target.value)}
+                      placeholder="Summary of your feedback"
+                      className="w-full px-3.5 py-2.5 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-brand-500 transition-colors bg-white text-gray-900"
+                    />
+                  </div>
+
+                  {/* Message Input */}
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block" htmlFor="feedback-message">Message Details</label>
+                    <textarea
+                      id="feedback-message"
+                      required
+                      rows={5}
+                      value={feedbackMessage}
+                      onChange={(e) => setFeedbackMessage(e.target.value)}
+                      placeholder="Please tell us details about your feedback or suggestion..."
+                      className="w-full px-3.5 py-2.5 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-brand-500 transition-colors bg-white text-gray-900 resize-none"
+                    />
+                    <div className="flex justify-between items-center text-[10px] text-gray-400 px-1">
+                      <span>Minimum 10 characters</span>
+                      <span>{feedbackMessage.length} characters</span>
+                    </div>
+                  </div>
+
+                  {/* Submit button inside form */}
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      disabled={feedbackSubmitting}
+                      className="w-full sm:w-auto px-6 py-2.5 bg-brand-600 text-white text-xs font-semibold rounded-xl hover:bg-brand-700 active:scale-[0.98] transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {feedbackSubmitting ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          Submitting Feedback...
+                        </>
+                      ) : (
+                        "Submit Feedback"
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
+
             {/* Save button */}
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
-              {saved && <span className="text-sm text-brand-600 font-medium">✓ Changes saved!</span>}
-              <button
-                onClick={handleSave}
-                className="px-6 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 active:scale-[0.98] transition-all shadow-sm"
-              >
-                Save Changes
-              </button>
-            </div>
+            {activeTab !== "feedback" && (
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+                {saved && <span className="text-sm text-brand-600 font-medium">✓ Changes saved!</span>}
+                <button
+                  onClick={handleSave}
+                  className="px-6 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 active:scale-[0.98] transition-all shadow-sm"
+                >
+                  Save Changes
+                </button>
+              </div>
+            )}
           </motion.div>
         </div>
+
       </div>
 
       {/* Account Deletion Confirmation Modal */}
