@@ -18,7 +18,7 @@ export default function HeroSection() {
             transition={{ duration: 0.6, ease: "easeOut" }}
             className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold font-playfair text-gray-900 leading-[1.1] tracking-tight whitespace-nowrap md:whitespace-normal"
           >
-            Serious about marriage? So are we.
+            Your journey to a blessed union starts here.
           </motion.h1>
 
           <motion.p
