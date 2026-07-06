@@ -162,8 +162,9 @@ export class RegisterUser {
                 }
             }
 
+            const { referred_by_code, ...restData } = data as any;
             const userData = {
-                ...data,
+                ...restData,
                 password: hashedPassword,
                 referral_code: referralCode,
                 referral_points: 0
