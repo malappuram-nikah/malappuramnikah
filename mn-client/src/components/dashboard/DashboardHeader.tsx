@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Bell, Search, Heart, MessageSquare, Check, Sparkles, X, User, Settings, LogOut, ShieldCheck, MapPin, Eye, Camera, UploadCloud, Trash2, Plus } from "lucide-react";
+import { Bell, Search, Heart, MessageSquare, Check, Sparkles, X, User, Settings, LogOut, ShieldCheck, MapPin, Eye, Camera, UploadCloud, Trash2, Plus, MessageCircle, ChevronDown, CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
 import { io, Socket } from "socket.io-client";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -335,8 +336,7 @@ export default function DashboardHeader() {
                 <div className="px-6 pb-2 relative -mt-8 flex items-end justify-between z-10 shrink-0">
                   <button
                     onClick={() => {
-                      setShowProfileDropdown(false);
-                      router.push("/dashboard/profile-builder?step=8");
+                      setShowPhotosModal(true);
                     }}
                     className="w-16 h-16 rounded-full border-4 border-white bg-brand-100 flex items-center justify-center text-brand-700 font-extrabold text-2xl uppercase shadow-lg overflow-hidden shrink-0 cursor-pointer relative group active:scale-95 transition-all"
                     title="Upload / Edit Photos"
@@ -720,10 +720,10 @@ export default function DashboardHeader() {
                             }
                             setLocalPhotos(filtered);
                           }}
-                          className="absolute bottom-1.5 right-1.5 bg-red-650 hover:bg-red-705 text-white p-1.5 rounded-full shadow-md transition-all opacity-0 group-hover:opacity-100 active:scale-90 cursor-pointer"
+                          className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full shadow-md transition-all active:scale-90 cursor-pointer z-10"
                           title="Delete Photo"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <X className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     ))}
@@ -749,7 +749,7 @@ export default function DashboardHeader() {
                       if (e.target.files) {
                         const files = Array.from(e.target.files);
                         if (localPhotos.length + files.length > 5) {
-                          alert("You can upload a maximum of 5 photos.");
+                          toast.error("You can upload a maximum of 5 photos.");
                           return;
                         }
 
@@ -813,7 +813,7 @@ export default function DashboardHeader() {
                         };
 
                         const token = localStorage.getItem("mn_token");
-                        const res = await fetch(`http://localhost:3333/user/${user.id}`, {
+                        const res = await fetch(`http://localhost:3333/user/${user.id}/profile`, {
                           method: "PUT",
                           headers: {
                             "Content-Type": "application/json",
@@ -830,12 +830,13 @@ export default function DashboardHeader() {
                           localStorage.setItem("mn_profile_photos_draft", JSON.stringify({ photos: localPhotos }));
                           await refreshUser();
                           setShowPhotosModal(false);
+                          toast.success("Photos saved successfully!");
                         } else {
-                          alert(data.message || "Failed to save photos");
+                          toast.error(data.message || "Failed to save photos");
                         }
                       } catch (err) {
                         console.error(err);
-                        alert("An error occurred while saving photos.");
+                        toast.error("An error occurred while saving photos.");
                       } finally {
                         setIsSavingPhotos(false);
                       }

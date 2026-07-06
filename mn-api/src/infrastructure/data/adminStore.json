@@ -205,6 +205,12 @@
   },
   "activity_logs": [
     {
+      "id": 1783274671867,
+      "admin": "Super Admin",
+      "action": "Approved identity verification for user Mohd Salih (ID: 36)",
+      "time": "2026-07-05 18:04:31"
+    },
+    {
       "id": 1783270627284,
       "admin": "Super Admin",
       "action": "Approved identity verification for user Iwa Mehawish (ID: 19)",

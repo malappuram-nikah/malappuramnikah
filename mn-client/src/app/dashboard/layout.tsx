@@ -19,8 +19,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <DashboardSidebar />
           <div className="flex-1 flex flex-col overflow-hidden">
             <DashboardHeader />
-            <main className="flex-1 overflow-y-auto pb-20 lg:pb-0">
-              <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-6xl">
+            <main className="flex-1 overflow-y-auto pb-20 lg:pb-0 bg-gray-50">
+              <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
                 <VerificationWall>
                   {children}
                 </VerificationWall>

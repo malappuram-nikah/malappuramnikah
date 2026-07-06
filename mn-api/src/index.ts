@@ -7,6 +7,7 @@ import chat_route from "./interface/routes/chat.route";
 import notification_route from "./interface/routes/notification.route";
 import admin_route from "./interface/routes/admin.route";
 import referral_route from "./interface/routes/referral.route";
+import search_route from "./interface/routes/search.route";
 import cors from "cors";
 import path from "path";
 
@@ -83,6 +84,7 @@ app.use("/user/admin", admin_route);
 app.use("/referral", referral_route);
 app.use("/user", user_route);
 app.use("/otp", otp_route);
+app.use("/search", search_route);
 
 const PORT = process.env.PORT || 3333;
 server.listen(PORT, () => {

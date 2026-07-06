@@ -23,6 +23,7 @@ model User {
   is_new_user    Boolean   @default(true)
   last_login     DateTime?
   profile_details Json?
+  search_preferences Json?
   kyc_status         String    @default("NOT_SUBMITTED")
   kyc_document_type  String?
   kyc_front_url      String?
