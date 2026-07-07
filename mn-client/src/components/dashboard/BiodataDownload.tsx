@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Download, Printer, Share2, X, FileText, CheckCircle2, Lock } from "lucide-react";
+import { API_URL } from "@/lib/config";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || `${API_URL}`;
 
 interface BiodataDownloadProps {
   profile: any;

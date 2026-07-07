@@ -68,6 +68,7 @@ export class SearchController {
       if (req.query.prayer) filters.prayer = req.query.prayer as string;
       if (req.query.hijab) filters.hijab = req.query.hijab as string;
       if (req.query.beard) filters.beard = req.query.beard as string;
+      if (req.query.lightweight) filters.lightweight = req.query.lightweight === "true";
 
       const result = await searchService.searchProfiles(filters, requesterId, isPremiumUser);
       

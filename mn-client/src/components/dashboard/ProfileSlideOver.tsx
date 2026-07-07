@@ -8,6 +8,7 @@ import { getEnrichedProfile } from "@/lib/profile-utils";
 import BiodataDownload from "./BiodataDownload";
 import { SlideOverSkeleton } from "./Skeleton";
 import { useProfileActions } from "@/hooks/useProfileActions";
+import { API_URL } from "@/lib/config";
 
 interface ProfileSlideOverProps {
   profile: {
@@ -74,7 +75,7 @@ export default function ProfileSlideOver({
       setPhotoIndex(0);
       try {
         const token = localStorage.getItem("mn_token");
-        const res = await fetch(`http://localhost:3333/user/${profile.id}`, {
+        const res = await fetch(`${API_URL}/user/${profile.id}`, {
           headers: token ? { "Authorization": `Bearer ${token}` } : {}
         });
         const data = await res.json();

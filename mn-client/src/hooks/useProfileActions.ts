@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { API_URL } from "@/lib/config";
 
-const API = "http://localhost:3333/user";
+const API = `${API_URL}/user`;
 
 function getToken(): string | null {
   return typeof window !== "undefined" ? localStorage.getItem("mn_token") : null;

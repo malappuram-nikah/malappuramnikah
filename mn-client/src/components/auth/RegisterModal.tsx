@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, ArrowLeft, CheckCircle2, ShieldCheck } from "lucide-react";
 
 import { LOCATIONS } from "@/lib/constants";
+import { API_URL } from "@/lib/config";
 
 interface RegisterModalProps {
   isOpen: boolean;
@@ -284,7 +285,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
         referred_by_code: formData.referralCode || undefined
       };
 
-      const response = await fetch("http://localhost:3333/user/register", {
+      const response = await fetch(`${API_URL}/user/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -362,7 +363,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
     setOtpError(null);
     try {
       try {
-        const response = await fetch("http://localhost:3333/otp/verify-otp", {
+        const response = await fetch(`${API_URL}/otp/verify-otp`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -403,7 +404,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
   const handleResendOtp = async () => {
     if (resendCooldown > 0) return;
     try {
-      await fetch("http://localhost:3333/otp/resend-otp", {
+      await fetch(`${API_URL}/otp/resend-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

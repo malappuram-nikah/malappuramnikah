@@ -6,6 +6,7 @@ import { User, Lock, Bell, Shield, ChevronRight, Sparkles, AlertCircle, ArrowRig
 import { useRouter } from "next/navigation";
 import { LOCATIONS } from "@/lib/constants";
 import { useUser } from "@/context/UserContext";
+import { API_URL } from "@/lib/config";
 
 const tabs = [
   { id: "profile", label: "Profile", icon: User },
@@ -306,7 +307,7 @@ export default function SettingsPage() {
 
     try {
       const storedToken = localStorage.getItem("mn_token");
-      const res = await fetch("http://localhost:3333/user/feedback", {
+      const res = await fetch(`${API_URL}/user/feedback`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -409,7 +410,7 @@ export default function SettingsPage() {
         return;
       }
 
-      const res = await fetch(`http://localhost:3333/user/${userId}/profile`, {
+      const res = await fetch(`${API_URL}/user/${userId}/profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -461,7 +462,7 @@ export default function SettingsPage() {
     setVerificationError("");
     setIsVerifying(true);
     try {
-      const response = await fetch("http://localhost:3333/otp/verify-aadhaar", {
+      const response = await fetch(`${API_URL}/otp/verify-aadhaar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -489,7 +490,7 @@ export default function SettingsPage() {
     setVerificationError("");
     setIsVerifying(true);
     try {
-      await fetch("http://localhost:3333/otp/resend-otp", {
+      await fetch(`${API_URL}/otp/resend-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phoneNumber: mobile })
@@ -509,7 +510,7 @@ export default function SettingsPage() {
     setVerificationError("");
     setIsVerifying(true);
     try {
-      const response = await fetch("http://localhost:3333/otp/verify-otp", {
+      const response = await fetch(`${API_URL}/otp/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -553,7 +554,7 @@ export default function SettingsPage() {
         throw new Error("No authentication details found.");
       }
 
-      const res = await fetch(`http://localhost:3333/user/${userId}`, {
+      const res = await fetch(`${API_URL}/user/${userId}`, {
         method: "DELETE",
         headers: {
           "Authorization": `Bearer ${token}`

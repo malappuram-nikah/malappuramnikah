@@ -1,6 +1,7 @@
 import { ApiResponse } from "@/types";
+import { API_URL } from "@/lib/config";
 
-const BASE_URL = "http://localhost:3333";
+const BASE_URL = `${API_URL}`;
 
 export class ApiError extends Error {
   status: number;

@@ -30,7 +30,7 @@ export class UserRepository implements IUserRepository {
         return bcrypt.compare(plainPassword, hashedPassword);
     }
 
-    async findAll(filters?: { gender?: string; status?: string; limit?: number; ids?: number[] }): Promise<User[]> {
+    async findAll(filters?: { gender?: string; status?: string; limit?: number; ids?: number[]; lightweight?: boolean }): Promise<User[]> {
         const whereClause: any = {};
         if (filters?.gender) {
             whereClause.gender = { equals: filters.gender, mode: 'insensitive' };
@@ -41,6 +41,33 @@ export class UserRepository implements IUserRepository {
 
         if (filters?.ids && filters.ids.length > 0) {
             whereClause.id = { in: filters.ids };
+        }
+
+        if (filters?.lightweight) {
+            // Use queryRaw for lightweight jsonb extraction to save memory/bandwidth
+            const conditions: any[] = [];
+            if (filters.gender) conditions.push(`u.gender ILIKE '${filters.gender}'`);
+            if (filters.status) conditions.push(`u.status = '${filters.status}'`);
+            if (filters.ids && filters.ids.length > 0) {
+                conditions.push(`u.id IN (${filters.ids.join(',')})`);
+            }
+            const whereStr = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+            const limitStr = filters.limit ? `LIMIT ${filters.limit}` : '';
+            
+            const query = `
+              SELECT u.id, u.first_name, u.last_name, u.gender, u.cast, u.location, u.dob, u.status, u.is_premium, u.profile_for, u.mobile_number, u.kyc_status, u.kyc_document_type, u.kyc_front_url, u.kyc_back_url, u.kyc_rejected_reason, u.kyc_submitted_at, u.kyc_verified_at, u.created_at, u.updated_at,
+              jsonb_build_object(
+                'mn_basic_details_draft', u.profile_details->'mn_basic_details_draft',
+                'mn_profile_photos_draft', u.profile_details->'mn_profile_photos_draft',
+                'mn_career_details_draft', u.profile_details->'mn_career_details_draft',
+                'mn_religious_info_draft', u.profile_details->'mn_religious_info_draft'
+              ) as profile_details
+              FROM "user" u
+              ${whereStr}
+              ORDER BY u.created_at DESC
+              ${limitStr}
+            `;
+            return prisma.$queryRawUnsafe(query) as Promise<User[]>;
         }
 
         return prisma.user.findMany({
@@ -58,7 +85,6 @@ export class UserRepository implements IUserRepository {
                 is_premium: true,
                 profile_for: true,
                 mobile_number: true,
-                profile_details: true,
                 kyc_status: true,
                 kyc_document_type: true,
                 kyc_front_url: true,
@@ -67,7 +93,11 @@ export class UserRepository implements IUserRepository {
                 kyc_submitted_at: true,
                 kyc_verified_at: true,
                 created_at: true,
-                updated_at: true
+                updated_at: true,
+                profile_details: true
+            },
+            orderBy: {
+                created_at: 'desc'
             }
         }) as any;
     }

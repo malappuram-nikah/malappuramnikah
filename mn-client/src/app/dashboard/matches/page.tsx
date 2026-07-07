@@ -202,6 +202,7 @@ const fallbackMockMaleProfiles = [
 
 import ProfileSlideOver from "@/components/dashboard/ProfileSlideOver";
 import { CardGridSkeleton, MatchesPageSkeleton } from "@/components/dashboard/Skeleton";
+import { API_URL } from "@/lib/config";
 
 
 export default function AiMatchesPage() {
@@ -251,7 +252,7 @@ export default function AiMatchesPage() {
 
   const fetchInterests = async (token: string) => {
     try {
-      const res = await fetch("http://localhost:3333/user/interest?idsOnly=true", {
+      const res = await fetch(`${API_URL}/user/interest?idsOnly=true`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       const data = await res.json();
@@ -274,7 +275,7 @@ export default function AiMatchesPage() {
         await fetchInterests(storedToken);
       }
 
-      const res = await fetch("http://localhost:3333/user/profiles", {
+      const res = await fetch(`${API_URL}/user/profiles`, {
         headers: storedToken ? { "Authorization": `Bearer ${storedToken}` } : {}
       });
       const data = await res.json();
@@ -388,7 +389,7 @@ export default function AiMatchesPage() {
         return;
       }
 
-      const res = await fetch("http://localhost:3333/user/interest", {
+      const res = await fetch(`${API_URL}/user/interest`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Crown, Check, Zap, Shield, Star, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/context/UserContext";
+import { API_URL } from "@/lib/config";
 
 const plans = [
   {
@@ -91,7 +92,7 @@ export default function PremiumPage() {
     setUpgrading(planName);
     try {
       const token = localStorage.getItem("mn_token");
-      const res = await fetch(`http://localhost:3333/user/${userId}/premium`, {
+      const res = await fetch(`${API_URL}/user/${userId}/premium`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

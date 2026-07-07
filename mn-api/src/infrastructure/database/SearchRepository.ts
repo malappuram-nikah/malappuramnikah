@@ -40,6 +40,7 @@ export interface SearchFilters {
   hijab?: string;
   beard?: string;
   isPremiumUser: boolean;
+  lightweight?: boolean;
 }
 
 export class SearchRepository {
@@ -172,9 +173,21 @@ export class SearchRepository {
       orderByClause = Prisma.sql`ORDER BY CAST(u.profile_details->'mn_basic_details_draft'->>'age' AS INTEGER) ASC NULLS LAST`;
     }
 
+    let profileDetailsSelect = Prisma.sql`u.profile_details`;
+    if (filters.lightweight) {
+      profileDetailsSelect = Prisma.sql`
+        jsonb_build_object(
+          'mn_basic_details_draft', u.profile_details->'mn_basic_details_draft',
+          'mn_profile_photos_draft', u.profile_details->'mn_profile_photos_draft',
+          'mn_career_details_draft', u.profile_details->'mn_career_details_draft',
+          'mn_religious_info_draft', u.profile_details->'mn_religious_info_draft'
+        ) as profile_details
+      `;
+    }
+
     const query = Prisma.sql`
       SELECT u.id, u.first_name, u.last_name, u.gender, u.cast, u.location, 
-             u.status, u.is_premium, u.kyc_status, u.last_login, u.profile_details, u.created_at
+             u.status, u.is_premium, u.kyc_status, u.last_login, ${profileDetailsSelect}, u.created_at
       FROM "user" u
       ${whereClause}
       ${orderByClause}

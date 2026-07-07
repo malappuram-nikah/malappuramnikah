@@ -7,6 +7,7 @@ import {
   Clock, Gift, ShieldAlert, ArrowRight, Loader2, Sparkles, Receipt 
 } from "lucide-react";
 import { useUser } from "@/context/UserContext";
+import { API_URL } from "@/lib/config";
 
 interface ReferralStats {
   total: number;
@@ -60,9 +61,9 @@ export default function ReferralDashboardPage() {
       if (!token) return;
 
       const [statsRes, historyRes, txRes] = await Promise.all([
-        fetch("http://localhost:3333/referral/me", { headers: { "Authorization": `Bearer ${token}` } }),
-        fetch("http://localhost:3333/referral/history?limit=20", { headers: { "Authorization": `Bearer ${token}` } }),
-        fetch("http://localhost:3333/referral/transactions?limit=20", { headers: { "Authorization": `Bearer ${token}` } })
+        fetch(`${API_URL}/referral/me`, { headers: { "Authorization": `Bearer ${token}` } }),
+        fetch(`${API_URL}/referral/history?limit=20`, { headers: { "Authorization": `Bearer ${token}` } }),
+        fetch(`${API_URL}/referral/transactions?limit=20`, { headers: { "Authorization": `Bearer ${token}` } })
       ]);
 
       const [statsData, historyData, txData] = await Promise.all([
@@ -126,7 +127,7 @@ export default function ReferralDashboardPage() {
     setIsRedeeming(true);
     try {
       const token = localStorage.getItem("mn_token");
-      const res = await fetch("http://localhost:3333/referral/redeem", {
+      const res = await fetch(`${API_URL}/referral/redeem`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",

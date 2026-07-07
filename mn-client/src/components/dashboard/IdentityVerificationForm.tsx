@@ -15,6 +15,7 @@ import {
   FileCheck,
   Fingerprint
 } from "lucide-react";
+import { API_URL } from "@/lib/config";
 
 interface UserKycInfo {
   kyc_status: string;
@@ -65,7 +66,7 @@ export default function IdentityVerificationForm({ isWizard = false, onBack, onN
         return;
       }
 
-      const res = await fetch(`http://localhost:3333/user/${userId}?t=${Date.now()}`, {
+      const res = await fetch(`${API_URL}/user/${userId}?t=${Date.now()}`, {
         headers: token ? { "Authorization": `Bearer ${token}` } : {},
         cache: "no-store"
       });
@@ -189,7 +190,7 @@ export default function IdentityVerificationForm({ isWizard = false, onBack, onN
     setSubmitting(true);
     try {
       const token = localStorage.getItem("mn_token");
-      const res = await fetch("http://localhost:3333/user/kyc/submit", {
+      const res = await fetch(`${API_URL}/user/kyc/submit`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -222,7 +223,7 @@ export default function IdentityVerificationForm({ isWizard = false, onBack, onN
 
   const getSecureDocumentUrl = (fileName: string) => {
     const token = localStorage.getItem("mn_token");
-    return `http://localhost:3333/user/kyc/document/${fileName}?token=${token}`;
+    return `${API_URL}/user/kyc/document/${fileName}?token=${token}`;
   };
 
   if (loading) {

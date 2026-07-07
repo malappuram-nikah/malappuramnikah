@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Briefcase, ArrowRight, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
+import { API_URL } from "@/lib/config";
 
 export default function BusinessLoginPage() {
   const router = useRouter();
@@ -36,7 +37,7 @@ export default function BusinessLoginPage() {
 
     try {
       // 1. Fetch live registered vendors from the backend B2B store
-      const res = await fetch("http://localhost:3333/user/admin/store");
+      const res = await fetch(`${API_URL}/user/admin/store`);
       const data = await res.json();
 
       if (data.success && data.store) {

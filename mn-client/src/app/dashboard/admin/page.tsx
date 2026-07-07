@@ -13,6 +13,7 @@ import {
 
 import { useRouter } from "next/navigation";
 import { LOCATIONS } from "@/lib/constants";
+import { API_URL } from "@/lib/config";
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -114,7 +115,7 @@ export default function AdminDashboardPage() {
       }
 
       // 1. Fetch Stats & Activity Logs
-      const statsRes = await fetch("http://localhost:3333/user/admin/stats", {
+      const statsRes = await fetch(`${API_URL}/user/admin/stats`, {
         headers: { "Authorization": `Bearer ${storedToken}` }
       });
       if (statsRes.status === 403 || statsRes.status === 401) {
@@ -129,7 +130,7 @@ export default function AdminDashboardPage() {
       }
 
       // 2. Fetch Stateful Store Data
-      const storeRes = await fetch("http://localhost:3333/user/admin/store", {
+      const storeRes = await fetch(`${API_URL}/user/admin/store`, {
         headers: { "Authorization": `Bearer ${storedToken}` }
       });
       const storeDataJson = await storeRes.json();
@@ -142,7 +143,7 @@ export default function AdminDashboardPage() {
       }
 
       // 3. Fetch Database Users List
-      const usersRes = await fetch("http://localhost:3333/user/admin/users", {
+      const usersRes = await fetch(`${API_URL}/user/admin/users`, {
         headers: { "Authorization": `Bearer ${storedToken}` }
       });
       const usersData = await usersRes.json();
@@ -151,7 +152,7 @@ export default function AdminDashboardPage() {
       }
 
       // 4. Fetch KYC Requests List
-      const kycRes = await fetch("http://localhost:3333/user/admin/kyc/requests", {
+      const kycRes = await fetch(`${API_URL}/user/admin/kyc/requests`, {
         headers: { "Authorization": `Bearer ${storedToken}` }
       });
       const kycData = await kycRes.json();
@@ -175,7 +176,7 @@ export default function AdminDashboardPage() {
     try {
       const storedToken = localStorage.getItem("mn_token");
       if (!storedToken) return;
-      const res = await fetch("http://localhost:3333/user/admin/feedback", {
+      const res = await fetch(`${API_URL}/user/admin/feedback`, {
         headers: { "Authorization": `Bearer ${storedToken}` }
       });
       const data = await res.json();
@@ -193,7 +194,7 @@ export default function AdminDashboardPage() {
   const handleDeleteFeedback = async (id: number) => {
     try {
       const storedToken = localStorage.getItem("mn_token");
-      const res = await fetch(`http://localhost:3333/user/admin/feedback/${id}`, {
+      const res = await fetch(`${API_URL}/user/admin/feedback/${id}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${storedToken}` }
       });
@@ -229,7 +230,7 @@ export default function AdminDashboardPage() {
   const handleVerifyUser = async (userId: number, action: "approve" | "reject") => {
     try {
       const storedToken = localStorage.getItem("mn_token");
-      const res = await fetch(`http://localhost:3333/user/admin/users/${userId}/verify`, {
+      const res = await fetch(`${API_URL}/user/admin/users/${userId}/verify`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -253,7 +254,7 @@ export default function AdminDashboardPage() {
   const handleTogglePremium = async (userId: number) => {
     try {
       const storedToken = localStorage.getItem("mn_token");
-      const res = await fetch(`http://localhost:3333/user/admin/users/${userId}/toggle-premium`, {
+      const res = await fetch(`${API_URL}/user/admin/users/${userId}/toggle-premium`, {
         method: "POST",
         headers: { "Authorization": `Bearer ${storedToken}` }
       });
@@ -271,7 +272,7 @@ export default function AdminDashboardPage() {
   const handleStoreUpdate = async (type: string, action: string, payload: any) => {
     try {
       const storedToken = localStorage.getItem("mn_token");
-      const res = await fetch("http://localhost:3333/user/admin/store/update", {
+      const res = await fetch(`${API_URL}/user/admin/store/update`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -292,7 +293,7 @@ export default function AdminDashboardPage() {
   const handleKycReview = async (requestId: number) => {
     try {
       const storedToken = localStorage.getItem("mn_token");
-      const res = await fetch(`http://localhost:3333/user/admin/kyc/${requestId}/review`, {
+      const res = await fetch(`${API_URL}/user/admin/kyc/${requestId}/review`, {
         method: "POST",
         headers: { "Authorization": `Bearer ${storedToken}` }
       });
@@ -309,7 +310,7 @@ export default function AdminDashboardPage() {
   const handleKycApprove = async (requestId: number) => {
     try {
       const storedToken = localStorage.getItem("mn_token");
-      const res = await fetch(`http://localhost:3333/user/admin/kyc/${requestId}/approve`, {
+      const res = await fetch(`${API_URL}/user/admin/kyc/${requestId}/approve`, {
         method: "POST",
         headers: { "Authorization": `Bearer ${storedToken}` }
       });
@@ -333,7 +334,7 @@ export default function AdminDashboardPage() {
     }
     try {
       const storedToken = localStorage.getItem("mn_token");
-      const res = await fetch(`http://localhost:3333/user/admin/kyc/${requestId}/reject`, {
+      const res = await fetch(`${API_URL}/user/admin/kyc/${requestId}/reject`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -14,6 +14,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { CompareTableSkeleton } from "@/components/dashboard/Skeleton";
+import { API_URL } from "@/lib/config";
 
 export default function ComparePage() {
   return (
@@ -34,6 +35,7 @@ function CompareContent() {
   const { currentUser } = useUser();
 
   const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [fullProfiles, setFullProfiles] = useState<any[]>([]);
   const [comparedProfiles, setComparedProfiles] = useState<any[]>([]);
   const [myPreferences, setMyPreferences] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -63,7 +65,7 @@ function CompareContent() {
         // Fetch Interests
         if (token) {
           try {
-            const res = await fetch("http://localhost:3333/user/interest", {
+            const res = await fetch(`${API_URL}/user/interest`, {
               headers: { "Authorization": `Bearer ${token}` }
             });
             const data = await res.json();
@@ -76,13 +78,7 @@ function CompareContent() {
         }
 
         // Fetch user profiles (Limit to 20 for the dropdown to prevent huge payload)
-        const fetchUrls = ["http://localhost:3333/user/profiles?limit=20"];
-        
-        // If there are specific IDs in the URL, fetch them explicitly
-        const idsParam = searchParams.get("ids");
-        if (idsParam) {
-          fetchUrls.push(`http://localhost:3333/user/profiles?ids=${idsParam}`);
-        }
+        const fetchUrls = [`${API_URL}/user/profiles?limit=20&lightweight=true`];
 
         const responses = await Promise.all(
           fetchUrls.map(url => fetch(url, { headers: token ? { "Authorization": `Bearer ${token}` } : {} }))
@@ -125,25 +121,75 @@ function CompareContent() {
     fetchData();
   }, [currentUser]);
 
+  // Dynamically fetch full profile details when added to comparison
+  useEffect(() => {
+    const fetchMissingFullProfiles = async () => {
+      const missingIds = compareIds.filter(id => !fullProfiles.some(p => p.id === id));
+      if (missingIds.length > 0) {
+        try {
+          const token = localStorage.getItem("mn_token");
+          const res = await fetch(`${API_URL}/user/profiles?ids=${missingIds.join(",")}`, {
+            headers: token ? { "Authorization": `Bearer ${token}` } : {}
+          });
+          const data = await res.json();
+          if (data.success && data.users) {
+            setFullProfiles(prev => {
+              const newProfiles = [...prev, ...data.users];
+              // Deduplicate just in case
+              return Array.from(new Map(newProfiles.map(u => [u.id, u])).values());
+            });
+          }
+        } catch (e) {
+          console.error("Failed to fetch full profiles", e);
+        }
+      }
+    };
+
+    if (compareIds.length > 0) {
+      fetchMissingFullProfiles();
+    }
+  }, [compareIds, fullProfiles]);
+
   // Assemble compared profiles lists
   useEffect(() => {
-    if (allUsers.length > 0) {
-      const enriched = allUsers
-        .filter(u => compareIds.includes(u.id))
-        .map(u => {
-          const profile = getEnrichedProfile(u);
-          const matchResult = analyzeMatch(profile, myPreferences);
+    if (compareIds.length > 0) {
+      const sorted = compareIds.map(id => {
+        const fullProfile = fullProfiles.find(u => u.id === id);
+        if (fullProfile) {
+          const enriched = getEnrichedProfile(fullProfile);
           return {
-            ...profile,
-            matchResult
+            ...enriched,
+            matchResult: analyzeMatch(enriched, myPreferences),
+            isLoading: false
           };
-        });
+        }
+
+        // Fallback to lightweight profile from allUsers while fetching full details
+        const lightProfile = allUsers.find(u => u.id === id);
+        if (lightProfile) {
+          const enriched = getEnrichedProfile(lightProfile);
+          return {
+            ...enriched,
+            matchResult: { score: 0, indicator: "Loading...", fields: {} },
+            isLoading: true
+          };
+        }
+
+        return {
+          id,
+          name: "Loading...",
+          photo: "",
+          profileId: `MN-${100000 + id}`,
+          matchResult: { score: 0, indicator: "Loading...", fields: {} },
+          isLoading: true
+        };
+      });
       
-      // Sort enriched profiles by search selection order
-      const sorted = compareIds.map(id => enriched.find(p => p?.id === id)).filter(Boolean);
       setComparedProfiles(sorted);
+    } else {
+      setComparedProfiles([]);
     }
-  }, [allUsers, compareIds, myPreferences]);
+  }, [fullProfiles, allUsers, compareIds, myPreferences]);
 
   const handleToggleFavorite = (id: number) => {
     let updated = [];
@@ -165,7 +211,7 @@ function CompareContent() {
         setAlertMsg("Please log in to express interest.");
         return;
       }
-      const res = await fetch("http://localhost:3333/user/interest", {
+      const res = await fetch(`${API_URL}/user/interest`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -343,7 +389,14 @@ function CompareContent() {
                           isHighest ? "bg-brand-50/20 border-brand-400 shadow-sm" : "bg-white border-gray-200 shadow-sm"
                         }`}
                       >
-                        {isHighest && (
+                        <button 
+                          onClick={() => removeFromCompare(p.id)}
+                          className="absolute -top-2 -right-2 bg-white border border-gray-200 hover:border-rose-400 hover:bg-rose-50 hover:text-rose-600 text-gray-400 rounded-full p-1 shadow-sm transition-colors z-20 print:hidden"
+                          title="Remove profile"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                        {isHighest && !p.isLoading && (
                           <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-600 text-white text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-md flex items-center gap-1 z-10 border border-brand-500">
                             <Award className="w-3.5 h-3.5" /> Best Match
                           </div>
@@ -363,50 +416,62 @@ function CompareContent() {
                           <div className="min-w-0 pr-4">
                             <span className="text-[10px] font-bold text-brand-600 block tracking-wider">{p.profileId}</span>
                             <span className="font-bold text-sm text-gray-900 truncate block mt-0.5">{p.name}</span>
-                            <span className="text-xs text-gray-500 block font-medium">{p.age} yrs · {p.location}</span>
+                            <span className="text-xs text-gray-500 block font-medium">{!p.isLoading ? `${p.age} yrs · ${p.location}` : "..."}</span>
                           </div>
                         </div>
 
                         {/* Matching Percentage Circular SVG Indicator */}
                         <div className="mt-5 p-3 bg-white rounded-xl border border-gray-100 shadow-sm flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Compatibility</span>
-                            <span className={`text-[10px] font-black uppercase block mt-0.5 truncate ${
-                              p.matchResult.score >= 85 ? "text-emerald-600" :
-                              p.matchResult.score >= 70 ? "text-brand-600" :
-                              p.matchResult.score >= 55 ? "text-amber-600" : "text-rose-500"
-                            }`}>
-                              {p.matchResult.indicator}
-                            </span>
-                          </div>
-                          
-                          <div className="relative flex items-center justify-center w-11 h-11 shrink-0">
-                            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                              <path
-                                className="text-gray-100"
-                                strokeWidth="3.5"
-                                stroke="currentColor"
-                                fill="none"
-                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                              />
-                              <path
-                                className={`${
-                                  p.matchResult.score >= 85 ? "text-emerald-500" :
-                                  p.matchResult.score >= 70 ? "text-brand-500" :
-                                  p.matchResult.score >= 55 ? "text-amber-400" : "text-rose-400"
-                                } transition-all duration-1000`}
-                                strokeWidth="3.5"
-                                strokeDasharray={`${p.matchResult.score}, 100`}
-                                strokeLinecap="round"
-                                stroke="currentColor"
-                                fill="none"
-                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                              />
-                            </svg>
-                            <div className="absolute text-[10px] font-black text-gray-800">
-                              {p.matchResult.score}%
+                          {p.isLoading ? (
+                            <div className="w-full flex items-center justify-between gap-3">
+                               <div className="flex-1">
+                                 <div className="h-2 bg-gray-100 rounded w-full mb-1"></div>
+                                 <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                               </div>
+                               <div className="w-11 h-11 rounded-full bg-gray-100 animate-pulse shrink-0"></div>
                             </div>
-                          </div>
+                          ) : (
+                            <>
+                              <div className="min-w-0">
+                                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Compatibility</span>
+                                <span className={`text-[10px] font-black uppercase block mt-0.5 truncate ${
+                                  p.matchResult.score >= 85 ? "text-emerald-600" :
+                                  p.matchResult.score >= 70 ? "text-brand-600" :
+                                  p.matchResult.score >= 55 ? "text-amber-600" : "text-rose-500"
+                                }`}>
+                                  {p.matchResult.indicator}
+                                </span>
+                              </div>
+                              
+                              <div className="relative flex items-center justify-center w-11 h-11 shrink-0">
+                                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                                  <path
+                                    className="text-gray-100"
+                                    strokeWidth="3.5"
+                                    stroke="currentColor"
+                                    fill="none"
+                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                  />
+                                  <path
+                                    className={`${
+                                      p.matchResult.score >= 85 ? "text-emerald-500" :
+                                      p.matchResult.score >= 70 ? "text-brand-500" :
+                                      p.matchResult.score >= 55 ? "text-amber-400" : "text-rose-400"
+                                    } transition-all duration-1000`}
+                                    strokeWidth="3.5"
+                                    strokeDasharray={`${p.matchResult.score}, 100`}
+                                    strokeLinecap="round"
+                                    stroke="currentColor"
+                                    fill="none"
+                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                  />
+                                </svg>
+                                <div className="absolute text-[10px] font-black text-gray-800">
+                                  {p.matchResult.score}%
+                                </div>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -654,7 +719,7 @@ function CompareContent() {
                   highestScoreIdx={highestScoreIdx}
                   getValue={p => (
                     <div className="flex flex-wrap gap-1">
-                      {p.interestsList.map((interest: string) => (
+                      {p.interestsList?.map((interest: string) => (
                         <span key={interest} className="bg-gray-100/80 px-2 py-0.5 rounded text-[10px] text-gray-700 font-medium">
                           {interest}
                         </span>
@@ -872,6 +937,14 @@ function GridRow({
       </div>
       
       {profiles.map((p, idx) => {
+        if (p.isLoading) {
+          return (
+            <div key={`${p.id}-${idx}`} className="col-span-1 p-2 flex items-center border-r border-gray-100">
+              <div className="w-full h-8 bg-gray-100/50 rounded-lg animate-pulse"></div>
+            </div>
+          );
+        }
+
         const status = getStatus ? getStatus(p) : undefined;
         const isHighest = idx === highestScoreIdx && profiles.length > 1;
         
@@ -950,7 +1023,7 @@ function CompareSearchSelector({
       setSearching(true);
       try {
         const token = localStorage.getItem("mn_token");
-        const res = await fetch(`http://localhost:3333/search/profiles?keyword=${encodeURIComponent(query)}&limit=10`, {
+        const res = await fetch(`${API_URL}/search/profiles?keyword=${encodeURIComponent(query)}&limit=10&lightweight=true`, {
           headers: token ? { "Authorization": `Bearer ${token}` } : {}
         });
         const data = await res.json();

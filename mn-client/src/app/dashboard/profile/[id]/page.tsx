@@ -15,6 +15,7 @@ import { useCompare } from "@/context/CompareContext";
 import { useUser } from "@/context/UserContext";
 import { FullProfileSkeleton } from "@/components/dashboard/Skeleton";
 import { useProfileActions } from "@/hooks/useProfileActions";
+import { API_URL } from "@/lib/config";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -44,7 +45,7 @@ export default function ProfileDetailPage({ params }: PageProps) {
 
   const fetchInterests = async (token: string) => {
     try {
-      const res = await fetch("http://localhost:3333/user/interest?idsOnly=true", {
+      const res = await fetch(`${API_URL}/user/interest?idsOnly=true`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       const data = await res.json();
@@ -67,7 +68,7 @@ export default function ProfileDetailPage({ params }: PageProps) {
         await fetchInterests(storedToken);
       }
 
-      const res = await fetch(`http://localhost:3333/user/${profileId}`, {
+      const res = await fetch(`${API_URL}/user/${profileId}`, {
         headers: storedToken ? { "Authorization": `Bearer ${storedToken}` } : {}
       });
       const data = await res.json();
@@ -119,7 +120,7 @@ export default function ProfileDetailPage({ params }: PageProps) {
         return;
       }
 
-      const res = await fetch("http://localhost:3333/user/interest", {
+      const res = await fetch(`${API_URL}/user/interest`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

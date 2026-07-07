@@ -6,6 +6,7 @@ import {
   Settings, Users, CheckCircle2, Clock, Plus, Minus, Search, 
   AlertTriangle, CreditCard, Loader2, RefreshCw, X 
 } from "lucide-react";
+import { API_URL } from "@/lib/config";
 
 interface AdminStats {
   totalUsers: number;
@@ -116,7 +117,7 @@ export default function AdminReferralsPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem("mn_token");
-      const res = await fetch(`http://localhost:3333/user/admin/referrals?page=${page}&search=${searchQuery}`, {
+      const res = await fetch(`${API_URL}/user/admin/referrals?page=${page}&search=${searchQuery}`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       const data = await res.json();
@@ -135,7 +136,7 @@ export default function AdminReferralsPage() {
   const fetchSettings = async () => {
     try {
       const token = localStorage.getItem("mn_token");
-      const res = await fetch("http://localhost:3333/user/admin/referrals/settings", {
+      const res = await fetch(`${API_URL}/user/admin/referrals/settings`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       const data = await res.json();
@@ -164,7 +165,7 @@ export default function AdminReferralsPage() {
     setSettingsMsg("");
     try {
       const token = localStorage.getItem("mn_token");
-      const res = await fetch("http://localhost:3333/user/admin/referrals/settings", {
+      const res = await fetch(`${API_URL}/user/admin/referrals/settings`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -191,7 +192,7 @@ export default function AdminReferralsPage() {
     setSelectedUser(null);
     try {
       const token = localStorage.getItem("mn_token");
-      const res = await fetch(`http://localhost:3333/user/admin/referrals/${userId}`, {
+      const res = await fetch(`${API_URL}/user/admin/referrals/${userId}`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       const data = await res.json();
@@ -221,7 +222,7 @@ export default function AdminReferralsPage() {
 
     try {
       const token = localStorage.getItem("mn_token");
-      const res = await fetch("http://localhost:3333/user/admin/referrals/points", {
+      const res = await fetch(`${API_URL}/user/admin/referrals/points`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -257,7 +258,7 @@ export default function AdminReferralsPage() {
 
     try {
       const token = localStorage.getItem("mn_token");
-      const res = await fetch("http://localhost:3333/user/admin/referrals/block", {
+      const res = await fetch(`${API_URL}/user/admin/referrals/block`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

@@ -123,9 +123,11 @@ export class UserController {
         ids = (req.query.ids as string).split(',').map(id => parseInt(id, 10)).filter(n => !isNaN(n));
       }
 
+      const lightweight = req.query.lightweight === "true";
+
       let users: any[];
       if (reqIsAdmin) {
-        users = await this.getAllUsers.execute({ limit, ids });
+        users = await this.getAllUsers.execute({ limit, ids, lightweight });
       } else {
         const reqGender = (requester.gender || "").toLowerCase();
         const oppositeGender = reqGender === "male" ? "female" : reqGender === "female" ? "male" : null;
@@ -135,7 +137,7 @@ export class UserController {
         }
 
         // Fetch only users of the opposite gender from the database
-        users = await this.getAllUsers.execute({ gender: oppositeGender, limit, ids });
+        users = await this.getAllUsers.execute({ gender: oppositeGender, limit, ids, lightweight });
       }
 
       // Map users to include online tracker state and prune base64 assets to save database/networking bandwidth

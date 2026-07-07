@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Filter, Lock, Unlock, Loader2 } from "lucide-react";
 import { RangeSlider, MultiSelect, FilterToggle } from "./FilterControls";
-import { useTranslation } from "react-i18next";
 
 interface FilterSidebarProps {
   isOpen: boolean;
@@ -20,7 +19,6 @@ interface FilterSidebarProps {
 export default function FilterSidebar({
   isOpen, onClose, filters, setFilters, onApply, totalProfiles, loading, isUserPremium
 }: FilterSidebarProps) {
-  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"basic" | "premium">("basic");
 
   // Lock body scroll when open
@@ -49,7 +47,7 @@ export default function FilterSidebar({
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
         <h2 className="text-base font-bold font-playfair flex items-center gap-2">
           <Filter className="w-5 h-5 text-brand-600" />
-          {t("filters.title", "Filter Profiles")}
+          Filter Profiles
         </h2>
         <button onClick={onClose} className="p-2 lg:hidden rounded-full hover:bg-gray-100 transition-colors">
           <X className="w-5 h-5 text-gray-500" />
@@ -63,14 +61,14 @@ export default function FilterSidebar({
             onClick={() => setActiveTab("basic")}
             className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${activeTab === "basic" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
           >
-            {t("filters.basicFilters", "Basic Filters")}
+            Basic Filters
           </button>
           <button 
             onClick={() => setActiveTab("premium")}
             className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all flex items-center justify-center gap-1.5 ${activeTab === "premium" ? "bg-white text-amber-700 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
           >
             {isUserPremium ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-            {t("filters.premiumFilters", "Premium Filters").replace(' Filters', '')}
+            Premium
           </button>
         </div>
       </div>
@@ -87,14 +85,14 @@ export default function FilterSidebar({
             <FilterToggle title="Don't Show Interested Profiles" checked={!!filters.hideInterested} onChange={v => updateFilter("hideInterested", v)} />
             
             <RangeSlider 
-              title={t("filters.ageRange", "Age Range")} 
+              title="Age Range" 
               min={18} max={80} 
               value={[filters.ageMin || 18, filters.ageMax || 40]} 
               onChange={v => { updateFilter("ageMin", v[0]); updateFilter("ageMax", v[1]); }} 
             />
             
             <RangeSlider 
-              title={`${t("filters.heightRange", "Height Range")} (${t("filters.cm", "cm")})`} 
+              title="Height Range (cm)" 
               min={120} max={220} 
               value={[filters.heightMin || 140, filters.heightMax || 190]} 
               onChange={v => { updateFilter("heightMin", v[0]); updateFilter("heightMax", v[1]); }} 
@@ -223,13 +221,13 @@ export default function FilterSidebar({
             onClick={handleClear}
             className="flex-1 py-1.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
           >
-            {t("filters.clearAll", "Clear All")}
+            Clear All
           </button>
           <button 
             onClick={handleApply}
             className="flex-1 py-1.5 text-xs font-semibold text-white bg-brand-600 rounded-md hover:bg-brand-700 transition-colors shadow-sm flex items-center justify-center gap-1.5"
           >
-            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : t("filters.applyFilters", "Apply Filters")}
+            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Apply Filters"}
           </button>
         </div>
         <p className="text-center text-[10px] text-gray-500 font-medium">

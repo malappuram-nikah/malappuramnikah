@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { API_URL } from "@/lib/config";
 
 interface UserContextType {
   currentUser: any;
@@ -36,7 +37,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         return null;
       }
 
-      const res = await fetch(`http://localhost:3333/user/${userId}?t=${Date.now()}`, {
+      const res = await fetch(`${API_URL}/user/${userId}?t=${Date.now()}`, {
         headers: { "Authorization": `Bearer ${token}` },
         cache: "no-store"
       });

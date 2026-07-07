@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, MessageCircle, ArrowRight, Loader2, Sparkles, X, Check, Unlock, Inbox, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { API_URL } from "@/lib/config";
 
 interface Profile {
   id: number;
@@ -35,7 +36,7 @@ export default function InterestsPage() {
         return;
       }
 
-      const res = await fetch("http://localhost:3333/user/interest", {
+      const res = await fetch(`${API_URL}/user/interest`, {
         headers: { "Authorization": `Bearer ${storedToken}` }
       });
       const data = await res.json();
@@ -113,7 +114,7 @@ export default function InterestsPage() {
       if (!storedToken) return;
 
       setLoading(true);
-      const res = await fetch("http://localhost:3333/user/interest", {
+      const res = await fetch(`${API_URL}/user/interest`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

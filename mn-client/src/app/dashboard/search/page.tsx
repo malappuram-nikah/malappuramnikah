@@ -11,6 +11,7 @@ import { getEnrichedProfile } from "@/lib/profile-utils";
 import ProfileSlideOver from "@/components/dashboard/ProfileSlideOver";
 import { CardGridSkeleton } from "@/components/dashboard/Skeleton";
 import FilterSidebar from "@/components/search/FilterSidebar";
+import { API_URL } from "@/lib/config";
 
 export default function SearchPage() {
   const router = useRouter();
@@ -65,7 +66,7 @@ export default function SearchPage() {
 
   const fetchInterests = async (token: string) => {
     try {
-      const res = await fetch("http://localhost:3333/user/interest?idsOnly=true", {
+      const res = await fetch(`${API_URL}/user/interest?idsOnly=true`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       const data = await res.json();
@@ -110,7 +111,7 @@ export default function SearchPage() {
         }
       });
 
-      const res = await fetch(`http://localhost:3333/search/profiles?${params.toString()}`, {
+      const res = await fetch(`${API_URL}/search/profiles?${params.toString()}`, {
         headers: { "Authorization": `Bearer ${storedToken}` }
       });
       const data = await res.json();
@@ -160,7 +161,7 @@ export default function SearchPage() {
     try {
       const storedToken = localStorage.getItem("mn_token");
       if (!storedToken) return;
-      await fetch("http://localhost:3333/search/preferences", {
+      await fetch(`${API_URL}/search/preferences`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${storedToken}` },
         body: JSON.stringify({ preferences: newFilters })
@@ -193,7 +194,7 @@ export default function SearchPage() {
     try {
       const storedToken = localStorage.getItem("mn_token");
       if (!storedToken) return;
-      const res = await fetch("http://localhost:3333/user/interest", {
+      const res = await fetch(`${API_URL}/user/interest`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${storedToken}` },
         body: JSON.stringify({ receiver_id: receiverId })

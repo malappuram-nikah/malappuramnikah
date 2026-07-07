@@ -12,6 +12,7 @@ import {
   CheckCircle2, User, Smile
 } from "lucide-react";
 import { getEnrichedProfile } from "@/lib/profile-utils";
+import { API_URL } from "@/lib/config";
 
 /* ──────────────────────────────────────────────────
    AUTH HELPERS  (parsed once, memoized via ref)
@@ -144,7 +145,7 @@ function EditModal({
       // 3. Background API sync
       const auth = getAuth();
       if (auth) {
-        await fetch(`http://localhost:3333/user/${auth.userId}/profile`, {
+        await fetch(`${API_URL}/user/${auth.userId}/profile`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -352,7 +353,7 @@ function PhotoManagerModal({
 
       const auth = getAuth();
       if (auth) {
-        await fetch(`http://localhost:3333/user/${auth.userId}/profile`, {
+        await fetch(`${API_URL}/user/${auth.userId}/profile`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -638,7 +639,7 @@ export default function MyProfilePage() {
       if (!auth) { router.push("/login"); return; }
 
       const res = await fetch(
-        `http://localhost:3333/user/${auth.userId}?t=${Date.now()}`,
+        `${API_URL}/user/${auth.userId}?t=${Date.now()}`,
         {
           headers: { Authorization: `Bearer ${auth.token}` },
           cache: "no-store",

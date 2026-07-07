@@ -16,6 +16,7 @@ import ReviewStep from "@/components/profile-setup/ReviewStep";
 import IdentityVerificationForm from "@/components/dashboard/IdentityVerificationForm";
 import { CheckCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { API_URL } from "@/lib/config";
 
 export default function ProfileBuilderPage() {
   const router = useRouter();
@@ -106,7 +107,7 @@ export default function ProfileBuilderPage() {
         }
 
         if (userId !== null) {
-          const res = await fetch(`http://localhost:3333/user/${userId}?t=${Date.now()}`, {
+          const res = await fetch(`${API_URL}/user/${userId}?t=${Date.now()}`, {
             headers: token ? { "Authorization": `Bearer ${token}` } : {},
             cache: "no-store"
           });

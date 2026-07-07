@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Play, Pause, Volume2, VolumeX, Music } from "lucide-react";
+import { API_URL } from "@/lib/config";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || `${API_URL}`;
 
 export default function AmbientMusicPlayer() {
   const [enabled, setEnabled] = useState(false);

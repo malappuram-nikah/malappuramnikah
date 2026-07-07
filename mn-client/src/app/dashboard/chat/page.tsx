@@ -5,6 +5,7 @@ import { Send, Search, Phone, Video, MessageSquare, AlertCircle } from "lucide-r
 import { useState, useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { useRouter } from "next/navigation";
+import { API_URL } from "@/lib/config";
 
 interface PeerProfile {
   id: number;
@@ -57,7 +58,7 @@ export default function ChatPage() {
           setUserId(payload.userId);
           
           // Connect to Realtime Socket.io server
-          const socket = io("http://localhost:3333", {
+          const socket = io(`${API_URL}`, {
             transports: ["websocket", "polling"]
           });
           socketRef.current = socket;
@@ -106,7 +107,7 @@ export default function ChatPage() {
 
     const fetchMatches = async () => {
       try {
-        const res = await fetch("http://localhost:3333/user/interest", {
+        const res = await fetch(`${API_URL}/user/interest`, {
           headers: {
             "Authorization": `Bearer ${token}`
           }
@@ -137,7 +138,7 @@ export default function ChatPage() {
     const fetchHistory = async () => {
       setIsLoadingHistory(true);
       try {
-        const res = await fetch(`http://localhost:3333/user/chat/history/${selectedPeer.id}`, {
+        const res = await fetch(`${API_URL}/user/chat/history/${selectedPeer.id}`, {
           headers: {
             "Authorization": `Bearer ${token}`
           }
@@ -176,7 +177,7 @@ export default function ChatPage() {
     setNewMessage("");
 
     try {
-      const res = await fetch("http://localhost:3333/user/chat/message", {
+      const res = await fetch(`${API_URL}/user/chat/message`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

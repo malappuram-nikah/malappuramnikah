@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { LOCATIONS } from "@/lib/constants";
+import { API_URL } from "@/lib/config";
 
 export default function WeddingBusinessDashboard() {
   const router = useRouter();
@@ -96,7 +97,7 @@ export default function WeddingBusinessDashboard() {
       }
 
       // Fetch Stats
-      const statsRes = await fetch("http://localhost:3333/user/admin/stats", {
+      const statsRes = await fetch(`${API_URL}/user/admin/stats`, {
         headers: { "Authorization": `Bearer ${storedToken}` }
       });
       if (statsRes.status === 403 || statsRes.status === 401) {
@@ -110,7 +111,7 @@ export default function WeddingBusinessDashboard() {
       }
 
       // Fetch Stateful Store
-      const storeRes = await fetch("http://localhost:3333/user/admin/store", {
+      const storeRes = await fetch(`${API_URL}/user/admin/store`, {
         headers: { "Authorization": `Bearer ${storedToken}` }
       });
       const storeDataJson = await storeRes.json();
@@ -143,7 +144,7 @@ export default function WeddingBusinessDashboard() {
   const handleStoreUpdate = async (type: string, action: string, payload: any) => {
     try {
       const storedToken = localStorage.getItem("mn_token");
-      const res = await fetch("http://localhost:3333/user/admin/store/update", {
+      const res = await fetch(`${API_URL}/user/admin/store/update`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
