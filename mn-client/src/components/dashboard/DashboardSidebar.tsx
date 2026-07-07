@@ -5,7 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Heart, Search, MessageCircle,
-  Crown, Settings, LogOut, Menu, X, Bell, Sparkles, Calendar, ShieldCheck, Briefcase,
+  Crown, Settings, LogOut, Menu, X, Bell, Radar, Calendar, ShieldCheck, Briefcase,
   BarChart3, Users, AlertTriangle, CreditCard, LayoutGrid, DollarSign, Layers, User, Award, Edit2,
   MessageSquarePlus
 } from "lucide-react";
@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 // 1. Matrimonial Member Navigation Items
 const memberNavItems = [
   { href: "/dashboard",          icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/dashboard/matches",  icon: Sparkles,         label: "AI Matches" },
+  { href: "/dashboard/matches",  icon: Radar,         label: "AI Matches" },
   { href: "/dashboard/search",   icon: Search,           label: "Search"    },
   { href: "/dashboard/compare",  icon: Layers,           label: "Compare"   },
   { href: "/dashboard/interests",icon: Heart,            label: "Interests" },
@@ -132,7 +132,7 @@ export default function DashboardSidebar() {
                     : "text-gray-600 hover:bg-brand-50 hover:text-brand-700"
                 )}
               >
-                <item.icon className={cn("w-5 h-5 shrink-0", isActive ? "text-white" : isAccent ? "text-brand-600" : "text-gray-400 group-hover:text-brand-600")} />
+                <item.icon className={cn("w-5 h-5 shrink-0", isActive ? "text-white" : isAccent ? "text-brand-600" : "text-gray-400 group-hover:text-brand-600")} strokeWidth={1.5} />
                 {!collapsed && <span>{item.label}</span>}
               </Link>
             );

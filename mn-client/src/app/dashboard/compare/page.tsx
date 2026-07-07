@@ -8,7 +8,8 @@ import {
   X, Layers, Heart, MessageCircle, Star, User, BookOpen, 
   Briefcase, Users, HeartHandshake, MapPin, Sparkles, Check, 
   Trash2, Share2, Printer, Plus, ChevronRight, Lock, Unlock,
-  TrendingUp, Award, Smile, ShieldCheck, ArrowRight, Info
+  TrendingUp, Award, Smile, ShieldCheck, ArrowRight, Info,
+  Search, Loader2
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -74,13 +75,33 @@ function CompareContent() {
           }
         }
 
-        // Fetch user profiles
-        const res = await fetch("http://localhost:3333/user/profiles", {
-          headers: token ? { "Authorization": `Bearer ${token}` } : {}
+        // Fetch user profiles (Limit to 20 for the dropdown to prevent huge payload)
+        const fetchUrls = ["http://localhost:3333/user/profiles?limit=20"];
+        
+        // If there are specific IDs in the URL, fetch them explicitly
+        const idsParam = searchParams.get("ids");
+        if (idsParam) {
+          fetchUrls.push(`http://localhost:3333/user/profiles?ids=${idsParam}`);
+        }
+
+        const responses = await Promise.all(
+          fetchUrls.map(url => fetch(url, { headers: token ? { "Authorization": `Bearer ${token}` } : {} }))
+        );
+        
+        const dataResponses = await Promise.all(responses.map(r => r.json()));
+        
+        let mergedUsers: any[] = [];
+        dataResponses.forEach(data => {
+          if (data.success && data.users) {
+            mergedUsers = [...mergedUsers, ...data.users];
+          }
         });
-        const data = await res.json();
-        if (data.success && data.users) {
-          setAllUsers(data.users);
+
+        // Deduplicate users just in case an ID was in both arrays
+        const uniqueUsers = Array.from(new Map(mergedUsers.map(u => [u.id, u])).values());
+        
+        if (uniqueUsers.length > 0) {
+          setAllUsers(uniqueUsers);
           
           // Identify current user preferences
           if (currentUser) {
@@ -264,11 +285,10 @@ function CompareContent() {
       {/* Header bar */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold font-playfair text-gray-900 flex items-center gap-2">
-            <Layers className="w-7 h-7 text-brand-600" />
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
             Profile Comparison
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-gray-500 mt-2 font-medium">
             Compare important profile parameters, compatibility analyses, and preference matching details side-by-side.
           </p>
         </div>
@@ -302,98 +322,90 @@ function CompareContent() {
       {compareIds.length === 0 ? (
         <EmptyState allUsers={allUsers} addToCompare={addToCompare} />
       ) : (
-        <div className="bg-white border border-gray-150 rounded-xl overflow-visible shadow-md">
+        <div className="bg-white border border-gray-150 rounded-lg overflow-visible shadow-sm">
           {/* Main Side-by-Side Scrolling Grid */}
           <div className="overflow-x-auto md:overflow-visible print:overflow-visible">
             <div className="min-w-[800px] md:w-full table-fixed">
               {/* Sticky Comparison Header */}
-              <div className="grid grid-cols-4 bg-gray-50/90 border-b border-gray-150 py-6 px-4 items-stretch sticky top-0 z-20 shadow-sm backdrop-blur-md rounded-t-xl">
+              <div className="grid grid-cols-4 bg-gray-50/90 border-b border-gray-150 py-6 px-4 items-stretch sticky top-0 z-20 shadow-sm backdrop-blur-md rounded-t-lg">
                 <div className="col-span-1 flex flex-col justify-center pr-4">
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">Comparing</span>
-                  <span className="text-2xl font-black font-playfair text-gray-900 mt-1">{comparedProfiles.length} Profiles</span>
-                  <p className="text-[11px] text-gray-500 mt-1.5 leading-relaxed">Green cards show parameters matching your preferred partner draft settings.</p>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Comparing</span>
+                  <span className="text-2xl font-bold text-gray-900 mt-1 tracking-tight">{comparedProfiles.length} Profiles</span>
+                  <p className="text-xs text-gray-500 mt-2 leading-relaxed font-medium">Green cards show parameters matching your preferred partner draft settings.</p>
                 </div>
 
                 {comparedProfiles.map((p, idx) => {
                   const isHighest = idx === highestScoreIdx && comparedProfiles.length > 1;
                   return (
-                    <div
-                      key={p.id}
-                      className={`col-span-1 px-4 relative flex flex-col justify-between transition-all duration-300 ${
-                        isHighest ? "bg-brand-50/20 border-x border-brand-100/60 rounded-2xl shadow-inner" : ""
-                      }`}
-                    >
-                      {isHighest && (
-                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-brand-600 to-rose-500 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-lg flex items-center gap-1">
-                          <Award className="w-3.5 h-3.5" /> Best Match
-                        </div>
-                      )}
-
-                      <button
-                        onClick={() => removeFromCompare(p.id)}
-                        className="absolute top-0 right-2 p-1.5 bg-white border border-gray-100 hover:bg-red-50 hover:text-red-500 rounded-full text-gray-400 transition-colors shadow-sm print:hidden z-10"
-                        title="Remove"
+                    <div key={p.id} className="col-span-1 px-2">
+                      <div
+                        className={`relative h-full flex flex-col justify-between p-4 rounded-xl border transition-all duration-300 ${
+                          isHighest ? "bg-brand-50/20 border-brand-400 shadow-sm" : "bg-white border-gray-200 shadow-sm"
+                        }`}
                       >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-
-                      <div className="flex gap-3 items-center">
-                        {p.photo ? (
-                          <img
-                            src={p.photo}
-                            alt={p.name}
-                            className="w-14 h-14 rounded-2xl object-cover border-2 border-white shadow-md bg-gray-100 hover:scale-105 transition-transform"
-                          />
-                        ) : (
-                          <div className="w-14 h-14 rounded-2xl bg-brand-50 border-2 border-white shadow-md flex items-center justify-center text-brand-700 font-extrabold text-sm uppercase">
-                            {p.name.charAt(0)}
+                        {isHighest && (
+                          <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-600 text-white text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-md flex items-center gap-1 z-10 border border-brand-500">
+                            <Award className="w-3.5 h-3.5" /> Best Match
                           </div>
                         )}
-                        <div className="min-w-0">
-                          <span className="text-[10px] font-extrabold text-brand-600 block tracking-wider">{p.profileId}</span>
-                          <span className="font-extrabold text-sm text-gray-950 truncate block mt-0.5">{p.name}</span>
-                          <span className="text-xs text-gray-500 block font-medium">{p.age} yrs · {p.location}</span>
+                        <div className="flex gap-3 items-center pt-1">
+                          {p.photo ? (
+                            <img
+                              src={p.photo}
+                              alt={p.name}
+                              className="w-12 h-12 rounded-full object-cover border border-gray-200 shadow-sm bg-gray-50 hover:scale-105 transition-transform"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-brand-50 border border-brand-100 shadow-sm flex items-center justify-center text-brand-700 font-bold text-sm uppercase">
+                              {p.name.charAt(0)}
+                            </div>
+                          )}
+                          <div className="min-w-0 pr-4">
+                            <span className="text-[10px] font-bold text-brand-600 block tracking-wider">{p.profileId}</span>
+                            <span className="font-bold text-sm text-gray-900 truncate block mt-0.5">{p.name}</span>
+                            <span className="text-xs text-gray-500 block font-medium">{p.age} yrs · {p.location}</span>
+                          </div>
                         </div>
-                      </div>
 
-                      {/* Matching Percentage Circular SVG Indicator */}
-                      <div className="mt-4 p-3 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Compatibility</span>
-                          <span className={`text-[10px] font-black uppercase block mt-0.5 truncate ${
-                            p.matchResult.score >= 85 ? "text-emerald-600" :
-                            p.matchResult.score >= 70 ? "text-brand-600" :
-                            p.matchResult.score >= 55 ? "text-amber-600" : "text-rose-500"
-                          }`}>
-                            {p.matchResult.indicator}
-                          </span>
-                        </div>
-                        
-                        <div className="relative flex items-center justify-center w-11 h-11 shrink-0">
-                          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                            <path
-                              className="text-gray-100"
-                              strokeWidth="3.5"
-                              stroke="currentColor"
-                              fill="none"
-                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                            />
-                            <path
-                              className={`${
-                                p.matchResult.score >= 85 ? "text-emerald-500" :
-                                p.matchResult.score >= 70 ? "text-brand-500" :
-                                p.matchResult.score >= 55 ? "text-amber-400" : "text-rose-400"
-                              } transition-all duration-1000`}
-                              strokeWidth="3.5"
-                              strokeDasharray={`${p.matchResult.score}, 100`}
-                              strokeLinecap="round"
-                              stroke="currentColor"
-                              fill="none"
-                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                            />
-                          </svg>
-                          <div className="absolute text-[10px] font-black text-gray-800">
-                            {p.matchResult.score}%
+                        {/* Matching Percentage Circular SVG Indicator */}
+                        <div className="mt-5 p-3 bg-white rounded-xl border border-gray-100 shadow-sm flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Compatibility</span>
+                            <span className={`text-[10px] font-black uppercase block mt-0.5 truncate ${
+                              p.matchResult.score >= 85 ? "text-emerald-600" :
+                              p.matchResult.score >= 70 ? "text-brand-600" :
+                              p.matchResult.score >= 55 ? "text-amber-600" : "text-rose-500"
+                            }`}>
+                              {p.matchResult.indicator}
+                            </span>
+                          </div>
+                          
+                          <div className="relative flex items-center justify-center w-11 h-11 shrink-0">
+                            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                              <path
+                                className="text-gray-100"
+                                strokeWidth="3.5"
+                                stroke="currentColor"
+                                fill="none"
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                              />
+                              <path
+                                className={`${
+                                  p.matchResult.score >= 85 ? "text-emerald-500" :
+                                  p.matchResult.score >= 70 ? "text-brand-500" :
+                                  p.matchResult.score >= 55 ? "text-amber-400" : "text-rose-400"
+                                } transition-all duration-1000`}
+                                strokeWidth="3.5"
+                                strokeDasharray={`${p.matchResult.score}, 100`}
+                                strokeLinecap="round"
+                                stroke="currentColor"
+                                fill="none"
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                              />
+                            </svg>
+                            <div className="absolute text-[10px] font-black text-gray-800">
+                              {p.matchResult.score}%
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -403,7 +415,7 @@ function CompareContent() {
 
                 {/* Empty column placeholder if less than 3 profiles compared */}
                 {Array.from({ length: 3 - comparedProfiles.length }).map((_, i) => (
-                  <div key={i} className="col-span-1 px-4 flex flex-col items-center justify-center border-l border-dashed border-gray-200">
+                  <div key={i} className="col-span-1 px-2 flex flex-col">
                     <CompareSearchSelector allUsers={allUsers} compareIds={compareIds} addToCompare={addToCompare} />
                   </div>
                 ))}
@@ -912,7 +924,6 @@ function LoaderSpinner() {
   );
 }
 
-// Compare Search Selector inside slots
 function CompareSearchSelector({ 
   allUsers, 
   compareIds, 
@@ -923,47 +934,91 @@ function CompareSearchSelector({
   addToCompare: (id: number) => void; 
 }) {
   const [open, setOpen] = useState(false);
-  const filterList = allUsers.filter(u => !compareIds.includes(u.id));
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<any[]>(allUsers);
+  const [searching, setSearching] = useState(false);
+
+  // Filter out already compared IDs from both local list and search results
+  const filterList = (query.length > 0 ? results : allUsers).filter(u => !compareIds.includes(u.id));
+
+  useEffect(() => {
+    if (query.length === 0) {
+      setResults(allUsers);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const token = localStorage.getItem("mn_token");
+        const res = await fetch(`http://localhost:3333/search/profiles?keyword=${encodeURIComponent(query)}&limit=10`, {
+          headers: token ? { "Authorization": `Bearer ${token}` } : {}
+        });
+        const data = await res.json();
+        if (data.success) {
+          setResults(data.data);
+        }
+      } catch(e) {}
+      setSearching(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query, allUsers]);
 
   return (
     <div className="relative w-full print:hidden">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full py-8 border border-dashed border-gray-250 hover:border-brand-350 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all group bg-gradient-to-br from-gray-50/50 to-white hover:shadow-md hover:scale-[1.02] duration-300"
+        className="w-full py-6 border border-dashed border-gray-300 hover:border-gray-400 rounded-xl flex flex-col items-center justify-center gap-2 transition-all bg-gray-50/30 hover:bg-gray-50 duration-200"
       >
-        <div className="p-3 bg-white group-hover:bg-brand-50 rounded-full transition-colors border border-gray-100 shadow-sm group-hover:border-brand-200">
-          <Plus className="w-5 h-5 text-gray-400 group-hover:text-brand-600" />
+        <div className="p-2 bg-white rounded-full border border-gray-200 shadow-sm">
+          <Plus className="w-4 h-4 text-gray-500" />
         </div>
-        <span className="text-xs font-bold text-gray-400 group-hover:text-brand-700 tracking-wider uppercase">Add Match Profile</span>
+        <span className="text-[11px] font-bold text-gray-500 tracking-wide uppercase">Add Match Profile</span>
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl z-30 max-h-60 overflow-y-auto p-2">
-          <div className="text-[10px] font-bold text-gray-400 uppercase px-3 py-1.5 tracking-wider">Select Profile</div>
-          {filterList.length === 0 ? (
-            <div className="text-xs text-gray-400 px-3 py-4 text-center">No other profiles available.</div>
-          ) : (
-            filterList.map(u => (
-              <button
-                key={u.id}
-                onClick={() => {
-                  addToCompare(u.id);
-                  setOpen(false);
-                }}
-                className="w-full text-left px-3 py-2 hover:bg-brand-50 rounded-xl flex items-center gap-2.5 transition-colors"
-              >
-                <img
-                  src={u.profile_details?.mn_profile_photos_draft?.photos?.[0]?.dataUrl || `https://i.pravatar.cc/100?img=${45 + (u.id % 20)}`}
-                  alt=""
-                  className="w-8 h-8 rounded-lg object-cover bg-gray-100"
-                />
-                <div className="min-w-0">
-                  <span className="text-xs font-bold text-gray-800 block truncate">{u.first_name} {u.last_name}</span>
-                  <span className="text-[10px] text-gray-500 block">{u.dob ? Math.floor((new Date().getTime() - new Date(u.dob).getTime()) / 31557600000) : 25} yrs · {u.location || "Kerala"}</span>
-                </div>
-              </button>
-            ))
-          )}
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl z-30 overflow-hidden flex flex-col">
+          <div className="p-3 border-b border-gray-100 bg-gray-50/50">
+             <div className="relative">
+               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+               <input 
+                 type="text"
+                 placeholder="Search by ID or Name..."
+                 value={query}
+                 onChange={e => setQuery(e.target.value)}
+                 className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+               />
+             </div>
+          </div>
+          <div className="max-h-60 overflow-y-auto p-2">
+            {searching ? (
+              <div className="flex justify-center items-center py-6"><Loader2 className="w-5 h-5 animate-spin text-brand-500" /></div>
+            ) : filterList.length === 0 ? (
+              <div className="text-xs text-gray-400 px-3 py-4 text-center">No profiles found.</div>
+            ) : (
+              filterList.map(u => (
+                <button
+                  key={u.id}
+                  onClick={() => {
+                    addToCompare(u.id);
+                    setOpen(false);
+                    setQuery("");
+                  }}
+                  className="w-full text-left px-3 py-2 hover:bg-brand-50 rounded-xl flex items-center gap-2.5 transition-colors"
+                >
+                  <img
+                    src={u.profile_details?.mn_profile_photos_draft?.photos?.[0]?.dataUrl || `https://i.pravatar.cc/100?img=${45 + (u.id % 20)}`}
+                    alt=""
+                    className="w-8 h-8 rounded-lg object-cover bg-gray-100"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <span className="text-xs font-bold text-gray-800 block truncate">{u.first_name} {u.last_name}</span>
+                    <span className="text-[10px] text-gray-500 block">{u.profile_details?.mn_basic_details_draft?.age || 25} yrs · {u.location || "Kerala"}</span>
+                  </div>
+                  <span className="text-[9px] font-bold text-gray-300 bg-gray-50 px-1.5 py-0.5 rounded">{u.profile_details?.mn_basic_details_draft?.profileId || `MN${1000+u.id}`}</span>
+                </button>
+              ))
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -1006,12 +1061,20 @@ function EmptyState({ allUsers, addToCompare }: { allUsers: any[]; addToCompare:
                   </div>
                 </div>
                 
-                <button
-                  onClick={() => addToCompare(u.id)}
-                  className="px-3.5 py-1.5 bg-brand-50 text-brand-700 hover:bg-brand-600 hover:text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Compare
-                </button>
+                <label className="relative flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={false} 
+                    onChange={() => addToCompare(u.id)} 
+                    className="peer sr-only"
+                  />
+                  <div className="w-5 h-5 border-2 border-gray-300 rounded peer-checked:bg-brand-600 peer-checked:border-brand-600 flex items-center justify-center transition-all shadow-sm">
+                    <Check className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100" />
+                  </div>
+                  <span className="ml-2 text-xs font-bold text-gray-600 peer-checked:text-brand-700 transition-colors select-none">
+                    Compare
+                  </span>
+                </label>
               </div>
             ))}
           </div>

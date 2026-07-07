@@ -14,7 +14,7 @@ import FilterSidebar from "@/components/search/FilterSidebar";
 
 export default function SearchPage() {
   const router = useRouter();
-  const { alertMsg: globalAlert, setAlertMsg: setGlobalAlert } = useCompare();
+  const { alertMsg: globalAlert, setAlertMsg: setGlobalAlert, isCompared, addToCompare, removeFromCompare } = useCompare();
   const { currentUser } = useUser();
   const [mounted, setMounted] = useState(false);
 
@@ -132,6 +132,7 @@ export default function SearchPage() {
             is_online: u.is_online,
             is_new_user: u.is_new_user,
             created_at: u.created_at,
+            isBlurred: u.profile_details?.mn_profile_photos_draft?.isBlurred || false,
           };
         });
 
@@ -330,18 +331,43 @@ export default function SearchPage() {
                     onClick={() => setSelectedProfile(p)}
                     className="group bg-white rounded-lg border border-gray-200 overflow-hidden cursor-pointer hover:shadow-md hover:border-brand-300 transition-all duration-300 flex flex-col"
                   >
-                    <div className="relative h-48 bg-gray-100 overflow-hidden">
-                      <img src={p.img || "/placeholder.jpg"} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                    <div className="relative h-48 bg-gray-100 overflow-hidden select-none">
+                      <img src={p.img || "/placeholder.jpg"} alt={p.name} className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ${p.isBlurred ? 'blur-md scale-110 opacity-80' : ''}`} />
                       {p.is_premium && (
                         <div className="absolute top-3 left-3 bg-amber-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider shadow-sm">
                           Premium
                         </div>
                       )}
+                      {p.isBlurred && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/10 backdrop-blur-[2px]">
+                          <div className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full text-[10px] font-bold text-gray-800 shadow-lg">
+                            Premium to View Photo
+                          </div>
+                        </div>
+                      )}
                       {p.kyc_status === "VERIFIED" && (
-                        <div className="absolute top-3 right-3 bg-emerald-500 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm flex items-center gap-1">
+                        <div className="absolute top-10 left-3 bg-emerald-500 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm flex items-center gap-1">
                           <Check className="w-3 h-3" /> Verified
                         </div>
                       )}
+                      <label 
+                        onClick={(e) => e.stopPropagation()}
+                        className="absolute top-3 right-3 flex items-center justify-center cursor-pointer z-10"
+                        title="Select for comparison"
+                      >
+                        <input 
+                          type="checkbox" 
+                          checked={isCompared(p.id)} 
+                          onChange={(e) => {
+                            if (e.target.checked) addToCompare(p.id);
+                            else removeFromCompare(p.id);
+                          }}
+                          className="peer sr-only"
+                        />
+                        <div className="w-6 h-6 bg-black/30 backdrop-blur-sm border-2 border-white/80 rounded flex items-center justify-center peer-checked:bg-brand-600 peer-checked:border-brand-600 transition-all shadow-md">
+                          <Check className="w-4 h-4 text-white opacity-0 peer-checked:opacity-100" />
+                        </div>
+                      </label>
                     </div>
                     <div className="p-4 flex-1 flex flex-col">
                       <div className="mb-4">

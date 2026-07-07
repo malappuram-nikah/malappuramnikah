@@ -30,7 +30,7 @@ export class UserRepository implements IUserRepository {
         return bcrypt.compare(plainPassword, hashedPassword);
     }
 
-    async findAll(filters?: { gender?: string; status?: string }): Promise<User[]> {
+    async findAll(filters?: { gender?: string; status?: string; limit?: number; ids?: number[] }): Promise<User[]> {
         const whereClause: any = {};
         if (filters?.gender) {
             whereClause.gender = { equals: filters.gender, mode: 'insensitive' };
@@ -39,8 +39,13 @@ export class UserRepository implements IUserRepository {
             whereClause.status = filters.status;
         }
 
+        if (filters?.ids && filters.ids.length > 0) {
+            whereClause.id = { in: filters.ids };
+        }
+
         return prisma.user.findMany({
             where: whereClause,
+            take: filters?.limit,
             select: {
                 id: true,
                 first_name: true,

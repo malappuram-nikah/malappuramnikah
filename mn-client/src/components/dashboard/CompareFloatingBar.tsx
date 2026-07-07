@@ -21,7 +21,7 @@ export default function CompareFloatingBar() {
     const fetchProfiles = async () => {
       try {
         const storedToken = localStorage.getItem("mn_token");
-        const res = await fetch("http://localhost:3333/user/profiles", {
+        const res = await fetch(`http://localhost:3333/user/profiles?ids=${compareIds.join(",")}`, {
           headers: storedToken ? { "Authorization": `Bearer ${storedToken}` } : {}
         });
         const data = await res.json();

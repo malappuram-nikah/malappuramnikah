@@ -82,6 +82,18 @@ export class SearchController {
             safeUser.profile_details.mn_voice_intro_draft.voice.dataUrl = "TRUNCATED_FOR_LISTING";
           }
         }
+
+        // Premium Restriction: If requester is not premium, mask last name and blur photos
+        if (!isPremiumUser) {
+          if (safeUser.last_name) {
+            safeUser.last_name = safeUser.last_name.charAt(0) + "***";
+          }
+          if (safeUser.profile_details?.mn_profile_photos_draft?.photos) {
+            // Add a blurred flag to instruct the frontend to blur these images
+            safeUser.profile_details.mn_profile_photos_draft.isBlurred = true;
+          }
+        }
+
         return safeUser;
       });
 

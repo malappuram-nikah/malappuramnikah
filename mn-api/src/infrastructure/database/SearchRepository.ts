@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -48,192 +48,149 @@ export class SearchRepository {
     const limit = filters.limit || 20;
     const offset = (page - 1) * limit;
 
-    let whereClauses: string[] = [];
-    const values: any[] = [];
-    let paramIndex = 1;
+    const conditions: Prisma.Sql[] = [];
 
     // Exclude current user
-    whereClauses.push(`u.id != $${paramIndex++}`);
-    values.push(currentUserId);
+    conditions.push(Prisma.sql`u.id != ${currentUserId}`);
+
+    // Active profiles only
+    conditions.push(Prisma.sql`u.status = 'active'`);
 
     // Filter opposite gender
     if (filters.gender) {
-      whereClauses.push(`LOWER(u.gender) = LOWER($${paramIndex++})`);
-      values.push(filters.gender);
+      conditions.push(Prisma.sql`LOWER(u.gender) = LOWER(${filters.gender})`);
     }
-
-    // Active profiles only
-    whereClauses.push(`u.status = 'active'`);
 
     // Basic Filters (Direct DB Columns)
     if (filters.verified) {
-      whereClauses.push(`u.kyc_status = 'VERIFIED'`);
+      conditions.push(Prisma.sql`u.kyc_status = 'VERIFIED'`);
     }
 
     if (filters.community && filters.community.length > 0) {
-      const placeholders = filters.community.map(() => `$${paramIndex++}`).join(", ");
-      whereClauses.push(`u.cast IN (${placeholders})`);
-      values.push(...filters.community);
+      conditions.push(Prisma.sql`u.cast IN (${Prisma.join(filters.community)})`);
     }
 
     if (filters.recentLogin) {
-      whereClauses.push(`u.last_login >= NOW() - INTERVAL '7 days'`);
+      conditions.push(Prisma.sql`u.last_login >= NOW() - INTERVAL '7 days'`);
     }
 
     if (filters.recentRegistration) {
-      whereClauses.push(`u.created_at >= NOW() - INTERVAL '7 days'`);
+      conditions.push(Prisma.sql`u.created_at >= NOW() - INTERVAL '7 days'`);
     }
 
     if (filters.hideInterested) {
-      whereClauses.push(`u.id NOT IN (SELECT receiver_id FROM "interest" WHERE sender_id = $${paramIndex++})`);
-      values.push(currentUserId);
+      conditions.push(Prisma.sql`u.id NOT IN (SELECT receiver_id FROM "interest" WHERE sender_id = ${currentUserId})`);
     }
 
     if (filters.hideViewed) {
-      whereClauses.push(`u.id NOT IN (SELECT viewed_id FROM "profile_view" WHERE viewer_id = $${paramIndex++})`);
-      values.push(currentUserId);
+      conditions.push(Prisma.sql`u.id NOT IN (SELECT viewed_id FROM "profile_view" WHERE viewer_id = ${currentUserId})`);
     }
 
     // JSON Filters (profile_details)
     // Age
     if (filters.ageMin !== undefined) {
-      whereClauses.push(`CAST(u.profile_details->'mn_basic_details_draft'->>'age' AS INTEGER) >= $${paramIndex++}`);
-      values.push(filters.ageMin);
+      conditions.push(Prisma.sql`CAST(u.profile_details->'mn_basic_details_draft'->>'age' AS INTEGER) >= ${filters.ageMin}`);
     }
     if (filters.ageMax !== undefined) {
-      whereClauses.push(`CAST(u.profile_details->'mn_basic_details_draft'->>'age' AS INTEGER) <= $${paramIndex++}`);
-      values.push(filters.ageMax);
+      conditions.push(Prisma.sql`CAST(u.profile_details->'mn_basic_details_draft'->>'age' AS INTEGER) <= ${filters.ageMax}`);
     }
 
     // Height
     if (filters.heightMin !== undefined) {
-      whereClauses.push(`CAST(u.profile_details->'mn_basic_details_draft'->>'height' AS INTEGER) >= $${paramIndex++}`);
-      values.push(filters.heightMin);
+      conditions.push(Prisma.sql`CAST(u.profile_details->'mn_basic_details_draft'->>'height' AS INTEGER) >= ${filters.heightMin}`);
     }
     if (filters.heightMax !== undefined) {
-      whereClauses.push(`CAST(u.profile_details->'mn_basic_details_draft'->>'height' AS INTEGER) <= $${paramIndex++}`);
-      values.push(filters.heightMax);
+      conditions.push(Prisma.sql`CAST(u.profile_details->'mn_basic_details_draft'->>'height' AS INTEGER) <= ${filters.heightMax}`);
     }
 
     // Marital Status
     if (filters.maritalStatus && filters.maritalStatus.length > 0) {
-      const placeholders = filters.maritalStatus.map(() => `$${paramIndex++}`).join(", ");
-      whereClauses.push(`u.profile_details->'mn_basic_details_draft'->>'maritalStatus' IN (${placeholders})`);
-      values.push(...filters.maritalStatus);
+      conditions.push(Prisma.sql`u.profile_details->'mn_basic_details_draft'->>'maritalStatus' IN (${Prisma.join(filters.maritalStatus)})`);
     }
 
     // District
     if (filters.district && filters.district.length > 0) {
-      const placeholders = filters.district.map(() => `$${paramIndex++}`).join(", ");
-      whereClauses.push(`u.profile_details->'mn_basic_details_draft'->>'location' IN (${placeholders})`);
-      values.push(...filters.district);
+      conditions.push(Prisma.sql`u.profile_details->'mn_basic_details_draft'->>'location' IN (${Prisma.join(filters.district)})`);
     }
 
     // Education
     if (filters.education && filters.education.length > 0) {
-      const placeholders = filters.education.map(() => `$${paramIndex++}`).join(", ");
-      whereClauses.push(`u.profile_details->'mn_professional_info_draft'->>'highestEducation' IN (${placeholders})`);
-      values.push(...filters.education);
+      conditions.push(Prisma.sql`u.profile_details->'mn_professional_info_draft'->>'highestEducation' IN (${Prisma.join(filters.education)})`);
     }
 
     // Profession
     if (filters.profession && filters.profession.length > 0) {
-      const placeholders = filters.profession.map(() => `$${paramIndex++}`).join(", ");
-      whereClauses.push(`u.profile_details->'mn_professional_info_draft'->>'profession' IN (${placeholders})`);
-      values.push(...filters.profession);
+      conditions.push(Prisma.sql`u.profile_details->'mn_professional_info_draft'->>'profession' IN (${Prisma.join(filters.profession)})`);
     }
 
     // Premium Filters
     if (filters.isPremiumUser) {
       if (filters.familyStatus && filters.familyStatus.length > 0) {
-        const placeholders = filters.familyStatus.map(() => `$${paramIndex++}`).join(", ");
-        whereClauses.push(`u.profile_details->'mn_family_details_draft'->>'familyStatus' IN (${placeholders})`);
-        values.push(...filters.familyStatus);
+        conditions.push(Prisma.sql`u.profile_details->'mn_family_details_draft'->>'familyStatus' IN (${Prisma.join(filters.familyStatus)})`);
       }
       if (filters.financialStatus && filters.financialStatus.length > 0) {
-        const placeholders = filters.financialStatus.map(() => `$${paramIndex++}`).join(", ");
-        whereClauses.push(`u.profile_details->'mn_family_details_draft'->>'financialStatus' IN (${placeholders})`);
-        values.push(...filters.financialStatus);
+        conditions.push(Prisma.sql`u.profile_details->'mn_family_details_draft'->>'financialStatus' IN (${Prisma.join(filters.financialStatus)})`);
       }
       if (filters.professionType && filters.professionType.length > 0) {
-        const placeholders = filters.professionType.map(() => `$${paramIndex++}`).join(", ");
-        whereClauses.push(`u.profile_details->'mn_professional_info_draft'->>'professionType' IN (${placeholders})`);
-        values.push(...filters.professionType);
+        conditions.push(Prisma.sql`u.profile_details->'mn_professional_info_draft'->>'professionType' IN (${Prisma.join(filters.professionType)})`);
       }
       if (filters.bodyType && filters.bodyType.length > 0) {
-        const placeholders = filters.bodyType.map(() => `$${paramIndex++}`).join(", ");
-        whereClauses.push(`u.profile_details->'mn_basic_details_draft'->>'bodyType' IN (${placeholders})`);
-        values.push(...filters.bodyType);
+        conditions.push(Prisma.sql`u.profile_details->'mn_basic_details_draft'->>'bodyType' IN (${Prisma.join(filters.bodyType)})`);
       }
       if (filters.ethnicity && filters.ethnicity.length > 0) {
-        const placeholders = filters.ethnicity.map(() => `$${paramIndex++}`).join(", ");
-        whereClauses.push(`u.profile_details->'mn_religious_info_draft'->>'ethnicity' IN (${placeholders})`);
-        values.push(...filters.ethnicity);
+        conditions.push(Prisma.sql`u.profile_details->'mn_religious_info_draft'->>'ethnicity' IN (${Prisma.join(filters.ethnicity)})`);
       }
       if (filters.eatingHabits && filters.eatingHabits.length > 0) {
-        const placeholders = filters.eatingHabits.map(() => `$${paramIndex++}`).join(", ");
-        whereClauses.push(`u.profile_details->'mn_basic_details_draft'->>'eatingHabits' IN (${placeholders})`);
-        values.push(...filters.eatingHabits);
+        conditions.push(Prisma.sql`u.profile_details->'mn_basic_details_draft'->>'eatingHabits' IN (${Prisma.join(filters.eatingHabits)})`);
       }
       if (filters.drinkingHabits && filters.drinkingHabits.length > 0) {
-        const placeholders = filters.drinkingHabits.map(() => `$${paramIndex++}`).join(", ");
-        whereClauses.push(`u.profile_details->'mn_basic_details_draft'->>'drinkingHabits' IN (${placeholders})`);
-        values.push(...filters.drinkingHabits);
+        conditions.push(Prisma.sql`u.profile_details->'mn_basic_details_draft'->>'drinkingHabits' IN (${Prisma.join(filters.drinkingHabits)})`);
       }
       if (filters.religiousness && filters.religiousness.length > 0) {
-        const placeholders = filters.religiousness.map(() => `$${paramIndex++}`).join(", ");
-        whereClauses.push(`u.profile_details->'mn_religious_info_draft'->>'religiousness' IN (${placeholders})`);
-        values.push(...filters.religiousness);
+        conditions.push(Prisma.sql`u.profile_details->'mn_religious_info_draft'->>'religiousness' IN (${Prisma.join(filters.religiousness)})`);
       }
       if (filters.prayer) {
-        whereClauses.push(`u.profile_details->'mn_religious_info_draft'->>'namaz' = $${paramIndex++}`);
-        values.push(filters.prayer);
+        conditions.push(Prisma.sql`u.profile_details->'mn_religious_info_draft'->>'namaz' = ${filters.prayer}`);
       }
       if (filters.hijab) {
-        whereClauses.push(`u.profile_details->'mn_religious_info_draft'->>'hijab' = $${paramIndex++}`);
-        values.push(filters.hijab);
+        conditions.push(Prisma.sql`u.profile_details->'mn_religious_info_draft'->>'hijab' = ${filters.hijab}`);
       }
       if (filters.beard) {
-        whereClauses.push(`u.profile_details->'mn_religious_info_draft'->>'beard' = $${paramIndex++}`);
-        values.push(filters.beard);
+        conditions.push(Prisma.sql`u.profile_details->'mn_religious_info_draft'->>'beard' = ${filters.beard}`);
       }
     }
 
+    const whereClause = conditions.length > 0 ? Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}` : Prisma.empty;
+
     // Sorting
-    let orderByClause = `ORDER BY u.created_at DESC`;
+    let orderByClause = Prisma.sql`ORDER BY u.created_at DESC`;
     if (filters.sortBy === "recently_active") {
-      orderByClause = `ORDER BY u.last_login DESC NULLS LAST, u.created_at DESC`;
+      orderByClause = Prisma.sql`ORDER BY u.last_login DESC NULLS LAST, u.created_at DESC`;
     } else if (filters.sortBy === "premium_first") {
-      orderByClause = `ORDER BY u.is_premium DESC, u.created_at DESC`;
+      orderByClause = Prisma.sql`ORDER BY u.is_premium DESC, u.created_at DESC`;
     } else if (filters.sortBy === "age_asc") {
-      orderByClause = `ORDER BY CAST(u.profile_details->'mn_basic_details_draft'->>'age' AS INTEGER) ASC NULLS LAST`;
+      orderByClause = Prisma.sql`ORDER BY CAST(u.profile_details->'mn_basic_details_draft'->>'age' AS INTEGER) ASC NULLS LAST`;
     }
 
-    const whereString = whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
-
-    const query = `
+    const query = Prisma.sql`
       SELECT u.id, u.first_name, u.last_name, u.gender, u.cast, u.location, 
              u.status, u.is_premium, u.kyc_status, u.last_login, u.profile_details, u.created_at
       FROM "user" u
-      ${whereString}
+      ${whereClause}
       ${orderByClause}
-      LIMIT $${paramIndex++} OFFSET $${paramIndex++}
+      LIMIT ${limit} OFFSET ${offset}
     `;
 
-    values.push(limit, offset);
-
-    const countQuery = `
+    const countQuery = Prisma.sql`
       SELECT COUNT(*) as total
       FROM "user" u
-      ${whereString}
+      ${whereClause}
     `;
-
-    const countValues = values.slice(0, values.length - 2); // Exclude LIMIT and OFFSET
 
     try {
       const [users, totalResult] = await Promise.all([
-        prisma.$queryRawUnsafe(query, ...values) as Promise<any[]>,
-        prisma.$queryRawUnsafe(countQuery, ...countValues) as Promise<any[]>
+        prisma.$queryRaw(query) as Promise<any[]>,
+        prisma.$queryRaw(countQuery) as Promise<any[]>
       ]);
 
       const total = Number(totalResult[0]?.total || 0);
