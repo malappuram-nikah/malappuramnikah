@@ -1,14 +1,14 @@
 import React from "react";
 
-export function CardGridSkeleton({ count = 4 }: { count?: number }) {
+export function CardGridSkeleton({ count = 4, className }: { count?: number; className?: string }) {
   return (
-    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+    <div className={className || "grid sm:grid-cols-2 lg:grid-cols-4 gap-5"}>
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="bg-white rounded-xl overflow-hidden border border-gray-100 p-0 flex flex-col justify-between shadow-xs animate-pulse"
+          className="bg-white rounded-lg overflow-hidden border border-gray-100 p-0 flex flex-col justify-between shadow-xs animate-pulse"
         >
-          <div className="relative h-44 bg-gray-100/85" />
+          <div className="relative h-48 bg-gray-100/85" />
           <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
             <div className="space-y-2">
               <div className="h-4 bg-gray-200 rounded-md w-3/4" />
@@ -16,7 +16,6 @@ export function CardGridSkeleton({ count = 4 }: { count?: number }) {
               <div className="h-3 bg-gray-150 rounded-md w-1/3" />
             </div>
             <div className="flex gap-2 pt-2">
-              <div className="flex-1 h-8 bg-gray-150 rounded-lg" />
               <div className="flex-1 h-8 bg-gray-150 rounded-lg" />
             </div>
           </div>

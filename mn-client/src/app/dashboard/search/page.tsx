@@ -9,7 +9,7 @@ import { useUser } from "@/context/UserContext";
 import { getEnrichedProfile } from "@/lib/profile-utils";
 
 import ProfileSlideOver from "@/components/dashboard/ProfileSlideOver";
-import { CardListSkeleton } from "@/components/dashboard/Skeleton";
+import { CardGridSkeleton } from "@/components/dashboard/Skeleton";
 import FilterSidebar from "@/components/search/FilterSidebar";
 
 export default function SearchPage() {
@@ -23,7 +23,9 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(true);
   
   const [filters, setFilters] = useState<any>({});
+  const [appliedFilters, setAppliedFilters] = useState<any>({});
   const [keyword, setKeyword] = useState("");
+  const [appliedKeyword, setAppliedKeyword] = useState("");
   const [page, setPage] = useState(1);
   const [hasNext, setHasNext] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -56,6 +58,7 @@ export default function SearchPage() {
     if (currentUser?.search_preferences) {
       try {
         setFilters(currentUser.search_preferences);
+        setAppliedFilters(currentUser.search_preferences);
       } catch(e) {}
     }
   }, [currentUser]);
@@ -94,10 +97,10 @@ export default function SearchPage() {
       const params = new URLSearchParams();
       params.append("page", String(isLoadMore ? page + 1 : 1));
       params.append("limit", "12");
-      if (keyword) params.append("keyword", keyword);
+      if (appliedKeyword) params.append("keyword", appliedKeyword);
 
       // Append all filters
-      Object.entries(filters).forEach(([key, value]) => {
+      Object.entries(appliedFilters).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== "") {
           if (Array.isArray(value)) {
             if (value.length > 0) params.append(key, value.join(","));
@@ -149,7 +152,7 @@ export default function SearchPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [filters, keyword, page, interests.sent.length]);
+  }, [appliedFilters, appliedKeyword, page, interests.sent.length]);
 
   // Save Preferences to API
   const savePreferences = async (newFilters: any) => {
@@ -167,21 +170,21 @@ export default function SearchPage() {
   };
 
   useEffect(() => {
-    // Debounce initial load slightly to allow filters to be set from currentUser
+    // Debounce load slightly
     const t = setTimeout(() => {
       fetchProfiles();
     }, 100);
     return () => clearTimeout(t);
-  }, [fetchProfiles]); // Fetch automatically runs on filter change due to dependency
+  }, [fetchProfiles]); // Fetch automatically runs only when appliedFilters or appliedKeyword changes
 
   const handleApplyFilters = () => {
     savePreferences(filters);
-    fetchProfiles();
+    setAppliedFilters(filters);
   };
 
   const handleSearchKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
-      fetchProfiles();
+      setAppliedKeyword(keyword);
     }
   };
 
@@ -204,8 +207,8 @@ export default function SearchPage() {
     }
   };
 
-  const activeFiltersCount = Object.keys(filters).filter(k => {
-    const v = filters[k];
+  const activeFiltersCount = Object.keys(appliedFilters).filter(k => {
+    const v = appliedFilters[k];
     if (Array.isArray(v)) return v.length > 0;
     return v !== undefined && v !== null && v !== "" && v !== false;
   }).length;
@@ -248,20 +251,20 @@ export default function SearchPage() {
           {/* Header & Global Search */}
           <div className="flex flex-col sm:flex-row gap-3 items-center z-20">
             <div className="relative flex-1 w-full">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
                 onKeyDown={handleSearchKeyPress}
                 placeholder="Search by name, profession, or location..."
-                className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm shadow-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all"
+                className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm shadow-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all"
               />
             </div>
             
             <button
               onClick={() => setShowFilters(true)}
-              className="lg:hidden w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl shadow-sm hover:bg-gray-50 transition-colors"
+              className="lg:hidden w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 font-medium text-sm rounded-lg shadow-sm hover:bg-gray-50 transition-colors"
             >
               <SlidersHorizontal className="w-4 h-4" />
               Filters
@@ -277,7 +280,7 @@ export default function SearchPage() {
           {activeFiltersCount > 0 && (
             <div className="flex flex-wrap gap-2 items-center px-1">
               <span className="text-xs font-semibold text-gray-500">Active Filters:</span>
-              {Object.entries(filters).map(([k, v]) => {
+              {Object.entries(appliedFilters).map(([k, v]) => {
                 if (v === undefined || v === null || v === "" || v === false) return null;
                 if (Array.isArray(v) && v.length === 0) return null;
                 const label = Array.isArray(v) ? v.join(", ") : String(v);
@@ -286,15 +289,15 @@ export default function SearchPage() {
                     <span className="capitalize">{k}:</span>
                     <span className="text-gray-900 truncate max-w-[150px]">{label}</span>
                     <button onClick={() => {
-                      const newF = { ...filters }; delete newF[k];
+                      const newF = { ...appliedFilters }; delete newF[k];
                       setFilters(newF);
+                      setAppliedFilters(newF);
                       savePreferences(newF);
-                      setTimeout(() => fetchProfiles(), 50);
                     }} className="ml-1 hover:text-brand-900"><X className="w-3 h-3" /></button>
                   </div>
                 );
               })}
-              <button onClick={() => { setFilters({}); savePreferences({}); setTimeout(() => fetchProfiles(), 50); }} className="text-xs font-semibold text-red-500 hover:text-red-600 ml-2">
+              <button onClick={() => { setFilters({}); setAppliedFilters({}); savePreferences({}); }} className="text-xs font-semibold text-red-500 hover:text-red-600 ml-2">
                 Clear All
               </button>
             </div>
@@ -302,7 +305,7 @@ export default function SearchPage() {
 
           {/* Results Grid */}
           {loading ? (
-            <CardListSkeleton />
+            <CardGridSkeleton count={6} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" />
           ) : profiles.length === 0 ? (
             <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center shadow-sm">
               <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -312,7 +315,7 @@ export default function SearchPage() {
               <p className="text-sm text-gray-500 max-w-xs mx-auto mb-5">
                 We couldn't find any profiles matching your filters. Try broadening your search.
               </p>
-              <button onClick={() => { setFilters({}); setKeyword(""); setTimeout(() => fetchProfiles(), 50); }} className="px-5 py-2 text-sm bg-brand-50 text-brand-700 font-bold rounded-xl hover:bg-brand-100 transition-colors">
+              <button onClick={() => { setFilters({}); setAppliedFilters({}); setKeyword(""); setAppliedKeyword(""); }} className="px-5 py-2 text-sm bg-brand-50 text-brand-700 font-bold rounded-xl hover:bg-brand-100 transition-colors">
                 Clear Filters
               </button>
             </div>
@@ -325,9 +328,9 @@ export default function SearchPage() {
                   <div 
                     key={p.id} 
                     onClick={() => setSelectedProfile(p)}
-                    className="group bg-white rounded-2xl border border-gray-200 overflow-hidden cursor-pointer hover:shadow-xl hover:border-brand-300 transition-all duration-300 flex flex-col"
+                    className="group bg-white rounded-lg border border-gray-200 overflow-hidden cursor-pointer hover:shadow-md hover:border-brand-300 transition-all duration-300 flex flex-col"
                   >
-                    <div className="relative h-56 bg-gray-100 overflow-hidden">
+                    <div className="relative h-48 bg-gray-100 overflow-hidden">
                       <img src={p.img || "/placeholder.jpg"} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                       {p.is_premium && (
                         <div className="absolute top-3 left-3 bg-amber-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider shadow-sm">
@@ -340,16 +343,16 @@ export default function SearchPage() {
                         </div>
                       )}
                     </div>
-                    <div className="p-5 flex-1 flex flex-col">
+                    <div className="p-4 flex-1 flex flex-col">
                       <div className="mb-4">
-                        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                        <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
                           {p.name}
-                          {p.is_online && <span className="w-2.5 h-2.5 bg-green-500 rounded-full" title="Online now" />}
+                          {p.is_online && <span className="w-2 h-2 bg-green-500 rounded-full" title="Online now" />}
                         </h3>
-                        <p className="text-sm text-gray-500 font-medium mt-0.5">{p.age} Yrs • {p.height} cm</p>
+                        <p className="text-xs text-gray-500 font-medium mt-0.5">{p.age} Yrs • {p.height} cm</p>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-xs text-gray-600 mb-6 flex-1">
+                      <div className="grid grid-cols-2 gap-y-2 gap-x-3 text-[11px] text-gray-600 mb-5 flex-1">
                         <div className="flex flex-col gap-0.5">
                           <span className="text-gray-400 font-medium">Education</span>
                           <span className="font-semibold text-gray-800 truncate">{p.education || "Not specified"}</span>
@@ -371,7 +374,7 @@ export default function SearchPage() {
                       <button 
                         onClick={(e) => { e.stopPropagation(); handleToggleInterest(p.id); }}
                         disabled={isSent || isMutual}
-                        className={`w-full py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+                        className={`w-full py-2 rounded-lg font-semibold text-xs transition-all flex items-center justify-center gap-2 ${
                           isMutual ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
                           isSent ? 'bg-gray-50 text-gray-400 border border-gray-100 cursor-not-allowed' :
                           'bg-brand-50 text-brand-600 hover:bg-brand-600 hover:text-white border border-brand-100 hover:border-brand-600'

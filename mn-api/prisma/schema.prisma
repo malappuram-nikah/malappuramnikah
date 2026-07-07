@@ -48,6 +48,8 @@ model User {
   sent_messages      Message[]  @relation("SentMessages")
   received_messages  Message[]  @relation("ReceivedMessages")
   feedbacks          Feedback[]
+  views_sent         ProfileView[] @relation("Viewer")
+  views_received     ProfileView[] @relation("Viewed")
 
   @@map("user")
 }
@@ -189,4 +191,17 @@ model Feedback {
   user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@map("feedback")
+}
+
+model ProfileView {
+  id         Int      @id @default(autoincrement())
+  viewer_id  Int
+  viewed_id  Int
+  created_at DateTime @default(now())
+
+  viewer     User     @relation("Viewer", fields: [viewer_id], references: [id], onDelete: Cascade)
+  viewed     User     @relation("Viewed", fields: [viewed_id], references: [id], onDelete: Cascade)
+
+  @@unique([viewer_id, viewed_id])
+  @@map("profile_view")
 }

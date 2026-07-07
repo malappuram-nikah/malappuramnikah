@@ -34,6 +34,10 @@ export class SearchController {
         online: req.query.online === "true",
         keyword: req.query.keyword as string,
         sortBy: req.query.sortBy as string,
+        recentLogin: req.query.recentLogin === "true",
+        recentRegistration: req.query.recentRegistration === "true",
+        hideViewed: req.query.hideViewed === "true",
+        hideInterested: req.query.hideInterested === "true",
       };
 
       // Ensure they only search for opposite gender unless specified otherwise (or admin)
@@ -53,6 +57,14 @@ export class SearchController {
 
       // Premium Arrays
       if (req.query.familyStatus) filters.familyStatus = (req.query.familyStatus as string).split(",");
+      if (req.query.financialStatus) filters.financialStatus = (req.query.financialStatus as string).split(",");
+      if (req.query.professionType) filters.professionType = (req.query.professionType as string).split(",");
+      if (req.query.bodyType) filters.bodyType = (req.query.bodyType as string).split(",");
+      if (req.query.ethnicity) filters.ethnicity = (req.query.ethnicity as string).split(",");
+      if (req.query.eatingHabits) filters.eatingHabits = (req.query.eatingHabits as string).split(",");
+      if (req.query.drinkingHabits) filters.drinkingHabits = (req.query.drinkingHabits as string).split(",");
+      if (req.query.religiousness) filters.religiousness = (req.query.religiousness as string).split(",");
+      
       if (req.query.prayer) filters.prayer = req.query.prayer as string;
       if (req.query.hijab) filters.hijab = req.query.hijab as string;
       if (req.query.beard) filters.beard = req.query.beard as string;

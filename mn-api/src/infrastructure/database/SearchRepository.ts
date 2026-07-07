@@ -22,8 +22,20 @@ export interface SearchFilters {
   online?: boolean;
   keyword?: string;
   sortBy?: string;
+  // New basic filters
+  recentLogin?: boolean;
+  recentRegistration?: boolean;
+  hideViewed?: boolean;
+  hideInterested?: boolean;
   // Premium filters
   familyStatus?: string[];
+  financialStatus?: string[];
+  professionType?: string[];
+  bodyType?: string[];
+  ethnicity?: string[];
+  eatingHabits?: string[];
+  drinkingHabits?: string[];
+  religiousness?: string[];
   prayer?: string;
   hijab?: string;
   beard?: string;
@@ -62,6 +74,24 @@ export class SearchRepository {
       const placeholders = filters.community.map(() => `$${paramIndex++}`).join(", ");
       whereClauses.push(`u.cast IN (${placeholders})`);
       values.push(...filters.community);
+    }
+
+    if (filters.recentLogin) {
+      whereClauses.push(`u.last_login >= NOW() - INTERVAL '7 days'`);
+    }
+
+    if (filters.recentRegistration) {
+      whereClauses.push(`u.created_at >= NOW() - INTERVAL '7 days'`);
+    }
+
+    if (filters.hideInterested) {
+      whereClauses.push(`u.id NOT IN (SELECT receiver_id FROM "interest" WHERE sender_id = $${paramIndex++})`);
+      values.push(currentUserId);
+    }
+
+    if (filters.hideViewed) {
+      whereClauses.push(`u.id NOT IN (SELECT viewed_id FROM "profile_view" WHERE viewer_id = $${paramIndex++})`);
+      values.push(currentUserId);
     }
 
     // JSON Filters (profile_details)
@@ -119,6 +149,41 @@ export class SearchRepository {
         const placeholders = filters.familyStatus.map(() => `$${paramIndex++}`).join(", ");
         whereClauses.push(`u.profile_details->'mn_family_details_draft'->>'familyStatus' IN (${placeholders})`);
         values.push(...filters.familyStatus);
+      }
+      if (filters.financialStatus && filters.financialStatus.length > 0) {
+        const placeholders = filters.financialStatus.map(() => `$${paramIndex++}`).join(", ");
+        whereClauses.push(`u.profile_details->'mn_family_details_draft'->>'financialStatus' IN (${placeholders})`);
+        values.push(...filters.financialStatus);
+      }
+      if (filters.professionType && filters.professionType.length > 0) {
+        const placeholders = filters.professionType.map(() => `$${paramIndex++}`).join(", ");
+        whereClauses.push(`u.profile_details->'mn_professional_info_draft'->>'professionType' IN (${placeholders})`);
+        values.push(...filters.professionType);
+      }
+      if (filters.bodyType && filters.bodyType.length > 0) {
+        const placeholders = filters.bodyType.map(() => `$${paramIndex++}`).join(", ");
+        whereClauses.push(`u.profile_details->'mn_basic_details_draft'->>'bodyType' IN (${placeholders})`);
+        values.push(...filters.bodyType);
+      }
+      if (filters.ethnicity && filters.ethnicity.length > 0) {
+        const placeholders = filters.ethnicity.map(() => `$${paramIndex++}`).join(", ");
+        whereClauses.push(`u.profile_details->'mn_religious_info_draft'->>'ethnicity' IN (${placeholders})`);
+        values.push(...filters.ethnicity);
+      }
+      if (filters.eatingHabits && filters.eatingHabits.length > 0) {
+        const placeholders = filters.eatingHabits.map(() => `$${paramIndex++}`).join(", ");
+        whereClauses.push(`u.profile_details->'mn_basic_details_draft'->>'eatingHabits' IN (${placeholders})`);
+        values.push(...filters.eatingHabits);
+      }
+      if (filters.drinkingHabits && filters.drinkingHabits.length > 0) {
+        const placeholders = filters.drinkingHabits.map(() => `$${paramIndex++}`).join(", ");
+        whereClauses.push(`u.profile_details->'mn_basic_details_draft'->>'drinkingHabits' IN (${placeholders})`);
+        values.push(...filters.drinkingHabits);
+      }
+      if (filters.religiousness && filters.religiousness.length > 0) {
+        const placeholders = filters.religiousness.map(() => `$${paramIndex++}`).join(", ");
+        whereClauses.push(`u.profile_details->'mn_religious_info_draft'->>'religiousness' IN (${placeholders})`);
+        values.push(...filters.religiousness);
       }
       if (filters.prayer) {
         whereClauses.push(`u.profile_details->'mn_religious_info_draft'->>'namaz' = $${paramIndex++}`);

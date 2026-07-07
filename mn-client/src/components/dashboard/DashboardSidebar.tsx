@@ -124,7 +124,7 @@ export default function DashboardSidebar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all group",
+                  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all group",
                   isActive
                     ? "bg-brand-600 text-white shadow-sm font-semibold"
                     : isAccent

@@ -29,6 +29,7 @@ interface Notification {
 }
 
 import AmbientMusicPlayer from "@/components/dashboard/AmbientMusicPlayer";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useUser } from "@/context/UserContext";
 
 export default function DashboardHeader() {
@@ -62,7 +63,7 @@ export default function DashboardHeader() {
   }, [showPhotosModal, user]);
 
   const calculateCompletionPercent = () => {
-    const draftKeys = [
+    const sections = [
       "mn_basic_details_draft",
       "mn_religious_info_draft",
       "mn_professional_info_draft",
@@ -72,27 +73,35 @@ export default function DashboardHeader() {
       "mn_partner_preferences_draft",
       "mn_profile_photos_draft",
       "mn_video_intro_draft",
-      "mn_voice_intro_draft"
+      "mn_voice_intro_draft",
+      ...(user?.gender?.toLowerCase() === "female" ? [] : ["mn_kyc_status"])
     ];
     let completedCount = 0;
-    draftKeys.forEach(key => {
+    sections.forEach(key => {
       try {
-        const item = localStorage.getItem(key);
-        if (item) {
-          const parsed = JSON.parse(item);
-          if (key === "mn_profile_photos_draft" && (!parsed.photos || parsed.photos.length === 0)) {
-            // not complete
-          } else if (key === "mn_video_intro_draft" && !parsed.video) {
-            // not complete
-          } else if (key === "mn_voice_intro_draft" && !parsed.voice) {
-            // not complete
-          } else {
+        if (key === "mn_kyc_status") {
+          const status = localStorage.getItem("mn_kyc_status");
+          if (status === "VERIFIED") {
             completedCount++;
+          }
+        } else {
+          const item = localStorage.getItem(key);
+          if (item) {
+            const parsed = JSON.parse(item);
+            if (key === "mn_profile_photos_draft" && (!parsed.photos || parsed.photos.length === 0)) {
+              // not complete
+            } else if (key === "mn_video_intro_draft" && !parsed.video) {
+              // not complete
+            } else if (key === "mn_voice_intro_draft" && !parsed.voice) {
+              // not complete
+            } else {
+              completedCount++;
+            }
           }
         }
       } catch (e) {}
     });
-    setCompletionPercent(Math.round((completedCount / draftKeys.length) * 100));
+    setCompletionPercent(Math.round((completedCount / sections.length) * 100));
   };
 
   // Close dropdown on click outside
@@ -249,12 +258,13 @@ export default function DashboardHeader() {
           type="text"
           placeholder="Search profiles..."
           onClick={() => router.push("/dashboard/search")}
-          className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all cursor-pointer"
+          className="w-full bg-gray-50 border border-gray-200 rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all cursor-pointer"
         />
       </div>
 
       {/* Action triggers */}
       <div className="flex items-center gap-4 ml-4 relative" ref={dropdownRef}>
+        <LanguageSwitcher />
         <AmbientMusicPlayer />
         
         {/* Notification Bell with counter */}

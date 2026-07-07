@@ -116,7 +116,7 @@ export default function ProfileBuilderPage() {
             const user = data.user;
             setUser(user);
 
-            // Always clear all profile builder draft keys to prevent stale cached/outdated values
+            // Only clear all profile builder draft keys if the logged in user changed
             const draftKeys = [
               "mn_basic_details_draft",
               "mn_religious_info_draft",
@@ -129,7 +129,12 @@ export default function ProfileBuilderPage() {
               "mn_video_intro_draft",
               "mn_voice_intro_draft"
             ];
-            draftKeys.forEach((key) => localStorage.removeItem(key));
+            
+            const prevUserId = localStorage.getItem("mn_logged_in_user_id");
+            if (prevUserId !== String(userId)) {
+              draftKeys.forEach((key) => localStorage.removeItem(key));
+            }
+            
             localStorage.setItem("mn_logged_in_user_id", String(userId));
 
             // 1. Sync saved profile_details drafts from database back into localStorage

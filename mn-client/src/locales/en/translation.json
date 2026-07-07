@@ -1,0 +1,18 @@
+{
+  "filters": {
+    "title": "Filter Profiles",
+    "clearAll": "Clear All",
+    "applyFilters": "Apply Filters",
+    "basicFilters": "Basic Filters",
+    "premiumFilters": "Premium Filters",
+    "ageRange": "Age Range",
+    "heightRange": "Height Range",
+    "years": "yrs",
+    "cm": "cm"
+  },
+  "header": {
+    "search": "Search profiles...",
+    "notifications": "Notifications",
+    "myProfile": "My Profile"
+  }
+}

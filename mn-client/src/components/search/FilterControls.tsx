@@ -23,7 +23,7 @@ export function RangeSlider({
             value={value[0]} 
             min={min} max={value[1]} 
             onChange={e => onChange([Number(e.target.value), value[1]])} 
-            className="w-full px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-center focus:bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all" 
+            className="w-full px-2 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-center focus:bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all" 
           />
         </div>
         <span className="text-gray-400 font-medium text-sm">to</span>
@@ -33,7 +33,7 @@ export function RangeSlider({
             value={value[1]} 
             min={value[0]} max={max} 
             onChange={e => onChange([value[0], Number(e.target.value)])} 
-            className="w-full px-2 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-center focus:bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all" 
+            className="w-full px-2 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-center focus:bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all" 
           />
         </div>
       </div>
@@ -71,7 +71,7 @@ export function MultiSelect({
       <div className="relative">
         <button 
           onClick={() => !disabled && setOpen(!open)}
-          className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm hover:bg-gray-100 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
+          className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm hover:bg-gray-100 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
         >
           <span className={selected.length ? "text-gray-900 truncate" : "text-gray-400"}>
             {selected.length ? selected.join(", ") : placeholder}
@@ -83,7 +83,7 @@ export function MultiSelect({
           {open && (
             <motion.div 
               initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
-              className="absolute z-10 w-full mt-1 bg-white border border-gray-100 rounded-xl shadow-lg shadow-gray-200/50 max-h-60 overflow-hidden flex flex-col"
+              className="absolute z-10 w-full mt-1 bg-white border border-gray-100 rounded-lg shadow-lg shadow-gray-200/50 max-h-60 overflow-hidden flex flex-col"
             >
               <div className="p-2 border-b border-gray-50 flex items-center gap-2 text-gray-400">
                 <Search className="w-4 h-4" />
@@ -103,9 +103,9 @@ export function MultiSelect({
                     <div 
                       key={opt}
                       onClick={() => toggle(opt)}
-                      className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer group"
+                      className="flex items-center gap-2 p-2 rounded-md hover:bg-gray-50 cursor-pointer group"
                     >
-                      <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${active ? 'bg-brand-600 border-brand-600 text-white' : 'border-gray-300 group-hover:border-brand-400 text-transparent'}`}>
+                      <div className={`w-4 h-4 rounded-sm border flex items-center justify-center transition-colors ${active ? 'bg-brand-600 border-brand-600 text-white' : 'border-gray-300 group-hover:border-brand-400 text-transparent'}`}>
                         <Check className="w-3 h-3" strokeWidth={3} />
                       </div>
                       <span className={`text-sm ${active ? 'font-medium text-gray-900' : 'text-gray-600'}`}>{opt}</span>

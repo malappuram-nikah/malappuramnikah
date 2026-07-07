@@ -12,6 +12,13 @@ export class SearchService {
     const safeFilters = { ...filters, isPremiumUser };
     if (!isPremiumUser) {
       delete safeFilters.familyStatus;
+      delete safeFilters.financialStatus;
+      delete safeFilters.professionType;
+      delete safeFilters.bodyType;
+      delete safeFilters.ethnicity;
+      delete safeFilters.eatingHabits;
+      delete safeFilters.drinkingHabits;
+      delete safeFilters.religiousness;
       delete safeFilters.prayer;
       delete safeFilters.hijab;
       delete safeFilters.beard;
