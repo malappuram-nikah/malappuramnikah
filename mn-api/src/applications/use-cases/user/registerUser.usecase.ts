@@ -47,7 +47,7 @@ export class RegisterUser {
                     });
 
                     // Check if referred by someone
-                    const refCode = (data as any).referred_by_code;
+                    const refCode = (data as any).referred_by_code?.toUpperCase();
                     if (refCode) {
                         const referrerUser = await prisma.user.findUnique({ where: { referral_code: refCode } });
                         if (referrerUser && referrerUser.id !== existingUser.id) {
@@ -153,7 +153,7 @@ export class RegisterUser {
             }
 
             // Check if referred by someone
-            const refCode = (data as any).referred_by_code;
+            const refCode = (data as any).referred_by_code?.toUpperCase();
             let referrerUser = null;
             if (refCode) {
                 referrerUser = await prisma.user.findUnique({ where: { referral_code: refCode } });
