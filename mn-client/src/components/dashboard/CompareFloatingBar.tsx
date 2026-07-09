@@ -50,7 +50,7 @@ export default function CompareFloatingBar() {
     };
 
     fetchProfiles();
-  }, [compareIds]);
+  }, [compareIds, pathname]);
 
   if (compareIds.length === 0 || pathname === "/dashboard/compare") return null;
 

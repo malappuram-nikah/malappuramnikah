@@ -43,6 +43,11 @@ export default function ChatPage() {
   
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const selectedPeerRef = useRef<PeerProfile | null>(null);
+
+  useEffect(() => {
+    selectedPeerRef.current = selectedPeer;
+  }, [selectedPeer]);
 
   // 1. Initial Authentication & Socket Connection
   useEffect(() => {
@@ -70,9 +75,10 @@ export default function ChatPage() {
           socket.on("private_message", (msg: Message) => {
             setMessages((prev) => {
               // Append only if the message belongs to current selected peer session
+              const currentPeer = selectedPeerRef.current;
               const isCurrentChat =
-                (msg.sender_id === payload.userId && msg.receiver_id === selectedPeer?.id) ||
-                (msg.sender_id === selectedPeer?.id && msg.receiver_id === payload.userId);
+                (msg.sender_id === payload.userId && msg.receiver_id === currentPeer?.id) ||
+                (msg.sender_id === currentPeer?.id && msg.receiver_id === payload.userId);
               
               if (isCurrentChat) {
                 return [...prev, msg];
@@ -81,7 +87,8 @@ export default function ChatPage() {
             });
 
             // If message is from another match, increment their unread counter
-            if (msg.sender_id !== payload.userId && msg.sender_id !== selectedPeer?.id) {
+            const currentPeer = selectedPeerRef.current;
+            if (msg.sender_id !== payload.userId && msg.sender_id !== currentPeer?.id) {
               setUnreadCounts((prev) => ({
                 ...prev,
                 [msg.sender_id]: (prev[msg.sender_id] || 0) + 1
@@ -99,7 +106,7 @@ export default function ChatPage() {
     } else {
       router.push("/login");
     }
-  }, [selectedPeer]);
+  }, []); // <-- Removed selectedPeer dependency! Socket stays connected!
 
   // 2. Fetch Mutual Matches
   useEffect(() => {
@@ -107,18 +114,18 @@ export default function ChatPage() {
 
     const fetchMatches = async () => {
       try {
-        const res = await fetch(`${API_URL}/user/interest`, {
+        const res = await fetch(`${API_URL}/user/interest?type=mutual&page=1&limit=50`, {
           headers: {
             "Authorization": `Bearer ${token}`
           }
         });
         const data = await res.json();
-        if (data.success && data.mutual) {
-          setMatches(data.mutual);
+        if (data.success && data.users) {
+          setMatches(data.users);
           
           // Automatically select first match if present and none is selected
-          if (data.mutual.length > 0 && !selectedPeer) {
-            setSelectedPeer(data.mutual[0]);
+          if (data.users.length > 0 && !selectedPeer) {
+            setSelectedPeer(data.users[0]);
           }
         }
       } catch (err) {

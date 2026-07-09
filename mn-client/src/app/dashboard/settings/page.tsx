@@ -243,8 +243,7 @@ export default function SettingsPage() {
       { key: "mn_habits_draft", name: "Personal Habits", step: 6, suggestion: "Add your lifestyle habits." },
       { key: "mn_partner_preferences_draft", name: "Partner Preferences", step: 7, suggestion: "Complete Partner Preferences to improve matches." },
       { key: "mn_profile_photos_draft", name: "Profile Photos", step: 8, suggestion: "Upload more photos to improve visibility." },
-      { key: "mn_video_intro_draft", name: "Video Onboarding", step: 9, suggestion: "Upload a video intro to stand out." },
-      { key: "mn_voice_intro_draft", name: "Voice Introduction", step: 10, suggestion: "Record a voice intro to boost responses." },
+      { key: "mn_voice_intro_draft", name: "Voice Introduction", step: 9, suggestion: "Record a voice intro to boost responses." },
     ];
 
     let completedCount = 0;

@@ -55,15 +55,15 @@ export default function ReferralDashboardPage() {
     ? `${window.location.origin}/login?ref=${referralCode}` 
     : `http://localhost:3000/login?ref=${referralCode}`;
 
-  const fetchReferralData = async () => {
+  const fetchReferralData = async (signal?: AbortSignal) => {
     try {
       const token = localStorage.getItem("mn_token");
       if (!token) return;
 
       const [statsRes, historyRes, txRes] = await Promise.all([
-        fetch(`${API_URL}/referral/me`, { headers: { "Authorization": `Bearer ${token}` } }),
-        fetch(`${API_URL}/referral/history?limit=20`, { headers: { "Authorization": `Bearer ${token}` } }),
-        fetch(`${API_URL}/referral/transactions?limit=20`, { headers: { "Authorization": `Bearer ${token}` } })
+        fetch(`${API_URL}/referral/me`, { headers: { "Authorization": `Bearer ${token}` }, signal }),
+        fetch(`${API_URL}/referral/history?limit=20`, { headers: { "Authorization": `Bearer ${token}` }, signal }),
+        fetch(`${API_URL}/referral/transactions?limit=20`, { headers: { "Authorization": `Bearer ${token}` }, signal })
       ]);
 
       const [statsData, historyData, txData] = await Promise.all([
@@ -85,7 +85,10 @@ export default function ReferralDashboardPage() {
       if (txData.success) {
         setTransactions(txData.transactions);
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err.name === "AbortError" || err?.message?.toLowerCase().includes("abort")) {
+        return; // Silently ignore deliberate aborts
+      }
       console.error("Error fetching referral details:", err);
     } finally {
       setLoading(false);
@@ -93,7 +96,9 @@ export default function ReferralDashboardPage() {
   };
 
   useEffect(() => {
-    fetchReferralData();
+    const controller = new AbortController();
+    fetchReferralData(controller.signal);
+    return () => controller.abort();
   }, []);
 
   const handleCopyCode = () => {

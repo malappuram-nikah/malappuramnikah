@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense, useRef } from "react";
 import { useCompare } from "@/context/CompareContext";
 import { useUser } from "@/context/UserContext";
 import { getEnrichedProfile, analyzeMatch } from "@/lib/profile-utils";
@@ -42,6 +42,13 @@ function CompareContent() {
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
   const [favIds, setFavIds] = useState<number[]>([]);
   const [interests, setInterests] = useState<number[]>([]);
+  const fetchedIdsRef = useRef<Set<number>>(new Set());
+  const [hasEnteredTable, setHasEnteredTable] = useState(compareIds.length > 0);
+
+  useEffect(() => {
+    if (compareIds.length >= 2) setHasEnteredTable(true);
+    if (compareIds.length === 0) setHasEnteredTable(false);
+  }, [compareIds.length]);
 
   // Load URL parameter comparison IDs if present
   useEffect(() => {
@@ -119,13 +126,14 @@ function CompareContent() {
       }
     };
     fetchData();
-  }, [currentUser]);
+  }, [currentUser?.id]);
 
   // Dynamically fetch full profile details when added to comparison
   useEffect(() => {
     const fetchMissingFullProfiles = async () => {
-      const missingIds = compareIds.filter(id => !fullProfiles.some(p => p.id === id));
+      const missingIds = compareIds.filter(id => !fetchedIdsRef.current.has(id) && !fullProfiles.some(p => p.id === id));
       if (missingIds.length > 0) {
+        missingIds.forEach(id => fetchedIdsRef.current.add(id));
         try {
           const token = localStorage.getItem("mn_token");
           const res = await fetch(`${API_URL}/user/profiles?ids=${missingIds.join(",")}`, {
@@ -365,8 +373,8 @@ function CompareContent() {
         )}
       </div>
 
-      {compareIds.length === 0 ? (
-        <EmptyState allUsers={allUsers} addToCompare={addToCompare} />
+      {!hasEnteredTable ? (
+        <EmptyState allUsers={allUsers} compareIds={compareIds} addToCompare={addToCompare} removeFromCompare={removeFromCompare} setHasEnteredTable={setHasEnteredTable} />
       ) : (
         <div className="bg-white border border-gray-150 rounded-lg overflow-visible shadow-sm">
           {/* Main Side-by-Side Scrolling Grid */}
@@ -1099,7 +1107,19 @@ function CompareSearchSelector({
 }
 
 // Empty state view
-function EmptyState({ allUsers, addToCompare }: { allUsers: any[]; addToCompare: (id: number) => void }) {
+function EmptyState({ 
+  allUsers, 
+  compareIds,
+  addToCompare,
+  removeFromCompare,
+  setHasEnteredTable
+}: { 
+  allUsers: any[]; 
+  compareIds: number[];
+  addToCompare: (id: number) => void; 
+  removeFromCompare: (id: number) => void;
+  setHasEnteredTable: (val: boolean) => void;
+}) {
   return (
     <div className="bg-white border border-gray-150 rounded-xl p-8 text-center max-w-xl mx-auto shadow-md space-y-6">
       <div className="w-16 h-16 bg-brand-50 text-brand-650 rounded-xl flex items-center justify-center mx-auto shadow-inner border border-brand-100">
@@ -1137,8 +1157,11 @@ function EmptyState({ allUsers, addToCompare }: { allUsers: any[]; addToCompare:
                 <label className="relative flex items-center cursor-pointer">
                   <input 
                     type="checkbox" 
-                    checked={false} 
-                    onChange={() => addToCompare(u.id)} 
+                    checked={compareIds.includes(u.id)} 
+                    onChange={(e) => {
+                      if (e.target.checked) addToCompare(u.id);
+                      else removeFromCompare(u.id);
+                    }} 
                     className="peer sr-only"
                   />
                   <div className="w-5 h-5 border-2 border-gray-300 rounded peer-checked:bg-brand-600 peer-checked:border-brand-600 flex items-center justify-center transition-all shadow-sm">
@@ -1155,9 +1178,17 @@ function EmptyState({ allUsers, addToCompare }: { allUsers: any[]; addToCompare:
       )}
 
       <div className="flex justify-center gap-3 pt-2">
+        {compareIds.length > 0 && (
+          <button
+            onClick={() => setHasEnteredTable(true)}
+            className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-[0.98]"
+          >
+            Compare {compareIds.length} Profile{compareIds.length > 1 ? 's' : ''}
+          </button>
+        )}
         <button
           onClick={() => window.location.href = "/dashboard/search"}
-          className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-[0.98]"
+          className={`px-5 py-2.5 ${compareIds.length === 0 ? 'bg-brand-600 hover:bg-brand-700 text-white' : 'bg-white border border-gray-200 hover:bg-gray-50 text-gray-700'} font-bold text-xs rounded-xl shadow-md transition-all active:scale-[0.98]`}
         >
           Search Profiles
         </button>

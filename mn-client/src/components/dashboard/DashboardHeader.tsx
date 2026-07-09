@@ -94,7 +94,6 @@ export default function DashboardHeader() {
       "mn_habits_draft",
       "mn_partner_preferences_draft",
       "mn_profile_photos_draft",
-      "mn_video_intro_draft",
       "mn_voice_intro_draft",
       ...(user?.gender?.toLowerCase() === "female" ? [] : ["mn_kyc_status"]),
     ];
@@ -114,8 +113,6 @@ export default function DashboardHeader() {
               key === "mn_profile_photos_draft" &&
               (!parsed.photos || parsed.photos.length === 0)
             ) {
-              // not complete
-            } else if (key === "mn_video_intro_draft" && !parsed.video) {
               // not complete
             } else if (key === "mn_voice_intro_draft" && !parsed.voice) {
               // not complete

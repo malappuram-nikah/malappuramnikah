@@ -207,6 +207,73 @@ interest_route.get("/", async (req: Request, res: Response) => {
       return;
     }
 
+
+    const type = req.query.type as string;
+    if (type) {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const skip = (page - 1) * limit;
+      
+      const selectUserFields = {
+        id: true,
+        first_name: true,
+        last_name: true,
+        cast: true,
+        location: true,
+        gender: true,
+        dob: true,
+        profile_details: true
+      };
+
+      if (type === "sent") {
+        const interests = await prisma.interest.findMany({
+          where: { sender_id: userId, status: "PENDING" },
+          include: { receiver: { select: selectUserFields } },
+          skip,
+          take: limit + 1, // Fetch one extra to check if hasMore
+          orderBy: { id: 'desc' }
+        });
+        const hasMore = interests.length > limit;
+        const users = interests.slice(0, limit).map(i => ({...i.receiver, interest_status: i.status}));
+        return res.status(200).json({ success: true, users, hasMore });
+      } else if (type === "received") {
+        const interests = await prisma.interest.findMany({
+          where: { receiver_id: userId, status: "PENDING" },
+          include: { sender: { select: selectUserFields } },
+          skip,
+          take: limit + 1,
+          orderBy: { id: 'desc' }
+        });
+        const hasMore = interests.length > limit;
+        const users = interests.slice(0, limit).map(i => ({...i.sender, interest_status: i.status}));
+        return res.status(200).json({ success: true, users, hasMore });
+      } else if (type === "mutual") {
+        const interests = await prisma.interest.findMany({
+          where: {
+            OR: [
+              { sender_id: userId, status: "ACCEPTED" },
+              { receiver_id: userId, status: "ACCEPTED" }
+            ]
+          },
+          include: {
+            sender: { select: selectUserFields },
+            receiver: { select: selectUserFields }
+          },
+          skip,
+          take: limit + 1,
+          orderBy: { id: 'desc' }
+        });
+        const hasMore = interests.length > limit;
+        const rawMutualUsers = interests.slice(0, limit).map(i => {
+          const peer = i.sender_id === userId ? i.receiver : i.sender;
+          return { ...peer, interest_status: i.status };
+        });
+        // Deduplicate peers to protect against bidirectional ACCEPTED rows in the database
+        const uniqueMutualUsers = Array.from(new Map(rawMutualUsers.map(u => [u.id, u])).values());
+        return res.status(200).json({ success: true, users: uniqueMutualUsers, hasMore });
+      }
+    }
+
     if (req.query.idsOnly === "true") {
       const allInterests = await prisma.interest.findMany({
         where: {
@@ -237,11 +304,16 @@ interest_route.get("/", async (req: Request, res: Response) => {
         }
       });
 
+      // Deduplicate arrays (especially mutual) to protect against duplicate database rows
+      const uniqueSent = Array.from(new Map(sent.map(m => [m.id, m])).values());
+      const uniqueReceived = Array.from(new Map(received.map(m => [m.id, m])).values());
+      const uniqueMutual = Array.from(new Map(mutual.map(m => [m.id, m])).values());
+
       res.status(200).json({
         success: true,
-        sent,
-        received,
-        mutual
+        sent: uniqueSent,
+        received: uniqueReceived,
+        mutual: uniqueMutual
       });
       return;
     }

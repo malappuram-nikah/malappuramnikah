@@ -24,7 +24,6 @@ export default function ProfileCompletionTracker() {
       { key: "mn_habits_draft", name: "Hobbies & Habits", suggestion: "Add your lifestyle habits.", step: 6 },
       { key: "mn_partner_preferences_draft", name: "Partner Preferences", suggestion: "Complete Partner Preferences to improve match suggestions.", step: 7 },
       { key: "mn_profile_photos_draft", name: "Profile Photos", suggestion: "Upload more photos to improve profile visibility.", step: 8 },
-      { key: "mn_video_intro_draft", name: "Video Introduction", suggestion: "Upload a video intro to stand out.", step: 9 },
       { key: "mn_voice_intro_draft", name: "Voice Introduction", suggestion: "Record a voice intro to boost responses.", step: 10 },
       ...(user?.gender?.toLowerCase() === "female" ? [] : [
         { key: "mn_kyc_status", name: "Identity Verification", suggestion: "Verify your identity to get the 'ID Verified' badge.", step: 11 }
@@ -48,8 +47,6 @@ export default function ProfileCompletionTracker() {
           if (item) {
             const parsed = JSON.parse(item);
             if (section.key === "mn_profile_photos_draft" && (!parsed.photos || parsed.photos.length === 0)) {
-              missing.push(section);
-            } else if (section.key === "mn_video_intro_draft" && !parsed.video) {
               missing.push(section);
             } else if (section.key === "mn_voice_intro_draft" && !parsed.voice) {
               missing.push(section);

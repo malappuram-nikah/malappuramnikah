@@ -10,7 +10,7 @@ import InterestsStep from "@/components/profile-setup/InterestsStep";
 import HabitsStep from "@/components/profile-setup/HabitsStep";
 import PartnerPreferencesStep from "@/components/profile-setup/PartnerPreferencesStep";
 import ProfilePhotosStep from "@/components/profile-setup/ProfilePhotosStep";
-import VideoIntroStep from "@/components/profile-setup/VideoIntroStep";
+
 import VoiceIntroStep from "@/components/profile-setup/VoiceIntroStep";
 import ReviewStep from "@/components/profile-setup/ReviewStep";
 import IdentityVerificationForm from "@/components/dashboard/IdentityVerificationForm";
@@ -64,7 +64,6 @@ export default function ProfileBuilderPage() {
     "Personal Habits",
     "Partner Preferences",
     "Profile Photos",
-    "Video Onboarding",
     "Voice Introduction",
     "Identity Verification",
     "Final Review",
@@ -78,7 +77,7 @@ export default function ProfileBuilderPage() {
       const stepParam = params.get("step");
       if (stepParam) {
         const parsedStep = parseInt(stepParam, 10);
-        if (!isNaN(parsedStep) && parsedStep >= 1 && parsedStep <= 13) {
+        if (!isNaN(parsedStep) && parsedStep >= 1 && parsedStep <= 12) {
           setCurrentStep(parsedStep);
         }
       } else {
@@ -127,7 +126,6 @@ export default function ProfileBuilderPage() {
               "mn_habits_draft",
               "mn_partner_preferences_draft",
               "mn_profile_photos_draft",
-              "mn_video_intro_draft",
               "mn_voice_intro_draft"
             ];
             
@@ -228,20 +226,16 @@ export default function ProfileBuilderPage() {
     setCurrentStep(9);
   };
 
-  const handleVideoIntroComplete = (data: any) => {
+  const handleVoiceIntroComplete = (data: any) => {
     setCurrentStep(10);
   };
 
-  const handleVoiceIntroComplete = (data: any) => {
+  const handleKycComplete = () => {
     setCurrentStep(11);
   };
 
-  const handleKycComplete = () => {
-    setCurrentStep(12);
-  };
-
   const handleReviewComplete = () => {
-    setCurrentStep(13); // Go to success screen
+    setCurrentStep(12); // Go to success screen
   };
 
   const handleFinish = () => {
@@ -427,39 +421,33 @@ export default function ProfileBuilderPage() {
 
         {currentStep === 9 && (
           <motion.div key="step9" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-            <VideoIntroStep onComplete={handleVideoIntroComplete} onBack={() => setCurrentStep(8)} />
-          </motion.div>
-        )}
-        
-        {currentStep === 10 && (
-          <motion.div key="step10" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-            <VoiceIntroStep onComplete={handleVoiceIntroComplete} onBack={() => setCurrentStep(9)} />
+            <VoiceIntroStep onComplete={handleVoiceIntroComplete} onBack={() => setCurrentStep(8)} />
           </motion.div>
         )}
 
-        {currentStep === 11 && (
-          <motion.div key="step11" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+        {currentStep === 10 && (
+          <motion.div key="step10" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
             <div className="max-w-2xl mx-auto bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
               <IdentityVerificationForm 
                 isWizard={true}
-                onBack={() => setCurrentStep(10)}
+                onBack={() => setCurrentStep(9)}
                 onNext={handleKycComplete}
               />
             </div>
           </motion.div>
         )}
 
-        {currentStep === 12 && (
-          <motion.div key="step12" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+        {currentStep === 11 && (
+          <motion.div key="step11" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
             <ReviewStep 
               onComplete={handleReviewComplete} 
-              onBack={() => setCurrentStep(11)} 
+              onBack={() => setCurrentStep(10)} 
               onEditSection={(step) => setCurrentStep(step)} 
             />
           </motion.div>
         )}
 
-        {currentStep === 13 && (
+        {currentStep === 12 && (
           <motion.div
             key="step13"
             initial={{ opacity: 0, scale: 0.95 }}

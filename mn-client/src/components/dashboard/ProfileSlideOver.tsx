@@ -452,18 +452,6 @@ export default function ProfileSlideOver({
                   </div>
                 )}
 
-                {/* Video Introduction */}
-                {fullUser.video && (
-                  <div className="bg-brand-50/40 border border-brand-100/30 p-3 rounded-xl flex flex-col gap-1">
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-brand-700 flex items-center gap-1.5">
-                      <Video className="w-3.5 h-3.5" /> Video Onboarding
-                    </span>
-                    <div className="relative rounded-lg overflow-hidden aspect-video bg-black mt-0.5">
-                      <video src={fullUser.video} controls className="w-full h-full object-contain" />
-                    </div>
-                  </div>
-                )}
-
                 {/* AI Compatibility */}
                 <div>
                   <h3 className="text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">AI Compatibility Analysis</h3>

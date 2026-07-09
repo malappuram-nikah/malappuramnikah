@@ -1,9 +1,8 @@
 import { Request, Response } from "express";
 import { SearchService } from "../../application/services/SearchService";
 import { getUserIdFromRequest } from "../routes/interest.route";
-import { PrismaClient } from "@prisma/client";
+import prisma from "../../infrastructure/prisma/prisamClient";
 
-const prisma = new PrismaClient();
 const searchService = new SearchService();
 
 export class SearchController {
