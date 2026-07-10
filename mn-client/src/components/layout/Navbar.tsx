@@ -60,7 +60,7 @@ export default function Navbar() {
               onClick={() => setReferralOpen(true)}
               className="text-sm font-medium text-brand-600 hover:text-brand-700 transition-colors"
             >
-              Partner Program
+              Referral Generator
             </button>
             <Link href="/login" className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">
               Log in
@@ -101,7 +101,7 @@ export default function Navbar() {
                   onClick={() => { setMobileMenuOpen(false); setReferralOpen(true); }}
                   className="block w-full text-left px-4 py-3 text-brand-600 font-medium hover:bg-gray-50 rounded-xl transition-colors"
                 >
-                  Partner Program
+                  Referral Generator
                 </button>
                 <Link href="/login" className="block px-4 py-3 text-gray-700 font-medium hover:bg-gray-50 rounded-xl transition-colors">Log in</Link>
                 <button 
