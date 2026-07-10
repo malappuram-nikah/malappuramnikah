@@ -38,6 +38,7 @@ export class RegisterUser {
                             last_name: data.last_name || existingUser.last_name,
                             password: hashedPassword,
                             location: data.location || existingUser.location,
+                            email: data.email || existingUser.email,
                             dob: data.dob || existingUser.dob,
                             cast: data.cast || existingUser.cast,
                             profile_for: data.profile_for || existingUser.profile_for,

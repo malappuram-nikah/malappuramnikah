@@ -19,5 +19,6 @@ export const LOCATIONS = [
   "Tirurangadi",
   "Valanchery",
   "Vengara",
+  "Venniyur",
   "Wandoor"
 ];

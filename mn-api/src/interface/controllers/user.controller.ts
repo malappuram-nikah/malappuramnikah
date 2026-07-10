@@ -3,6 +3,7 @@ import { RegisterUser } from "../../applications/use-cases/user/registerUser.use
 import { LoginUser } from "../../applications/use-cases/user/LoginUser.usecase";
 import { SendOtpUseCase } from "../../applications/use-cases/user/SentOtp.usecase";
 import { UpdateProfileDetailsUseCase } from "../../applications/use-cases/user/UpdateProfileDetails.usecase";
+import { GenerateGuestReferralUseCase } from "../../applications/use-cases/user/GenerateGuestReferral.usecase";
 import { MediaStorageService } from "../../infrastructure/service/MediaStorageService";
 import { getUserIdFromRequest } from "../routes/interest.route";
 import prisma from "../../infrastructure/prisma/prisamClient";
@@ -13,8 +14,24 @@ export class UserController {
     private registerUser: RegisterUser,
     private sendOtp: SendOtpUseCase,
     private getAllUsers: any,
-    private updateProfileDetails: UpdateProfileDetailsUseCase
+    private updateProfileDetails: UpdateProfileDetailsUseCase,
+    private generateGuestReferral: GenerateGuestReferralUseCase
   ) {}
+
+  async generateReferral(req: Request, res: Response) {
+    try {
+      const { name, mobile_number } = req.body;
+      if (!name || !mobile_number) {
+        return res.status(400).json({ success: false, message: "Name and Mobile Number are required" });
+      }
+
+      const referralCode = await this.generateGuestReferral.execute(name, mobile_number);
+      return res.status(200).json({ success: true, referralCode, message: "Referral code generated successfully." });
+    } catch (error: any) {
+      console.error("Generate referral error:", error);
+      return res.status(500).json({ success: false, message: error.message || "Failed to generate referral code" });
+    }
+  }
 
   async register(req: Request, res: Response) {
     console.log(req.body, "re body");

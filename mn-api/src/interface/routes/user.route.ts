@@ -4,6 +4,7 @@ import fs from "fs";
 import { UserController } from "../controllers/user.controller";
 import { UserRepository } from "../../infrastructure/repositories/UserRepository";
 import { LoginUser, RegisterUser } from "../../applications/use-cases";
+import { GenerateGuestReferralUseCase } from "../../applications/use-cases/user/GenerateGuestReferral.usecase";
 import { SendOtpUseCase } from "../../applications/use-cases/user/SentOtp.usecase";
 import { GetAllUsers } from "../../applications/use-cases/user/GetAllUsers.usecase";
 import { OtpRepository } from "../../infrastructure/repositories/OtpRepository";
@@ -24,15 +25,18 @@ const loginUser = new LoginUser(userRepository)
 const sendOtp = new SendOtpUseCase(otpRepository)
 const getAllUsers = new GetAllUsers(userRepository)
 const updateProfileDetails = new UpdateProfileDetailsUseCase(userRepository)
+const generateGuestReferral = new GenerateGuestReferralUseCase()
 const userController = new UserController(
 loginUser,
 registerUser,
 sendOtp,
 getAllUsers,
-updateProfileDetails
+updateProfileDetails,
+generateGuestReferral
 );
 
 user_route.post('/register', async (req: Request, res: Response) => { await userController.register(req, res)});
+user_route.post('/generate-referral-code', async (req: Request, res: Response) => { await userController.generateReferral(req, res)});
 user_route.post('/login',async (req:Request,res:Response) => {await userController.login(req,res)})
 user_route.get('/profiles', async (req: Request, res: Response) => { await userController.getProfiles(req, res)});
 user_route.put('/:id/profile', async (req: Request, res: Response) => { await userController.updateProfile(req, res)});

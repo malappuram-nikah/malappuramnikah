@@ -15,6 +15,7 @@ model User {
   last_name      String
   cast           String
   location       String
+  email          String?   @unique
   mobile_number  String    @unique 
   password       String
   dob            String

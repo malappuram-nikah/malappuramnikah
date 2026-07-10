@@ -26,6 +26,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
     caste: "",
     countryCode: "+91",
     mobile: "",
+    email: "",
     password: "",
     referralCode: "",
   });
@@ -234,6 +235,16 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
               </div>
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email Address (Optional)</label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => updateForm("email", e.target.value)}
+                placeholder="Enter your email"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+              />
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
               <input
                 type="password"
@@ -263,7 +274,9 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
       case 1: return formData.profileFor && formData.gender;
       case 2: return formData.first_name.trim().length >= 2 && formData.last_name.trim().length >= 1 && formData.dateOfBirth;
       case 3: return formData.location && formData.caste;
-      case 4: return formData.mobile.length >= 8 && formData.password.length >= 6;
+      case 4: 
+        const isEmailValid = !formData.email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
+        return formData.mobile.length >= 8 && formData.password.length >= 6 && isEmailValid;
       default: return false;
     }
   };
@@ -282,6 +295,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
         location: formData.location,
         dob: formData.dateOfBirth,
         cast: formData.caste,
+        email: formData.email || undefined,
         referred_by_code: formData.referralCode || undefined
       };
 

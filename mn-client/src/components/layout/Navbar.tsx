@@ -7,11 +7,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import RegisterModal from "@/components/auth/RegisterModal";
+import ReferralGeneratorModal from "@/components/home/ReferralGeneratorModal";
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
+  const [referralOpen, setReferralOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -54,6 +56,12 @@ export default function Navbar() {
 
           {/* Actions */}
           <div className="hidden md:flex items-center gap-5">
+            <button 
+              onClick={() => setReferralOpen(true)}
+              className="text-sm font-medium text-brand-600 hover:text-brand-700 transition-colors"
+            >
+              Partner Program
+            </button>
             <Link href="/login" className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">
               Log in
             </Link>
@@ -89,6 +97,12 @@ export default function Navbar() {
                 <Link href="/success-stories" className="block px-4 py-3 text-gray-700 font-medium hover:bg-gray-50 rounded-xl transition-colors">Success Stories</Link>
                 <Link href="/pricing" className="block px-4 py-3 text-gray-700 font-medium hover:bg-gray-50 rounded-xl transition-colors">Pricing</Link>
                 <div className="h-px bg-gray-100 my-2 mx-4" />
+                <button 
+                  onClick={() => { setMobileMenuOpen(false); setReferralOpen(true); }}
+                  className="block w-full text-left px-4 py-3 text-brand-600 font-medium hover:bg-gray-50 rounded-xl transition-colors"
+                >
+                  Partner Program
+                </button>
                 <Link href="/login" className="block px-4 py-3 text-gray-700 font-medium hover:bg-gray-50 rounded-xl transition-colors">Log in</Link>
                 <button 
                   onClick={() => { setMobileMenuOpen(false); setRegisterOpen(true); }}
@@ -103,6 +117,7 @@ export default function Navbar() {
       </header>
       
       {registerOpen && <RegisterModal isOpen={registerOpen} onClose={() => setRegisterOpen(false)} />}
+      <ReferralGeneratorModal isOpen={referralOpen} onClose={() => setReferralOpen(false)} />
     </>
   );
 }
