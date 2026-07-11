@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Save, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 import { LOCATIONS } from "@/lib/constants";
 
 export interface BasicDetailsData {
@@ -197,7 +198,7 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
       if (onComplete) onComplete(formData);
       // Optional: Clear draft after successful completion
       // localStorage.removeItem(DRAFT_KEY);
-    }
+    } else { toast.error("Please fill required details"); }
   };
 
   // Progress calculation
@@ -220,7 +221,7 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden w-full max-w-4xl mx-auto">
-      <div className="p-6 md:p-8 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-4 md:p-5 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl md:text-2xl font-bold font-playfair text-gray-900">About & Basic Details</h2>
           <p className="text-sm text-gray-500 mt-1">Tell us a bit about yourself to find the best matches.</p>
@@ -242,13 +243,13 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-8">
+      <form onSubmit={handleSubmit} className="p-4 md:p-5 space-y-4">
         
         {/* Core Identity */}
-        <section className="space-y-6">
+        <section className="space-y-3">
           <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Core Identity</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Profile Created For *</label>
               <div className="grid grid-cols-2 gap-3">
@@ -298,7 +299,7 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
                 value={formData.name}
                 onChange={(e) => updateForm("name", e.target.value)}
                 placeholder="Enter full name"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
               />
               {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
             </div>
@@ -312,7 +313,7 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
                 placeholder="e.g. 25"
                 min="18"
                 max="100"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
               />
               {errors.age && <p className="text-red-500 text-xs mt-1">{errors.age}</p>}
             </div>
@@ -328,7 +329,7 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
                     updateForm("haveChildren", "");
                   }
                 }}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="" disabled>Select Status</option>
                 <option value="Never Married">Never Married</option>
@@ -346,7 +347,7 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
                 <select
                   value={formData.haveChildren}
                   onChange={(e) => updateForm("haveChildren", e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
                 >
                   <option value="" disabled>Select Option</option>
                   <option value="No">No</option>
@@ -362,7 +363,7 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
               <select
                 value={formData.motherTongue}
                 onChange={(e) => updateForm("motherTongue", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="" disabled>Select Language</option>
                 <option value="Malayalam">Malayalam</option>
@@ -381,13 +382,13 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
         <section className="space-y-6 pt-6 border-t border-gray-50">
           <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Physical Attributes</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Height *</label>
               <select
                 value={formData.height}
                 onChange={(e) => updateForm("height", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="" disabled>Select Height</option>
                 <option value="4'10&quot; (147 cm)">4'10" (147 cm)</option>
@@ -419,7 +420,7 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
                 value={formData.weight}
                 onChange={(e) => updateForm("weight", e.target.value)}
                 placeholder="e.g. 65"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
               />
             </div>
 
@@ -428,7 +429,7 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
               <select
                 value={formData.physicalStatus}
                 onChange={(e) => updateForm("physicalStatus", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="" disabled>Select Status</option>
                 <option value="Normal">Normal</option>
@@ -441,7 +442,7 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
               <select
                 value={formData.appearance}
                 onChange={(e) => updateForm("appearance", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="" disabled>Select Appearance</option>
                 <option value="Fair">Fair</option>
@@ -457,13 +458,13 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
         <section className="space-y-6 pt-6 border-t border-gray-50">
           <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Present Location & Marriage Plans</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Present Location</label>
               <select
                 value={formData.presentLocation || ""}
                 onChange={(e) => updateForm("presentLocation", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white text-gray-800 font-medium"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white text-gray-800 font-medium"
               >
                 <option value="" disabled>Select Location</option>
                 {LOCATIONS.map((loc) => (
@@ -477,7 +478,7 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
               <select
                 value={formData.marriageGoalPlan}
                 onChange={(e) => updateForm("marriageGoalPlan", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="">Select Goal Plan</option>
                 <option value="Immediate (Within 6 months)">Immediate (Within 6 months)</option>
@@ -492,7 +493,7 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
               <select
                 value={formData.relocateForPartner}
                 onChange={(e) => updateForm("relocateForPartner", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="">Select Relocation Option</option>
                 <option value="Yes, willing to relocate">Yes, willing to relocate</option>
@@ -509,7 +510,7 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
         <section className="space-y-6 pt-6 border-t border-gray-50">
           <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">About Me & Languages</h3>
           
-          <div className="space-y-6">
+          <div className="space-y-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Languages Spoken</label>
               <div className="flex flex-wrap gap-4 py-1.5">
@@ -546,7 +547,7 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
                 value={formData.aboutMe}
                 onChange={(e) => updateForm("aboutMe", e.target.value)}
                 placeholder="Write a brief description about yourself, your hobbies, interests, and what you are looking for..."
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm resize-none"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm resize-none"
               />
               {errors.aboutMe && <p className="text-red-500 text-xs mt-1">{errors.aboutMe}</p>}
             </div>

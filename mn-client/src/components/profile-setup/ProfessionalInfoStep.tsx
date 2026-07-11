@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Save } from "lucide-react";
+import { toast } from "sonner";
 
 export interface ProfessionalInfoData {
   education: string;
@@ -102,7 +103,7 @@ export default function ProfessionalInfoStep({ initialData, onComplete, onBack }
       if (onComplete) onComplete(formData);
       // Optional: Clear draft after successful completion
       // localStorage.removeItem(DRAFT_KEY);
-    }
+    } else { toast.error("Please fill required details"); }
   };
 
   // Progress calculation
@@ -120,7 +121,7 @@ export default function ProfessionalInfoStep({ initialData, onComplete, onBack }
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden w-full max-w-4xl mx-auto">
-      <div className="p-6 md:p-8 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-4 md:p-5 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl md:text-2xl font-bold font-playfair text-gray-900">Professional Information</h2>
           <p className="text-sm text-gray-500 mt-1">Tell us about your educational and professional background.</p>
@@ -142,13 +143,13 @@ export default function ProfessionalInfoStep({ initialData, onComplete, onBack }
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-8">
+      <form onSubmit={handleSubmit} className="p-4 md:p-5 space-y-4">
         
         {/* Education */}
-        <section className="space-y-6">
+        <section className="space-y-3">
           <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Education Details</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Highest Education *</label>
               <select
@@ -160,7 +161,7 @@ export default function ProfessionalInfoStep({ initialData, onComplete, onBack }
                     updateForm("customEducation", "");
                   }
                 }}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="" disabled>Select Education</option>
                 <option value="B.Tech">B.Tech</option>
@@ -187,7 +188,7 @@ export default function ProfessionalInfoStep({ initialData, onComplete, onBack }
                   value={formData.customEducation || ""}
                   onChange={(e) => updateForm("customEducation", e.target.value)}
                   placeholder="e.g. Islamic Studies, Diploma in Design"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
                 />
                 {errors.customEducation && <p className="text-red-500 text-xs mt-1">{errors.customEducation}</p>}
               </div>
@@ -200,7 +201,7 @@ export default function ProfessionalInfoStep({ initialData, onComplete, onBack }
                 value={formData.educationInstitution}
                 onChange={(e) => updateForm("educationInstitution", e.target.value)}
                 placeholder="e.g. NIT Calicut, Kerala University"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
               />
             </div>
           </div>
@@ -210,13 +211,13 @@ export default function ProfessionalInfoStep({ initialData, onComplete, onBack }
         <section className="space-y-6 pt-6 border-t border-gray-50">
           <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Career Details</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Profession Type *</label>
               <select
                 value={formData.professionType}
                 onChange={(e) => updateForm("professionType", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="" disabled>Select Profession Type</option>
                 <option value="Private Sector">Private Sector</option>
@@ -238,7 +239,7 @@ export default function ProfessionalInfoStep({ initialData, onComplete, onBack }
                 value={formData.profession}
                 onChange={(e) => updateForm("profession", e.target.value)}
                 placeholder="e.g. Software Engineer, Doctor"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
               />
               <datalist id="professionOptions">
                 <option value="Software Engineer" />
@@ -263,7 +264,7 @@ export default function ProfessionalInfoStep({ initialData, onComplete, onBack }
                 value={formData.companyName}
                 onChange={(e) => updateForm("companyName", e.target.value)}
                 placeholder="Where do you work?"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
               />
             </div>
 
@@ -272,7 +273,7 @@ export default function ProfessionalInfoStep({ initialData, onComplete, onBack }
               <select
                 value={formData.annualIncome}
                 onChange={(e) => updateForm("annualIncome", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="" disabled>Select Income Range</option>
                 <option value="Below 2 Lakhs">Below 2 Lakhs</option>
@@ -292,7 +293,7 @@ export default function ProfessionalInfoStep({ initialData, onComplete, onBack }
                 value={formData.jobDetails}
                 onChange={(e) => updateForm("jobDetails", e.target.value)}
                 placeholder="Any other details about your career..."
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm resize-none"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm resize-none"
               />
             </div>
           </div>

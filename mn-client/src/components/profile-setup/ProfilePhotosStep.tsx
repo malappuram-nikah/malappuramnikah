@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Save, Trash2, Plus } from "lucide-react";
+import { toast } from "sonner";
 
 export interface PhotoData {
   id: string;
@@ -154,7 +155,7 @@ export default function ProfilePhotosStep({ initialData, onComplete, onBack }: P
     if (e) e.preventDefault();
     if (validate()) {
       if (onComplete) onComplete(formData);
-    }
+    } else { toast.error("Please fill required details"); }
   };
 
   const progressPercent = formData.photos.length > 0 ? 100 : 0;
@@ -163,7 +164,7 @@ export default function ProfilePhotosStep({ initialData, onComplete, onBack }: P
 
   return (
     <div className="bg-white rounded-xl border border-gray-150 shadow-sm overflow-hidden w-full max-w-xl mx-auto">
-      <div className="p-6 md:p-8 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="p-4 md:p-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl md:text-2xl font-bold font-playfair text-gray-900">Profile Photos</h2>
           <p className="text-sm text-gray-500 mt-1">Upload up to 5 clear, friendly photos of yourself (portrait size).</p>
@@ -184,7 +185,7 @@ export default function ProfilePhotosStep({ initialData, onComplete, onBack }: P
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6">
+      <form onSubmit={handleSubmit} className="p-4 md:p-5 space-y-6">
         
         {/* Upload/Preview Section */}
         <div className="space-y-4">

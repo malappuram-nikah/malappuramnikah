@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Save, Plus, X } from "lucide-react";
+import { toast } from "sonner";
 
 export interface InterestsData {
   interests: string[];
@@ -116,7 +117,7 @@ export default function InterestsStep({ initialData, onComplete, onBack }: Inter
       if (onComplete) onComplete(formData);
       // Optional: Clear draft after successful completion
       // localStorage.removeItem(DRAFT_KEY);
-    }
+    } else { toast.error("Please fill required details"); }
   };
 
   // Progress calculation
@@ -131,7 +132,7 @@ export default function InterestsStep({ initialData, onComplete, onBack }: Inter
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden w-full max-w-4xl mx-auto">
-      <div className="p-6 md:p-8 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-4 md:p-5 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl md:text-2xl font-bold font-playfair text-gray-900">Interests & Personality</h2>
           <p className="text-sm text-gray-500 mt-1">Let potential matches know what you're passionate about.</p>
@@ -152,10 +153,10 @@ export default function InterestsStep({ initialData, onComplete, onBack }: Inter
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-8">
+      <form onSubmit={handleSubmit} className="p-4 md:p-5 space-y-4">
         
         {/* Interests */}
-        <section className="space-y-6">
+        <section className="space-y-3">
           <div>
             <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">Your Interests *</h3>
             <p className="text-sm text-gray-500 mb-4">Select the activities and hobbies you enjoy, or add your own.</p>
@@ -235,7 +236,7 @@ export default function InterestsStep({ initialData, onComplete, onBack }: Inter
               value={formData.personalityDescription}
               onChange={(e) => updateForm("personalityDescription", e.target.value)}
               placeholder="Describe your personality, your goals in life, what makes you unique, and what kind of partner you are looking for..."
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm resize-none"
+              className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm resize-none"
             />
             {errors.personalityDescription && <p className="text-red-500 text-xs mt-1">{errors.personalityDescription}</p>}
             <p className="text-xs text-gray-400 mt-2">A detailed description gets up to 4x more responses.</p>

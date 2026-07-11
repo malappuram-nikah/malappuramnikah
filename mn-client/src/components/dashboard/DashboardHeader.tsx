@@ -329,10 +329,10 @@ export default function DashboardHeader() {
               <img
                 src={userPhotoUrl}
                 alt={userName}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover pointer-events-none"
               />
             ) : (
-              userName.charAt(0)
+              <span className="pointer-events-none">{userName.charAt(0)}</span>
             )}
           </button>
 
@@ -375,6 +375,7 @@ export default function DashboardHeader() {
                     <div className="px-6 pb-2 relative -mt-8 flex items-end justify-between z-10 shrink-0">
                       <button
                         onClick={() => {
+                          setShowProfileDropdown(false);
                           setShowPhotosModal(true);
                         }}
                         className="w-16 h-16 rounded-full border-4 border-white bg-brand-100 flex items-center justify-center text-brand-700 font-extrabold text-2xl uppercase shadow-lg overflow-hidden shrink-0 cursor-pointer relative group active:scale-95 transition-all"
@@ -384,12 +385,12 @@ export default function DashboardHeader() {
                           <img
                             src={userPhotoUrl}
                             alt={userName}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform pointer-events-none"
                           />
                         ) : (
-                          userName.charAt(0)
+                          <span className="pointer-events-none">{userName.charAt(0)}</span>
                         )}
-                        <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[10px] text-white font-bold">
+                        <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[10px] text-white font-bold pointer-events-none">
                           Edit
                         </div>
                       </button>
@@ -492,13 +493,13 @@ export default function DashboardHeader() {
                               setShowProfileDropdown(false);
                               router.push(`/dashboard/profile/${user?.id}`);
                             }}
-                            className="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 hover:bg-brand-50 hover:text-brand-700 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-brand-100 group cursor-pointer"
+                            className="w-full text-left px-3 py-2.5 text-xs font-bold text-gray-700 hover:bg-brand-50 hover:text-brand-700 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-brand-100 group cursor-pointer"
                           >
-                            <div className="flex items-center gap-2">
-                              <Eye className="w-3.5 h-3.5 text-gray-400 group-hover:text-brand-600 transition-colors" />
+                            <div className="flex items-center gap-2.5 pointer-events-none">
+                              <Eye className="w-4 h-4 text-gray-400 group-hover:text-brand-600 transition-colors" />
                               <span>Preview Full Profile</span>
                             </div>
-                            <span className="text-gray-400 group-hover:text-brand-600 group-hover:translate-x-0.5 transition-all">
+                            <span className="text-gray-400 group-hover:text-brand-600 group-hover:translate-x-0.5 transition-all pointer-events-none">
                               &rarr;
                             </span>
                           </button>
@@ -508,13 +509,13 @@ export default function DashboardHeader() {
                               setShowProfileDropdown(false);
                               setShowPhotosModal(true);
                             }}
-                            className="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 hover:bg-brand-50 hover:text-brand-700 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-brand-100 group cursor-pointer"
+                            className="w-full text-left px-3 py-2.5 text-xs font-bold text-gray-700 hover:bg-brand-50 hover:text-brand-700 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-brand-100 group cursor-pointer"
                           >
-                            <div className="flex items-center gap-2">
-                              <Camera className="w-3.5 h-3.5 text-gray-400 group-hover:text-brand-600 transition-colors" />
+                            <div className="flex items-center gap-2.5 pointer-events-none">
+                              <Camera className="w-4 h-4 text-gray-400 group-hover:text-brand-600 transition-colors" />
                               <span>Upload Multiple Photos</span>
                             </div>
-                            <span className="text-gray-400 group-hover:text-brand-600 group-hover:translate-x-0.5 transition-all">
+                            <span className="text-gray-400 group-hover:text-brand-600 group-hover:translate-x-0.5 transition-all pointer-events-none">
                               &rarr;
                             </span>
                           </button>
@@ -524,13 +525,13 @@ export default function DashboardHeader() {
                               setShowProfileDropdown(false);
                               router.push("/dashboard/profile-builder");
                             }}
-                            className="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 hover:bg-brand-50 hover:text-brand-700 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-brand-100 group cursor-pointer"
+                            className="w-full text-left px-3 py-2.5 text-xs font-bold text-gray-700 hover:bg-brand-50 hover:text-brand-700 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-brand-100 group cursor-pointer"
                           >
-                            <div className="flex items-center gap-2">
-                              <User className="w-3.5 h-3.5 text-gray-400 group-hover:text-brand-600 transition-colors" />
+                            <div className="flex items-center gap-2.5 pointer-events-none">
+                              <User className="w-4 h-4 text-gray-400 group-hover:text-brand-600 transition-colors" />
                               <span>Edit Matrimony Profile</span>
                             </div>
-                            <span className="text-gray-400 group-hover:text-brand-600 group-hover:translate-x-0.5 transition-all">
+                            <span className="text-gray-400 group-hover:text-brand-600 group-hover:translate-x-0.5 transition-all pointer-events-none">
                               &rarr;
                             </span>
                           </button>
@@ -540,13 +541,13 @@ export default function DashboardHeader() {
                               setShowProfileDropdown(false);
                               router.push("/dashboard/settings");
                             }}
-                            className="w-full text-left px-3 py-2 text-xs font-bold text-gray-700 hover:bg-brand-50 hover:text-brand-700 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-brand-100 group"
+                            className="w-full text-left px-3 py-2.5 text-xs font-bold text-gray-700 hover:bg-brand-50 hover:text-brand-700 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-brand-100 group cursor-pointer"
                           >
-                            <div className="flex items-center gap-2">
-                              <Settings className="w-3.5 h-3.5 text-gray-400 group-hover:text-brand-600 transition-colors" />
+                            <div className="flex items-center gap-2.5 pointer-events-none">
+                              <Settings className="w-4 h-4 text-gray-400 group-hover:text-brand-600 transition-colors" />
                               <span>Account Settings</span>
                             </div>
-                            <span className="text-gray-400 group-hover:text-brand-600 group-hover:translate-x-0.5 transition-all">
+                            <span className="text-gray-400 group-hover:text-brand-600 group-hover:translate-x-0.5 transition-all pointer-events-none">
                               &rarr;
                             </span>
                           </button>
@@ -573,13 +574,13 @@ export default function DashboardHeader() {
                               );
                               window.location.href = "/login";
                             }}
-                            className="w-full text-left px-3 py-2 text-xs font-bold text-red-650 hover:bg-red-50 hover:text-red-700 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-red-100 group"
+                            className="w-full text-left px-3 py-2.5 text-xs font-bold text-red-650 hover:bg-red-50 hover:text-red-700 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-red-100 group cursor-pointer"
                           >
-                            <div className="flex items-center gap-2">
-                              <LogOut className="w-3.5 h-3.5 text-red-400 group-hover:text-red-600 transition-colors" />
+                            <div className="flex items-center gap-2.5 pointer-events-none">
+                              <LogOut className="w-4 h-4 text-red-400 group-hover:text-red-600 transition-colors" />
                               <span>Sign Out</span>
                             </div>
-                            <span className="text-red-400 group-hover:text-red-600 group-hover:translate-x-0.5 transition-all">
+                            <span className="text-red-400 group-hover:text-red-600 group-hover:translate-x-0.5 transition-all pointer-events-none">
                               &rarr;
                             </span>
                           </button>
