@@ -1,7 +1,5 @@
 import { IOtpRepository } from "../../domain/interfaces/IOtpRepository";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "../prisma/prisamClient";
 
 export class OtpRepository implements IOtpRepository {
   async saveOtp(

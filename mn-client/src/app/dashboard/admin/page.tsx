@@ -9,10 +9,12 @@ import {
   AlertTriangle, CreditCard, LayoutGrid, BarChart3,
   TrendingUp, Download, Plus, Check, X, Search,
   Lock, Unlock, Award, Settings, Layers, Megaphone,
-  Briefcase, Star, MapPin, ChevronRight, HelpCircle, Music
+  Briefcase, Star, MapPin, ChevronRight, HelpCircle, Music, MessageSquarePlus, Loader2
 } from "lucide-react";
+
 import { useRouter } from "next/navigation";
 import { LOCATIONS } from "@/lib/constants";
+import { API_URL } from "@/lib/config";
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -57,6 +59,20 @@ export default function AdminDashboardPage() {
   const [newVendorForm, setNewVendorForm] = useState({ name: "", category: "Photography", location: "", contact: "", commission_rate: 10 });
   const [showAddVendor, setShowAddVendor] = useState(false);
   const [cmsBanner, setCmsBanner] = useState("");
+  const [kycRequests, setKycRequests] = useState<any[]>([]);
+  const [selectedKycRequest, setSelectedKycRequest] = useState<any | null>(null);
+  const [kycRejectReason, setKycRejectReason] = useState("");
+  const [showKycRejectModal, setShowKycRejectModal] = useState(false);
+  const [kycStatusFilter, setKycStatusFilter] = useState<string>("ALL");
+
+  // Feedback Management States
+  const [feedbacks, setFeedbacks] = useState<any[]>([]);
+  const [feedbackStats, setFeedbackStats] = useState<any>({ total: 0, averageRating: 0, bugs: 0, suggestions: 0, appreciations: 0, others: 0 });
+  const [selectedFeedback, setSelectedFeedback] = useState<any | null>(null);
+  const [feedbackCategoryFilter, setFeedbackCategoryFilter] = useState<string>("ALL");
+  const [feedbackRatingFilter, setFeedbackRatingFilter] = useState<string>("ALL");
+  const [loadingFeedbacks, setLoadingFeedbacks] = useState(false);
+
 
   const triggerAlert = (text: string, type: "success" | "error" = "success") => {
     setAlertMsg({ text, type });
@@ -100,7 +116,7 @@ export default function AdminDashboardPage() {
       }
 
       // 1. Fetch Stats & Activity Logs
-      const statsRes = await fetch("http://localhost:3333/user/admin/stats", {
+      const statsRes = await fetch(`${API_URL}/user/admin/stats`, {
         headers: { "Authorization": `Bearer ${storedToken}` }
       });
       if (statsRes.status === 403 || statsRes.status === 401) {
@@ -115,7 +131,7 @@ export default function AdminDashboardPage() {
       }
 
       // 2. Fetch Stateful Store Data
-      const storeRes = await fetch("http://localhost:3333/user/admin/store", {
+      const storeRes = await fetch(`${API_URL}/user/admin/store`, {
         headers: { "Authorization": `Bearer ${storedToken}` }
       });
       const storeDataJson = await storeRes.json();
@@ -128,13 +144,25 @@ export default function AdminDashboardPage() {
       }
 
       // 3. Fetch Database Users List
-      const usersRes = await fetch("http://localhost:3333/user/admin/users", {
+      const usersRes = await fetch(`${API_URL}/user/admin/users`, {
         headers: { "Authorization": `Bearer ${storedToken}` }
       });
       const usersData = await usersRes.json();
       if (usersData.success) {
         setDbUsers(usersData.users);
       }
+
+      // 4. Fetch KYC Requests List
+      const kycRes = await fetch(`${API_URL}/user/admin/kyc/requests`, {
+        headers: { "Authorization": `Bearer ${storedToken}` }
+      });
+      const kycData = await kycRes.json();
+      if (kycData.success) {
+        setKycRequests(kycData.requests);
+      }
+
+      // 5. Fetch User Feedbacks & Stats
+      await loadFeedbacksData();
 
     } catch (e) {
       console.error("Admin data loading failed:", e);
@@ -143,6 +171,47 @@ export default function AdminDashboardPage() {
       setLoading(false);
     }
   };
+
+  const loadFeedbacksData = async () => {
+    setLoadingFeedbacks(true);
+    try {
+      const storedToken = localStorage.getItem("mn_token");
+      if (!storedToken) return;
+      const res = await fetch(`${API_URL}/user/admin/feedback`, {
+        headers: { "Authorization": `Bearer ${storedToken}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setFeedbacks(data.feedbacks);
+        setFeedbackStats(data.stats);
+      }
+    } catch (e) {
+      console.error("Failed to load feedbacks:", e);
+    } finally {
+      setLoadingFeedbacks(false);
+    }
+  };
+
+  const handleDeleteFeedback = async (id: number) => {
+    try {
+      const storedToken = localStorage.getItem("mn_token");
+      const res = await fetch(`${API_URL}/user/admin/feedback/${id}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${storedToken}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        triggerAlert("Feedback log deleted successfully!");
+        setSelectedFeedback(null);
+        await loadFeedbacksData();
+      } else {
+        triggerAlert(data.message || "Failed to delete feedback.", "error");
+      }
+    } catch (e) {
+      triggerAlert("Failed to delete feedback.", "error");
+    }
+  };
+
 
   useEffect(() => {
     loadAdminData();
@@ -162,7 +231,7 @@ export default function AdminDashboardPage() {
   const handleVerifyUser = async (userId: number, action: "approve" | "reject") => {
     try {
       const storedToken = localStorage.getItem("mn_token");
-      const res = await fetch(`http://localhost:3333/user/admin/users/${userId}/verify`, {
+      const res = await fetch(`${API_URL}/user/admin/users/${userId}/verify`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -186,7 +255,7 @@ export default function AdminDashboardPage() {
   const handleTogglePremium = async (userId: number) => {
     try {
       const storedToken = localStorage.getItem("mn_token");
-      const res = await fetch(`http://localhost:3333/user/admin/users/${userId}/toggle-premium`, {
+      const res = await fetch(`${API_URL}/user/admin/users/${userId}/toggle-premium`, {
         method: "POST",
         headers: { "Authorization": `Bearer ${storedToken}` }
       });
@@ -204,7 +273,7 @@ export default function AdminDashboardPage() {
   const handleStoreUpdate = async (type: string, action: string, payload: any) => {
     try {
       const storedToken = localStorage.getItem("mn_token");
-      const res = await fetch("http://localhost:3333/user/admin/store/update", {
+      const res = await fetch(`${API_URL}/user/admin/store/update`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -219,6 +288,73 @@ export default function AdminDashboardPage() {
       }
     } catch (e) {
       triggerAlert("Failed to submit update.", "error");
+    }
+  };
+
+  const handleKycReview = async (requestId: number) => {
+    try {
+      const storedToken = localStorage.getItem("mn_token");
+      const res = await fetch(`${API_URL}/user/admin/kyc/${requestId}/review`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${storedToken}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        await loadAdminData();
+        setSelectedKycRequest((prev: any) => prev && prev.id === requestId ? { ...prev, kyc_status: "UNDER_REVIEW" } : prev);
+      }
+    } catch (e) {
+      console.error("Failed to move request to UNDER_REVIEW", e);
+    }
+  };
+
+  const handleKycApprove = async (requestId: number) => {
+    try {
+      const storedToken = localStorage.getItem("mn_token");
+      const res = await fetch(`${API_URL}/user/admin/kyc/${requestId}/approve`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${storedToken}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        triggerAlert("Identity verification approved successfully!");
+        setSelectedKycRequest(null);
+        await loadAdminData();
+      } else {
+        triggerAlert(data.message || "Failed to approve request.", "error");
+      }
+    } catch (e) {
+      triggerAlert("Server error during approval.", "error");
+    }
+  };
+
+  const handleKycReject = async (requestId: number) => {
+    if (!kycRejectReason.trim()) {
+      triggerAlert("Rejection reason is required.", "error");
+      return;
+    }
+    try {
+      const storedToken = localStorage.getItem("mn_token");
+      const res = await fetch(`${API_URL}/user/admin/kyc/${requestId}/reject`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${storedToken}`
+        },
+        body: JSON.stringify({ reason: kycRejectReason })
+      });
+      const data = await res.json();
+      if (data.success) {
+        triggerAlert("Identity verification request rejected.");
+        setShowKycRejectModal(false);
+        setKycRejectReason("");
+        setSelectedKycRequest(null);
+        await loadAdminData();
+      } else {
+        triggerAlert(data.message || "Failed to reject request.", "error");
+      }
+    } catch (e) {
+      triggerAlert("Server error during rejection.", "error");
     }
   };
 
@@ -272,12 +408,15 @@ export default function AdminDashboardPage() {
     { id: "analytics",     icon: BarChart3,      label: "Analytics Core",      color: "border-brand-500/20 text-brand-600" },
     { id: "users",         icon: Users,          label: "User Accounts",       color: "border-teal-500/20 text-teal-600" },
     { id: "profiles",      icon: Heart,          label: "Matrimony Profiles",  color: "border-pink-500/20 text-pink-600" },
+    { id: "kyc",           icon: ShieldCheck,    label: "Identity KYC",        color: "border-blue-500/20 text-blue-600" },
     { id: "reports",       icon: AlertTriangle,  label: "Complaints Grid",     color: "border-red-500/20 text-red-600" },
+    { id: "feedbacks",     icon: MessageSquarePlus, label: "User Feedbacks",    color: "border-teal-500/20 text-teal-600" },
     { id: "subscriptions", icon: CreditCard,     label: "Premium Plans",       color: "border-indigo-500/20 text-indigo-600" },
     { id: "cms",           icon: Megaphone,      label: "CMS & Story Sliders", color: "border-cyan-500/20 text-cyan-600" },
     { id: "biodata",       icon: FileText,       label: "Biodata Downloads",   color: "border-amber-500/20 text-amber-600" },
     { id: "music",         icon: Music,          label: "Ambient Music",       color: "border-purple-500/20 text-purple-600" }
   ];
+
 
   if (loading) {
     return (
@@ -394,6 +533,13 @@ export default function AdminDashboardPage() {
                       isActive ? "bg-white text-brand-700" : "bg-pink-100 text-pink-700"
                     }`}>
                       {stats.pendingApproval} New
+                    </span>
+                  )}
+                  {item.id === "kyc" && kycRequests.filter(r => r.kyc_status === "PENDING" || r.kyc_status === "UNDER_REVIEW").length > 0 && (
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${
+                      isActive ? "bg-white text-blue-700" : "bg-blue-100 text-blue-700"
+                    }`}>
+                      {kycRequests.filter(r => r.kyc_status === "PENDING" || r.kyc_status === "UNDER_REVIEW").length} New
                     </span>
                   )}
                   {item.id === "reports" && storeData.reports.filter((r:any)=>r.status === "PENDING").length > 0 && (
@@ -668,6 +814,283 @@ export default function AdminDashboardPage() {
                           </div>
                         </div>
                       ))
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Tab: Identity KYC Verification Requests */}
+              {activeTab === "kyc" && (
+                <motion.div key="kyc" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+                    <div>
+                      <h2 className="text-base font-bold text-gray-900 flex items-center gap-1.5">
+                        <ShieldCheck className="w-5 h-5 text-blue-600" /> Identity KYC Verification Center
+                      </h2>
+                      <p className="text-[10px] text-gray-400 mt-0.5">
+                        Review official government issued IDs, verify details, and approve/reject trust badges.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={kycStatusFilter}
+                        onChange={(e) => setKycStatusFilter(e.target.value)}
+                        className="p-2 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 bg-gray-50 font-semibold text-gray-700 cursor-pointer"
+                      >
+                        <option value="ALL">All Submissions</option>
+                        <option value="PENDING">Pending (New)</option>
+                        <option value="UNDER_REVIEW">Under Review</option>
+                        <option value="VERIFIED">Verified (Approved)</option>
+                        <option value="REJECTED">Rejected</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid lg:grid-cols-12 gap-6">
+                    {/* Left side: Requests List */}
+                    <div className={`${selectedKycRequest ? "lg:col-span-5" : "lg:col-span-12"} space-y-3`}>
+                      {kycRequests.filter(r => {
+                        if (kycStatusFilter === "ALL") return true;
+                        return r.kyc_status === kycStatusFilter;
+                      }).filter(r => {
+                        const fullName = `${r.first_name || ""} ${r.last_name || ""}`.toLowerCase();
+                        const query = searchQuery.toLowerCase();
+                        return fullName.includes(query) || (r.mobile_number || "").includes(query);
+                      }).length === 0 ? (
+                        <div className="py-16 text-center text-gray-400 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                          <ShieldCheck className="w-10 h-10 mx-auto mb-2 text-blue-500 opacity-60" />
+                          <p className="font-semibold text-sm">No verification requests found</p>
+                          <p className="text-[10px] mt-0.5">There are no submissions matching the selected filters.</p>
+                        </div>
+                      ) : (
+                        kycRequests.filter(r => {
+                          if (kycStatusFilter === "ALL") return true;
+                          return r.kyc_status === kycStatusFilter;
+                        }).filter(r => {
+                          const fullName = `${r.first_name || ""} ${r.last_name || ""}`.toLowerCase();
+                          const query = searchQuery.toLowerCase();
+                          return fullName.includes(query) || (r.mobile_number || "").includes(query);
+                        }).map(req => {
+                          const isSelected = selectedKycRequest?.id === req.id;
+                          return (
+                            <button
+                              key={req.id}
+                              onClick={() => {
+                                setSelectedKycRequest(req);
+                                if (req.kyc_status === "PENDING") {
+                                  handleKycReview(req.id);
+                                }
+                              }}
+                              className={`w-full text-left p-4 rounded-xl border transition-all flex items-start justify-between gap-3 ${
+                                isSelected
+                                  ? "border-blue-500 bg-blue-50/20 shadow-sm"
+                                  : "border-gray-100 hover:border-gray-200 bg-white"
+                              }`}
+                            >
+                              <div className="min-w-0 flex-1">
+                                <p className="font-bold text-gray-900 text-xs truncate">
+                                  {req.first_name} {req.last_name}
+                                </p>
+                                <p className="text-[10px] text-gray-500 font-medium mt-0.5">
+                                  {req.kyc_document_type} • {req.mobile_number}
+                                </p>
+                                <p className="text-[9px] text-gray-400 font-semibold mt-1">
+                                  Submitted: {req.kyc_submitted_at ? new Date(req.kyc_submitted_at).toLocaleDateString() : "N/A"}
+                                </p>
+                              </div>
+
+                              <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full shrink-0 ${
+                                req.kyc_status === "VERIFIED"
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : req.kyc_status === "PENDING"
+                                  ? "bg-blue-100 text-blue-800 animate-pulse"
+                                  : req.kyc_status === "UNDER_REVIEW"
+                                  ? "bg-amber-100 text-amber-800"
+                                  : "bg-red-100 text-red-800"
+                              }`}>
+                                {req.kyc_status.replace("_", " ")}
+                              </span>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    {/* Right side: Detailed inspector */}
+                    {selectedKycRequest && (
+                      <div className="lg:col-span-7 bg-white border border-gray-100 rounded-2xl p-5 space-y-5 shadow-sm">
+                        <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                          <div>
+                            <h3 className="font-bold text-gray-900 text-sm">
+                              {selectedKycRequest.first_name} {selectedKycRequest.last_name}
+                            </h3>
+                            <p className="text-[10px] text-gray-500 font-semibold mt-0.5">
+                              User ID: {selectedKycRequest.id} • {selectedKycRequest.gender} • DOB: {selectedKycRequest.dob || "N/A"}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => setSelectedKycRequest(null)}
+                            className="p-1 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        {/* Document details card */}
+                        <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100 text-xs">
+                          <div>
+                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Document Type</span>
+                            <span className="font-semibold text-gray-800 mt-0.5 block">{selectedKycRequest.kyc_document_type}</span>
+                          </div>
+                          <div>
+                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Current Status</span>
+                            <span className={`inline-block text-[9px] font-bold uppercase px-2 py-0.5 rounded-full mt-1 ${
+                              selectedKycRequest.kyc_status === "VERIFIED"
+                                ? "bg-emerald-100 text-emerald-800"
+                                : selectedKycRequest.kyc_status === "PENDING"
+                                ? "bg-blue-100 text-blue-800"
+                                : selectedKycRequest.kyc_status === "UNDER_REVIEW"
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-red-100 text-red-800"
+                            }`}>
+                              {selectedKycRequest.kyc_status.replace("_", " ")}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Document Images Display */}
+                        <div className="space-y-4">
+                          <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Uploaded Documents</h4>
+                          <div className="grid sm:grid-cols-2 gap-4">
+                            {/* Front Image */}
+                            <div className="border border-gray-200 rounded-xl overflow-hidden bg-gray-50 flex flex-col justify-between h-48">
+                              <div className="bg-gray-100 px-3 py-1.5 text-[9px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 flex justify-between items-center">
+                                <span>Front side</span>
+                                {selectedKycRequest.kyc_front_url && (
+                                  <a
+                                    href={selectedKycRequest.kyc_front_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-blue-600 hover:underline"
+                                  >
+                                    Open Full Size
+                                  </a>
+                                )}
+                              </div>
+                              <div className="flex-1 flex items-center justify-center p-3">
+                                {selectedKycRequest.kyc_front_url ? (
+                                  <img
+                                    src={selectedKycRequest.kyc_front_url}
+                                    alt="Front ID"
+                                    className="max-h-full max-w-full object-contain rounded-md shadow-sm"
+                                  />
+                                ) : (
+                                  <span className="text-[10px] text-gray-400 font-medium">No Front Document Image</span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Back Image */}
+                            <div className="border border-gray-200 rounded-xl overflow-hidden bg-gray-50 flex flex-col justify-between h-48">
+                              <div className="bg-gray-100 px-3 py-1.5 text-[9px] font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200 flex justify-between items-center">
+                                <span>Back side</span>
+                                {selectedKycRequest.kyc_back_url && (
+                                  <a
+                                    href={selectedKycRequest.kyc_back_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-blue-600 hover:underline"
+                                  >
+                                    Open Full Size
+                                  </a>
+                                )}
+                              </div>
+                              <div className="flex-1 flex items-center justify-center p-3">
+                                {selectedKycRequest.kyc_back_url ? (
+                                  <img
+                                    src={selectedKycRequest.kyc_back_url}
+                                    alt="Back ID"
+                                    className="max-h-full max-w-full object-contain rounded-md shadow-sm"
+                                  />
+                                ) : (
+                                  <span className="text-[10px] text-gray-400 font-medium">No Back Document Image</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Action buttons or forms */}
+                        {selectedKycRequest.kyc_status === "REJECTED" && selectedKycRequest.kyc_rejected_reason && (
+                          <div className="bg-red-50 border border-red-100 rounded-xl p-3.5 text-xs text-red-800">
+                            <span className="font-semibold block">Rejection Reason:</span>
+                            "{selectedKycRequest.kyc_rejected_reason}"
+                          </div>
+                        )}
+
+                        {selectedKycRequest.kyc_status === "VERIFIED" && selectedKycRequest.kyc_verified_at && (
+                          <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3.5 text-xs text-emerald-800 flex items-center gap-2">
+                            <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
+                            <div>
+                              <span className="font-semibold block">Approved and Badge Granted!</span>
+                              Verified on: {new Date(selectedKycRequest.kyc_verified_at).toLocaleDateString()}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* If in pending or under review, allow actions */}
+                        {(selectedKycRequest.kyc_status === "PENDING" || selectedKycRequest.kyc_status === "UNDER_REVIEW") && (
+                          <div className="space-y-4 pt-2 border-t border-gray-100">
+                            {showKycRejectModal ? (
+                              <div className="bg-red-50/50 border border-red-100 rounded-xl p-4 space-y-3">
+                                <label className="text-[10px] font-bold text-red-800 uppercase tracking-wider block">
+                                  Specify Rejection Reason
+                                </label>
+                                <textarea
+                                  placeholder="e.g. The uploaded Aadhaar card is blurry and details are unreadable. Please upload a clear scan."
+                                  value={kycRejectReason}
+                                  onChange={(e) => setKycRejectReason(e.target.value)}
+                                  rows={3}
+                                  className="w-full p-3 border border-red-200 rounded-xl text-xs bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500/20"
+                                />
+                                <div className="flex gap-2 justify-end">
+                                  <button
+                                    onClick={() => {
+                                      setShowKycRejectModal(false);
+                                      setKycRejectReason("");
+                                    }}
+                                    className="px-3.5 py-2 bg-white border border-gray-200 text-gray-600 text-[10px] font-bold rounded-lg hover:bg-gray-50 transition-colors"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    onClick={() => handleKycReject(selectedKycRequest.id)}
+                                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1"
+                                  >
+                                    Confirm Rejection & Notify
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex gap-3">
+                                <button
+                                  onClick={() => handleKycApprove(selectedKycRequest.id)}
+                                  className="flex-1 py-3 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center justify-center gap-1 active:scale-[0.98]"
+                                >
+                                  <Check className="w-4 h-4" /> Approve & Grant Badge
+                                </button>
+                                <button
+                                  onClick={() => setShowKycRejectModal(true)}
+                                  className="flex-1 py-3 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold rounded-xl border border-red-100 transition-colors flex items-center justify-center gap-1"
+                                >
+                                  <X className="w-4 h-4" /> Reject Request
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 </motion.div>
@@ -1240,7 +1663,7 @@ export default function AdminDashboardPage() {
                       }}
                       className={`w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-[0.97] border ${
                         musicEnabled 
-                          ? "bg-red-50 text-red-600 hover:bg-red-100 border-red-200" 
+                          ? "bg-red-50 text-red-650 hover:bg-red-100 border-red-200" 
                           : "bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200"
                       }`}
                     >
@@ -1306,6 +1729,262 @@ export default function AdminDashboardPage() {
                   </div>
                 </motion.div>
               )}
+
+              {/* ===== USER FEEDBACKS TAB ===== */}
+              {activeTab === "feedbacks" && (
+                <motion.div
+                  key="feedbacks"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="space-y-6"
+                >
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                    <div>
+                      <h2 className="text-base font-bold text-gray-900 flex items-center gap-1.5">
+                        <MessageSquarePlus className="w-5 h-5 text-teal-650" /> User Feedbacks
+                      </h2>
+                      <p className="text-xs text-gray-500 mt-0.5 font-medium">Read, review, search, and manage feedback submitted by platform users.</p>
+                    </div>
+                  </div>
+
+                  {/* Feedback Metrics Summary */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[
+                      { label: "Total Received", value: feedbackStats.total, icon: MessageSquarePlus, color: "bg-teal-50 text-teal-600" },
+                      { label: "Average Experience", value: `${feedbackStats.averageRating || 0} / 5.0`, icon: Star, color: "bg-amber-50 text-amber-500" },
+                      { label: "Bug Reports 🐛", value: feedbackStats.bugs, icon: AlertTriangle, color: "bg-red-50 text-red-600" },
+                      { label: "Appreciations 💖", value: feedbackStats.appreciations, icon: Heart, color: "bg-pink-50 text-pink-600" },
+                    ].map((item, idx) => (
+                      <div key={idx} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-xs flex items-center justify-between animate-fade-in">
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{item.label}</p>
+                          <h3 className="text-lg font-extrabold text-gray-900 mt-1">{item.value}</h3>
+                        </div>
+                        <div className={`p-2 rounded-xl shrink-0 ${item.color}`}>
+                          <item.icon className="w-4 h-4" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Search and Filters bar */}
+                  <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex flex-col md:flex-row gap-3 items-center justify-between">
+                    <div className="relative w-full md:max-w-xs">
+                      <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        placeholder="Search by name, subject..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+                      />
+                    </div>
+
+                    <div className="flex gap-2 w-full md:w-auto justify-end">
+                      {/* Filter by Category */}
+                      <select
+                        value={feedbackCategoryFilter}
+                        onChange={(e) => setFeedbackCategoryFilter(e.target.value)}
+                        className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-650 focus:outline-none"
+                      >
+                        <option value="ALL">All Categories</option>
+                        <option value="SUGGESTION">💡 Suggestions</option>
+                        <option value="BUG">🐛 Bug Reports</option>
+                        <option value="APPRECIATION">💖 Appreciations</option>
+                        <option value="OTHER">✨ Others</option>
+                      </select>
+
+                      {/* Filter by Rating */}
+                      <select
+                        value={feedbackRatingFilter}
+                        onChange={(e) => setFeedbackRatingFilter(e.target.value)}
+                        className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-650 focus:outline-none"
+                      >
+                        <option value="ALL">All Ratings</option>
+                        <option value="5">⭐⭐⭐⭐⭐ (5/5)</option>
+                        <option value="4">⭐⭐⭐⭐ (4/5)</option>
+                        <option value="3">⭐⭐⭐ (3/5)</option>
+                        <option value="2">⭐⭐ (2/5)</option>
+                        <option value="1">⭐ (1/5)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Feedback Logs List */}
+                  {loadingFeedbacks ? (
+                    <div className="p-10 text-center text-xs text-gray-400 font-semibold bg-white border border-gray-100 rounded-2xl">
+                      <Loader2 className="w-5 h-5 animate-spin mx-auto text-brand-550 mb-2" />
+                      Retrieving Feedbacks...
+                    </div>
+                  ) : feedbacks.length === 0 ? (
+                    <div className="p-12 text-center text-xs text-gray-400 font-medium bg-white border border-gray-100 rounded-2xl">
+                      No feedbacks found matching selected filters.
+                    </div>
+                  ) : (
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      {feedbacks
+                        .filter(f => {
+                          const nameMatch = `${f.user?.first_name || ""} ${f.user?.last_name || ""}`.toLowerCase().includes(searchQuery.toLowerCase());
+                          const subjMatch = f.subject.toLowerCase().includes(searchQuery.toLowerCase());
+                          const msgMatch = f.message.toLowerCase().includes(searchQuery.toLowerCase());
+                          const matchesQuery = nameMatch || subjMatch || msgMatch;
+
+                          const matchesCat = feedbackCategoryFilter === "ALL" || f.category === feedbackCategoryFilter;
+                          const matchesRating = feedbackRatingFilter === "ALL" || f.rating === parseInt(feedbackRatingFilter, 10);
+
+                          return matchesQuery && matchesCat && matchesRating;
+                        })
+                        .map((f) => {
+                          let catStyle = "bg-gray-50 text-gray-600 border-gray-200";
+                          if (f.category === "BUG") catStyle = "bg-red-50 text-red-755 border-red-100";
+                          else if (f.category === "SUGGESTION") catStyle = "bg-amber-50 text-amber-755 border-amber-100";
+                          else if (f.category === "APPRECIATION") catStyle = "bg-pink-50 text-pink-700 border-pink-100";
+
+                          return (
+                            <motion.div
+                              key={f.id}
+                              layout
+                              className="bg-white border border-gray-100 rounded-2xl p-4 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-teal-200/50 transition-all duration-200"
+                            >
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold border ${catStyle}`}>
+                                    {f.category}
+                                  </span>
+                                  <div className="flex gap-0.5">
+                                    {[1, 2, 3, 4, 5].map((s) => (
+                                      <Star key={s} className={`w-3 h-3 ${s <= f.rating ? "fill-amber-400 text-amber-400" : "text-gray-200"}`} />
+                                    ))}
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <h4 className="text-xs font-bold text-gray-900 line-clamp-1">{f.subject}</h4>
+                                  <p className="text-[11px] text-gray-500 mt-1 line-clamp-3 leading-relaxed">{f.message}</p>
+                                </div>
+                              </div>
+
+                              <div className="border-t border-gray-55 pt-3 mt-4 flex items-center justify-between gap-2">
+                                <div className="min-w-0">
+                                  <p className="text-[10px] font-bold text-gray-800 truncate">
+                                    {f.user?.first_name} {f.user?.last_name}
+                                  </p>
+                                  <p className="text-[9px] text-gray-400 truncate">
+                                    {f.user?.location || "Malappuram"} · {new Date(f.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                                  </p>
+                                </div>
+                                <div className="flex gap-1 shrink-0">
+                                  <button
+                                    onClick={() => setSelectedFeedback(f)}
+                                    className="px-2.5 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-650 border border-gray-200 text-[10px] font-bold rounded-lg transition-colors"
+                                  >
+                                    View
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      if (confirm("Are you sure you want to delete this feedback log?")) {
+                                        handleDeleteFeedback(f.id);
+                                      }
+                                    }}
+                                    className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-650 border border-red-200 text-[10px] font-bold rounded-lg transition-colors"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                    </div>
+                  )}
+
+                  {/* Feedback Details Modal */}
+                  {selectedFeedback && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                      <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-xs" onClick={() => setSelectedFeedback(null)} />
+                      <div className="bg-white rounded-2xl w-full max-w-lg p-6 border border-gray-150 shadow-2xl relative z-10 flex flex-col gap-4">
+                        <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                          <div>
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold border bg-teal-50 text-teal-700 border-teal-100">
+                              {selectedFeedback.category}
+                            </span>
+                            <h3 className="font-extrabold text-gray-950 text-sm mt-1">{selectedFeedback.subject}</h3>
+                          </div>
+                          <button
+                            onClick={() => setSelectedFeedback(null)}
+                            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        <div className="space-y-4">
+                          {/* Rating and Date */}
+                          <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-1">
+                              <span className="font-semibold text-gray-500">Rating:</span>
+                              <div className="flex gap-0.5">
+                                {[1, 2, 3, 4, 5].map((s) => (
+                                  <Star key={s} className={`w-3.5 h-3.5 ${s <= selectedFeedback.rating ? "fill-amber-400 text-amber-400" : "text-gray-200"}`} />
+                                ))}
+                              </div>
+                            </div>
+                            <span className="text-gray-400">
+                              {new Date(selectedFeedback.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+                            </span>
+                          </div>
+
+                          {/* Message box */}
+                          <div className="bg-gray-50 p-4 border border-gray-100 rounded-xl">
+                            <p className="text-xs font-bold text-gray-450 uppercase tracking-wider mb-2">Message</p>
+                            <p className="text-xs text-gray-800 leading-relaxed whitespace-pre-line">{selectedFeedback.message}</p>
+                          </div>
+
+                          {/* User card info */}
+                          <div className="bg-brand-50/20 border border-brand-100/50 p-4 rounded-xl space-y-2">
+                            <p className="text-[10px] font-bold text-brand-700 uppercase tracking-wider">User Details</p>
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div>
+                                <span className="text-gray-450">Name:</span>
+                                <p className="font-semibold text-gray-900">{selectedFeedback.user?.first_name} {selectedFeedback.user?.last_name}</p>
+                              </div>
+                              <div>
+                                <span className="text-gray-450">Location:</span>
+                                <p className="font-semibold text-gray-900">{selectedFeedback.user?.location || "N/A"}</p>
+                              </div>
+                              <div className="col-span-2">
+                                <span className="text-gray-450">Mobile Contact:</span>
+                                <p className="font-semibold text-gray-950 select-all">{selectedFeedback.user?.mobile_number}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2 border-t border-gray-100 pt-4 mt-2">
+                          <button
+                            onClick={() => setSelectedFeedback(null)}
+                            className="px-4 py-2 bg-gray-50 hover:bg-gray-100 text-gray-750 text-xs font-bold rounded-lg border border-gray-200"
+                          >
+                            Close
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm("Are you sure you want to delete this feedback log?")) {
+                                handleDeleteFeedback(selectedFeedback.id);
+                              }
+                            }}
+                            className="px-4 py-2 bg-red-650 hover:bg-red-750 text-white text-xs font-bold rounded-lg shadow-sm"
+                          >
+                            Delete Log
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+
 
             </AnimatePresence>
           </div>

@@ -11,11 +11,13 @@ import InterestsStep from "@/components/profile-setup/InterestsStep";
 import HabitsStep from "@/components/profile-setup/HabitsStep";
 import PartnerPreferencesStep from "@/components/profile-setup/PartnerPreferencesStep";
 import ProfilePhotosStep from "@/components/profile-setup/ProfilePhotosStep";
-import VideoIntroStep from "@/components/profile-setup/VideoIntroStep";
+
 import VoiceIntroStep from "@/components/profile-setup/VoiceIntroStep";
 import ReviewStep from "@/components/profile-setup/ReviewStep";
+import IdentityVerificationForm from "@/components/dashboard/IdentityVerificationForm";
 import { CheckCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { API_URL } from "@/lib/config";
 
 export default function ProfileBuilderPage() {
   const router = useRouter();
@@ -63,19 +65,28 @@ export default function ProfileBuilderPage() {
     "Personal Habits",
     "Partner Preferences",
     "Profile Photos",
-    "Video Onboarding",
     "Voice Introduction",
+    "Identity Verification",
     "Final Review",
     "Completion"
   ];
 
   useEffect(() => {
-    // Determine the initial step target from settings redirect, if any
+    // Determine the initial step target from query params or localStorage redirect
     if (typeof window !== "undefined") {
-      const savedStep = localStorage.getItem("mn_profile_builder_step");
-      if (savedStep) {
-        setCurrentStep(parseInt(savedStep, 10));
-        localStorage.removeItem("mn_profile_builder_step");
+      const params = new URLSearchParams(window.location.search);
+      const stepParam = params.get("step");
+      if (stepParam) {
+        const parsedStep = parseInt(stepParam, 10);
+        if (!isNaN(parsedStep) && parsedStep >= 1 && parsedStep <= 12) {
+          setCurrentStep(parsedStep);
+        }
+      } else {
+        const savedStep = localStorage.getItem("mn_profile_builder_step");
+        if (savedStep) {
+          setCurrentStep(parseInt(savedStep, 10));
+          localStorage.removeItem("mn_profile_builder_step");
+        }
       }
     }
 
@@ -96,7 +107,7 @@ export default function ProfileBuilderPage() {
         }
 
         if (userId !== null) {
-          const res = await fetch(`http://localhost:3333/user/${userId}?t=${Date.now()}`, {
+          const res = await fetch(`${API_URL}/user/${userId}?t=${Date.now()}`, {
             headers: token ? { "Authorization": `Bearer ${token}` } : {},
             cache: "no-store"
           });
@@ -106,7 +117,7 @@ export default function ProfileBuilderPage() {
             const user = data.user;
             setUser(user);
 
-            // Always clear all profile builder draft keys to prevent stale cached/outdated values
+            // Only clear all profile builder draft keys if the logged in user changed
             const draftKeys = [
               "mn_basic_details_draft",
               "mn_religious_info_draft",
@@ -116,10 +127,14 @@ export default function ProfileBuilderPage() {
               "mn_habits_draft",
               "mn_partner_preferences_draft",
               "mn_profile_photos_draft",
-              "mn_video_intro_draft",
               "mn_voice_intro_draft"
             ];
-            draftKeys.forEach((key) => localStorage.removeItem(key));
+            
+            const prevUserId = localStorage.getItem("mn_logged_in_user_id");
+            if (prevUserId !== String(userId)) {
+              draftKeys.forEach((key) => localStorage.removeItem(key));
+            }
+            
             localStorage.setItem("mn_logged_in_user_id", String(userId));
 
             // 1. Sync saved profile_details drafts from database back into localStorage
@@ -212,11 +227,11 @@ export default function ProfileBuilderPage() {
     setCurrentStep(9);
   };
 
-  const handleVideoIntroComplete = (data: any) => {
+  const handleVoiceIntroComplete = (data: any) => {
     setCurrentStep(10);
   };
 
-  const handleVoiceIntroComplete = (data: any) => {
+  const handleKycComplete = () => {
     setCurrentStep(11);
   };
 
@@ -231,8 +246,8 @@ export default function ProfileBuilderPage() {
   if (isLoadingData) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6">
-        <div className="bg-white rounded-3xl border border-gray-100 p-8 text-center max-w-sm w-full shadow-xl shadow-brand-900/5 flex flex-col items-center">
-          <div className="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center mb-5 relative">
+        <div className="bg-white rounded-xl border border-gray-100 p-8 text-center max-w-sm w-full shadow-xl shadow-brand-900/5 flex flex-col items-center">
+          <div className="w-16 h-16 bg-brand-50 text-brand-600 rounded-xl flex items-center justify-center mb-5 relative">
             <span className="w-8 h-8 border-4 border-brand-200 border-t-brand-600 rounded-full animate-spin" />
           </div>
           <h3 className="text-lg font-bold text-gray-900">Restoring Progress</h3>
@@ -245,115 +260,114 @@ export default function ProfileBuilderPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 font-playfair text-center">
-          Complete Your Profile
+
+        {/* Header row with back link + title */}
+        <div className="flex items-center gap-3 mb-6">
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-brand-600 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            Dashboard
+          </button>
+          <span className="text-gray-300">/</span>
+          <span className="text-sm font-semibold text-gray-800">Manage My Profile</span>
+        </div>
+
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 font-playfair text-center">
+          Manage My Profile
         </h1>
-        <p className="text-gray-500 text-center mt-2">
-          Help us find the perfect match for you by providing these details.
+        <p className="text-gray-500 text-center mt-2 text-sm">
+          Click any step below to jump directly to it and update your details.
         </p>
 
-        {/* Wizard Steps Indicator */}
-        {/* Sleek Mobile Step Tracker */}
+        {/* Mobile Step Tracker */}
         <div className="block sm:hidden mt-6 bg-white p-4 rounded-2xl border border-gray-200/60 shadow-sm">
-          <div className="flex items-center justify-between text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
             <span>Step {currentStep} of 12</span>
             <span className="text-brand-600 font-bold">{stepNames[currentStep - 1] || "Review"}</span>
           </div>
-          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-            <motion.div 
-              className="h-full bg-brand-600 rounded-full" 
-              initial={{ width: 0 }} 
-              animate={{ width: `${(currentStep / 12) * 100}%` }} 
-              transition={{ duration: 0.3 }} 
+          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
+            <motion.div
+              className="h-full bg-brand-600 rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${((currentStep - 1) / 12) * 100}%` }}
+              transition={{ duration: 0.3 }}
             />
+          </div>
+          {/* Mobile: scrollable step chips */}
+          <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+            {stepNames.slice(0, 12).map((name, idx) => {
+              const step = idx + 1;
+              const isDone = currentStep > step;
+              const isCurrent = currentStep === step;
+              return (
+                <button
+                  key={step}
+                  onClick={() => setCurrentStep(step)}
+                  className={`shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all border ${
+                    isCurrent
+                      ? "bg-brand-600 text-white border-brand-600 shadow-sm"
+                      : isDone
+                      ? "bg-brand-50 text-brand-700 border-brand-200"
+                      : "bg-gray-50 text-gray-500 border-gray-200"
+                  }`}
+                >
+                  {step}. {name}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Desktop Dots Tracker */}
-        <div className="hidden sm:flex items-center justify-center mt-8 gap-1.5 overflow-x-auto pb-4 px-2 w-full max-w-full hide-scrollbar">
-          <div className={`flex items-center gap-1.5 ${currentStep >= 1 ? 'text-brand-600' : 'text-gray-400'}`}>
-            <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${currentStep >= 1 ? 'bg-brand-600 text-white' : 'bg-gray-200'}`}>1</div>
-          </div>
-          <div className="w-1.5 sm:w-2 h-0.5 bg-gray-200 shrink-0">
-            <motion.div className="h-full bg-brand-600" initial={{ width: 0 }} animate={{ width: currentStep >= 2 ? '100%' : '0%' }} transition={{ duration: 0.3 }} />
-          </div>
-
-          <div className={`flex items-center gap-1.5 ${currentStep >= 2 ? 'text-brand-600' : 'text-gray-400'}`}>
-            <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${currentStep >= 2 ? 'bg-brand-600 text-white' : 'bg-gray-200'}`}>2</div>
-          </div>
-          <div className="w-1.5 sm:w-2 h-0.5 bg-gray-200 shrink-0">
-            <motion.div className="h-full bg-brand-600" initial={{ width: 0 }} animate={{ width: currentStep >= 3 ? '100%' : '0%' }} transition={{ duration: 0.3 }} />
-          </div>
-
-          <div className={`flex items-center gap-1.5 ${currentStep >= 3 ? 'text-brand-600' : 'text-gray-400'}`}>
-            <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${currentStep >= 3 ? 'bg-brand-600 text-white' : 'bg-gray-200'}`}>3</div>
-          </div>
-          <div className="w-1.5 sm:w-2 h-0.5 bg-gray-200 shrink-0">
-            <motion.div className="h-full bg-brand-600" initial={{ width: 0 }} animate={{ width: currentStep >= 4 ? '100%' : '0%' }} transition={{ duration: 0.3 }} />
-          </div>
-
-          <div className={`flex items-center gap-1.5 ${currentStep >= 4 ? 'text-brand-600' : 'text-gray-400'}`}>
-            <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${currentStep >= 4 ? 'bg-brand-600 text-white' : 'bg-gray-200'}`}>4</div>
-          </div>
-          <div className="w-1.5 sm:w-2 h-0.5 bg-gray-200 shrink-0">
-            <motion.div className="h-full bg-brand-600" initial={{ width: 0 }} animate={{ width: currentStep >= 5 ? '100%' : '0%' }} transition={{ duration: 0.3 }} />
-          </div>
-
-          <div className={`flex items-center gap-1.5 ${currentStep >= 5 ? 'text-brand-600' : 'text-gray-400'}`}>
-            <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${currentStep >= 5 ? 'bg-brand-600 text-white' : 'bg-gray-200'}`}>5</div>
-          </div>
-          <div className="w-1.5 sm:w-2 h-0.5 bg-gray-200 shrink-0">
-            <motion.div className="h-full bg-brand-600" initial={{ width: 0 }} animate={{ width: currentStep >= 6 ? '100%' : '0%' }} transition={{ duration: 0.3 }} />
-          </div>
-
-          <div className={`flex items-center gap-1.5 ${currentStep >= 6 ? 'text-brand-600' : 'text-gray-400'}`}>
-            <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${currentStep >= 6 ? 'bg-brand-600 text-white' : 'bg-gray-200'}`}>6</div>
-          </div>
-          <div className="w-1.5 sm:w-2 h-0.5 bg-gray-200 shrink-0">
-            <motion.div className="h-full bg-brand-600" initial={{ width: 0 }} animate={{ width: currentStep >= 7 ? '100%' : '0%' }} transition={{ duration: 0.3 }} />
-          </div>
-
-          <div className={`flex items-center gap-1.5 ${currentStep >= 7 ? 'text-brand-600' : 'text-gray-400'}`}>
-            <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${currentStep >= 7 ? 'bg-brand-600 text-white' : 'bg-gray-200'}`}>7</div>
-          </div>
-          <div className="w-1.5 sm:w-2 h-0.5 bg-gray-200 shrink-0">
-            <motion.div className="h-full bg-brand-600" initial={{ width: 0 }} animate={{ width: currentStep >= 8 ? '100%' : '0%' }} transition={{ duration: 0.3 }} />
-          </div>
-
-          <div className={`flex items-center gap-1.5 ${currentStep >= 8 ? 'text-brand-600' : 'text-gray-400'}`}>
-            <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${currentStep >= 8 ? 'bg-brand-600 text-white' : 'bg-gray-200'}`}>8</div>
-          </div>
-          <div className="w-1.5 sm:w-2 h-0.5 bg-gray-200 shrink-0">
-            <motion.div className="h-full bg-brand-600" initial={{ width: 0 }} animate={{ width: currentStep >= 9 ? '100%' : '0%' }} transition={{ duration: 0.3 }} />
-          </div>
-
-          <div className={`flex items-center gap-1.5 ${currentStep >= 9 ? 'text-brand-600' : 'text-gray-400'}`}>
-            <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${currentStep >= 9 ? 'bg-brand-600 text-white' : 'bg-gray-200'}`}>9</div>
-          </div>
-          <div className="w-1.5 sm:w-2 h-0.5 bg-gray-200 shrink-0">
-            <motion.div className="h-full bg-brand-600" initial={{ width: 0 }} animate={{ width: currentStep >= 10 ? '100%' : '0%' }} transition={{ duration: 0.3 }} />
-          </div>
-          
-          <div className={`flex items-center gap-1.5 ${currentStep >= 10 ? 'text-brand-600' : 'text-gray-400'}`}>
-            <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${currentStep >= 10 ? 'bg-brand-600 text-white' : 'bg-gray-200'}`}>10</div>
-          </div>
-          <div className="w-1.5 sm:w-2 h-0.5 bg-gray-200 shrink-0">
-            <motion.div className="h-full bg-brand-600" initial={{ width: 0 }} animate={{ width: currentStep >= 11 ? '100%' : '0%' }} transition={{ duration: 0.3 }} />
-          </div>
-
-          <div className={`flex items-center gap-1.5 ${currentStep >= 11 ? 'text-brand-600' : 'text-gray-400'}`}>
-            <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${currentStep >= 11 ? 'bg-brand-600 text-white' : 'bg-gray-200'}`}>11</div>
-            <span className="hidden lg:block text-xs font-medium whitespace-nowrap">Review</span>
-          </div>
-          <div className="w-1.5 sm:w-2 h-0.5 bg-gray-200 shrink-0">
-            <motion.div className="h-full bg-brand-600" initial={{ width: 0 }} animate={{ width: currentStep >= 12 ? '100%' : '0%' }} transition={{ duration: 0.3 }} />
-          </div>
-
-          <div className={`flex items-center gap-1.5 ${currentStep >= 12 ? 'text-brand-600' : 'text-gray-400'}`}>
-            <div className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${currentStep >= 12 ? 'bg-brand-600 text-white' : 'bg-gray-200'}`}>12</div>
-          </div>
+        {/* Desktop: Clickable step dots with tooltips */}
+        <div className="hidden sm:flex items-start justify-between mt-8 w-full max-w-full px-2">
+          {stepNames.slice(0, 12).map((name, idx) => {
+            const step = idx + 1;
+            const isDone = currentStep > step;
+            const isCurrent = currentStep === step;
+            const isLast = step === 12;
+            return (
+              <div key={step} className={`flex items-start ${isLast ? 'shrink-0' : 'flex-1'}`}>
+                {/* Step dot + label */}
+                <div className="flex flex-col items-center group shrink-0 w-14 md:w-16">
+                  <button
+                    onClick={() => setCurrentStep(step)}
+                    title={name}
+                    className={`relative w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-[11px] font-bold transition-all ring-2 ring-offset-1 ${
+                      isCurrent
+                        ? "bg-brand-600 text-white ring-brand-400 scale-110 shadow-md shadow-brand-200"
+                        : isDone
+                        ? "bg-brand-500 text-white ring-brand-300 hover:scale-105"
+                        : "bg-gray-100 text-gray-400 ring-transparent hover:bg-brand-50 hover:text-brand-600 hover:ring-brand-200"
+                    }`}
+                  >
+                    {isDone ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    ) : step}
+                  </button>
+                  <span className={`mt-2 text-[9px] md:text-[10px] font-semibold text-center whitespace-normal leading-tight ${
+                    isCurrent ? "text-brand-600" : isDone ? "text-brand-400" : "text-gray-400"
+                  }`}>
+                    {name}
+                  </span>
+                </div>
+                {/* Connector line */}
+                {!isLast && (
+                  <div className="flex-1 h-0.5 bg-gray-200 mt-4 mx-1 min-w-[4px]">
+                    <motion.div
+                      className="h-full bg-brand-500 rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: currentStep > step ? "100%" : "0%" }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -408,13 +422,19 @@ export default function ProfileBuilderPage() {
 
         {currentStep === 9 && (
           <motion.div key="step9" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-            <VideoIntroStep onComplete={handleVideoIntroComplete} onBack={() => setCurrentStep(8)} />
+            <VoiceIntroStep onComplete={handleVoiceIntroComplete} onBack={() => setCurrentStep(8)} />
           </motion.div>
         )}
-        
+
         {currentStep === 10 && (
           <motion.div key="step10" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-            <VoiceIntroStep onComplete={handleVoiceIntroComplete} onBack={() => setCurrentStep(9)} />
+            <div className="max-w-2xl mx-auto bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
+              <IdentityVerificationForm 
+                isWizard={true}
+                onBack={() => setCurrentStep(9)}
+                onNext={handleKycComplete}
+              />
+            </div>
           </motion.div>
         )}
 
@@ -430,7 +450,7 @@ export default function ProfileBuilderPage() {
 
         {currentStep === 12 && (
           <motion.div
-            key="step12"
+            key="step13"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="max-w-2xl mx-auto bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center"

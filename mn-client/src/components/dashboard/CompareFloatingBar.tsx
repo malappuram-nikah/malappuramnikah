@@ -7,6 +7,7 @@ import { X, Layers, ArrowRight, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { API_URL } from "@/lib/config";
 
 export default function CompareFloatingBar() {
   const { compareIds, removeFromCompare, clearCompare } = useCompare();
@@ -22,7 +23,7 @@ export default function CompareFloatingBar() {
     const fetchProfiles = async () => {
       try {
         const storedToken = localStorage.getItem("mn_token");
-        const res = await fetch("http://localhost:3333/user/profiles", {
+        const res = await fetch(`${API_URL}/user/profiles?ids=${compareIds.join(",")}`, {
           headers: storedToken ? { "Authorization": `Bearer ${storedToken}` } : {}
         });
         const data = await res.json();
@@ -50,7 +51,7 @@ export default function CompareFloatingBar() {
     };
 
     fetchProfiles();
-  }, [compareIds]);
+  }, [compareIds, pathname]);
 
   if (compareIds.length === 0 || pathname === "/dashboard/compare") return null;
 

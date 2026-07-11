@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { CheckCircle2, ChevronRight, Edit3, User, Heart, BookOpen, Users, MapPin, Briefcase, Camera, Video, Mic } from "lucide-react";
 import { showChildrenField } from "./BasicDetailsStep";
 import { showPartnerChildrenField } from "./PartnerPreferencesStep";
+import { API_URL } from "@/lib/config";
 
 
 interface SectionHeaderProps {
@@ -112,7 +113,7 @@ export default function ReviewStep({ onComplete, onBack, onEditSection }: Review
         }
       }
 
-      const response = await fetch(`http://localhost:3333/user/${userId}/profile`, {
+      const response = await fetch(`${API_URL}/user/${userId}/profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

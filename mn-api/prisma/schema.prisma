@@ -15,6 +15,7 @@ model User {
   last_name      String
   cast           String
   location       String
+  email          String?   @unique
   mobile_number  String    @unique 
   password       String
   dob            String
@@ -23,11 +24,33 @@ model User {
   is_new_user    Boolean   @default(true)
   last_login     DateTime?
   profile_details Json?
+  search_preferences Json?
+  kyc_status         String    @default("NOT_SUBMITTED")
+  kyc_document_type  String?
+  kyc_front_url      String?
+  kyc_back_url       String?
+  kyc_rejected_reason String?
+  kyc_submitted_at   DateTime?
+  kyc_verified_at    DateTime?
   created_at     DateTime  @default(now())
   updated_at     DateTime  @updatedAt
   verify         Verify[]
   sent_interests     Interest[] @relation("SentInterests")
   received_interests Interest[] @relation("ReceivedInterests")
+  referral_code      String?    @unique
+  referral_points    Int        @default(0)
+  referrals_sent     Referral[] @relation("Referrer")
+  referrals_received Referral[] @relation("ReferredUser")
+  referral_transactions ReferralTransaction[]
+  blocking           Block[]    @relation("Blocker")
+  blocked_by         Block[]    @relation("Blocked")
+  favouriting        Favourite[] @relation("Favouriter")
+  favourited_by      Favourite[] @relation("Favourited")
+  sent_messages      Message[]  @relation("SentMessages")
+  received_messages  Message[]  @relation("ReceivedMessages")
+  feedbacks          Feedback[]
+  views_sent         ProfileView[] @relation("Viewer")
+  views_received     ProfileView[] @relation("Viewed")
 
   @@map("user")
 }
@@ -68,6 +91,9 @@ model Message {
   is_read     Boolean  @default(false)
   created_at  DateTime @default(now())
 
+  sender      User     @relation("SentMessages", fields: [sender_id], references: [id], onDelete: Cascade)
+  receiver    User     @relation("ReceivedMessages", fields: [receiver_id], references: [id], onDelete: Cascade)
+
   @@map("message")
 }
 
@@ -82,4 +108,101 @@ model Notification {
   created_at  DateTime @default(now())
 
   @@map("notification")
+}
+
+model Referral {
+  id               Int      @id @default(autoincrement())
+  referrer_id      Int
+  referred_user_id Int      @unique
+  referral_code    String
+  status           String   @default("PENDING") // PENDING, SUCCESS, REJECTED
+  rewarded         Boolean  @default(false)
+  created_at       DateTime @default(now())
+
+  referrer         User     @relation("Referrer", fields: [referrer_id], references: [id], onDelete: Cascade)
+  referred_user    User     @relation("ReferredUser", fields: [referred_user_id], references: [id], onDelete: Cascade)
+  transactions     ReferralTransaction[]
+
+  @@index([referrer_id])
+  @@map("referral")
+}
+
+model ReferralTransaction {
+  id            Int       @id @default(autoincrement())
+  user_id       Int
+  referral_id   Int?
+  points        Int
+  type          String    // EARN, REDEEM, BONUS, DEDUCT, EXPIRE
+  reason        String
+  created_at    DateTime  @default(now())
+
+  user          User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  referral      Referral? @relation(fields: [referral_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id])
+  @@map("referral_transaction")
+}
+
+model ReferralSettings {
+  id                  Int      @id @default(1)
+  points_per_referral Int      @default(100)
+  reward_condition    String   @default("SIGNUP") // SIGNUP, KYC, PAYMENT
+  enabled             Boolean  @default(true)
+  max_referral        Int      @default(100)
+  daily_limit         Int      @default(10)
+
+  @@map("referral_settings")
+}
+
+model Block {
+  id         Int      @id @default(autoincrement())
+  blocker_id Int
+  blocked_id Int
+  created_at DateTime @default(now())
+
+  blocker    User     @relation("Blocker", fields: [blocker_id], references: [id], onDelete: Cascade)
+  blocked    User     @relation("Blocked", fields: [blocked_id], references: [id], onDelete: Cascade)
+
+  @@unique([blocker_id, blocked_id])
+  @@map("block")
+}
+
+model Favourite {
+  id            Int      @id @default(autoincrement())
+  favouriter_id Int
+  favourited_id Int
+  created_at    DateTime @default(now())
+
+  favouriter    User     @relation("Favouriter", fields: [favouriter_id], references: [id], onDelete: Cascade)
+  favourited    User     @relation("Favourited", fields: [favourited_id], references: [id], onDelete: Cascade)
+
+  @@unique([favouriter_id, favourited_id])
+  @@map("favourite")
+}
+
+model Feedback {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  category   String   // SUGGESTION, BUG, APPRECIATION, OTHER
+  rating     Int      // 1-5 stars
+  subject    String
+  message    String
+  created_at DateTime @default(now())
+
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("feedback")
+}
+
+model ProfileView {
+  id         Int      @id @default(autoincrement())
+  viewer_id  Int
+  viewed_id  Int
+  created_at DateTime @default(now())
+
+  viewer     User     @relation("Viewer", fields: [viewer_id], references: [id], onDelete: Cascade)
+  viewed     User     @relation("Viewed", fields: [viewed_id], references: [id], onDelete: Cascade)
+
+  @@unique([viewer_id, viewed_id])
+  @@map("profile_view")
 }

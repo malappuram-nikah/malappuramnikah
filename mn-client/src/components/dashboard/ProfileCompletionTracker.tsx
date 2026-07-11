@@ -5,146 +5,71 @@ import { motion } from "framer-motion";
 import { ArrowRight, AlertCircle, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 
+import { useUser } from "@/context/UserContext";
+
 export default function ProfileCompletionTracker() {
   const [completionPercent, setCompletionPercent] = useState(0);
-  const [missingSections, setMissingSections] = useState<{name: string, suggestion: string, step: number}[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [missingSections, setMissingSections] = useState<{key: string, name: string, suggestion: string, step: number, weight: number}[]>([]);
+  const { currentUser: user, loadingUser } = useUser();
 
   useEffect(() => {
-    const syncAndCalculate = async () => {
-      const sections = [
-        { key: "mn_basic_details_draft", name: "Basic Details", suggestion: "Add your basic details to start matching.", step: 1 },
-        { key: "mn_religious_info_draft", name: "Religious Info", suggestion: "Add your religious background.", step: 2 },
-        { key: "mn_professional_info_draft", name: "Professional Info", suggestion: "Add your education and career details.", step: 3 },
-        { key: "mn_family_details_draft", name: "Family Details", suggestion: "Tell us about your family background.", step: 4 },
-        { key: "mn_interests_draft", name: "Interests & Personality", suggestion: "Complete Interests & Personality to find like-minded people.", step: 5 },
-        { key: "mn_habits_draft", name: "Hobbies & Habits", suggestion: "Add your lifestyle habits.", step: 6 },
-        { key: "mn_partner_preferences_draft", name: "Partner Preferences", suggestion: "Complete Partner Preferences to improve match suggestions.", step: 7 },
-        { key: "mn_profile_photos_draft", name: "Profile Photos", suggestion: "Upload more photos to improve profile visibility.", step: 8 },
-        { key: "mn_video_intro_draft", name: "Video Introduction", suggestion: "Upload a video intro to stand out.", step: 9 },
-        { key: "mn_voice_intro_draft", name: "Voice Introduction", suggestion: "Record a voice intro to boost responses.", step: 10 },
-      ];
+    if (loadingUser) return;
 
-      const token = localStorage.getItem("mn_token");
-      let userId = null;
-      if (token) {
-        try {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          userId = payload.userId;
-        } catch (e) {
-          console.error("Token decoding error", e);
-        }
-      }
+    const sections = [
+      { key: "mn_basic_details_draft", name: "Basic Details", suggestion: "Add your height and marital status.", step: 1, weight: 20, check: (p: any) => p && p.height && p.maritalStatus },
+      { key: "mn_religious_info_draft", name: "Religious Info", suggestion: "Add your prayer habits and religiousness.", step: 2, weight: 15, check: (p: any) => p && p.namaz && p.religiousness },
+      { key: "mn_professional_info_draft", name: "Professional Info", suggestion: "Add your education and profession.", step: 3, weight: 15, check: (p: any) => p && p.highestEducation && p.profession },
+      { key: "mn_family_details_draft", name: "Family Details", suggestion: "Tell us about your family background.", step: 4, weight: 10, check: (p: any) => p && p.familyStatus },
+      { key: "mn_interests_draft", name: "Interests & Personality", suggestion: "Complete Interests & Personality to find like-minded people.", step: 5, weight: 5, check: (p: any) => p && Object.keys(p).length > 0 },
+      { key: "mn_habits_draft", name: "Hobbies & Habits", suggestion: "Add your lifestyle habits.", step: 6, weight: 5, check: (p: any) => p && Object.keys(p).length > 0 },
+      { key: "mn_partner_preferences_draft", name: "Partner Preferences", suggestion: "Complete Partner Preferences to improve match suggestions.", step: 7, weight: 15, check: (p: any) => p && Object.keys(p).length > 0 },
+      { key: "mn_profile_photos_draft", name: "Profile Photos", suggestion: "Upload more photos to improve profile visibility.", step: 8, weight: 10, check: (p: any) => p && p.photos && p.photos.length > 0 },
+      { key: "mn_voice_intro_draft", name: "Voice Introduction", suggestion: "Record a voice intro to boost responses.", step: 10, weight: 5, check: (p: any) => p && p.voice },
+      ...(user?.gender?.toLowerCase() === "female" ? [] : [
+        { key: "mn_kyc_status", name: "Identity Verification", suggestion: "Verify your identity to get the 'ID Verified' badge.", step: 11, weight: 10, check: () => localStorage.getItem("mn_kyc_status") === "VERIFIED" }
+      ])
+    ];
 
-      if (userId) {
-        const cachedUserId = localStorage.getItem("mn_logged_in_user_id");
-        if (cachedUserId !== String(userId)) {
-          try {
-            const res = await fetch(`http://localhost:3333/user/${userId}?t=${Date.now()}`, {
-              headers: token ? { "Authorization": `Bearer ${token}` } : {},
-              cache: "no-store"
-            });
-            const data = await res.json();
-            if (data.success && data.user) {
-              const user = data.user;
-              
-              // Clear old draft keys first to prevent stale cache
-              sections.forEach(sec => localStorage.removeItem(sec.key));
-              
-              // Sync backend profile details to localStorage
-              if (user.profile_details) {
-                Object.entries(user.profile_details).forEach(([key, value]) => {
-                  if (value) {
-                    localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
-                  }
-                });
-              }
+    let earnedWeight = 0;
+    let totalWeight = 0;
+    const missing: {key: string, name: string, suggestion: string, step: number, weight: number}[] = [];
 
-              // Pre-populate step 1 draft from core signup details if not already saved
-              const basicKey = "mn_basic_details_draft";
-              if (!localStorage.getItem(basicKey)) {
-                let calculatedAge = "24";
-                if (user.dob) {
-                  const birthYear = parseInt(user.dob.split("-")[0], 10);
-                  if (!isNaN(birthYear)) {
-                    calculatedAge = (new Date().getFullYear() - birthYear).toString();
-                  }
-                }
-                const defaultBasic = {
-                  name: `${user.first_name || ""} ${user.last_name || ""}`.trim(),
-                  profileFor: user.profile_for || "Myself",
-                  gender: user.gender || "Male",
-                  location: user.location || "Malappuram, Kerala",
-                  presentLocation: user.location || "Malappuram",
-                  age: calculatedAge,
-                  aboutMe: "Looking for a pious, family-oriented partner with shared values.",
-                  height: "",
-                  maritalStatus: "Single",
-                  motherTongue: "Malayalam",
-                  physicalStatus: "Normal",
-                  appearance: "",
-                  weight: "",
-                  languagesSpoken: "Malayalam, English"
-                };
-                localStorage.setItem(basicKey, JSON.stringify(defaultBasic));
-              }
-
-              // Pre-populate step 2 draft (Religious) from community column if not already saved
-              const religiousKey = "mn_religious_info_draft";
-              if (!localStorage.getItem(religiousKey)) {
-                const defaultReligious = {
-                  religion: "Islam",
-                  community: user.cast || "Sunni",
-                  religiousness: "Pious"
-                };
-                localStorage.setItem(religiousKey, JSON.stringify(defaultReligious));
-              }
-              
-              // Mark as synced for this user ID
-              localStorage.setItem("mn_logged_in_user_id", String(userId));
-            }
-          } catch (err) {
-            console.error("Failed to sync profile details in tracker:", err);
+    sections.forEach(section => {
+      totalWeight += section.weight;
+      try {
+        if (section.key === "mn_kyc_status") {
+          if (section.check(null)) {
+            earnedWeight += section.weight;
+          } else {
+            missing.push(section);
           }
-        }
-      }
-
-      let completedCount = 0;
-      const missing: {name: string, suggestion: string, step: number}[] = [];
-
-      sections.forEach(section => {
-        try {
+        } else {
           const item = localStorage.getItem(section.key);
           if (item) {
             const parsed = JSON.parse(item);
-            // specific checks to ensure it's not empty
-            if (section.key === "mn_profile_photos_draft" && (!parsed.photos || parsed.photos.length === 0)) {
-              missing.push(section);
-            } else if (section.key === "mn_video_intro_draft" && !parsed.video) {
-              missing.push(section);
-            } else if (section.key === "mn_voice_intro_draft" && !parsed.voice) {
-              missing.push(section);
+            if (section.check(parsed)) {
+              earnedWeight += section.weight;
             } else {
-              completedCount++;
+              missing.push(section);
             }
           } else {
             missing.push(section);
           }
-        } catch (e) {
-          missing.push(section);
         }
-      });
+      } catch (e) {
+        missing.push(section);
+      }
+    });
 
-      const percent = Math.round((completedCount / sections.length) * 100);
-      setCompletionPercent(percent);
-      setMissingSections(missing);
-      setIsLoaded(true);
-    };
+    // Sort missing sections by weight (descending) so highest priority is shown first
+    missing.sort((a, b) => b.weight - a.weight);
 
-    syncAndCalculate();
-  }, []);
+    const percent = Math.round((earnedWeight / totalWeight) * 100);
+    setCompletionPercent(percent);
+    setMissingSections(missing);
+  }, [user, loadingUser]);
 
-  if (!isLoaded) return null;
+  if (loadingUser) return null;
 
   // Determine profile strength
   let strength = "Weak";
@@ -205,13 +130,21 @@ export default function ProfileCompletionTracker() {
                 </div>
               </div>
               <Link 
-                href={`/dashboard/profile-builder`} 
+                href={`/dashboard/profile-builder?step=${section.step}`} 
                 className="shrink-0 px-4 py-1.5 bg-white border border-gray-200 text-xs font-semibold text-gray-700 rounded-lg hover:bg-brand-50 hover:text-brand-700 hover:border-brand-200 transition-colors"
               >
                 Complete
               </Link>
             </div>
           ))}
+
+          {missingSections.length > 2 && (
+            <div className="flex items-center justify-center mt-2 mb-1">
+              <span className="text-xs font-medium text-gray-500 bg-gray-50 border border-gray-100 px-3 py-1 rounded-full">
+                + {missingSections.length - 2} more section{missingSections.length - 2 !== 1 ? 's' : ''} remaining
+              </span>
+            </div>
+          )}
 
           <Link href="/dashboard/profile-builder" className="inline-flex items-center gap-1 mt-2 text-sm font-semibold text-brand-600 hover:text-brand-700 hover:underline">
             Go to Profile Builder <ArrowRight className="w-4 h-4" />

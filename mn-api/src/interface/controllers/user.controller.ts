@@ -3,6 +3,7 @@ import { RegisterUser } from "../../applications/use-cases/user/registerUser.use
 import { LoginUser } from "../../applications/use-cases/user/LoginUser.usecase";
 import { SendOtpUseCase } from "../../applications/use-cases/user/SentOtp.usecase";
 import { UpdateProfileDetailsUseCase } from "../../applications/use-cases/user/UpdateProfileDetails.usecase";
+import { GenerateGuestReferralUseCase } from "../../applications/use-cases/user/GenerateGuestReferral.usecase";
 import { MediaStorageService } from "../../infrastructure/service/MediaStorageService";
 import { getUserIdFromRequest } from "../routes/interest.route";
 import prisma from "../../infrastructure/prisma/prisamClient";
@@ -13,19 +14,53 @@ export class UserController {
     private registerUser: RegisterUser,
     private sendOtp: SendOtpUseCase,
     private getAllUsers: any,
-    private updateProfileDetails: UpdateProfileDetailsUseCase
+    private updateProfileDetails: UpdateProfileDetailsUseCase,
+    private generateGuestReferral: GenerateGuestReferralUseCase
   ) {}
+
+  async generateReferral(req: Request, res: Response) {
+    try {
+      const { name, mobile_number } = req.body;
+      if (!name || !mobile_number) {
+        return res.status(400).json({ success: false, message: "Name and Mobile Number are required" });
+      }
+
+      const referralCode = await this.generateGuestReferral.execute(name, mobile_number);
+      return res.status(200).json({ success: true, referralCode, message: "Referral code generated successfully." });
+    } catch (error: any) {
+      console.error("Generate referral error:", error);
+      return res.status(500).json({ success: false, message: error.message || "Failed to generate referral code" });
+    }
+  }
 
   async register(req: Request, res: Response) {
     console.log(req.body, "re body");
 
     try {
       console.log("Request body:", req.body);
+      const phoneNumber = req.body.mobile_number;
+
+      // Check if user exists and is unverified (status is 'in_active')
+      const existingUser = await prisma.user.findUnique({
+        where: { mobile_number: phoneNumber }
+      });
+      const isUnverified = existingUser && existingUser.status === "in_active";
+
       const user = await this.registerUser.execute(req.body);
       console.log("User from use case:", user);
 
-      const phoneNumber = req.body.mobile_number;
       await this.sendOtp.execute(phoneNumber);
+
+      if (isUnverified) {
+        return res
+          .status(200)
+          .json({
+            success: true,
+            unverified: true,
+            message: "Your account has already been created but is not yet verified. Please verify your OTP to activate your account.",
+            user
+          });
+      }
 
       return res
         .status(200)
@@ -95,21 +130,74 @@ export class UserController {
 
       const reqIsAdmin = (requester.profile_details as any)?.isAdmin === true || requester.mobile_number === "+911212121212" || requester.mobile_number === "+919876543210";
 
-      const users = await this.getAllUsers.execute();
-
-      if (reqIsAdmin) {
-        return res.status(200).json({ success: true, users });
+      let limit: number | undefined;
+      if (req.query.limit) {
+        limit = parseInt(req.query.limit as string, 10);
       }
 
-      const reqGender = (requester.gender || "").toLowerCase();
-      const oppositeGender = reqGender === "male" ? "female" : reqGender === "female" ? "male" : null;
+      let ids: number[] | undefined;
+      if (req.query.ids) {
+        ids = (req.query.ids as string).split(',').map(id => parseInt(id, 10)).filter(n => !isNaN(n));
+      }
 
-      const filteredUsers = users.filter((u: any) => {
-        if (!oppositeGender) return false;
-        return (u.gender || "").toLowerCase() === oppositeGender;
+      const lightweight = req.query.lightweight === "true";
+
+      let users: any[];
+      if (reqIsAdmin) {
+        users = await this.getAllUsers.execute({ limit, ids, lightweight });
+      } else {
+        const reqGender = (requester.gender || "").toLowerCase();
+        const oppositeGender = reqGender === "male" ? "female" : reqGender === "female" ? "male" : null;
+
+        if (!oppositeGender) {
+          return res.status(200).json({ success: true, users: [] });
+        }
+
+        // Fetch only users of the opposite gender from the database
+        users = await this.getAllUsers.execute({ gender: oppositeGender, limit, ids, lightweight });
+      }
+
+      // Map users to include online tracker state and prune base64 assets to save database/networking bandwidth
+      const { onlineUsers } = require("../../infrastructure/onlineTracker");
+      const cleanedUsers = users.map((u: any) => {
+        const { password, ...safeUser } = u;
+        if (safeUser.profile_details) {
+          const details = { ...safeUser.profile_details };
+          // Strip large base64 video/voice uploads from the grid listing response
+          if (details.mn_video_intro_draft?.video?.dataUrl?.startsWith("data:")) {
+            details.mn_video_intro_draft = {
+              ...details.mn_video_intro_draft,
+              video: { ...details.mn_video_intro_draft.video, dataUrl: "" }
+            };
+          }
+          if (details.mn_voice_intro_draft?.voice?.dataUrl?.startsWith("data:")) {
+            details.mn_voice_intro_draft = {
+              ...details.mn_voice_intro_draft,
+              voice: { ...details.mn_voice_intro_draft.voice, dataUrl: "" }
+            };
+          }
+          // Strip non-primary base64 photos to keep payload size tiny
+          if (details.mn_profile_photos_draft?.photos) {
+            details.mn_profile_photos_draft = {
+              ...details.mn_profile_photos_draft,
+              photos: details.mn_profile_photos_draft.photos.map((p: any) => {
+                if (p.isPrimary) return p;
+                if (p.dataUrl?.startsWith("data:")) {
+                  return { ...p, dataUrl: "" };
+                }
+                return p;
+              })
+            };
+          }
+          safeUser.profile_details = details;
+        }
+        return {
+          ...safeUser,
+          is_online: onlineUsers.has(safeUser.id)
+        };
       });
 
-      return res.status(200).json({ success: true, users: filteredUsers });
+      return res.status(200).json({ success: true, users: cleanedUsers });
     } catch (error: any) {
       console.error("Error fetching users:", error);
       return res.status(500).json({ success: false, message: "Failed to fetch users" });

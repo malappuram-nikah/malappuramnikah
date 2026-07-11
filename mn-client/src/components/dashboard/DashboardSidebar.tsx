@@ -5,21 +5,25 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Heart, Search, MessageCircle,
-  Crown, Settings, LogOut, Menu, X, Bell, Sparkles, Calendar, ShieldCheck, Briefcase,
-  BarChart3, Users, AlertTriangle, CreditCard, LayoutGrid, DollarSign, Layers, User
+  Crown, Settings, LogOut, Menu, X, Bell, Radar, Calendar, ShieldCheck, Briefcase,
+  BarChart3, Users, AlertTriangle, CreditCard, LayoutGrid, DollarSign, Layers, User, Award, Edit2,
+  MessageSquarePlus
 } from "lucide-react";
+
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 // 1. Matrimonial Member Navigation Items
 const memberNavItems = [
   { href: "/dashboard",          icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/dashboard/matches",  icon: Sparkles,         label: "AI Matches" },
+  { href: "/dashboard/matches",  icon: Radar,         label: "AI Matches" },
   { href: "/dashboard/search",   icon: Search,           label: "Search"    },
   { href: "/dashboard/compare",  icon: Layers,           label: "Compare"   },
   { href: "/dashboard/interests",icon: Heart,            label: "Interests" },
   { href: "/dashboard/chat",     icon: MessageCircle,    label: "Chat"      },
-  { href: "/dashboard/profile-builder", icon: User,      label: "Edit Profile" },
+  { href: "/dashboard/my-profile",     icon: User,      label: "Manage My Profile" },
+  { href: "/dashboard/profile-builder", icon: Edit2,      label: "Edit Profile" },
+  { href: "/dashboard/referral", icon: Award,            label: "Referral & Earn" },
   { href: "/dashboard/premium",  icon: Crown,            label: "Premium"   },
   { href: "/dashboard/save-the-date", icon: Calendar,    label: "Save the Date" },
   { href: "/dashboard/settings", icon: Settings,         label: "Settings"  },
@@ -30,11 +34,14 @@ const adminNavItems = [
   { href: "/dashboard/admin?tab=analytics", icon: BarChart3,     label: "Analytics Core" },
   { href: "/dashboard/admin?tab=users",      icon: Users,          label: "User Accounts" },
   { href: "/dashboard/admin?tab=profiles",   icon: ShieldCheck,    label: "Matrimony Profiles" },
+  { href: "/dashboard/admin/referrals",     icon: Award,          label: "Referrals & Wallet" },
   { href: "/dashboard/admin?tab=complaints", icon: AlertTriangle,  label: "Complaints Grid" },
+  { href: "/dashboard/admin?tab=feedbacks",  icon: MessageSquarePlus, label: "User Feedbacks" },
   { href: "/dashboard/admin?tab=plans",      icon: CreditCard,     label: "Premium Plans" },
   { href: "/dashboard/admin?tab=cms",        icon: LayoutGrid,     label: "CMS Management" },
   { href: "/dashboard/business",             icon: Briefcase,      label: "B2B Creator Hub" },
 ];
+
 
 // 3. Wedding Business Creator Navigation Items (Only shown in /dashboard/business)
 const businessNavItems = [
@@ -110,19 +117,22 @@ export default function DashboardSidebar() {
                window.location.search === "?" + item.href.split("?")[1]);
 
             const isActive = isTabActive || (pathname === item.href);
+            const isAccent = (item as any).accent;
 
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all group",
+                  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all group",
                   isActive
                     ? "bg-brand-600 text-white shadow-sm font-semibold"
+                    : isAccent
+                    ? "text-brand-700 hover:bg-brand-50 border border-brand-100 bg-brand-50/40"
                     : "text-gray-600 hover:bg-brand-50 hover:text-brand-700"
                 )}
               >
-                <item.icon className={cn("w-5 h-5 shrink-0", isActive ? "text-white" : "text-gray-400 group-hover:text-brand-600")} />
+                <item.icon className={cn("w-5 h-5 shrink-0", isActive ? "text-white" : isAccent ? "text-brand-600" : "text-gray-400 group-hover:text-brand-600")} strokeWidth={1.5} />
                 {!collapsed && <span>{item.label}</span>}
               </Link>
             );

@@ -5,6 +5,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Crown, Check, Zap, Shield, Star, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/context/UserContext";
+import { API_URL } from "@/lib/config";
 
 const plans = [
   {
@@ -60,6 +62,7 @@ const plans = [
 
 export default function PremiumPage() {
   const router = useRouter();
+  const { currentUser, loadingUser, refreshUser } = useUser();
   const [userId, setUserId] = useState<number | null>(null);
   const [isPremium, setIsPremium] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
@@ -71,41 +74,16 @@ export default function PremiumPage() {
     setTimeout(() => setAlertMsg(null), 4000);
   };
 
-  const fetchUserPremiumStatus = async (token: string, uId: number) => {
-    try {
-      const res = await fetch(`http://localhost:3333/user/${uId}`, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (data.success && data.user) {
-        setIsPremium(!!data.user.is_premium);
-      }
-    } catch (e) {
-      console.error("Failed to load user premium status:", e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    const token = localStorage.getItem("mn_token");
-    if (!token) {
+    if (loadingUser) return;
+    if (!currentUser) {
       router.push("/login");
       return;
     }
-    try {
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      if (payload.userId) {
-        setUserId(payload.userId);
-        fetchUserPremiumStatus(token, payload.userId);
-      } else {
-        setLoading(false);
-      }
-    } catch (e) {
-      console.error("Failed to decode token", e);
-      setLoading(false);
-    }
-  }, []);
+    setUserId(currentUser.id);
+    setIsPremium(!!currentUser.is_premium);
+    setLoading(false);
+  }, [currentUser, loadingUser, router]);
 
   const handleUpgradePlan = async (planName: string) => {
     if (!userId) {
@@ -115,7 +93,7 @@ export default function PremiumPage() {
     setUpgrading(planName);
     try {
       const token = localStorage.getItem("mn_token");
-      const res = await fetch(`http://localhost:3333/user/${userId}/premium`, {
+      const res = await fetch(`${API_URL}/user/${userId}/premium`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -127,6 +105,7 @@ export default function PremiumPage() {
       if (data.success) {
         setIsPremium(true);
         triggerAlert(`Congratulations! You have successfully upgraded to the ${planName} Plan! 🎉`);
+        await refreshUser();
       } else {
         triggerAlert(data.message || "Upgrade failed.", "error");
       }

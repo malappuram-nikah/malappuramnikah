@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, ArrowLeft, CheckCircle2, ShieldCheck } from "lucide-react";
 
 import { LOCATIONS } from "@/lib/constants";
+import { API_URL } from "@/lib/config";
 
 interface RegisterModalProps {
   isOpen: boolean;
@@ -25,8 +26,20 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
     caste: "",
     countryCode: "+91",
     mobile: "",
+    email: "",
     password: "",
+    referralCode: "",
   });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get("ref");
+      if (ref) {
+        setFormData((prev) => ({ ...prev, referralCode: ref.toUpperCase() }));
+      }
+    }
+  }, []);
 
   const updateForm = (key: string, value: string) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -222,6 +235,16 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
               </div>
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email Address (Optional)</label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => updateForm("email", e.target.value)}
+                placeholder="Enter your email"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+              />
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
               <input
                 type="password"
@@ -229,6 +252,16 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
                 onChange={(e) => updateForm("password", e.target.value)}
                 placeholder="Minimum 6 characters"
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Referral Code (Optional)</label>
+              <input
+                type="text"
+                value={formData.referralCode}
+                onChange={(e) => updateForm("referralCode", e.target.value)}
+                placeholder="Enter referral code"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm uppercase font-mono tracking-wider"
               />
             </div>
           </motion.div>
@@ -241,7 +274,9 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
       case 1: return formData.profileFor && formData.gender;
       case 2: return formData.first_name.trim().length >= 2 && formData.last_name.trim().length >= 1 && formData.dateOfBirth;
       case 3: return formData.location && formData.caste;
-      case 4: return formData.mobile.length >= 8 && formData.password.length >= 6;
+      case 4: 
+        const isEmailValid = !formData.email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
+        return formData.mobile.length >= 8 && formData.password.length >= 6 && isEmailValid;
       default: return false;
     }
   };
@@ -259,10 +294,12 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
         password: formData.password,
         location: formData.location,
         dob: formData.dateOfBirth,
-        cast: formData.caste
+        cast: formData.caste,
+        email: formData.email || undefined,
+        referred_by_code: formData.referralCode || undefined
       };
 
-      const response = await fetch("http://localhost:3333/user/register", {
+      const response = await fetch(`${API_URL}/user/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -277,12 +314,18 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
         setRegisteredUserId(data.user.id);
       }
 
-      setSuccess(true);
-      setResendCooldown(30);
-      setTimeout(() => {
-        setSuccess(false);
+      if (data.unverified) {
+        setOtpError(data.message);
+        setResendCooldown(30);
         setShowOtpScreen(true);
-      }, 1500);
+      } else {
+        setSuccess(true);
+        setResendCooldown(30);
+        setTimeout(() => {
+          setSuccess(false);
+          setShowOtpScreen(true);
+        }, 1500);
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "An unexpected error occurred";
       setError(msg);
@@ -334,7 +377,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
     setOtpError(null);
     try {
       try {
-        const response = await fetch("http://localhost:3333/otp/verify-otp", {
+        const response = await fetch(`${API_URL}/otp/verify-otp`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -375,7 +418,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
   const handleResendOtp = async () => {
     if (resendCooldown > 0) return;
     try {
-      await fetch("http://localhost:3333/otp/resend-otp", {
+      await fetch(`${API_URL}/otp/resend-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

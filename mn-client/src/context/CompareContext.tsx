@@ -1,6 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { useUser } from "./UserContext";
 
 interface CompareContextType {
   compareIds: number[];
@@ -18,19 +19,14 @@ export function CompareProvider({ children }: { children: React.ReactNode }) {
   const [compareIds, setCompareIds] = useState<number[]>([]);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
 
-  const getStorageKey = () => {
-    if (typeof window === "undefined") return "mn_compare_ids_guest";
-    const token = localStorage.getItem("mn_token");
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        if (payload.userId) {
-          return `mn_compare_ids_${payload.userId}`;
-        }
-      } catch (e) {}
+  const { currentUser } = useUser();
+
+  const getStorageKey = useCallback(() => {
+    if (currentUser?.id) {
+      return `mn_compare_ids_${currentUser.id}`;
     }
     return "mn_compare_ids_guest";
-  };
+  }, [currentUser?.id]);
 
   useEffect(() => {
     const handleSync = () => {
@@ -56,7 +52,7 @@ export function CompareProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener("storage", handleSync);
       window.removeEventListener("focus", handleSync);
     };
-  }, []);
+  }, [getStorageKey]);
 
   const addToCompare = (id: number) => {
     if (compareIds.includes(id)) return;

@@ -3,23 +3,40 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Lock, Bell, Shield, ChevronRight, Sparkles, AlertCircle, ArrowRight, Save, CheckCircle2, Fingerprint, Phone } from "lucide-react";
+import { User, Lock, Bell, Shield, ChevronRight, Sparkles, AlertCircle, ArrowRight, Save, CheckCircle2, Phone, Loader2, MessageSquarePlus, Star, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { LOCATIONS } from "@/lib/constants";
+import { useUser } from "@/context/UserContext";
+import { API_URL } from "@/lib/config";
 
 const tabs = [
   { id: "profile", label: "Profile", icon: User },
   { id: "security", label: "Security", icon: Lock },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "privacy", label: "Privacy", icon: Shield },
+  { id: "feedback", label: "Feedback", icon: MessageSquarePlus },
 ];
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { currentUser, refreshUser } = useUser();
   const [activeTab, setActiveTab] = useState("profile");
   const [saved, setSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [userId, setUserId] = useState<number | null>(null);
+  
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Feedback Form State
+  const [feedbackCategory, setFeedbackCategory] = useState("SUGGESTION");
+  const [feedbackRating, setFeedbackRating] = useState(5);
+  const [feedbackRatingHover, setFeedbackRatingHover] = useState<number | null>(null);
+  const [feedbackSubject, setFeedbackSubject] = useState("");
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [feedbackSuccess, setFeedbackSuccess] = useState(false);
+  const [feedbackError, setFeedbackError] = useState("");
 
   // User Profile States
   const [firstName, setFirstName] = useState("");
@@ -75,15 +92,7 @@ export default function SettingsPage() {
 
       let userFetched = false;
       try {
-        if (currentUserId !== null) {
-          const res = await fetch(`http://localhost:3333/user/${currentUserId}?t=${Date.now()}`, {
-            headers: token ? { "Authorization": `Bearer ${token}` } : {},
-            cache: "no-store"
-          });
-          const data = await res.json();
-          if (data.success && data.user) {
-            const currentUser = data.user;
-
+        if (currentUser) {
             // Clear old draft keys first to prevent stale cache
             const draftKeys = [
               "mn_basic_details_draft",
@@ -164,7 +173,7 @@ export default function SettingsPage() {
               setAge("");
             }
 
-             setCommunity(currentUser.cast || "");
+            setCommunity(currentUser.cast || "");
             setGender(currentUser.gender || "");
             setProfileFor(currentUser.profile_for || "");
             setAboutMe(currentUser.profile_details?.mn_basic_details_draft?.aboutMe || "");
@@ -174,10 +183,9 @@ export default function SettingsPage() {
             setQuranReading(religiousDraft.quranReading || "");
 
             userFetched = true;
-          }
         }
       } catch (apiErr) {
-        console.warn("Backend profile fetch failed. Using fallback details.", apiErr);
+        console.warn("Backend profile sync failed in settings. Using fallback details.", apiErr);
       }
 
       if (!userFetched) {
@@ -236,8 +244,7 @@ export default function SettingsPage() {
       { key: "mn_habits_draft", name: "Personal Habits", step: 6, suggestion: "Add your lifestyle habits." },
       { key: "mn_partner_preferences_draft", name: "Partner Preferences", step: 7, suggestion: "Complete Partner Preferences to improve matches." },
       { key: "mn_profile_photos_draft", name: "Profile Photos", step: 8, suggestion: "Upload more photos to improve visibility." },
-      { key: "mn_video_intro_draft", name: "Video Onboarding", step: 9, suggestion: "Upload a video intro to stand out." },
-      { key: "mn_voice_intro_draft", name: "Voice Introduction", step: 10, suggestion: "Record a voice intro to boost responses." },
+      { key: "mn_voice_intro_draft", name: "Voice Introduction", step: 9, suggestion: "Record a voice intro to boost responses." },
     ];
 
     let completedCount = 0;
@@ -273,7 +280,63 @@ export default function SettingsPage() {
   useEffect(() => {
     loadProfileData();
     calculateCompletion();
-  }, []);
+
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get("tab");
+      if (tab && ["profile", "security", "notifications", "privacy", "feedback"].includes(tab)) {
+        setActiveTab(tab);
+      }
+    }
+  }, [currentUser]);
+
+  const handleFeedbackSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (feedbackSubject.trim().length < 3) {
+      setFeedbackError("Subject must be at least 3 characters long.");
+      return;
+    }
+    if (feedbackMessage.trim().length < 10) {
+      setFeedbackError("Message must be at least 10 characters long.");
+      return;
+    }
+
+    setFeedbackSubmitting(true);
+    setFeedbackError("");
+    setFeedbackSuccess(false);
+
+    try {
+      const storedToken = localStorage.getItem("mn_token");
+      const res = await fetch(`${API_URL}/user/feedback`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${storedToken}`
+        },
+        body: JSON.stringify({
+          category: feedbackCategory,
+          rating: feedbackRating,
+          subject: feedbackSubject,
+          message: feedbackMessage
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setFeedbackSuccess(true);
+        setFeedbackSubject("");
+        setFeedbackMessage("");
+        setFeedbackRating(5);
+        setTimeout(() => setFeedbackSuccess(false), 4000);
+      } else {
+        setFeedbackError(data.message || "Failed to submit feedback.");
+      }
+    } catch (err) {
+      setFeedbackError("Connection error. Please check your internet connection.");
+    } finally {
+      setFeedbackSubmitting(false);
+    }
+  };
 
   const handleSave = async () => {
     setSaved(false);
@@ -347,7 +410,7 @@ export default function SettingsPage() {
         return;
       }
 
-      const res = await fetch(`http://localhost:3333/user/${userId}/profile`, {
+      const res = await fetch(`${API_URL}/user/${userId}/profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -362,7 +425,7 @@ export default function SettingsPage() {
       if (data.success) {
         setSaved(true);
         setTimeout(() => setSaved(false), 2500);
-        loadProfileData();
+        await refreshUser();
         calculateCompletion();
       } else {
         console.error("Profile save rejected by API:", data.message);
@@ -399,7 +462,7 @@ export default function SettingsPage() {
     setVerificationError("");
     setIsVerifying(true);
     try {
-      const response = await fetch("http://localhost:3333/otp/verify-aadhaar", {
+      const response = await fetch(`${API_URL}/otp/verify-aadhaar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -427,7 +490,7 @@ export default function SettingsPage() {
     setVerificationError("");
     setIsVerifying(true);
     try {
-      await fetch("http://localhost:3333/otp/resend-otp", {
+      await fetch(`${API_URL}/otp/resend-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phoneNumber: mobile })
@@ -447,7 +510,7 @@ export default function SettingsPage() {
     setVerificationError("");
     setIsVerifying(true);
     try {
-      const response = await fetch("http://localhost:3333/otp/verify-otp", {
+      const response = await fetch(`${API_URL}/otp/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -481,6 +544,37 @@ export default function SettingsPage() {
   const handleCompleteNextStep = (stepNum: number) => {
     localStorage.setItem("mn_profile_builder_step", stepNum.toString());
     router.push("/dashboard/profile-builder");
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      const token = localStorage.getItem("mn_token");
+      if (!token || !userId) {
+        throw new Error("No authentication details found.");
+      }
+
+      const res = await fetch(`${API_URL}/user/${userId}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        localStorage.clear();
+        router.push("/login");
+        window.location.reload();
+      } else {
+        alert(data.message || "Failed to delete account.");
+      }
+    } catch (err: any) {
+      console.error("Failed to delete account:", err);
+      alert(err.message || "An error occurred while deleting your account.");
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+    }
   };
 
   // Determine profile strength
@@ -521,7 +615,7 @@ export default function SettingsPage() {
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Tab navigation */}
         <aside className="lg:w-56 shrink-0">
-          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+          <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -548,7 +642,7 @@ export default function SettingsPage() {
             key={activeTab}
             initial={{ opacity: 0, x: 10 }}
             animate={{ opacity: 1, x: 0 }}
-            className="bg-white rounded-2xl border border-gray-100 p-6 space-y-6"
+            className="bg-white rounded-xl border border-gray-100 p-6 space-y-6"
           >
             {activeTab === "profile" && (
               <>
@@ -566,7 +660,7 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Advanced Profile Builder redirect card */}
-                <div className="bg-brand-50 rounded-2xl p-5 border border-brand-100/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+                <div className="bg-brand-50 rounded-xl p-5 border border-brand-100/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
                   <div className="flex items-start gap-2.5">
                     <Sparkles className="w-5 h-5 text-brand-600 shrink-0 mt-0.5 animate-pulse" />
                     <div>
@@ -587,7 +681,7 @@ export default function SettingsPage() {
 
                 {/* Micro Completion Interactive Card */}
                 {completionPercent < 100 && missingSections.length > 0 && (
-                  <div className="bg-gradient-to-br from-brand-900 to-brand-700 rounded-2xl p-5 text-white shadow-md relative overflow-hidden">
+                  <div className="bg-gradient-to-br from-brand-900 to-brand-700 rounded-xl p-5 text-white shadow-md relative overflow-hidden">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] bg-[size:16px_16px] opacity-5 pointer-events-none" />
                     
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
@@ -667,7 +761,7 @@ export default function SettingsPage() {
                 <div className="border-t border-gray-100 pt-6 mt-6 space-y-4">
                   <div>
                     <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                      <Shield className="w-5 h-5 text-brand-600 animate-pulse" />
+                      <Shield className="w-5 h-5 text-brand-600" />
                       Profile Verification
                     </h3>
                     <p className="text-xs text-gray-500 mt-0.5">
@@ -675,172 +769,49 @@ export default function SettingsPage() {
                     </p>
                   </div>
 
-                  {userStatus === "active" ? (
-                    <div className="bg-green-50 border border-green-200/60 rounded-2xl p-4 flex items-center gap-3">
-                      <CheckCircle2 className="w-8 h-8 text-green-600 shrink-0" />
-                      <div>
-                        <p className="font-semibold text-green-800 text-sm">Verified Profile</p>
-                        <p className="text-xs text-green-700 mt-0.5">
-                          Your profile has been successfully verified via{" "}
-                          <span className="font-semibold capitalize">
-                            {verificationMethod || "Mobile OTP"}
-                          </span>
-                          .
+                  <div className="bg-gray-50 border border-gray-100 rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <p className="font-semibold text-gray-900 text-sm">Government-Issued ID Verification</p>
+                      {currentUser?.kyc_status === "VERIFIED" ? (
+                        <p className="text-xs text-green-700 mt-1 font-medium flex items-center gap-1">
+                          <CheckCircle2 className="w-4 h-4 text-green-600" />
+                          Your identity has been verified successfully. You have the 'ID Verified' badge.
                         </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="bg-gray-50 border border-gray-200/60 rounded-2xl p-5 space-y-5">
-                      <div className="flex items-center gap-2 text-amber-700 bg-amber-50 px-3.5 py-2 rounded-xl border border-amber-200/50 text-xs font-semibold w-max">
-                        <AlertCircle className="w-4 h-4 shrink-0" />
-                        <span>Verification Pending</span>
-                      </div>
-
-                      {verifyMode === "choose" && (
-                        <div className="grid sm:grid-cols-2 gap-4">
-                          <button
-                            onClick={() => setVerifyMode("aadhaar")}
-                            className="p-4 border border-gray-200 rounded-xl hover:border-brand-500 hover:bg-white text-left transition-all group"
-                          >
-                            <Fingerprint className="w-5 h-5 text-brand-600 mb-2" />
-                            <p className="font-bold text-sm text-gray-900 group-hover:text-brand-600">Aadhaar Card Verification</p>
-                            <p className="text-xs text-gray-500 mt-1">Instant, secure Aadhaar OTP verification.</p>
-                          </button>
-
-                          <button
-                            onClick={() => setVerifyMode("number")}
-                            className="p-4 border border-gray-200 rounded-xl hover:border-brand-500 hover:bg-white text-left transition-all group"
-                          >
-                            <Phone className="w-5 h-5 text-brand-600 mb-2" />
-                            <p className="font-bold text-sm text-gray-900 group-hover:text-brand-600">Mobile OTP Verification</p>
-                            <p className="text-xs text-gray-500 mt-1">Receive SMS OTP code on your mobile number.</p>
-                          </button>
+                      ) : (currentUser?.kyc_status === "PENDING" || currentUser?.kyc_status === "UNDER_REVIEW") ? (
+                        <div className="mt-1 space-y-1">
+                          <p className="text-xs text-amber-700 font-medium">
+                            Your profile identity document is currently under verification.
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            If you have any queries, please contact admin: <span className="font-semibold text-gray-700">+91 9961 896886</span>
+                          </p>
                         </div>
-                      )}
-
-                      {verifyMode === "aadhaar" && (
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-bold text-gray-900">Verify with Aadhaar Card</h4>
-                            <button onClick={() => setVerifyMode("choose")} className="text-xs font-semibold text-brand-600 hover:underline">
-                              Change Method
-                            </button>
-                          </div>
-
-                          {showAadhaarOtpBanner && (
-                            <div className="bg-brand-600 text-white text-xs font-semibold px-4 py-2.5 rounded-xl text-center animate-pulse">
-                              Simulated SMS sent: Your OTP is <span className="font-mono text-sm underline">987654</span>
-                            </div>
-                          )}
-
-                          {verificationError && (
-                            <div className="p-3 bg-red-50 text-red-700 border border-red-100 text-xs rounded-xl">
-                              {verificationError}
-                            </div>
-                          )}
-
-                          {!aadhaarOtpSent ? (
-                            <div className="flex gap-2">
-                              <input
-                                type="text"
-                                value={aadhaarNumber}
-                                onChange={(e) => setAadhaarNumber(formatAadhaar(e.target.value))}
-                                placeholder="0000 0000 0000"
-                                className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 font-mono tracking-wider text-center"
-                              />
-                              <button
-                                onClick={handleAadhaarVerifySend}
-                                disabled={isVerifying}
-                                className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm"
-                              >
-                                {isVerifying ? "Sending..." : "Send OTP"}
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="space-y-4">
-                              <p className="text-xs text-gray-500">Enter the 6-digit OTP code sent to your registered number (987654):</p>
-                              <div className="flex gap-2">
-                                <input
-                                  type="text"
-                                  maxLength={6}
-                                  value={aadhaarOtp}
-                                  onChange={(e) => setAadhaarOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                                  placeholder="Enter 6-digit OTP"
-                                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-center font-semibold tracking-widest"
-                                />
-                                <button
-                                  onClick={handleAadhaarVerifyConfirm}
-                                  disabled={isVerifying || aadhaarOtp.length < 6}
-                                  className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm"
-                                >
-                                  {isVerifying ? "Verifying..." : "Verify"}
-                                </button>
-                              </div>
-                            </div>
-                          )}
+                      ) : currentUser?.kyc_status === "REJECTED" ? (
+                        <div className="mt-1 space-y-1">
+                          <p className="text-xs text-red-650 font-medium">
+                            Your previous verification request was rejected. Please upload a clear ID document.
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Reason: {currentUser?.kyc_rejected_reason || "Invalid document image."}
+                          </p>
                         </div>
-                      )}
-
-                      {verifyMode === "number" && (
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-bold text-gray-900">Verify with Mobile Number</h4>
-                            <button onClick={() => setVerifyMode("choose")} className="text-xs font-semibold text-brand-600 hover:underline">
-                              Change Method
-                            </button>
-                          </div>
-
-                          {showMobileOtpBanner && (
-                            <div className="bg-brand-600 text-white text-xs font-semibold px-4 py-2.5 rounded-xl text-center animate-pulse">
-                              Simulated SMS sent: Your OTP is <span className="font-mono text-sm underline">123456</span>
-                            </div>
-                          )}
-
-                          {verificationError && (
-                            <div className="p-3 bg-red-50 text-red-700 border border-red-100 text-xs rounded-xl">
-                              {verificationError}
-                            </div>
-                          )}
-
-                          {!mobileOtpSent ? (
-                            <div className="flex items-center gap-3">
-                              <p className="text-xs text-gray-600">
-                                Send a 6-digit SMS verification code to your registered mobile number: <span className="font-semibold">{mobile}</span>
-                              </p>
-                              <button
-                                onClick={handleMobileVerifySend}
-                                disabled={isVerifying}
-                                className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm shrink-0"
-                              >
-                                {isVerifying ? "Sending..." : "Send OTP"}
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="space-y-4">
-                              <p className="text-xs text-gray-500">Enter the 6-digit OTP code sent to your mobile phone (123456):</p>
-                              <div className="flex gap-2">
-                                <input
-                                  type="text"
-                                  maxLength={6}
-                                  value={mobileOtp}
-                                  onChange={(e) => setMobileOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                                  placeholder="Enter 6-digit OTP"
-                                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-center font-semibold tracking-widest"
-                                />
-                                <button
-                                  onClick={handleMobileVerifyConfirm}
-                                  disabled={isVerifying || mobileOtp.length < 6}
-                                  className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm"
-                                >
-                                  {isVerifying ? "Verifying..." : "Verify"}
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-500 mt-0.5 max-w-md">
+                          Upload your Aadhaar Card, Driving License, Passport, or Voter ID. Our administrators will verify your document.
+                        </p>
                       )}
                     </div>
-                  )}
+                    {(!currentUser?.kyc_status || currentUser?.kyc_status === "NOT_SUBMITTED" || currentUser?.kyc_status === "REJECTED") && (
+                      <button
+                        type="button"
+                        onClick={() => router.push("/dashboard/profile-builder?step=11")}
+                        className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm shrink-0 flex items-center gap-1 active:scale-95 cursor-pointer"
+                      >
+                        Verify Now
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </>
             )}
@@ -908,22 +879,265 @@ export default function SettingsPage() {
                     </div>
                   ))}
                 </div>
+
+                {/* Danger Zone */}
+                <div className="border-t border-red-100 pt-6 mt-6 space-y-4">
+                  <div>
+                    <h3 className="text-base font-bold text-red-650 flex items-center gap-2">
+                      <AlertCircle className="w-5 h-5 text-red-500" />
+                      Danger Zone
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+                      Permanently delete your matrimonial profile and all associated verify documents, message logs, and match lists. This action is irreversible.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteModal(true)}
+                    className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-650 font-bold border border-red-200 text-xs rounded-lg transition-colors active:scale-95"
+                  >
+                    Delete Account
+                  </button>
+                </div>
+              </>
+            )}
+
+            {activeTab === "feedback" && (
+              <>
+                <div className="border-b border-gray-50 pb-5">
+                  <h2 className="text-lg font-bold text-gray-900">Share Your Feedback</h2>
+                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                    Help us improve Malappuram Nikah! Your suggestions, bug reports, and appreciation help us build a better platform for everyone.
+                  </p>
+                </div>
+
+                <form onSubmit={handleFeedbackSubmit} className="space-y-6">
+                  {feedbackSuccess && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-4 bg-teal-50 border border-teal-200 rounded-xl flex items-center gap-3 text-teal-800"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
+                        <Check className="w-4 h-4 text-teal-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-teal-900">Feedback Submitted!</p>
+                        <p className="text-[10px] text-teal-700 mt-0.5">Thank you for your valuable feedback. Our team will review it.</p>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {feedbackError && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-red-800"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                        <AlertCircle className="w-4 h-4 text-red-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-red-900">Submission Failed</p>
+                        <p className="text-[10px] text-red-700 mt-0.5">{feedbackError}</p>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Category Selector */}
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Feedback Category</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {[
+                        { id: "SUGGESTION", label: "💡 Suggestion" },
+                        { id: "BUG", label: "🐛 Bug Report" },
+                        { id: "APPRECIATION", label: "💖 Appreciation" },
+                        { id: "OTHER", label: "✨ Other" }
+                      ].map((cat) => {
+                        const isSelected = feedbackCategory === cat.id;
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => setFeedbackCategory(cat.id)}
+                            className={`py-3 px-2 text-center text-xs font-bold rounded-xl border transition-all duration-200 ${
+                              isSelected
+                                ? "bg-brand-50 border-brand-500 text-brand-700 shadow-sm"
+                                : "bg-white border-gray-150 text-gray-600 hover:bg-gray-50"
+                            }`}
+                          >
+                            {cat.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Rating Selector */}
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Rate your experience</label>
+                    <div className="flex items-center gap-1.5">
+                      {[1, 2, 3, 4, 5].map((star) => {
+                        const isFilled = (feedbackRatingHover !== null ? feedbackRatingHover : feedbackRating) >= star;
+                        return (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setFeedbackRating(star)}
+                            onMouseEnter={() => setFeedbackRatingHover(star)}
+                            onMouseLeave={() => setFeedbackRatingHover(null)}
+                            className="p-1 transition-transform active:scale-90"
+                          >
+                            <Star
+                              className={`w-8 h-8 transition-colors ${
+                                isFilled
+                                  ? "fill-amber-400 text-amber-400"
+                                  : "text-gray-300"
+                              }`}
+                            />
+                          </button>
+                        );
+                      })}
+                      <span className="text-xs font-semibold text-gray-500 ml-2">
+                        {feedbackRating === 5 && "Excellent! 🌟"}
+                        {feedbackRating === 4 && "Very Good! 👍"}
+                        {feedbackRating === 3 && "Good! 🙂"}
+                        {feedbackRating === 2 && "Fair 😐"}
+                        {feedbackRating === 1 && "Poor 😞"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Subject Input */}
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block" htmlFor="feedback-subject">Subject</label>
+                    <input
+                      id="feedback-subject"
+                      type="text"
+                      required
+                      value={feedbackSubject}
+                      onChange={(e) => setFeedbackSubject(e.target.value)}
+                      placeholder="Summary of your feedback"
+                      className="w-full px-3.5 py-2.5 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-brand-500 transition-colors bg-white text-gray-900"
+                    />
+                  </div>
+
+                  {/* Message Input */}
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block" htmlFor="feedback-message">Message Details</label>
+                    <textarea
+                      id="feedback-message"
+                      required
+                      rows={5}
+                      value={feedbackMessage}
+                      onChange={(e) => setFeedbackMessage(e.target.value)}
+                      placeholder="Please tell us details about your feedback or suggestion..."
+                      className="w-full px-3.5 py-2.5 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-brand-500 transition-colors bg-white text-gray-900 resize-none"
+                    />
+                    <div className="flex justify-between items-center text-[10px] text-gray-400 px-1">
+                      <span>Minimum 10 characters</span>
+                      <span>{feedbackMessage.length} characters</span>
+                    </div>
+                  </div>
+
+                  {/* Submit button inside form */}
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      disabled={feedbackSubmitting}
+                      className="w-full sm:w-auto px-6 py-2.5 bg-brand-600 text-white text-xs font-semibold rounded-xl hover:bg-brand-700 active:scale-[0.98] transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {feedbackSubmitting ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          Submitting Feedback...
+                        </>
+                      ) : (
+                        "Submit Feedback"
+                      )}
+                    </button>
+                  </div>
+                </form>
               </>
             )}
 
             {/* Save button */}
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
-              {saved && <span className="text-sm text-brand-600 font-medium">✓ Changes saved!</span>}
-              <button
-                onClick={handleSave}
-                className="px-6 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 active:scale-[0.98] transition-all shadow-sm"
-              >
-                Save Changes
-              </button>
-            </div>
+            {activeTab !== "feedback" && (
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+                {saved && <span className="text-sm text-brand-600 font-medium">✓ Changes saved!</span>}
+                <button
+                  onClick={handleSave}
+                  className="px-6 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 active:scale-[0.98] transition-all shadow-sm"
+                >
+                  Save Changes
+                </button>
+              </div>
+            )}
           </motion.div>
         </div>
+
       </div>
+
+      {/* Account Deletion Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !isDeleting && setShowDeleteModal(false)}
+              className="absolute inset-0 bg-gray-900/40 backdrop-blur-xs"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative w-full max-w-md bg-white rounded-xl p-6 shadow-xl border border-gray-150 space-y-4 z-10"
+            >
+              <div className="flex items-center gap-3 text-red-650">
+                <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-gray-950">Delete Account Permanently?</h4>
+                  <p className="text-xs text-gray-400">This action cannot be undone.</p>
+                </div>
+              </div>
+              
+              <p className="text-xs text-gray-600 leading-relaxed">
+                By deleting your account, you will lose your profile details, KYC verification status, and all matching history. Your active chat messages and expressed interests will be permanently deleted.
+              </p>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={() => setShowDeleteModal(false)}
+                  className="flex-1 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-bold rounded-lg border border-gray-200 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={handleDeleteAccount}
+                  className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    "Delete Permanently"
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

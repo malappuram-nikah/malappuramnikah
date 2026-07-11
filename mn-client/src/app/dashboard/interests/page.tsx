@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, MessageCircle, ArrowRight, Loader2, Sparkles, X, Check, Unlock, Inbox, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { API_URL } from "@/lib/config";
 
 interface Profile {
   id: number;
@@ -21,91 +22,131 @@ interface Profile {
 export default function InterestsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"sent" | "received" | "mutual">("mutual");
-  const [initialTabSet, setInitialTabSet] = useState(false);
-  const [sentList, setSentList] = useState<any[]>([]);
-  const [receivedList, setReceivedList] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<"mutual" | "received" | "sent">("mutual");
+  
   const [mutualList, setMutualList] = useState<any[]>([]);
+  const [receivedList, setReceivedList] = useState<any[]>([]);
+  const [sentList, setSentList] = useState<any[]>([]);
+  
+  const [mutualPage, setMutualPage] = useState(1);
+  const [receivedPage, setReceivedPage] = useState(1);
+  const [sentPage, setSentPage] = useState(1);
+  
+  const [mutualHasMore, setMutualHasMore] = useState(true);
+  const [receivedHasMore, setReceivedHasMore] = useState(true);
+  const [sentHasMore, setSentHasMore] = useState(true);
+  
+  const [fetching, setFetching] = useState(false);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
 
-  const fetchAllInterests = async () => {
+  const resolveAvatar = (u: any, index: number) => {
+    let avatar = `https://i.pravatar.cc/200?img=${30 + (index % 30)}`;
+    const photos = u.profile_details?.mn_profile_photos_draft?.photos;
+    if (photos && photos.length > 0) {
+      const primary = photos.find((p: any) => p.isPrimary);
+      avatar = primary ? primary.dataUrl : photos[0].dataUrl;
+    }
+    return avatar;
+  };
+
+  const mapUser = (u: any, idx: number) => {
+    if (!u) return null;
+    return {
+      id: u.id,
+      name: `${u.first_name} ${u.last_name}`,
+      age: u.dob ? Math.floor((new Date().getTime() - new Date(u.dob).getTime()) / 31557600000) : 25,
+      location: u.location || "Kerala",
+      img: resolveAvatar(u, idx),
+      caste: u.cast || "Sunni",
+      gender: u.gender,
+      interest_status: u.interest_status || "PENDING"
+    };
+  };
+
+  const fetchTab = async (tab: "mutual" | "received" | "sent", page: number, isLoadMore = false) => {
+    if (fetching) return;
     try {
       const storedToken = localStorage.getItem("mn_token");
       if (!storedToken) {
         setLoading(false);
         return;
       }
+      
+      setFetching(true);
+      if (!isLoadMore) setLoading(true);
 
-      const res = await fetch("http://localhost:3333/user/interest", {
+      const res = await fetch(`${API_URL}/user/interest?type=${tab}&page=${page}&limit=20`, {
         headers: { "Authorization": `Bearer ${storedToken}` }
       });
       const data = await res.json();
       
       if (data.success) {
-        const resolveAvatar = (u: Profile, index: number) => {
-          let avatar = `https://i.pravatar.cc/200?img=${30 + (index % 30)}`;
-          const photos = u.profile_details?.mn_profile_photos_draft?.photos;
-          if (photos && photos.length > 0) {
-            const primary = photos.find((p: any) => p.isPrimary);
-            avatar = primary ? primary.dataUrl : photos[0].dataUrl;
-          }
-          return avatar;
+        const mapped = (data.users || []).map((u: any, i: number) => mapUser(u, i)).filter(Boolean);
+        const hasMore = data.hasMore || false;
+        
+        const dedupe = (prev: any[], next: any[]) => {
+          const map = new Map(prev.map(p => [p.id, p]));
+          next.forEach(n => map.set(n.id, n));
+          return Array.from(map.values());
         };
-
-        const mapUser = (u: Profile, idx: number) => {
-          if (!u) return null;
-          return {
-            id: u.id,
-            name: `${u.first_name} ${u.last_name}`,
-            age: u.dob ? Math.floor((new Date().getTime() - new Date(u.dob).getTime()) / 31557600000) : 25,
-            location: u.location || "Kerala",
-            img: resolveAvatar(u, idx),
-            caste: u.cast || "Sunni",
-            gender: u.gender,
-            interest_status: u.interest_status || "PENDING"
-          };
-        };
-
-        const sent = (data.sent || [])
-          .map((u: Profile, i: number) => mapUser(u, i))
-          .filter(Boolean)
-          .filter((p: any) => p.interest_status === "PENDING");
-
-        const received = (data.received || [])
-          .map((u: Profile, i: number) => mapUser(u, i))
-          .filter(Boolean)
-          .filter((p: any) => p.interest_status === "PENDING");
-
-        const mutual = (data.mutual || [])
-          .map((u: Profile, i: number) => mapUser(u, i))
-          .filter(Boolean);
-
-        setSentList(sent);
-        setReceivedList(received);
-        setMutualList(mutual);
-
-        // Smart Initial Tab Focus: Focus on the tab that actually has items so the user doesn't see an empty page first
-        if (!initialTabSet) {
-          if (mutual.length > 0) {
-            setActiveTab("mutual");
-          } else if (received.length > 0) {
-            setActiveTab("received");
-          } else if (sent.length > 0) {
-            setActiveTab("sent");
-          }
-          setInitialTabSet(true);
+        
+        if (tab === "mutual") {
+          setMutualList(prev => isLoadMore ? dedupe(prev, mapped) : dedupe([], mapped));
+          setMutualHasMore(hasMore);
+        } else if (tab === "received") {
+          setReceivedList(prev => isLoadMore ? dedupe(prev, mapped) : dedupe([], mapped));
+          setReceivedHasMore(hasMore);
+        } else if (tab === "sent") {
+          setSentList(prev => isLoadMore ? dedupe(prev, mapped) : dedupe([], mapped));
+          setSentHasMore(hasMore);
         }
       }
     } catch (e) {
       console.error("Failed to load interests:", e);
     } finally {
+      setFetching(false);
       setLoading(false);
     }
   };
 
+  // Initial load
   useEffect(() => {
-    fetchAllInterests();
-  }, []);
+    fetchTab(activeTab, 1, false);
+  }, [activeTab]);
+
+  const loadMore = () => {
+    if (activeTab === "mutual" && mutualHasMore && !fetching) {
+      const next = mutualPage + 1;
+      setMutualPage(next);
+      fetchTab("mutual", next, true);
+    } else if (activeTab === "received" && receivedHasMore && !fetching) {
+      const next = receivedPage + 1;
+      setReceivedPage(next);
+      fetchTab("received", next, true);
+    } else if (activeTab === "sent" && sentHasMore && !fetching) {
+      const next = sentPage + 1;
+      setSentPage(next);
+      fetchTab("sent", next, true);
+    }
+  };
+
+  // Intersection observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    const target = document.getElementById("infinite-scroll-trigger");
+    if (target) observer.observe(target);
+    return () => {
+      if (target) observer.unobserve(target);
+    };
+  }, [activeTab, mutualHasMore, receivedHasMore, sentHasMore, fetching, mutualPage, receivedPage, sentPage]);
+
 
   // Handle express/accept/withdraw interest toggling
   const handleAction = async (targetId: number, successMessage: string) => {
@@ -114,7 +155,7 @@ export default function InterestsPage() {
       if (!storedToken) return;
 
       setLoading(true);
-      const res = await fetch("http://localhost:3333/user/interest", {
+      const res = await fetch(`${API_URL}/user/interest`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -126,7 +167,15 @@ export default function InterestsPage() {
       const data = await res.json();
       if (data.success) {
         setAlertMsg(successMessage);
-        await fetchAllInterests();
+        // Refresh the current tab fully
+        if (activeTab === "mutual") {
+          setMutualPage(1);
+        } else if (activeTab === "received") {
+          setReceivedPage(1);
+        } else if (activeTab === "sent") {
+          setSentPage(1);
+        }
+        fetchTab(activeTab, 1, false);
       }
     } catch (e) {
       console.error("Action failed:", e);
@@ -167,14 +216,14 @@ export default function InterestsPage() {
           Interests & Matches
         </h1>
         <p className="text-sm text-gray-500 mt-1">
-          Manage your connections. Discover mutual matches, incoming responses, and outgoing interest requests.
+          Manage your connections. Discover accepted interests, incoming responses, and outgoing interest requests.
         </p>
       </div>
 
       {/* Modern Tabs */}
       <div className="flex bg-gray-100/80 p-1.5 rounded-2xl w-full max-w-md border border-gray-200/50">
         {[
-          { id: "mutual", label: "Matches", count: mutualList.length, icon: Sparkles },
+          { id: "mutual", label: "Accepted", count: mutualList.length, icon: Sparkles },
           { id: "received", label: "Received", count: receivedList.length, icon: Inbox },
           { id: "sent", label: "Sent", count: sentList.length, icon: Send },
         ].map((tab) => {
@@ -208,8 +257,8 @@ export default function InterestsPage() {
           <p className="font-semibold text-sm">Loading your interests...</p>
         </div>
       ) : activeList.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center justify-center max-w-2xl mx-auto">
-          <div className="w-16 h-16 rounded-2xl bg-brand-50 flex items-center justify-center text-brand-500 mb-4 border border-brand-100/50">
+        <div className="text-center py-20 bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col items-center justify-center max-w-2xl mx-auto">
+          <div className="w-16 h-16 rounded-xl bg-brand-50 flex items-center justify-center text-brand-500 mb-4 border border-brand-100/50">
             {activeTab === "mutual" ? (
               <Sparkles className="w-8 h-8" />
             ) : activeTab === "sent" ? (
@@ -220,7 +269,7 @@ export default function InterestsPage() {
           </div>
           <h3 className="text-base font-bold text-gray-900">
             {activeTab === "mutual"
-              ? "No Mutual Matches Yet"
+              ? "No Accepted Interests Yet"
               : activeTab === "sent"
               ? "No Sent Interests"
               : "No Interests Received"}
@@ -270,7 +319,7 @@ export default function InterestsPage() {
                   </div>
                   {isMatched && (
                     <span className="absolute top-3 right-3 bg-pink-600 text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1">
-                      <Sparkles className="w-2.5 h-2.5" /> Mutual Match
+                      <Sparkles className="w-2.5 h-2.5" /> Accepted
                     </span>
                   )}
                 </div>

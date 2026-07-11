@@ -2,8 +2,8 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, Save, UploadCloud, Trash2, Camera } from "lucide-react";
+import { motion } from "framer-motion";
+import { CheckCircle2, Save, Trash2, Plus } from "lucide-react";
 
 export interface PhotoData {
   id: string;
@@ -81,24 +81,38 @@ export default function ProfilePhotosStep({ initialData, onComplete, onBack }: P
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setIsUploading(true);
-      const file = e.target.files[0];
+      const files = Array.from(e.target.files);
+
+      if (formData.photos.length + files.length > 5) {
+        alert("You can upload a maximum of 5 photos.");
+        setIsUploading(false);
+        return;
+      }
 
       try {
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (ev) => resolve(ev.target?.result as string);
-          reader.onerror = (ev) => reject(ev);
-          reader.readAsDataURL(file);
-        });
+        const loadedPhotos = await Promise.all(
+          files.map(async (file) => {
+            return new Promise<PhotoData>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = (ev) => {
+                resolve({
+                  id: Math.random().toString(36).substring(2, 9),
+                  dataUrl: ev.target?.result as string,
+                  isPrimary: false,
+                });
+              };
+              reader.onerror = reject;
+              reader.readAsDataURL(file);
+            });
+          })
+        );
 
-        setFormData({
-          photos: [{
-            id: Math.random().toString(36).substring(2, 9),
-            dataUrl,
-            isPrimary: true,
-          }]
-        });
-        
+        const newPhotos = [...formData.photos, ...loadedPhotos];
+        if (newPhotos.length > 0 && !newPhotos.some(p => p.isPrimary)) {
+          newPhotos[0].isPrimary = true;
+        }
+
+        setFormData({ photos: newPhotos });
         setErrors({});
       } catch (err) {
         console.error("Error loading image:", err);
@@ -112,14 +126,27 @@ export default function ProfilePhotosStep({ initialData, onComplete, onBack }: P
     }
   };
 
-  const removePhoto = () => {
-    setFormData({ photos: [] });
+  const removePhoto = (id: string) => {
+    const filtered = formData.photos.filter(p => p.id !== id);
+    if (filtered.length > 0 && !filtered.some(p => p.isPrimary)) {
+      filtered[0].isPrimary = true;
+    }
+    setFormData({ photos: filtered });
+  };
+
+  const makePrimary = (id: string) => {
+    setFormData({
+      photos: formData.photos.map(p => ({
+        ...p,
+        isPrimary: p.id === id
+      }))
+    });
   };
 
   const validate = () => {
     const newErrors: Partial<Record<keyof ProfilePhotosData, string>> = {};
     if (formData.photos.length === 0) {
-      newErrors.photos = "Please upload a profile picture.";
+      newErrors.photos = "Please upload at least one profile picture.";
     }
 
     setErrors(newErrors);
@@ -134,16 +161,15 @@ export default function ProfilePhotosStep({ initialData, onComplete, onBack }: P
   };
 
   const progressPercent = formData.photos.length > 0 ? 100 : 0;
-  const profilePic = formData.photos[0]?.dataUrl || null;
 
   if (!isDraftLoaded) return null;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden w-full max-w-xl mx-auto">
+    <div className="bg-white rounded-xl border border-gray-150 shadow-sm overflow-hidden w-full max-w-xl mx-auto">
       <div className="p-6 md:p-8 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl md:text-2xl font-bold font-playfair text-gray-900">Profile Picture</h2>
-          <p className="text-sm text-gray-500 mt-1">Upload a clear, friendly photo of yourself.</p>
+          <h2 className="text-xl md:text-2xl font-bold font-playfair text-gray-900">Profile Photos</h2>
+          <p className="text-sm text-gray-500 mt-1">Upload up to 5 clear, friendly photos of yourself (portrait size).</p>
         </div>
         
         <div className="flex items-center gap-4 shrink-0">
@@ -164,66 +190,73 @@ export default function ProfilePhotosStep({ initialData, onComplete, onBack }: P
       <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6">
         
         {/* Upload/Preview Section */}
-        <div className="flex flex-col items-center justify-center py-6">
-          <AnimatePresence mode="wait">
-            {profilePic ? (
-              <motion.div 
-                key="preview"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="relative"
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            {formData.photos.map((photo) => (
+              <div 
+                key={photo.id}
+                className="relative rounded-xl overflow-hidden border border-gray-200 aspect-[3/4] group bg-gray-55 shadow-xs"
               >
-                <div className="w-48 h-48 rounded-full overflow-hidden border-4 border-brand-500/30 shadow-lg relative group">
-                  <img 
-                    src={profilePic} 
-                    alt="Profile Picture" 
-                    className="w-full h-full object-cover"
-                  />
-                  <div 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white cursor-pointer"
-                  >
-                    <Camera className="w-6 h-6 mb-1" />
-                    <span className="text-xs font-medium">Change Photo</span>
-                  </div>
+                <img 
+                  src={photo.dataUrl} 
+                  alt="Matrimony Profile" 
+                  className="w-full h-full object-cover"
+                />
+                
+                {/* Primary star badge */}
+                <div className="absolute top-2 left-2 flex gap-1">
+                  {photo.isPrimary ? (
+                    <span className="bg-amber-500 text-white w-6 h-6 rounded-full text-[12px] font-extrabold shadow-sm flex items-center justify-center" title="Primary Profile Photo">
+                      ★
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => makePrimary(photo.id)}
+                      className="bg-black/40 hover:bg-black/60 text-white w-6 h-6 rounded-full text-[12px] font-bold shadow-sm opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center"
+                      title="Make Primary"
+                    >
+                      ☆
+                    </button>
+                  )}
                 </div>
 
+                {/* Remove button */}
                 <button
                   type="button"
-                  onClick={removePhoto}
-                  className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow-md transition-colors hover:scale-105 active:scale-95"
-                  title="Remove Picture"
+                  onClick={() => removePhoto(photo.id)}
+                  className="absolute bottom-2 right-2 bg-red-605 hover:bg-red-700 text-white p-2 rounded-full shadow-md transition-all opacity-0 group-hover:opacity-100 active:scale-90 cursor-pointer"
+                  title="Remove Photo"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="upload-prompt"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
+              </div>
+            ))}
+
+            {/* Add Photo Button Slot */}
+            {formData.photos.length < 5 && (
+              <button
+                type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="w-48 h-48 rounded-full border-2 border-dashed border-brand-300 bg-brand-50/30 hover:bg-brand-50 transition-all cursor-pointer flex flex-col items-center justify-center text-center p-4 relative group"
+                className="border-2 border-dashed border-gray-200 hover:border-brand-500 rounded-xl aspect-[3/4] flex flex-col items-center justify-center text-gray-400 hover:text-brand-600 transition-all bg-gray-50/50 hover:bg-brand-50/10 cursor-pointer group"
               >
-                <UploadCloud className="w-10 h-10 text-brand-500 mb-2 group-hover:scale-110 transition-transform" />
-                <span className="text-xs font-semibold text-gray-700">Upload Photo</span>
-                <span className="text-[10px] text-gray-400 mt-1 max-w-[120px]">JPG, PNG or WEBP up to 5MB</span>
-              </motion.div>
+                <Plus className="w-8 h-8 mb-2 group-hover:scale-110 transition-transform animate-pulse" />
+                <span className="text-xs font-bold">Add Photo</span>
+              </button>
             )}
-          </AnimatePresence>
+          </div>
 
           <input 
             type="file" 
             accept="image/jpeg, image/png, image/webp" 
+            multiple
             className="hidden" 
             ref={fileInputRef}
             onChange={handleFileChange}
           />
 
           {errors.photos && (
-            <motion.p initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 text-xs font-semibold mt-4 text-center">
+            <motion.p initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-red-550 text-xs font-semibold mt-4 text-center">
               {errors.photos}
             </motion.p>
           )}
@@ -231,7 +264,7 @@ export default function ProfilePhotosStep({ initialData, onComplete, onBack }: P
           {isUploading && (
             <div className="flex items-center justify-center mt-4 gap-2 text-brand-600">
               <span className="w-4 h-4 border-2 border-brand-200 border-t-brand-600 rounded-full animate-spin" />
-              <span className="text-xs font-medium">Uploading profile picture...</span>
+              <span className="text-xs font-medium">Uploading images...</span>
             </div>
           )}
         </div>
@@ -257,14 +290,14 @@ export default function ProfilePhotosStep({ initialData, onComplete, onBack }: P
               <button
                 type="button"
                 onClick={onBack}
-                className="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 active:scale-[0.98] transition-all text-sm"
+                className="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 active:scale-[0.98] transition-all text-sm cursor-pointer"
               >
                 Back
               </button>
             )}
             <button
               type="submit"
-              className="px-6 py-2.5 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 active:scale-[0.98] transition-all shadow-sm flex items-center gap-1.5 text-sm"
+              className="px-6 py-2.5 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 active:scale-[0.98] transition-all shadow-sm flex items-center gap-1.5 text-sm cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4" />
               Save & Continue

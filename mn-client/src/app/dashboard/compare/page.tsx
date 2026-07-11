@@ -1,17 +1,21 @@
 "use client";
 /* eslint-disable react-hooks/set-state-in-effect */
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense, useRef } from "react";
 import { useCompare } from "@/context/CompareContext";
+import { useUser } from "@/context/UserContext";
 import { getEnrichedProfile, analyzeMatch } from "@/lib/profile-utils";
 import { 
   X, Layers, Heart, MessageCircle, Star, User, BookOpen, 
   Briefcase, Users, HeartHandshake, MapPin, Sparkles, Check, 
   Trash2, Share2, Printer, Plus, ChevronRight, Lock, Unlock,
-  TrendingUp, Award, Smile, ShieldCheck, ArrowRight, Info
+  TrendingUp, Award, Smile, ShieldCheck, ArrowRight, Info,
+  Search, Loader2
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { CompareTableSkeleton } from "@/components/dashboard/Skeleton";
+import { API_URL } from "@/lib/config";
 
 export default function ComparePage() {
   return (
@@ -29,14 +33,23 @@ function CompareContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { compareIds, addToCompare, removeFromCompare, clearCompare } = useCompare();
+  const { currentUser } = useUser();
 
   const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [fullProfiles, setFullProfiles] = useState<any[]>([]);
   const [comparedProfiles, setComparedProfiles] = useState<any[]>([]);
   const [myPreferences, setMyPreferences] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
   const [favIds, setFavIds] = useState<number[]>([]);
   const [interests, setInterests] = useState<number[]>([]);
+  const fetchedIdsRef = useRef<Set<number>>(new Set());
+  const [hasEnteredTable, setHasEnteredTable] = useState(compareIds.length > 0);
+
+  useEffect(() => {
+    if (compareIds.length >= 2) setHasEnteredTable(true);
+    if (compareIds.length === 0) setHasEnteredTable(false);
+  }, [compareIds.length]);
 
   // Load URL parameter comparison IDs if present
   useEffect(() => {
@@ -60,7 +73,7 @@ function CompareContent() {
         // Fetch Interests
         if (token) {
           try {
-            const res = await fetch("http://localhost:3333/user/interest", {
+            const res = await fetch(`${API_URL}/user/interest`, {
               headers: { "Authorization": `Bearer ${token}` }
             });
             const data = await res.json();
@@ -72,36 +85,33 @@ function CompareContent() {
           }
         }
 
-        // Fetch user profiles
-        const res = await fetch("http://localhost:3333/user/profiles", {
-          headers: token ? { "Authorization": `Bearer ${token}` } : {}
+        // Fetch user profiles (Limit to 20 for the dropdown to prevent huge payload)
+        const fetchUrls = [`${API_URL}/user/profiles?limit=20&lightweight=true`];
+
+        const responses = await Promise.all(
+          fetchUrls.map(url => fetch(url, { headers: token ? { "Authorization": `Bearer ${token}` } : {} }))
+        );
+        
+        const dataResponses = await Promise.all(responses.map(r => r.json()));
+        
+        let mergedUsers: any[] = [];
+        dataResponses.forEach(data => {
+          if (data.success && data.users) {
+            mergedUsers = [...mergedUsers, ...data.users];
+          }
         });
-        const data = await res.json();
-        if (data.success && data.users) {
-          setAllUsers(data.users);
+
+        // Deduplicate users just in case an ID was in both arrays
+        const uniqueUsers = Array.from(new Map(mergedUsers.map(u => [u.id, u])).values());
+        
+        if (uniqueUsers.length > 0) {
+          setAllUsers(uniqueUsers);
           
           // Identify current user preferences
-          if (token) {
-            try {
-              const payload = JSON.parse(atob(token.split(".")[1]));
-              const meRes = await fetch(`http://localhost:3333/user/${payload.userId}`, {
-                headers: { "Authorization": `Bearer ${token}` }
-              });
-              const meData = await meRes.json();
-              if (meData.success && meData.user) {
-                const me = meData.user;
-                if (me.profile_details?.mn_partner_preferences_draft) {
-                  setMyPreferences(me.profile_details.mn_partner_preferences_draft);
-                } else {
-                  const localPref = localStorage.getItem("mn_partner_preferences_draft");
-                  if (localPref) setMyPreferences(JSON.parse(localPref));
-                }
-              } else {
-                const localPref = localStorage.getItem("mn_partner_preferences_draft");
-                if (localPref) setMyPreferences(JSON.parse(localPref));
-              }
-            } catch (meErr) {
-              console.error("Failed to load current user for preferences", meErr);
+          if (currentUser) {
+            if (currentUser.profile_details?.mn_partner_preferences_draft) {
+              setMyPreferences(currentUser.profile_details.mn_partner_preferences_draft);
+            } else {
               const localPref = localStorage.getItem("mn_partner_preferences_draft");
               if (localPref) setMyPreferences(JSON.parse(localPref));
             }
@@ -117,27 +127,78 @@ function CompareContent() {
       }
     };
     fetchData();
-  }, []);
+  }, [currentUser?.id]);
+
+  // Dynamically fetch full profile details when added to comparison
+  useEffect(() => {
+    const fetchMissingFullProfiles = async () => {
+      const missingIds = compareIds.filter(id => !fetchedIdsRef.current.has(id) && !fullProfiles.some(p => p.id === id));
+      if (missingIds.length > 0) {
+        missingIds.forEach(id => fetchedIdsRef.current.add(id));
+        try {
+          const token = localStorage.getItem("mn_token");
+          const res = await fetch(`${API_URL}/user/profiles?ids=${missingIds.join(",")}`, {
+            headers: token ? { "Authorization": `Bearer ${token}` } : {}
+          });
+          const data = await res.json();
+          if (data.success && data.users) {
+            setFullProfiles(prev => {
+              const newProfiles = [...prev, ...data.users];
+              // Deduplicate just in case
+              return Array.from(new Map(newProfiles.map(u => [u.id, u])).values());
+            });
+          }
+        } catch (e) {
+          console.error("Failed to fetch full profiles", e);
+        }
+      }
+    };
+
+    if (compareIds.length > 0) {
+      fetchMissingFullProfiles();
+    }
+  }, [compareIds, fullProfiles]);
 
   // Assemble compared profiles lists
   useEffect(() => {
-    if (allUsers.length > 0) {
-      const enriched = allUsers
-        .filter(u => compareIds.includes(u.id))
-        .map(u => {
-          const profile = getEnrichedProfile(u);
-          const matchResult = analyzeMatch(profile, myPreferences);
+    if (compareIds.length > 0) {
+      const sorted = compareIds.map(id => {
+        const fullProfile = fullProfiles.find(u => u.id === id);
+        if (fullProfile) {
+          const enriched = getEnrichedProfile(fullProfile);
           return {
-            ...profile,
-            matchResult
+            ...enriched,
+            matchResult: analyzeMatch(enriched, myPreferences),
+            isLoading: false
           };
-        });
+        }
+
+        // Fallback to lightweight profile from allUsers while fetching full details
+        const lightProfile = allUsers.find(u => u.id === id);
+        if (lightProfile) {
+          const enriched = getEnrichedProfile(lightProfile);
+          return {
+            ...enriched,
+            matchResult: { score: 0, indicator: "Loading...", fields: {} },
+            isLoading: true
+          };
+        }
+
+        return {
+          id,
+          name: "Loading...",
+          photo: "",
+          profileId: `MN-${100000 + id}`,
+          matchResult: { score: 0, indicator: "Loading...", fields: {} },
+          isLoading: true
+        };
+      });
       
-      // Sort enriched profiles by search selection order
-      const sorted = compareIds.map(id => enriched.find(p => p?.id === id)).filter(Boolean);
       setComparedProfiles(sorted);
+    } else {
+      setComparedProfiles([]);
     }
-  }, [allUsers, compareIds, myPreferences]);
+  }, [fullProfiles, allUsers, compareIds, myPreferences]);
 
   const handleToggleFavorite = (id: number) => {
     let updated = [];
@@ -159,7 +220,7 @@ function CompareContent() {
         setAlertMsg("Please log in to express interest.");
         return;
       }
-      const res = await fetch("http://localhost:3333/user/interest", {
+      const res = await fetch(`${API_URL}/user/interest`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -193,14 +254,75 @@ function CompareContent() {
     window.print();
   };
 
+  if (loading) {
+    return <CompareTableSkeleton />;
+  }
+
   // Find the index of the profile with the highest compatibility score
-  const highestScoreIdx = comparedProfiles.reduce(
-    (maxIdx, p, idx, arr) => (p.matchResult.score > arr[maxIdx].matchResult.score ? idx : maxIdx),
-    0
-  );
+  const highestScoreIdx = comparedProfiles.length > 0
+    ? comparedProfiles.reduce(
+        (maxIdx, p, idx, arr) => {
+          const currentScore = p?.matchResult?.score ?? 0;
+          const maxScore = arr[maxIdx]?.matchResult?.score ?? 0;
+          return currentScore > maxScore ? idx : maxIdx;
+        },
+        0
+      )
+    : 0;
 
   return (
     <div className="space-y-6 pb-20 relative">
+      {/* Print override styling to ensure all pages are printable */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          /* Hide sidebar, header, navigation, toast notifications and floating bars */
+          aside,
+          header,
+          nav,
+          footer,
+          .print\\:hidden,
+          [class*="DashboardSidebar"],
+          [class*="DashboardHeader"],
+          [class*="CompareFloatingBar"] {
+            display: none !important;
+          }
+          
+          /* Reset wrapper layout elements for natural print page flow */
+          div.flex.h-screen.bg-gray-50.overflow-hidden,
+          div.flex-1.flex.flex-col.overflow-hidden,
+          main.flex-1.overflow-y-auto {
+            height: auto !important;
+            overflow: visible !important;
+            display: block !important;
+            position: static !important;
+          }
+          
+          html, body {
+            height: auto !important;
+            overflow: visible !important;
+            background-color: white !important;
+          }
+          
+          main {
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          
+          /* Expand comparison container to print on physical pages */
+          .container {
+            max-width: 100% !important;
+            width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          
+          /* Prevent breaks inside comparative rows */
+          .grid {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+        }
+      `}} />
       {/* Toast Alert Banner */}
       <AnimatePresence>
         {alertMsg && (
@@ -218,11 +340,10 @@ function CompareContent() {
       {/* Header bar */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold font-playfair text-gray-900 flex items-center gap-2">
-            <Layers className="w-7 h-7 text-brand-600" />
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
             Profile Comparison
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-gray-500 mt-2 font-medium">
             Compare important profile parameters, compatibility analyses, and preference matching details side-by-side.
           </p>
         </div>
@@ -253,102 +374,113 @@ function CompareContent() {
         )}
       </div>
 
-      {compareIds.length === 0 ? (
-        <EmptyState allUsers={allUsers} addToCompare={addToCompare} />
+      {!hasEnteredTable ? (
+        <EmptyState allUsers={allUsers} compareIds={compareIds} addToCompare={addToCompare} removeFromCompare={removeFromCompare} setHasEnteredTable={setHasEnteredTable} />
       ) : (
-        <div className="bg-white border border-gray-150 rounded-3xl overflow-visible shadow-md">
+        <div className="bg-white border border-gray-150 rounded-lg overflow-visible shadow-sm">
           {/* Main Side-by-Side Scrolling Grid */}
           <div className="overflow-x-auto md:overflow-visible print:overflow-visible">
             <div className="min-w-[800px] md:w-full table-fixed">
               {/* Sticky Comparison Header */}
-              <div className="grid grid-cols-4 bg-gray-50/90 border-b border-gray-150 py-6 px-4 items-stretch sticky top-0 z-20 shadow-sm backdrop-blur-md rounded-t-3xl">
+              <div className="grid grid-cols-4 bg-gray-50/90 border-b border-gray-150 py-6 px-4 items-stretch sticky top-0 z-20 shadow-sm backdrop-blur-md rounded-t-lg">
                 <div className="col-span-1 flex flex-col justify-center pr-4">
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">Comparing</span>
-                  <span className="text-2xl font-black font-playfair text-gray-900 mt-1">{comparedProfiles.length} Profiles</span>
-                  <p className="text-[11px] text-gray-500 mt-1.5 leading-relaxed">Green cards show parameters matching your preferred partner draft settings.</p>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Comparing</span>
+                  <span className="text-2xl font-bold text-gray-900 mt-1 tracking-tight">{comparedProfiles.length} Profiles</span>
+                  <p className="text-xs text-gray-500 mt-2 leading-relaxed font-medium">Green cards show parameters matching your preferred partner draft settings.</p>
                 </div>
 
                 {comparedProfiles.map((p, idx) => {
                   const isHighest = idx === highestScoreIdx && comparedProfiles.length > 1;
                   return (
-                    <div
-                      key={p.id}
-                      className={`col-span-1 px-4 relative flex flex-col justify-between transition-all duration-300 ${
-                        isHighest ? "bg-brand-50/20 border-x border-brand-100/60 rounded-2xl shadow-inner" : ""
-                      }`}
-                    >
-                      {isHighest && (
-                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-brand-600 to-rose-500 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-lg flex items-center gap-1">
-                          <Award className="w-3.5 h-3.5" /> Best Match
-                        </div>
-                      )}
-
-                      <button
-                        onClick={() => removeFromCompare(p.id)}
-                        className="absolute top-0 right-2 p-1.5 bg-white border border-gray-100 hover:bg-red-50 hover:text-red-500 rounded-full text-gray-400 transition-colors shadow-sm print:hidden z-10"
-                        title="Remove"
+                    <div key={p.id} className="col-span-1 px-2">
+                      <div
+                        className={`relative h-full flex flex-col justify-between p-4 rounded-xl border transition-all duration-300 ${
+                          isHighest ? "bg-brand-50/20 border-brand-400 shadow-sm" : "bg-white border-gray-200 shadow-sm"
+                        }`}
                       >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-
-                      <div className="flex gap-3 items-center">
-                        {p.photo ? (
-                          <img
-                            src={p.photo}
-                            alt={p.name}
-                            className="w-14 h-14 rounded-2xl object-cover border-2 border-white shadow-md bg-gray-100 hover:scale-105 transition-transform"
-                          />
-                        ) : (
-                          <div className="w-14 h-14 rounded-2xl bg-brand-50 border-2 border-white shadow-md flex items-center justify-center text-brand-700 font-extrabold text-sm uppercase">
-                            {p.name.charAt(0)}
+                        <button 
+                          onClick={() => removeFromCompare(p.id)}
+                          className="absolute -top-2 -right-2 bg-white border border-gray-200 hover:border-rose-400 hover:bg-rose-50 hover:text-rose-600 text-gray-400 rounded-full p-1 shadow-sm transition-colors z-20 print:hidden"
+                          title="Remove profile"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                        {isHighest && !p.isLoading && (
+                          <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-600 text-white text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-md flex items-center gap-1 z-10 border border-brand-500">
+                            <Award className="w-3.5 h-3.5" /> Best Match
                           </div>
                         )}
-                        <div className="min-w-0">
-                          <span className="text-[10px] font-extrabold text-brand-600 block tracking-wider">{p.profileId}</span>
-                          <span className="font-extrabold text-sm text-gray-950 truncate block mt-0.5">{p.name}</span>
-                          <span className="text-xs text-gray-500 block font-medium">{p.age} yrs · {p.location}</span>
-                        </div>
-                      </div>
-
-                      {/* Matching Percentage Circular SVG Indicator */}
-                      <div className="mt-4 p-3 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Compatibility</span>
-                          <span className={`text-[10px] font-black uppercase block mt-0.5 truncate ${
-                            p.matchResult.score >= 85 ? "text-emerald-600" :
-                            p.matchResult.score >= 70 ? "text-brand-600" :
-                            p.matchResult.score >= 55 ? "text-amber-600" : "text-rose-500"
-                          }`}>
-                            {p.matchResult.indicator}
-                          </span>
-                        </div>
-                        
-                        <div className="relative flex items-center justify-center w-11 h-11 shrink-0">
-                          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                            <path
-                              className="text-gray-100"
-                              strokeWidth="3.5"
-                              stroke="currentColor"
-                              fill="none"
-                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                        <div className="flex gap-3 items-center pt-1">
+                          {p.photo ? (
+                            <img
+                              src={p.photo}
+                              alt={p.name}
+                              className="w-12 h-12 rounded-full object-cover border border-gray-200 shadow-sm bg-gray-50 hover:scale-105 transition-transform"
                             />
-                            <path
-                              className={`${
-                                p.matchResult.score >= 85 ? "text-emerald-500" :
-                                p.matchResult.score >= 70 ? "text-brand-500" :
-                                p.matchResult.score >= 55 ? "text-amber-400" : "text-rose-400"
-                              } transition-all duration-1000`}
-                              strokeWidth="3.5"
-                              strokeDasharray={`${p.matchResult.score}, 100`}
-                              strokeLinecap="round"
-                              stroke="currentColor"
-                              fill="none"
-                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                            />
-                          </svg>
-                          <div className="absolute text-[10px] font-black text-gray-800">
-                            {p.matchResult.score}%
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-brand-50 border border-brand-100 shadow-sm flex items-center justify-center text-brand-700 font-bold text-sm uppercase">
+                              {p.name.charAt(0)}
+                            </div>
+                          )}
+                          <div className="min-w-0 pr-4">
+                            <span className="text-[10px] font-bold text-brand-600 block tracking-wider">{p.profileId}</span>
+                            <span className="font-bold text-sm text-gray-900 truncate block mt-0.5">{p.name}</span>
+                            <span className="text-xs text-gray-500 block font-medium">{!p.isLoading ? `${p.age} yrs · ${p.location}` : "..."}</span>
                           </div>
+                        </div>
+
+                        {/* Matching Percentage Circular SVG Indicator */}
+                        <div className="mt-5 p-3 bg-white rounded-xl border border-gray-100 shadow-sm flex items-center justify-between gap-3">
+                          {p.isLoading ? (
+                            <div className="w-full flex items-center justify-between gap-3">
+                               <div className="flex-1">
+                                 <div className="h-2 bg-gray-100 rounded w-full mb-1"></div>
+                                 <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                               </div>
+                               <div className="w-11 h-11 rounded-full bg-gray-100 animate-pulse shrink-0"></div>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="min-w-0">
+                                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Compatibility</span>
+                                <span className={`text-[10px] font-black uppercase block mt-0.5 truncate ${
+                                  p.matchResult.score >= 85 ? "text-emerald-600" :
+                                  p.matchResult.score >= 70 ? "text-brand-600" :
+                                  p.matchResult.score >= 55 ? "text-amber-600" : "text-rose-500"
+                                }`}>
+                                  {p.matchResult.indicator}
+                                </span>
+                              </div>
+                              
+                              <div className="relative flex items-center justify-center w-11 h-11 shrink-0">
+                                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                                  <path
+                                    className="text-gray-100"
+                                    strokeWidth="3.5"
+                                    stroke="currentColor"
+                                    fill="none"
+                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                  />
+                                  <path
+                                    className={`${
+                                      p.matchResult.score >= 85 ? "text-emerald-500" :
+                                      p.matchResult.score >= 70 ? "text-brand-500" :
+                                      p.matchResult.score >= 55 ? "text-amber-400" : "text-rose-400"
+                                    } transition-all duration-1000`}
+                                    strokeWidth="3.5"
+                                    strokeDasharray={`${p.matchResult.score}, 100`}
+                                    strokeLinecap="round"
+                                    stroke="currentColor"
+                                    fill="none"
+                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                  />
+                                </svg>
+                                <div className="absolute text-[10px] font-black text-gray-800">
+                                  {p.matchResult.score}%
+                                </div>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -357,7 +489,7 @@ function CompareContent() {
 
                 {/* Empty column placeholder if less than 3 profiles compared */}
                 {Array.from({ length: 3 - comparedProfiles.length }).map((_, i) => (
-                  <div key={i} className="col-span-1 px-4 flex flex-col items-center justify-center border-l border-dashed border-gray-200">
+                  <div key={i} className="col-span-1 px-2 flex flex-col">
                     <CompareSearchSelector allUsers={allUsers} compareIds={compareIds} addToCompare={addToCompare} />
                   </div>
                 ))}
@@ -596,7 +728,7 @@ function CompareContent() {
                   highestScoreIdx={highestScoreIdx}
                   getValue={p => (
                     <div className="flex flex-wrap gap-1">
-                      {p.interestsList.map((interest: string) => (
+                      {p.interestsList?.map((interest: string) => (
                         <span key={interest} className="bg-gray-100/80 px-2 py-0.5 rounded text-[10px] text-gray-700 font-medium">
                           {interest}
                         </span>
@@ -814,6 +946,14 @@ function GridRow({
       </div>
       
       {profiles.map((p, idx) => {
+        if (p.isLoading) {
+          return (
+            <div key={`${p.id}-${idx}`} className="col-span-1 p-2 flex items-center border-r border-gray-100">
+              <div className="w-full h-8 bg-gray-100/50 rounded-lg animate-pulse"></div>
+            </div>
+          );
+        }
+
         const status = getStatus ? getStatus(p) : undefined;
         const isHighest = idx === highestScoreIdx && profiles.length > 1;
         
@@ -866,7 +1006,6 @@ function LoaderSpinner() {
   );
 }
 
-// Compare Search Selector inside slots
 function CompareSearchSelector({ 
   allUsers, 
   compareIds, 
@@ -877,47 +1016,91 @@ function CompareSearchSelector({
   addToCompare: (id: number) => void; 
 }) {
   const [open, setOpen] = useState(false);
-  const filterList = allUsers.filter(u => !compareIds.includes(u.id));
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<any[]>(allUsers);
+  const [searching, setSearching] = useState(false);
+
+  // Filter out already compared IDs from both local list and search results
+  const filterList = (query.length > 0 ? results : allUsers).filter(u => !compareIds.includes(u.id));
+
+  useEffect(() => {
+    if (query.length === 0) {
+      setResults(allUsers);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const token = localStorage.getItem("mn_token");
+        const res = await fetch(`${API_URL}/search/profiles?keyword=${encodeURIComponent(query)}&limit=10&lightweight=true`, {
+          headers: token ? { "Authorization": `Bearer ${token}` } : {}
+        });
+        const data = await res.json();
+        if (data.success) {
+          setResults(data.data);
+        }
+      } catch(e) {}
+      setSearching(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query, allUsers]);
 
   return (
     <div className="relative w-full print:hidden">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full py-8 border border-dashed border-gray-250 hover:border-brand-350 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all group bg-gradient-to-br from-gray-50/50 to-white hover:shadow-md hover:scale-[1.02] duration-300"
+        className="w-full py-6 border border-dashed border-gray-300 hover:border-gray-400 rounded-xl flex flex-col items-center justify-center gap-2 transition-all bg-gray-50/30 hover:bg-gray-50 duration-200"
       >
-        <div className="p-3 bg-white group-hover:bg-brand-50 rounded-full transition-colors border border-gray-100 shadow-sm group-hover:border-brand-200">
-          <Plus className="w-5 h-5 text-gray-400 group-hover:text-brand-600" />
+        <div className="p-2 bg-white rounded-full border border-gray-200 shadow-sm">
+          <Plus className="w-4 h-4 text-gray-500" />
         </div>
-        <span className="text-xs font-bold text-gray-400 group-hover:text-brand-700 tracking-wider uppercase">Add Match Profile</span>
+        <span className="text-[11px] font-bold text-gray-500 tracking-wide uppercase">Add Match Profile</span>
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl z-30 max-h-60 overflow-y-auto p-2">
-          <div className="text-[10px] font-bold text-gray-400 uppercase px-3 py-1.5 tracking-wider">Select Profile</div>
-          {filterList.length === 0 ? (
-            <div className="text-xs text-gray-400 px-3 py-4 text-center">No other profiles available.</div>
-          ) : (
-            filterList.map(u => (
-              <button
-                key={u.id}
-                onClick={() => {
-                  addToCompare(u.id);
-                  setOpen(false);
-                }}
-                className="w-full text-left px-3 py-2 hover:bg-brand-50 rounded-xl flex items-center gap-2.5 transition-colors"
-              >
-                <img
-                  src={u.profile_details?.mn_profile_photos_draft?.photos?.[0]?.dataUrl || `https://i.pravatar.cc/100?img=${45 + (u.id % 20)}`}
-                  alt=""
-                  className="w-8 h-8 rounded-lg object-cover bg-gray-100"
-                />
-                <div className="min-w-0">
-                  <span className="text-xs font-bold text-gray-800 block truncate">{u.first_name} {u.last_name}</span>
-                  <span className="text-[10px] text-gray-500 block">{u.dob ? Math.floor((new Date().getTime() - new Date(u.dob).getTime()) / 31557600000) : 25} yrs · {u.location || "Kerala"}</span>
-                </div>
-              </button>
-            ))
-          )}
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl z-30 overflow-hidden flex flex-col">
+          <div className="p-3 border-b border-gray-100 bg-gray-50/50">
+             <div className="relative">
+               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+               <input 
+                 type="text"
+                 placeholder="Search by ID or Name..."
+                 value={query}
+                 onChange={e => setQuery(e.target.value)}
+                 className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+               />
+             </div>
+          </div>
+          <div className="max-h-60 overflow-y-auto p-2">
+            {searching ? (
+              <div className="flex justify-center items-center py-6"><Loader2 className="w-5 h-5 animate-spin text-brand-500" /></div>
+            ) : filterList.length === 0 ? (
+              <div className="text-xs text-gray-400 px-3 py-4 text-center">No profiles found.</div>
+            ) : (
+              filterList.map(u => (
+                <button
+                  key={u.id}
+                  onClick={() => {
+                    addToCompare(u.id);
+                    setOpen(false);
+                    setQuery("");
+                  }}
+                  className="w-full text-left px-3 py-2 hover:bg-brand-50 rounded-xl flex items-center gap-2.5 transition-colors"
+                >
+                  <img
+                    src={u.profile_details?.mn_profile_photos_draft?.photos?.[0]?.dataUrl || `https://i.pravatar.cc/100?img=${45 + (u.id % 20)}`}
+                    alt=""
+                    className="w-8 h-8 rounded-lg object-cover bg-gray-100"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <span className="text-xs font-bold text-gray-800 block truncate">{u.first_name} {u.last_name}</span>
+                    <span className="text-[10px] text-gray-500 block">{u.profile_details?.mn_basic_details_draft?.age || 25} yrs · {u.location || "Kerala"}</span>
+                  </div>
+                  <span className="text-[9px] font-bold text-gray-300 bg-gray-50 px-1.5 py-0.5 rounded">{u.profile_details?.mn_basic_details_draft?.profileId || `MN${1000+u.id}`}</span>
+                </button>
+              ))
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -925,10 +1108,22 @@ function CompareSearchSelector({
 }
 
 // Empty state view
-function EmptyState({ allUsers, addToCompare }: { allUsers: any[]; addToCompare: (id: number) => void }) {
+function EmptyState({ 
+  allUsers, 
+  compareIds,
+  addToCompare,
+  removeFromCompare,
+  setHasEnteredTable
+}: { 
+  allUsers: any[]; 
+  compareIds: number[];
+  addToCompare: (id: number) => void; 
+  removeFromCompare: (id: number) => void;
+  setHasEnteredTable: (val: boolean) => void;
+}) {
   return (
-    <div className="bg-white border border-gray-150 rounded-3xl p-8 text-center max-w-xl mx-auto shadow-md space-y-6">
-      <div className="w-16 h-16 bg-brand-50 text-brand-650 rounded-2xl flex items-center justify-center mx-auto shadow-inner border border-brand-100">
+    <div className="bg-white border border-gray-150 rounded-xl p-8 text-center max-w-xl mx-auto shadow-md space-y-6">
+      <div className="w-16 h-16 bg-brand-50 text-brand-650 rounded-xl flex items-center justify-center mx-auto shadow-inner border border-brand-100">
         <Layers className="w-8 h-8" />
       </div>
       
@@ -960,12 +1155,23 @@ function EmptyState({ allUsers, addToCompare }: { allUsers: any[]; addToCompare:
                   </div>
                 </div>
                 
-                <button
-                  onClick={() => addToCompare(u.id)}
-                  className="px-3.5 py-1.5 bg-brand-50 text-brand-700 hover:bg-brand-600 hover:text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Compare
-                </button>
+                <label className="relative flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={compareIds.includes(u.id)} 
+                    onChange={(e) => {
+                      if (e.target.checked) addToCompare(u.id);
+                      else removeFromCompare(u.id);
+                    }} 
+                    className="peer sr-only"
+                  />
+                  <div className="w-5 h-5 border-2 border-gray-300 rounded peer-checked:bg-brand-600 peer-checked:border-brand-600 flex items-center justify-center transition-all shadow-sm">
+                    <Check className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100" />
+                  </div>
+                  <span className="ml-2 text-xs font-bold text-gray-600 peer-checked:text-brand-700 transition-colors select-none">
+                    Compare
+                  </span>
+                </label>
               </div>
             ))}
           </div>
@@ -973,9 +1179,17 @@ function EmptyState({ allUsers, addToCompare }: { allUsers: any[]; addToCompare:
       )}
 
       <div className="flex justify-center gap-3 pt-2">
+        {compareIds.length > 0 && (
+          <button
+            onClick={() => setHasEnteredTable(true)}
+            className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-[0.98]"
+          >
+            Compare {compareIds.length} Profile{compareIds.length > 1 ? 's' : ''}
+          </button>
+        )}
         <button
           onClick={() => window.location.href = "/dashboard/search"}
-          className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-[0.98]"
+          className={`px-5 py-2.5 ${compareIds.length === 0 ? 'bg-brand-600 hover:bg-brand-700 text-white' : 'bg-white border border-gray-200 hover:bg-gray-50 text-gray-700'} font-bold text-xs rounded-xl shadow-md transition-all active:scale-[0.98]`}
         >
           Search Profiles
         </button>

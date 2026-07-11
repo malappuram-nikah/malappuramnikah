@@ -5,8 +5,9 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Download, Printer, Share2, X, FileText, CheckCircle2, Lock } from "lucide-react";
+import { API_URL } from "@/lib/config";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || `${API_URL}`;
 
 interface BiodataDownloadProps {
   profile: any;
@@ -349,7 +350,7 @@ ${forPrint ? `<div class="actions no-print">
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.92, y: 20 }}
                 transition={{ duration: 0.25 }}
-                className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
+                className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden"
               >
                 {/* Modal header */}
                 <div className="bg-gradient-to-r from-amber-50 to-orange-50 px-6 py-5 border-b border-amber-100 flex items-center justify-between">

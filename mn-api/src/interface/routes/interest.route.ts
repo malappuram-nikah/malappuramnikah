@@ -8,9 +8,13 @@ const interest_route = Router();
 // Safely extract user ID from JWT token (supports real verify and base64 decode for dev fallback)
 export function getUserIdFromRequest(req: Request): number | null {
   try {
+    let token: string | undefined;
     const authHeader = req.headers.authorization;
-    if (!authHeader) return null;
-    const token = authHeader.split(" ")[1];
+    if (authHeader) {
+      token = authHeader.split(" ")[1];
+    } else if (req.query.token) {
+      token = req.query.token as string;
+    }
     if (!token) return null;
     
     try {
@@ -200,6 +204,117 @@ interest_route.get("/", async (req: Request, res: Response) => {
     const userId = getUserIdFromRequest(req);
     if (!userId) {
       res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+
+    const type = req.query.type as string;
+    if (type) {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const skip = (page - 1) * limit;
+      
+      const selectUserFields = {
+        id: true,
+        first_name: true,
+        last_name: true,
+        cast: true,
+        location: true,
+        gender: true,
+        dob: true,
+        profile_details: true
+      };
+
+      if (type === "sent") {
+        const interests = await prisma.interest.findMany({
+          where: { sender_id: userId, status: "PENDING" },
+          include: { receiver: { select: selectUserFields } },
+          skip,
+          take: limit + 1, // Fetch one extra to check if hasMore
+          orderBy: { id: 'desc' }
+        });
+        const hasMore = interests.length > limit;
+        const users = interests.slice(0, limit).map(i => ({...i.receiver, interest_status: i.status}));
+        return res.status(200).json({ success: true, users, hasMore });
+      } else if (type === "received") {
+        const interests = await prisma.interest.findMany({
+          where: { receiver_id: userId, status: "PENDING" },
+          include: { sender: { select: selectUserFields } },
+          skip,
+          take: limit + 1,
+          orderBy: { id: 'desc' }
+        });
+        const hasMore = interests.length > limit;
+        const users = interests.slice(0, limit).map(i => ({...i.sender, interest_status: i.status}));
+        return res.status(200).json({ success: true, users, hasMore });
+      } else if (type === "mutual") {
+        const interests = await prisma.interest.findMany({
+          where: {
+            OR: [
+              { sender_id: userId, status: "ACCEPTED" },
+              { receiver_id: userId, status: "ACCEPTED" }
+            ]
+          },
+          include: {
+            sender: { select: selectUserFields },
+            receiver: { select: selectUserFields }
+          },
+          skip,
+          take: limit + 1,
+          orderBy: { id: 'desc' }
+        });
+        const hasMore = interests.length > limit;
+        const rawMutualUsers = interests.slice(0, limit).map(i => {
+          const peer = i.sender_id === userId ? i.receiver : i.sender;
+          return { ...peer, interest_status: i.status };
+        });
+        // Deduplicate peers to protect against bidirectional ACCEPTED rows in the database
+        const uniqueMutualUsers = Array.from(new Map(rawMutualUsers.map(u => [u.id, u])).values());
+        return res.status(200).json({ success: true, users: uniqueMutualUsers, hasMore });
+      }
+    }
+
+    if (req.query.idsOnly === "true") {
+      const allInterests = await prisma.interest.findMany({
+        where: {
+          OR: [
+            { sender_id: userId },
+            { receiver_id: userId }
+          ]
+        },
+        select: {
+          sender_id: true,
+          receiver_id: true,
+          status: true
+        }
+      });
+
+      const sent: { id: number }[] = [];
+      const received: { id: number }[] = [];
+      const mutual: { id: number }[] = [];
+
+      allInterests.forEach(item => {
+        if (item.status === "ACCEPTED") {
+          const peerId = item.sender_id === userId ? item.receiver_id : item.sender_id;
+          mutual.push({ id: peerId });
+        } else if (item.sender_id === userId) {
+          sent.push({ id: item.receiver_id });
+        } else if (item.receiver_id === userId) {
+          received.push({ id: item.sender_id });
+        }
+      });
+
+      // Deduplicate arrays (especially mutual) to protect against duplicate database rows
+      const uniqueSent = Array.from(new Map(sent.map(m => [m.id, m])).values());
+      const uniqueReceived = Array.from(new Map(received.map(m => [m.id, m])).values());
+      const uniqueMutual = Array.from(new Map(mutual.map(m => [m.id, m])).values());
+
+      res.status(200).json({
+        success: true,
+        sent: uniqueSent,
+        received: uniqueReceived,
+        mutual: uniqueMutual
+      });
       return;
     }
 

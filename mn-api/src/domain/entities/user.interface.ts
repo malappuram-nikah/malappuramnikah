@@ -6,6 +6,7 @@ export interface User {
   last_name: string;
   cast: string;
   location: string;
+  email?: string;
   mobile_number: string;
   password: string;
   dob: string;
@@ -14,4 +15,13 @@ export interface User {
   is_new_user: boolean;
   last_login?: Date | null;
   profile_details?: any;
+  kyc_status?: string;
+  kyc_document_type?: string | null;
+  kyc_front_url?: string | null;
+  kyc_back_url?: string | null;
+  kyc_rejected_reason?: string | null;
+  kyc_submitted_at?: Date | string | null;
+  kyc_verified_at?: Date | string | null;
+  referral_code?: string | null;
+  referral_points?: number;
 }
