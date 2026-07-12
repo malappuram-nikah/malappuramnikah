@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect */
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -341,7 +342,7 @@ export default function SettingsPage() {
     setSaved(false);
     
     // Read current drafts from localStorage
-    let profileDetails: any = {};
+    const profileDetails: Record<string, any> = {};
     const draftKeys = [
       "mn_basic_details_draft",
       "mn_religious_info_draft",

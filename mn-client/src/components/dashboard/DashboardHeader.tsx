@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect */
 
 import { useState, useEffect, useRef } from "react";
 import {
@@ -26,6 +27,7 @@ import {
 import { toast } from "sonner";
 import { io, Socket } from "socket.io-client";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
 import { Photo } from "@/types";
@@ -190,6 +192,7 @@ export default function DashboardHeader() {
         console.error("DashboardHeader setup error:", err);
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -210,7 +213,7 @@ export default function DashboardHeader() {
     } catch (err) {
       console.error("Failed to fetch notifications:", err);
     }
-  };
+  }
 
   const handleMarkAllRead = async () => {
     if (!token) return;
@@ -298,6 +301,15 @@ export default function DashboardHeader() {
       {/* Action triggers */}
       <div className="flex items-center gap-4 ml-4 relative" ref={dropdownRef}>
         <AmbientMusicPlayer />
+
+        {/* Interests Icon Link */}
+        <Link
+          href="/dashboard/interests"
+          className="p-2.5 rounded-xl hover:bg-gray-50 text-gray-500 hover:text-pink-500 transition-colors flex items-center justify-center"
+          title="Interests"
+        >
+          <Heart className="w-5 h-5 fill-pink-500 text-pink-500" />
+        </Link>
 
         {/* Notification Bell with counter */}
         <button

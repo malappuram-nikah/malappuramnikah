@@ -7,7 +7,7 @@ import {
   Heart, MessageCircle, Star, ArrowLeft, Loader2, Sparkles, 
   Lock, Unlock, ShieldCheck, Volume2, Video, MapPin, 
   BookOpen, Briefcase, Award, Users, HeartHandshake, Smile, Layers,
-  Ban, MoreVertical, Flag
+  Ban, MoreVertical, Flag, TrendingUp
 } from "lucide-react";
 import { getEnrichedProfile } from "@/lib/profile-utils";
 import BiodataDownload from "@/components/dashboard/BiodataDownload";
@@ -218,7 +218,7 @@ export default function ProfileDetailPage({ params }: PageProps) {
       <div className="flex items-center justify-between">
         <button 
           onClick={() => router.back()} 
-          className="inline-flex items-center gap-2 text-xs font-semibold text-gray-500 hover:text-brand-600 transition-colors bg-white px-3.5 py-2 rounded-xl border border-gray-150/80 shadow-xs"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-[#026d77] hover:text-[#0b3c49] hover:underline transition-all"
         >
           <ArrowLeft className="w-4 h-4" /> Back to matches
         </button>
@@ -229,9 +229,9 @@ export default function ProfileDetailPage({ params }: PageProps) {
 
       <div className="grid md:grid-cols-3 gap-6 items-start">
         {/* Left Side: Avatar Card and Gallery */}
-        <div className="md:col-span-1 space-y-5">
+        <div className="md:col-span-1 space-y-5 md:sticky md:top-6 self-start">
           {/* Main profile card */}
-          <div className="bg-white rounded-xl border border-gray-150/85 overflow-hidden shadow-sm sticky top-6">
+          <div className="bg-white rounded-xl border border-gray-150/85 overflow-hidden shadow-sm">
             <div className="h-72 bg-gray-100 relative overflow-hidden flex items-center justify-center">
               {activePhoto || profile.img ? (
                 <img 
@@ -258,7 +258,7 @@ export default function ProfileDetailPage({ params }: PageProps) {
 
               {/* Match Score Indicator */}
               <div className="absolute top-4 right-4 bg-brand-600/90 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-lg backdrop-blur-xs flex items-center gap-1">
-                <Sparkles className="w-3.5 h-3.5" /> {profile.matchScore}% Match
+                <TrendingUp className="w-3.5 h-3.5" /> {profile.matchScore}% Match
               </div>
 
               {/* Name Overlay */}
@@ -434,8 +434,8 @@ export default function ProfileDetailPage({ params }: PageProps) {
 
           {/* QR Code Sharing Card */}
           <div className="bg-white p-4 rounded-xl border border-gray-150/80 shadow-xs text-center space-y-3">
-            <h3 className="text-xs font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center justify-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-brand-600" /> Share Profile (QR Code)
+            <h3 className="text-xs font-bold text-gray-900 border-b border-gray-100 pb-2">
+              Share Profile (QR Code)
             </h3>
             <div className="flex justify-center p-2 bg-gray-50 rounded-lg border border-gray-100 w-max mx-auto">
               <img 
@@ -468,12 +468,12 @@ export default function ProfileDetailPage({ params }: PageProps) {
           )}
 
           {/* AI compatibility card */}
-          <div className="bg-gradient-to-br from-brand-900 to-brand-850 p-6 rounded-xl text-white shadow-md relative overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] bg-[size:20px_20px] opacity-5" />
+          <div className="bg-[#026d77] p-6 rounded-xl text-white shadow-md relative overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] bg-[size:16px_16px] opacity-10 pointer-events-none z-0" />
             <div className="relative z-10 space-y-4">
               <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                <h3 className="font-bold font-playfair text-white text-base flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-brand-300" /> AI Compatibility Report
+                <h3 className="font-bold font-playfair text-white text-base">
+                  AI Compatibility Report
                 </h3>
                 <span className="bg-white/10 px-3 py-1 rounded-xl text-xs font-bold tracking-wider">{profile.matchScore}% Score</span>
               </div>

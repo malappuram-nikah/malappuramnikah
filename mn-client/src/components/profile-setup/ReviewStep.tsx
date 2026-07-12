@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect */
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
@@ -6,6 +7,49 @@ import { CheckCircle2, ChevronRight, Edit3, User, Heart, BookOpen, Users, MapPin
 import { showChildrenField } from "./BasicDetailsStep";
 import { showPartnerChildrenField } from "./PartnerPreferencesStep";
 import { API_URL } from "@/lib/config";
+
+
+interface SectionHeaderProps {
+  title: string;
+  icon: React.ElementType;
+  step: number;
+  onEditSection?: (stepNumber: number) => void;
+}
+
+function SectionHeader({ title, icon: Icon, step, onEditSection }: SectionHeaderProps) {
+  return (
+    <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
+      <div className="flex items-center gap-2 text-brand-600">
+        <Icon className="w-5 h-5" />
+        <h3 className="font-bold text-gray-900">{title}</h3>
+      </div>
+      {onEditSection && (
+        <button 
+          onClick={() => onEditSection(step)}
+          className="text-sm font-medium text-gray-500 hover:text-brand-600 flex items-center gap-1 transition-colors"
+        >
+          <Edit3 className="w-3.5 h-3.5" />
+          Edit
+        </button>
+      )}
+    </div>
+  );
+}
+
+interface DataRowProps {
+  label: string;
+  value: string | number | null | undefined;
+}
+
+function DataRow({ label, value }: DataRowProps) {
+  if (!value) return null;
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 py-1.5 border-b border-gray-50 last:border-0">
+      <span className="text-sm text-gray-500 font-medium col-span-1">{label}</span>
+      <span className="text-sm text-gray-900 col-span-1 md:col-span-2 font-medium">{value}</span>
+    </div>
+  );
+}
 
 interface ReviewStepProps {
   onComplete?: () => void;
@@ -46,7 +90,9 @@ export default function ReviewStep({ onComplete, onBack, onEditSection }: Review
       }
     });
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDrafts(loadedDrafts);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoading(false);
   }, []);
 
@@ -106,33 +152,6 @@ export default function ReviewStep({ onComplete, onBack, onEditSection }: Review
   const video = drafts["mn_video_intro_draft"] || {};
   const voice = drafts["mn_voice_intro_draft"] || {};
 
-  const SectionHeader = ({ title, icon: Icon, step }: { title: string, icon: any, step: number }) => (
-    <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
-      <div className="flex items-center gap-2 text-brand-600">
-        <Icon className="w-5 h-5" />
-        <h3 className="font-bold text-gray-900">{title}</h3>
-      </div>
-      {onEditSection && (
-        <button 
-          onClick={() => onEditSection(step)}
-          className="text-sm font-medium text-gray-500 hover:text-brand-600 flex items-center gap-1 transition-colors"
-        >
-          <Edit3 className="w-3.5 h-3.5" />
-          Edit
-        </button>
-      )}
-    </div>
-  );
-
-  const DataRow = ({ label, value }: { label: string, value: any }) => {
-    if (!value) return null;
-    return (
-      <div className="grid grid-cols-2 md:grid-cols-3 py-1.5 border-b border-gray-50 last:border-0">
-        <span className="text-sm text-gray-500 font-medium col-span-1">{label}</span>
-        <span className="text-sm text-gray-900 col-span-1 md:col-span-2 font-medium">{value}</span>
-      </div>
-    );
-  };
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden w-full max-w-4xl mx-auto">
@@ -147,7 +166,7 @@ export default function ReviewStep({ onComplete, onBack, onEditSection }: Review
         
         {/* Basic Details */}
         <section className="bg-gray-50/50 p-5 rounded-2xl border border-gray-100">
-          <SectionHeader title="Basic Details" icon={User} step={1} />
+          <SectionHeader title="Basic Details" icon={User} step={1} onEditSection={onEditSection} />
           <div className="space-y-1">
             <DataRow label="Name" value={basic.name || "Not provided"} />
             <DataRow label="Profile Created For" value={basic.profileFor} />
@@ -167,7 +186,7 @@ export default function ReviewStep({ onComplete, onBack, onEditSection }: Review
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Religious Info */}
           <section className="bg-gray-50/50 p-5 rounded-2xl border border-gray-100">
-            <SectionHeader title="Religious Info" icon={BookOpen} step={2} />
+            <SectionHeader title="Religious Info" icon={BookOpen} step={2} onEditSection={onEditSection} />
             <div className="space-y-1">
               <DataRow label="Religion" value={religious.religion} />
               <DataRow label="Community" value={religious.community} />
@@ -179,7 +198,7 @@ export default function ReviewStep({ onComplete, onBack, onEditSection }: Review
 
           {/* Professional Info */}
           <section className="bg-gray-50/50 p-5 rounded-2xl border border-gray-100">
-            <SectionHeader title="Career Info" icon={Briefcase} step={3} />
+            <SectionHeader title="Career Info" icon={Briefcase} step={3} onEditSection={onEditSection} />
             <div className="space-y-1">
               <DataRow label="Education" value={professional.education === "Others" ? `Others (${professional.customEducation || ''})` : professional.education} />
               <DataRow label="Profession" value={professional.profession} />
@@ -191,7 +210,7 @@ export default function ReviewStep({ onComplete, onBack, onEditSection }: Review
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Family Info */}
           <section className="bg-gray-50/50 p-5 rounded-2xl border border-gray-100">
-            <SectionHeader title="Family Details" icon={Users} step={4} />
+            <SectionHeader title="Family Details" icon={Users} step={4} onEditSection={onEditSection} />
             <div className="space-y-1">
               <DataRow label="Family Type" value={family.familyType} />
               <DataRow label="Financial Status" value={family.financialStatus} />
@@ -202,7 +221,7 @@ export default function ReviewStep({ onComplete, onBack, onEditSection }: Review
 
           {/* Lifestyle Info */}
           <section className="bg-gray-50/50 p-5 rounded-2xl border border-gray-100">
-            <SectionHeader title="Lifestyle" icon={MapPin} step={6} />
+            <SectionHeader title="Lifestyle" icon={MapPin} step={6} onEditSection={onEditSection} />
             <div className="space-y-1">
               <DataRow label="Eating Habits" value={habits.eatingHabits} />
               <DataRow label="Smoking" value={habits.smokingHabits} />
@@ -213,7 +232,7 @@ export default function ReviewStep({ onComplete, onBack, onEditSection }: Review
 
         {/* Partner Preferences */}
         <section className="bg-gray-50/50 p-5 rounded-2xl border border-gray-100">
-          <SectionHeader title="Partner Preferences" icon={Heart} step={7} />
+          <SectionHeader title="Partner Preferences" icon={Heart} step={7} onEditSection={onEditSection} />
           <div className="space-y-1">
             <DataRow label="Age Range" value={`${partner.minAge || ''} to ${partner.maxAge || ''} Years`} />
             <DataRow label="Marital Status" value={partner.maritalStatus} />

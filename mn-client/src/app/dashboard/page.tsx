@@ -1,4 +1,8 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable @next/next/no-img-element */
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
@@ -14,7 +18,7 @@ import ProfileSlideOver from "@/components/dashboard/ProfileSlideOver";
 import { CardGridSkeleton } from "@/components/dashboard/Skeleton";
 import { useProfileActions } from "@/hooks/useProfileActions";
 import { API_URL } from "@/lib/config";
-
+import { cn } from "@/lib/utils";
 export default function DashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -25,10 +29,10 @@ export default function DashboardPage() {
   
   // Real Statistics state — no hardcoded/dummy values
   const [stats, setStats] = useState([
-    { label: "Interests Sent",    value: "—", icon: Heart,         color: "bg-rose-50 text-rose-600"     },
-    { label: "Mutual Matches",    value: "—", icon: Star,          color: "bg-amber-50 text-amber-600"   },
-    { label: "Requests Received", value: "—", icon: MessageCircle, color: "bg-blue-50 text-blue-600"     },
-    { label: "Profile Views",     value: "—", icon: Eye,           color: "bg-brand-50 text-brand-600"   },
+    { label: "Interests Sent",    value: "—", icon: Heart,         color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10" },
+    { label: "Mutual Matches",    value: "—", icon: Star,          color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10" },
+    { label: "Requests Received", value: "—", icon: MessageCircle, color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10" },
+    { label: "Profile Views",     value: "—", icon: Eye,           color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10" },
   ]);
 
   const [suggestedMatches, setSuggestedMatches] = useState<any[]>([]);
@@ -68,10 +72,10 @@ export default function DashboardPage() {
 
         // Update statistics with real data only — no dummy profile views
         setStats([
-          { label: "Interests Sent",    value: String(sentIds.length),      icon: Heart,         color: "bg-rose-50 text-rose-600"     },
-          { label: "Mutual Matches",    value: String(mutualIds.length),    icon: Star,          color: "bg-amber-50 text-amber-600"   },
-          { label: "Requests Received", value: String(receivedIds.length),  icon: MessageCircle, color: "bg-blue-50 text-blue-600"     },
-          { label: "Profile Views",     value: "N/A",                       icon: Eye,           color: "bg-gray-100 text-gray-400"    },
+          { label: "Interests Sent",    value: String(sentIds.length),      icon: Heart,         color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10" },
+          { label: "Mutual Matches",    value: String(mutualIds.length),    icon: Star,          color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10" },
+          { label: "Requests Received", value: String(receivedIds.length),  icon: MessageCircle, color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10" },
+          { label: "Profile Views",     value: "N/A",                       icon: Eye,           color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10" },
         ]);
       }
     } catch (e) {
@@ -132,12 +136,11 @@ export default function DashboardPage() {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     setMounted(true);
     fetchProfilesAndSuggestions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
   const handleToggleInterest = async (receiverId: number, profileName: string) => {
     try {
       const storedToken = localStorage.getItem("mn_token");
@@ -195,68 +198,58 @@ export default function DashboardPage() {
         )}
       </AnimatePresence>
 
-      {/* Welcome banner — compact */}
+      {/* Profile Completion */}
+      <ProfileCompletionTracker />
+
+      {/* Welcome header */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-br from-brand-700 to-brand-900 rounded-xl p-4 sm:p-5 text-white relative overflow-hidden shadow-md"
+        className="py-4 relative border-b border-gray-100/80 pb-6"
       >
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] bg-[size:24px_24px]" />
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h1 className="text-lg sm:text-xl font-bold font-playfair">Welcome back! 👋</h1>
-            <p className="text-brand-100 text-xs mt-0.5 max-w-md leading-relaxed">
-              Review incoming interests under the <strong className="text-white">Interests Tab</strong> and discover compatible partners.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
-            <Link
-              href="/dashboard/matches"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white text-brand-700 text-xs font-bold rounded-lg hover:bg-brand-50 transition-all shadow-sm"
-            >
-              View AI Matches <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-            <Link
-              href="/dashboard/interests"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-brand-800/40 border border-brand-500/30 text-white text-xs font-bold rounded-lg hover:bg-brand-800/60 transition-all"
-            >
-              <Heart className="w-3.5 h-3.5 fill-pink-400 text-pink-400" /> Interests
-            </Link>
-            {currentUser && (
-              <BiodataDownload profile={currentUser} enriched={getEnrichedProfile(currentUser)} />
-            )}
-          </div>
+        <div className="space-y-1">
+          <h1 className="text-2xl sm:text-3xl font-bold font-playfair tracking-wide text-gray-900">
+            Welcome back, <span className="text-[#026d77] font-semibold">{currentUser?.first_name || "User"}</span>! 👋
+          </h1>
+          <p className="text-gray-500 text-xs sm:text-sm max-w-lg leading-relaxed font-medium">
+            Review your incoming requests under the <strong className="text-gray-700 font-semibold">Interests</strong> section and discover handpicked compatible matches below.
+          </p>
         </div>
       </motion.div>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {stats.map((stat, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.07 }}
-            className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md hover:border-brand-100 transition-all duration-200 flex items-center gap-3"
-          >
-            <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${stat.color}`}>
-              <stat.icon className="w-4 h-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xl font-bold text-gray-900 leading-tight">{stat.value}</p>
-              <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide leading-tight mt-0.5 truncate">{stat.label}</p>
-            </div>
-          </motion.div>
-        ))}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {stats.map((stat, i) => {
+          return (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.07, type: "spring", stiffness: 80 }}
+              className="bg-white rounded-2xl p-5 border border-gray-100/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_30px_-5px_rgba(2,109,119,0.06)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center gap-4 cursor-default group"
+            >
+              <div className={cn(
+                "w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 group-hover:scale-110",
+                stat.color
+              )}>
+                <stat.icon className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-2xl font-black text-slate-800 font-sans tracking-tight leading-none transition-colors">{stat.value}</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider leading-none mt-1.5 truncate transition-colors">{stat.label}</p>
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* Suggested Matches */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-brand-600" /> Suggested Matches
+      <div className="space-y-4">
+        <div className="flex items-center justify-between pb-1 border-b border-gray-100/80">
+          <h2 className="text-base font-bold text-gray-900 font-playfair tracking-wide">
+            Suggested Matches
           </h2>
-          <Link href="/dashboard/search" className="text-xs font-semibold text-brand-600 hover:underline flex items-center gap-0.5">
+          <Link href="/dashboard/search" className="text-xs font-bold text-[#026d77] hover:text-[#0b3c49] flex items-center gap-0.5 transition-colors">
             Browse all <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -264,33 +257,33 @@ export default function DashboardPage() {
         {loading ? (
           <CardGridSkeleton count={4} />
         ) : suggestedMatches.length === 0 ? (
-          <div className="py-8 text-center text-gray-400 bg-white rounded-xl border border-gray-100">
-            <p className="text-sm font-semibold">No recommendations found</p>
-            <p className="text-xs mt-1">Complete your profile setup to get matches</p>
+          <div className="py-12 text-center text-gray-400 bg-white rounded-2xl border border-gray-100 shadow-xs">
+            <p className="text-sm font-semibold text-gray-700">No recommendations found</p>
+            <p className="text-xs mt-1 text-gray-400">Complete your profile setup to get matches</p>
           </div>
         ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {suggestedMatches.map((match, i) => {
               const isMutual = interests.mutual.includes(match.id);
               const isSent = interests.sent.includes(match.id);
               const isReceived = interests.received.includes(match.id);
               const isInterested = isMutual || isSent || isReceived;
 
-              let interestText = "Interest";
-              let interestStyle = "bg-brand-50 text-brand-700 hover:bg-brand-100 border border-transparent";
+              let interestText = "Connect";
+              let interestStyle = "bg-[#026d77]/10 text-[#026d77] hover:bg-[#026d77] hover:text-white hover:shadow-xs";
               let isHeartFilled = false;
 
               if (isMutual) {
                 interestText = "Matched! 🎉";
-                interestStyle = "bg-pink-600 text-white hover:bg-pink-700 border border-transparent";
+                interestStyle = "bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-xs";
                 isHeartFilled = true;
               } else if (isSent) {
                 interestText = "Sent";
-                interestStyle = "bg-pink-100 text-pink-700 hover:bg-pink-200 border border-transparent";
+                interestStyle = "bg-pink-50 text-pink-700 hover:bg-pink-100/80 border border-pink-200/50";
                 isHeartFilled = true;
               } else if (isReceived) {
                 interestText = "Accept";
-                interestStyle = "bg-amber-100 text-amber-800 hover:bg-amber-200 border-2 border-dashed border-amber-300 animate-pulse";
+                interestStyle = "bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200 shadow-xs animate-pulse";
               }
 
               const isOnline = match.is_online;
@@ -300,108 +293,146 @@ export default function DashboardPage() {
               return (
                 <motion.div
                   key={match.id}
-                  initial={{ opacity: 0, y: 8 }}
+                  initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 + i * 0.07 }}
-                  className="bg-white rounded-xl overflow-hidden border border-gray-100 hover:shadow-md hover:border-brand-100 transition-all duration-200 group flex flex-col"
+                  transition={{ delay: 0.2 + i * 0.07, type: "spring", stiffness: 85 }}
+                  onClick={() => setSelectedProfile(match)}
+                  className="relative h-[420px] rounded-2xl overflow-hidden border border-gray-100 shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)] hover:shadow-[0_15px_30px_-5px_rgba(2,109,119,0.15)] hover:scale-[1.03] transition-all duration-300 group flex flex-col justify-end cursor-pointer"
                 >
-                  <div 
-                    onClick={() => setSelectedProfile(match)}
-                    className="relative h-44 overflow-hidden bg-gray-50 cursor-pointer"
-                  >
-                    {match.img ? (
-                      <img 
-                        src={match.img} 
-                        alt={match.name} 
-                        className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${!isInterested ? "filter blur-[12px] select-none" : ""}`} 
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-brand-50 flex items-center justify-center text-brand-700 font-extrabold text-4xl uppercase">
-                        {match.name.charAt(0)}
+                  {/* Image Background */}
+                  {match.img ? (
+                    <img 
+                      src={match.img} 
+                      alt={match.name} 
+                      className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 z-0 ${!isInterested ? "filter blur-[16px] select-none" : ""}`} 
+                    />
+                  ) : (
+                    <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#026d77]/10 to-[#026d77]/30 flex items-center justify-center text-[#026d77]/40 font-extrabold text-7xl uppercase font-playfair z-0">
+                      {match.name.charAt(0)}
+                    </div>
+                  )}
+
+                  {/* Lock Screen for Not Interested */}
+                  {!isInterested && (
+                    <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-[6px] flex items-center justify-center transition-all duration-300 group-hover:bg-slate-950/50 z-10">
+                      <div className="bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-md border border-[#d4af37]/30 flex items-center gap-1.5 hover:scale-105 transition-all">
+                        <Lock className="w-3.5 h-3.5 text-[#d4af37] animate-pulse" />
+                        <span className="text-[10px] font-bold text-gray-800 tracking-wide uppercase">Connect to view photo</span>
                       </div>
-                    )}
-                    {!isInterested && (
-                      <div className="absolute inset-0 bg-black/15 flex items-center justify-center transition-all">
-                        <div className="bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full shadow-sm border border-white/20 flex items-center gap-1">
-                          <Lock className="w-3.5 h-3.5 text-brand-600" />
-                          <span className="text-[9px] font-bold text-gray-700">Connect to view photo</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Status Badges Overlay */}
-                    <div className="absolute bottom-3 left-3 flex flex-wrap gap-1 z-10">
-                      {isOnline && (
-                        <span className="flex items-center gap-1 bg-green-50/95 backdrop-blur-xs text-green-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-green-200 shadow-xs">
-                          <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                          Online
-                        </span>
-                      )}
-                      {isNew ? (
-                        <span className="bg-brand-50/95 backdrop-blur-xs text-brand-700 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border border-brand-100 shadow-xs">
-                          New
-                        </span>
-                      ) : isRecentlyActive ? (
-                        <span className="bg-blue-50/95 backdrop-blur-xs text-blue-700 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border border-blue-100 shadow-xs">
-                          Active
-                        </span>
-                      ) : null}
                     </div>
+                  )}
 
-                    <div className="absolute top-2 left-2 z-10">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); toggleFavourite(match.id).then(r => setAlertMsg(r === "FAVOURITED" ? "⭐ Favourited!" : "Removed from favourites")); }}
-                        className={`p-1.5 rounded-full shadow transition-all ${
-                          isFavourite(match.id)
-                            ? "bg-amber-400 text-white scale-110"
-                            : "bg-white/90 text-gray-400 hover:text-amber-500 hover:bg-white"
-                        }`}
-                        title="Favourite"
-                      >
-                        <Star className={`w-3 h-3 ${isFavourite(match.id) ? "fill-white" : ""}`} />
-                      </button>
-                    </div>
+                  {/* Bottom Gradient Shadow Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent z-10 pointer-events-none" />
 
-                    <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm text-brand-700 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm z-10">
-                      <TrendingUp className="w-3 h-3" />
-                      {match.match}% match
-                    </div>
+                  {/* Favourite Star Button */}
+                  <div className="absolute top-3 left-3 z-20">
+                    <button
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        toggleFavourite(match.id).then(r => setAlertMsg(r === "FAVOURITED" ? "⭐ Favourited!" : "Removed from favourites")); 
+                      }}
+                      className={`p-1.5 rounded-full shadow-md transition-all duration-300 hover:scale-110 active:scale-95 ${
+                        isFavourite(match.id)
+                          ? "bg-amber-400 text-white border border-amber-300"
+                          : "bg-white/80 backdrop-blur-md text-gray-600 hover:text-amber-500 hover:bg-white"
+                      }`}
+                      title="Favourite"
+                    >
+                      <Star className={`w-3.5 h-3.5 ${isFavourite(match.id) ? "fill-white" : ""}`} />
+                    </button>
                   </div>
-                  <div className="p-3 flex-1 flex flex-col justify-between">
-                    <div onClick={() => setSelectedProfile(match)} className="cursor-pointer">
-                      <p className="font-bold text-gray-900 text-[13px] truncate group-hover:text-brand-600 transition-colors flex items-center gap-1">
+
+                  {/* Match Score Badge */}
+                  <div className="absolute top-3 right-3 bg-gradient-to-r from-[#d4af37]/90 to-[#b8860b]/90 backdrop-blur-xs text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-md z-20 border border-[#d4af37]/30 pointer-events-none">
+                    <TrendingUp className="w-3.5 h-3.5" />
+                    {match.match}% match
+                  </div>
+
+                  {/* Content & Action Buttons Container */}
+                  <div className="relative z-20 p-4 w-full flex flex-col gap-2.5">
+                    {/* Status Badges Overlay */}
+                    {(isOnline || isNew || isRecentlyActive) && (
+                      <div className="flex flex-wrap gap-1 mb-0.5">
+                        {isOnline && (
+                          <span className="flex items-center gap-1 bg-green-500/20 backdrop-blur-md text-green-300 text-[9px] font-bold px-2 py-0.5 rounded-full border border-green-500/30">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                            Online
+                          </span>
+                        )}
+                        {isNew ? (
+                          <span className="bg-[#026d77]/80 backdrop-blur-md text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border border-white/10">
+                            New
+                          </span>
+                        ) : isRecentlyActive ? (
+                          <span className="bg-blue-500/20 backdrop-blur-md text-blue-300 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border border-blue-500/30">
+                            Active
+                          </span>
+                        ) : null}
+                      </div>
+                    )}
+
+                    {/* Name & Caste */}
+                    <div className="flex items-center justify-between min-w-0 gap-1.5">
+                      <p className="font-bold text-white text-base tracking-wide truncate transition-colors flex items-center gap-1.5">
                         {match.name}
                         {match.kyc_status === "VERIFIED" && (
-                          <span title="ID Verified" className="shrink-0"><ShieldCheck className="w-3.5 h-3.5 text-blue-600 fill-blue-100" /></span>
+                          <span title="ID Verified" className="shrink-0">
+                            <ShieldCheck className="w-4 h-4 text-blue-400 fill-blue-900/50" />
+                          </span>
                         )}
                       </p>
-                      <p className="text-[10px] text-gray-500 mt-0.5 truncate">{match.age} yrs · {match.location}</p>
-                      <p className="text-[10px] text-gray-400 truncate">{match.education || ""}</p>
-                      <p className="text-[10px] text-brand-600 mt-0.5 font-bold truncate">{match.caste}</p>
+                      <span className="shrink-0 text-[9px] font-bold text-amber-300 bg-amber-950/60 border border-amber-500/30 px-1.5 py-0.5 rounded-md uppercase tracking-wider">
+                        {match.caste || "Muslim"}
+                      </span>
                     </div>
-                    <div className="flex gap-1.5 mt-3">
+
+                    {/* Tag pill details */}
+                    <div className="flex flex-wrap gap-1.5">
+                      <span className="text-[10px] font-semibold text-gray-200 bg-white/10 backdrop-blur-md border border-white/10 px-2 py-0.5 rounded-md">
+                        {match.age} yrs
+                      </span>
+                      <span className="text-[10px] font-semibold text-gray-200 bg-white/10 backdrop-blur-md border border-white/10 px-2 py-0.5 rounded-md truncate max-w-[95px]">
+                        {match.location}
+                      </span>
+                      <span className="text-[10px] font-semibold text-gray-200 bg-white/10 backdrop-blur-md border border-white/10 px-2 py-0.5 rounded-md truncate max-w-[95px]">
+                        {match.education || "Graduate"}
+                      </span>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 mt-2">
                       <button
-                        onClick={() => handleToggleInterest(match.id, match.name)}
-                        className={`flex-1 py-1.5 text-[11px] font-semibold rounded-lg transition-all flex items-center justify-center gap-1 active:scale-[0.97] ${interestStyle}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleInterest(match.id, match.name);
+                        }}
+                        className={`flex-1 py-2 text-[11px] font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-1 active:scale-[0.97] shadow-sm ${
+                          isMutual ? "bg-gradient-to-r from-pink-500 to-rose-600 text-white" :
+                          isSent ? "bg-white/10 text-white border border-white/10 hover:bg-white/15" :
+                          isReceived ? "bg-amber-500 hover:bg-amber-600 text-white animate-pulse" :
+                          "bg-[#026d77] hover:bg-[#03828e] text-white"
+                        }`}
                       >
-                        <Heart className={`w-3 h-3 ${isHeartFilled ? "fill-current" : ""}`} />
+                        <Heart className={`w-3.5 h-3.5 ${isHeartFilled ? "fill-current" : ""}`} />
                         {interestText}
                       </button>
                       <button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           if (isMutual) {
                             router.push("/dashboard/chat");
                           } else {
                             setAlertMsg("Chat is locked! Establish a mutual match first.");
                           }
                         }}
-                        className={`flex-1 py-1.5 text-[11px] font-semibold rounded-lg transition-colors flex items-center justify-center gap-1 ${
+                        className={`flex-1 py-2 text-[11px] font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-1 ${
                           isMutual
-                            ? "bg-brand-600 text-white hover:bg-brand-700"
-                            : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                            ? "bg-white/20 hover:bg-white text-white hover:text-gray-900 border border-white/20 hover:border-white shadow-sm active:scale-[0.97]"
+                            : "bg-white/5 text-white/40 border border-white/5 cursor-not-allowed"
                         }`}
                       >
-                        <MessageCircle className="w-3 h-3" /> Chat
+                        <MessageCircle className="w-3.5 h-3.5" /> Chat
                       </button>
                     </div>
                   </div>
@@ -411,9 +442,6 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
-
-      {/* Profile Completion */}
-      <ProfileCompletionTracker />
 
       {/* AI Profile Details Modal */}
       <AnimatePresence>

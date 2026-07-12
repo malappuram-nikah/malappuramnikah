@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect */
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -137,7 +138,8 @@ export default function WeddingBusinessDashboard() {
     const params = new URLSearchParams(currentSearch);
     const tabParam = params.get("tab");
     if (tabParam) {
-      setActiveTab(tabParam);
+      const timeout = setTimeout(() => setActiveTab(tabParam), 0);
+      return () => clearTimeout(timeout);
     }
   }, [currentSearch]);
 

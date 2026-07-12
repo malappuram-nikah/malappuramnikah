@@ -21,7 +21,7 @@ notification_route.get("/", async (req: Request, res: Response) => {
 
     // Populate sender profile info for visual display in frontend notifications dropdown
     const enrichedNotifications = await Promise.all(
-      notifications.map(async (notif) => {
+      notifications.map(async (notif: typeof notifications[number]) => {
         const sender = await prisma.user.findUnique({
           where: { id: notif.sender_id },
           select: {

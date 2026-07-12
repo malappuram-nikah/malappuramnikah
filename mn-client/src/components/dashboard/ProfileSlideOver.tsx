@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Heart, MessageCircle, Sparkles, Volume2, Video, ShieldCheck, Lock, ChevronLeft, ChevronRight, ExternalLink, Star, MoreVertical, Ban, Flag } from "lucide-react";
+import { X, Heart, MessageCircle, Sparkles, Volume2, Video, ShieldCheck, Lock, ChevronLeft, ChevronRight, ExternalLink, Star, MoreVertical, Ban, Flag, TrendingUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getEnrichedProfile } from "@/lib/profile-utils";
 import BiodataDownload from "./BiodataDownload";
@@ -352,7 +352,7 @@ export default function ProfileSlideOver({
                   </p>
                 </div>
                 <div className="bg-brand-600 text-white px-2.5 py-1 rounded-lg font-bold text-xs shadow-md flex items-center gap-1 shrink-0">
-                  <Sparkles className="w-3 h-3" /> {profile.matchScore || profile.match}%
+                  <TrendingUp className="w-3 h-3" /> {profile.matchScore || profile.match}%
                 </div>
               </div>
             </div>

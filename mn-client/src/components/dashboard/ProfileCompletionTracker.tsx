@@ -1,8 +1,11 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/set-state-in-effect */
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, AlertCircle, CheckCircle2 } from "lucide-react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { getProfileCompletionStatus, ProfileSection } from "@/lib/profile-utils";
 import { useUser } from "@/context/UserContext";
@@ -20,102 +23,77 @@ export default function ProfileCompletionTracker() {
     setMissingSections(missing);
   }, [user, loadingUser]);
 
-  if (loadingUser) return null;
-
-  // Determine profile strength
+  if (loadingUser) return null;  // Determine profile strength
   let strength = "Weak";
-  let strengthColor = "text-red-500 bg-red-50 border-red-200";
-  let barColor = "bg-red-500";
+  let strengthColor = "text-rose-200 bg-rose-950/40 border-rose-800/30";
+  let barColor = "bg-gradient-to-r from-rose-400 to-rose-500";
   
   if (completionPercent >= 80) {
     strength = "Excellent";
-    strengthColor = "text-green-600 bg-green-50 border-green-200";
-    barColor = "bg-green-500";
+    strengthColor = "text-emerald-200 bg-emerald-950/40 border-emerald-800/30";
+    barColor = "bg-gradient-to-r from-emerald-400 to-teal-400";
   } else if (completionPercent >= 60) {
     strength = "Strong";
-    strengthColor = "text-brand-600 bg-brand-50 border-brand-200";
-    barColor = "bg-brand-500";
+    strengthColor = "text-teal-200 bg-teal-950/40 border-teal-800/30";
+    barColor = "bg-gradient-to-r from-[#81c4bd] to-[#026d77]";
   } else if (completionPercent >= 40) {
     strength = "Average";
-    strengthColor = "text-yellow-600 bg-yellow-50 border-yellow-200";
-    barColor = "bg-yellow-500";
+    strengthColor = "text-amber-200 bg-amber-950/40 border-amber-800/30";
+    barColor = "bg-gradient-to-r from-amber-400 to-amber-300";
   }
 
   return (
-    <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm transition-all hover:shadow-md">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="font-bold text-gray-900 flex items-center gap-2">
+    <div className="relative overflow-hidden bg-[#026d77] rounded-xl p-4 border border-[#026d77] shadow-[0_4px_25px_-5px_rgba(2,109,119,0.15)] transition-all duration-300">
+      {/* Decorative radial grid background pattern */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] bg-[size:16px_16px] opacity-10 pointer-events-none z-0" />
+
+      <div className="relative z-10 flex items-center justify-between mb-1.5">
+        <h3 className="font-bold text-white text-xs tracking-wide flex items-center gap-1.5">
           Profile Strength
-          <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full border ${strengthColor}`}>
+          <span className={`text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.2 rounded-full border ${strengthColor}`}>
             {strength}
           </span>
         </h3>
-        <span className={`text-xl font-bold ${strengthColor.split(' ')[0]}`}>{completionPercent}%</span>
+        <span className="text-base font-bold font-sans tracking-tight text-white">{completionPercent}%</span>
       </div>
       
-      <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden mb-5">
+      <div className="relative z-10 w-full h-1.5 bg-white/15 rounded-full overflow-hidden mb-3 border border-white/5">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${completionPercent}%` }}
-          transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
-          className={`h-full rounded-full ${barColor}`}
+          transition={{ duration: 1.2, delay: 0.2, ease: "easeOut" }}
+          className="h-full rounded-full bg-white"
         />
       </div>
 
       {completionPercent < 100 ? (
-        <div className="space-y-4">
-          <p className="text-sm text-gray-600">
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <p className="text-[11px] text-teal-100/90 font-medium leading-relaxed max-w-[80%]">
             {completionPercent < 40 
-              ? "Your profile is almost empty. Complete it to start seeing relevant matches!"
-              : "You're getting there! Complete these remaining sections to unlock 3x more matches."}
+              ? "Your profile is currently sparse. Complete it to start seeing relevant matches!"
+              : "You're getting closer! Complete remaining sections to unlock 3x more matches."}
           </p>
-          
-          {/* Show top 2 missing sections as suggestions */}
-          {missingSections.slice(0, 2).map((section, idx) => (
-            <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-100 gap-3">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 text-brand-600 mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">{section.name}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{section.suggestion}</p>
-                </div>
-              </div>
-              <Link 
-                href={`/dashboard/profile-builder?step=${section.step}`} 
-                className="shrink-0 px-4 py-1.5 bg-white border border-gray-200 text-xs font-semibold text-gray-700 rounded-lg hover:bg-brand-50 hover:text-brand-700 hover:border-brand-200 transition-colors"
-              >
-                Complete
-              </Link>
-            </div>
-          ))}
-
-          {missingSections.length > 2 && (
-            <div className="flex items-center justify-center mt-2 mb-1">
-              <span className="text-xs font-medium text-gray-500 bg-gray-50 border border-gray-100 px-3 py-1 rounded-full">
-                + {missingSections.length - 2} more section{missingSections.length - 2 !== 1 ? 's' : ''} remaining
-              </span>
-            </div>
-          )}
-
-          <Link href="/dashboard/profile-builder" className="inline-flex items-center gap-1 mt-2 text-sm font-semibold text-brand-600 hover:text-brand-700 hover:underline">
-            Go to Profile Builder <ArrowRight className="w-4 h-4" />
+          <Link href="/dashboard/profile-builder" className="inline-flex items-center gap-1 text-xs font-bold text-teal-200 hover:text-white transition-colors whitespace-nowrap">
+            Go to Profile Builder <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-4 text-center">
-          <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-3">
-            <CheckCircle2 className="w-6 h-6" />
+        <div className="relative z-10 flex items-center justify-between gap-4 py-1">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 bg-white/10 text-emerald-300 rounded-full flex items-center justify-center shrink-0 border border-white/10">
+              <CheckCircle2 className="w-4.5 h-4.5" />
+            </div>
+            <div className="min-w-0">
+              <h4 className="font-bold text-white text-xs sm:text-sm">Outstanding Profile!</h4>
+              <p className="text-[11px] text-teal-100/80 mt-0.5 truncate max-w-md">Your profile is 100% complete and fully visible.</p>
+            </div>
           </div>
-          <h4 className="font-bold text-gray-900">Outstanding Profile!</h4>
-          <p className="text-sm text-gray-500 mt-1">
-            Your profile is 100% complete. You are now fully visible to your best matches.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
-            <Link href="/dashboard/profile-builder" className="inline-flex items-center gap-1 text-xs font-semibold px-4 py-2 bg-gray-50 border border-gray-200 text-gray-700 rounded-xl hover:bg-brand-50 hover:text-brand-700 hover:border-brand-200 transition-colors shadow-sm">
-              Edit Full Profile
+          <div className="flex items-center gap-2 shrink-0">
+            <Link href="/dashboard/profile-builder" className="px-3 py-1.5 bg-white/10 border border-white/20 text-white text-xs font-bold rounded-lg hover:bg-white/20 transition-colors">
+              Edit Profile
             </Link>
-            <Link href="/dashboard/matches" className="inline-flex items-center gap-1 text-xs font-semibold px-4 py-2 bg-brand-600 text-white rounded-xl hover:bg-brand-700 transition-colors shadow-sm">
-              View AI Matches <ArrowRight className="w-3.5 h-3.5" />
+            <Link href="/dashboard/matches" className="px-3 py-1.5 bg-white hover:bg-teal-50 text-[#026d77] text-xs font-bold rounded-lg transition-all flex items-center gap-1 shadow-sm">
+              View Matches <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>

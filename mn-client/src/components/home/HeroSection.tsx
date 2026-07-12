@@ -1,130 +1,216 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Search, MapPin, Users, CheckCircle2 } from "lucide-react";
+import { BookOpen } from "lucide-react";
+import CalligraphicL from "@/components/ui/CalligraphicL";
 
 export default function HeroSection() {
   return (
-    <section className="relative pt-28 pb-16 md:pt-36 md:pb-24 overflow-hidden bg-[#f0faf9]">
-      {/* Subtle teal grid background */}
-      <div className="absolute inset-0 z-0 bg-[linear-gradient(to_right,#a3e1dc33_1px,transparent_1px),linear-gradient(to_bottom,#a3e1dc33_1px,transparent_1px)] bg-[size:6rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
-      {/* Teal glow blob */}
-      <div className="absolute top-[-10%] right-[-5%] -z-10 w-[60%] h-[60%] rounded-full bg-brand-200/40 blur-3xl" />
+    <section className="relative pt-24 pb-20 overflow-hidden bg-white">
+      {/* Premium subtle warm/purple background glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full md:w-[90%] h-[700px] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#81c4bd]/60 via-[#026d77]/30 to-transparent -z-10 blur-3xl" />
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 max-w-7xl">
-        <div className="grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-          
-          {/* Left Content */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 max-w-7xl text-center">
+        {/* Header Text Section */}
+        <div className="max-w-4xl mx-auto pt-8 pb-2">
+          <motion.h1
+            initial={{ opacity: 0, y: -30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-            className="lg:col-span-7 xl:col-span-6 flex flex-col justify-center"
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold font-playfair text-gray-900 leading-[1.1] tracking-tight"
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-brand-200 text-brand-700 text-sm font-medium w-fit mb-6 shadow-sm">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
-              </span>
-              #1 Trusted Matrimony in Kerala
-            </div>
-            
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold font-playfair text-gray-900 leading-[1.15] tracking-tight">
-              Begin Your Journey to <br className="hidden sm:block" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-600 to-brand-400">Forever.</span>
-            </h1>
-            
-            <p className="mt-6 text-base sm:text-lg text-gray-500 leading-relaxed max-w-xl">
-              Experience a premium matchmaking service designed for those who seek meaningful connections. Verified profiles, dedicated assistance, and absolute privacy.
-            </p>
+            <span className="inline-flex items-center align-middle">
+              <CalligraphicL className="w-[1.05em] h-[1.05em] -mr-[0.04em] -ml-[0.08em] text-[#026d77] inline-block align-middle" />
+              <span>et&apos;s help you to meet</span>
+            </span>
+            <br />
+            <span>someone who truly gets you</span>
+          </motion.h1>
 
-            {/* Professional Search Widget */}
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
-              className="mt-10 bg-white p-4 sm:p-5 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.05)] border border-brand-100 max-w-2xl"
-            >
-              <form className="flex flex-col sm:flex-row gap-3" onSubmit={(e) => e.preventDefault()}>
-                <div className="flex-1 relative">
-                  <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                    <Users className="h-5 w-5 text-brand-400" />
-                  </div>
-                  <select defaultValue="" className="w-full bg-brand-50/50 border border-brand-100 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all appearance-none cursor-pointer">
-                    <option value="" disabled>I&apos;m looking for a</option>
-                    <option value="bride">Bride</option>
-                    <option value="groom">Groom</option>
-                  </select>
-                </div>
-                
-                <div className="flex-1 relative">
-                  <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                    <MapPin className="h-5 w-5 text-brand-400" />
-                  </div>
-                  <select defaultValue="" className="w-full bg-brand-50/50 border border-brand-100 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all appearance-none cursor-pointer">
-                    <option value="" disabled>Location</option>
-                    <option value="kerala">Kerala</option>
-                    <option value="uae">UAE</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-                
-                <button className="bg-brand-600 hover:bg-brand-700 text-white rounded-xl px-6 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-all shadow-sm hover:shadow group whitespace-nowrap">
-                  <Search className="w-4 h-4 transition-transform group-hover:scale-110" />
-                  Search
-                </button>
-              </form>
-            </motion.div>
+          <motion.p
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.15, ease: "easeOut" }}
+            className="mt-6 text-sm sm:text-base md:text-lg text-gray-500 font-medium tracking-wide max-w-xl mx-auto"
+          >
+            Where Muslims meet with intention, not swipes.
+          </motion.p>
 
-            {/* Trust Metrics */}
-            <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4 text-sm text-gray-500">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-brand-500" />
-                <span>10k+ Success Stories</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-brand-500" />
-                <span>100% Verified</span>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Right Visuals */}
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.97 }}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
-            className="lg:col-span-5 xl:col-span-6 relative flex justify-center lg:justify-end"
+            transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
+            className="mt-8 flex justify-center"
           >
-            <div className="relative w-full max-w-lg aspect-[4/5] rounded-[2.5rem] overflow-hidden shadow-2xl bg-brand-100 border-4 border-white">
-              <img 
-                src="https://images.unsplash.com/photo-1607190074257-dd4b7af0309f?q=80&w=1000&auto=format&fit=crop" 
-                alt="Elegant Couple" 
-                className="w-full h-full object-cover object-top"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#013d43]/50 via-transparent to-transparent" />
+            <button className="bg-[#111827] hover:bg-black text-white px-8 py-3.5 rounded-full text-sm font-semibold flex items-center gap-2 transition-all shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]">
+              Join Now
+              <span className="text-base font-normal">→</span>
+            </button>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Floating Profile Cards & Smartphone Showcase Section */}
+      <div className="relative w-full max-w-[1440px] mx-auto mt-0 px-4 py-2 overflow-hidden select-none">
+        {/* Cards Row layout */}
+        <div className="flex items-center justify-center gap-4 md:gap-6 lg:gap-8 overflow-hidden py-6">
+          
+          {/* Left Card 1 (Outermost): Girl with book */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.6 }}
+            transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
+            whileHover={{ scale: 1.05, opacity: 0.8, transition: { duration: 0.2 } }}
+            className="w-28 h-36 sm:w-36 sm:h-48 md:w-40 md:h-52 rounded-[1.6rem] overflow-hidden bg-white flex-shrink-0 hidden lg:block transform cursor-pointer rotate-[-6deg]"
+          >
+            <img
+              src="/hero-girl-beach-book.jpg"
+              alt="Muslim Bride Beach Book"
+              className="w-full h-full object-cover"
+            />
+          </motion.div>
+
+          {/* Left Card 2 (Middle): Man in teal jacket */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.75 }}
+            transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+            whileHover={{ scale: 1.05, opacity: 0.9, transition: { duration: 0.2 } }}
+            className="w-32 h-40 sm:w-44 sm:h-56 md:w-48 md:h-60 rounded-[1.8rem] overflow-hidden bg-white flex-shrink-0 hidden sm:block transform cursor-pointer rotate-[-4deg]"
+          >
+            <img
+              src="/hero-man-jacket.jpg"
+              alt="Kerala Muslim Groom"
+              className="w-full h-full object-cover"
+            />
+          </motion.div>
+
+          {/* Left Card 3 (Innermost): Girl in green dress / pink hijab */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.9 }}
+            transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+            whileHover={{ scale: 1.05, opacity: 1, transition: { duration: 0.2 } }}
+            className="w-36 h-44 sm:w-48 sm:h-60 md:w-52 md:h-64 rounded-[2rem] overflow-hidden bg-white flex-shrink-0 cursor-pointer rotate-[-2deg]"
+          >
+            <img
+              src="/hero-girl-hijab.jpg"
+              alt="Muslim Bride Profile"
+              className="w-full h-full object-cover"
+            />
+          </motion.div>
+
+          {/* Center: Premium Smartphone Mockup - animates from bottom to top on entrance */}
+          <motion.div
+            initial={{ opacity: 0, y: 220 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1.2, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+            className="relative z-10 w-[260px] h-[480px] sm:w-[280px] sm:h-[520px] md:w-[310px] md:h-[580px] rounded-[2.8rem] border-[8px] border-gray-900 bg-gray-900 flex-shrink-0 overflow-hidden"
+          >
+            {/* Dynamic Island Notch */}
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 w-28 h-5 bg-gray-900 rounded-full z-30 flex items-center justify-center">
+              <div className="w-12 h-1 bg-gray-800 rounded-full" />
             </div>
 
-            {/* Floating Stats Card */}
-            <motion.div 
-              animate={{ y: [0, -8, 0] }}
-              transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
-              className="absolute -bottom-6 -left-6 sm:left-4 bg-white p-5 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.1)] border border-brand-100 hidden sm:flex items-center gap-4"
-            >
-              <div className="flex -space-x-3">
-                <img className="w-10 h-10 rounded-full border-2 border-white object-cover" src="https://i.pravatar.cc/100?img=1" alt="User" />
-                <img className="w-10 h-10 rounded-full border-2 border-white object-cover" src="https://i.pravatar.cc/100?img=2" alt="User" />
-                <img className="w-10 h-10 rounded-full border-2 border-white object-cover" src="https://i.pravatar.cc/100?img=3" alt="User" />
-                <div className="w-10 h-10 rounded-full border-2 border-white bg-brand-50 flex items-center justify-center text-xs font-semibold text-brand-700">
-                  +2k
+            {/* Speaker & Sensor dots inside notch */}
+            <div className="absolute top-[18px] left-[calc(50%+24px)] w-1.5 h-1.5 bg-gray-800 rounded-full z-30" />
+
+            {/* Simulated Mobile Status Bar */}
+            <div className="absolute top-1.5 left-0 right-0 px-6 flex justify-between items-center text-[10px] font-semibold text-gray-700 z-20 pointer-events-none">
+              <span>9:41</span>
+              <div className="flex items-center gap-1">
+                <span className="w-3.5 h-2.5 border border-gray-700 rounded-sm relative flex items-center justify-start p-0.5"><span className="w-1.5 h-full bg-gray-700 rounded-xs block" /></span>
+              </div>
+            </div>
+
+            {/* Inside Screen Content */}
+            <div className="w-full h-full bg-[#FAF9F5] pt-9 pb-4 px-3 flex flex-col justify-between overflow-hidden">
+              <div className="bg-white rounded-[2rem] p-4 sm:p-5 border border-gray-100 flex flex-col items-center h-full justify-between">
+                
+                {/* User Profile Avatar */}
+                <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-26 md:h-26 rounded-[2.2rem] overflow-hidden border-2 border-brand-50 shadow-sm">
+                  <img
+                    src="/hero-muhammad.jpg"
+                    alt="Muhammad Profile"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
+
+                {/* Profile Name & Tagline */}
+                <div className="text-center mt-2">
+                  <h3 className="text-lg sm:text-xl font-bold font-playfair text-gray-900">Muhammad</h3>
+                  <p className="text-[11px] sm:text-xs text-gray-500 font-medium mt-0.5">Kottakkal, Head of School</p>
+                </div>
+
+                {/* Dot Indicator & Book Icon */}
+                <div className="flex items-center gap-2 mt-2 w-full justify-center">
+                  <div className="h-px bg-gray-200 flex-1 max-w-[40px]" />
+                  <div className="w-9 h-9 bg-white shadow-[0_3px_10px_rgba(0,0,0,0.05)] rounded-xl flex items-center justify-center border border-gray-50">
+                    <BookOpen className="w-4 h-4 text-gray-700" />
+                  </div>
+                  <div className="h-px bg-gray-200 flex-1 max-w-[40px]" />
+                </div>
+
+                {/* About Me Title */}
+                <h4 className="text-xs sm:text-sm font-bold font-playfair text-gray-900 mt-2">About me</h4>
+
+                {/* About Me Text with fade out gradient overlay */}
+                <div className="relative text-center mt-1 px-1 max-h-[85px] overflow-hidden">
+                  <p className="text-[10px] sm:text-[11px] leading-relaxed text-gray-500 font-medium">
+                    My downtime includes going for runs, hanging out with my family, and experimenting in the kitchen. I find each of these activities grounding and a great way to unwind.
+                  </p>
+                  <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+                </div>
+
               </div>
-              <div>
-                <p className="text-sm font-bold text-gray-900">New matches</p>
-                <p className="text-xs text-gray-500">Joined this week</p>
-              </div>
-            </motion.div>
+            </div>
           </motion.div>
+
+          {/* Right Card 1 (Innermost): Girl with headphones */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.9 }}
+            transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+            whileHover={{ scale: 1.05, opacity: 1, transition: { duration: 0.2 } }}
+            className="w-36 h-44 sm:w-48 sm:h-60 md:w-52 md:h-64 rounded-[2rem] overflow-hidden bg-white flex-shrink-0 cursor-pointer rotate-[2deg]"
+          >
+            <img
+              src="/hero-girl-headphones.jpg"
+              alt="Muslim Groom Profile"
+              className="w-full h-full object-cover"
+            />
+          </motion.div>
+
+          {/* Right Card 2 (Middle): Man on beach */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.75 }}
+            transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+            whileHover={{ scale: 1.05, opacity: 0.9, transition: { duration: 0.2 } }}
+            className="w-32 h-40 sm:w-44 sm:h-56 md:w-48 md:h-60 rounded-[1.8rem] overflow-hidden bg-white flex-shrink-0 hidden sm:block transform cursor-pointer rotate-[4deg]"
+          >
+            <img
+              src="/hero-man-beach.jpg"
+              alt="Muslim Groom Profile Beach"
+              className="w-full h-full object-cover"
+            />
+          </motion.div>
+
+          {/* Right Card 3 (Outermost): Man with backpack */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.6 }}
+            transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
+            whileHover={{ scale: 1.05, opacity: 0.8, transition: { duration: 0.2 } }}
+            className="w-28 h-36 sm:w-36 sm:h-48 md:w-40 md:h-52 rounded-[1.6rem] overflow-hidden bg-white flex-shrink-0 hidden lg:block transform cursor-pointer rotate-[6deg]"
+          >
+            <img
+              src="/hero-man-backpack.jpg"
+              alt="Muslim Groom Backpack"
+              className="w-full h-full object-cover"
+            />
+          </motion.div>
+
         </div>
       </div>
     </section>
