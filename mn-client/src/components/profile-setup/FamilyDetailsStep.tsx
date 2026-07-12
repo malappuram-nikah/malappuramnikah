@@ -138,7 +138,7 @@ export default function FamilyDetailsStep({ initialData, onComplete, onBack }: F
   if (!isDraftLoaded) return null; // Avoid hydration mismatch
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden w-full max-w-4xl mx-auto">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden w-full">
       <div className="p-6 md:p-8 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl md:text-2xl font-bold font-playfair text-gray-900">Family & Living Details</h2>

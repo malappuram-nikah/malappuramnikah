@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, MessageCircle, TrendingUp, Sparkles, MapPin, BookOpen, Zap, Info, ChevronRight, X, Loader2, Lock, Unlock, Layers, Play, Pause, Volume2, Video, ShieldCheck } from "lucide-react";
+import { Heart, MessageCircle, TrendingUp, Sparkles, MapPin, BookOpen, Zap, Info, ChevronRight, X, Loader2, Lock, Unlock, Layers, Play, Pause, Volume2, Video, ShieldCheck, Radar, BadgeCheck, HeartHandshake } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCompare } from "@/context/CompareContext";
 import { useUser } from "@/context/UserContext";
@@ -466,7 +466,7 @@ export default function AiMatchesPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold font-playfair text-gray-900 flex items-center gap-2">
-          <Sparkles className="w-6 h-6 text-brand-600" />
+          <HeartHandshake className="w-6 h-6 text-brand-600" />
           AI Matchmaking
         </h1>
         <p className="text-sm text-gray-500 mt-1 max-w-2xl">
@@ -509,7 +509,7 @@ export default function AiMatchesPage() {
           {/* Top Recommendation (Hero Match) */}
           <section>
             <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-brand-600" />
+              <Heart className="w-5 h-5 text-brand-600" />
               Highest Compatibility Match
             </h2>
             <div className="bg-gradient-to-br from-brand-900 to-brand-700 rounded-xl overflow-hidden shadow-xl relative">
@@ -572,7 +572,7 @@ export default function AiMatchesPage() {
                   <div className="mb-6 bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/10">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-sm font-medium text-brand-50 flex items-center gap-1.5">
-                        <Sparkles className="w-4 h-4 text-brand-200" />
+                        <TrendingUp className="w-4 h-4 text-brand-200" />
                         AI Compatibility Score
                       </span>
                       <span className="text-2xl font-bold text-white">{bestMatch.matchScore}%</span>
@@ -653,7 +653,7 @@ export default function AiMatchesPage() {
           <section>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <Zap className="w-5 h-5 text-brand-500" />
+                <BadgeCheck className="w-5 h-5 text-brand-600" />
                 Recommended Daily
               </h2>
               <button onClick={() => router.push("/dashboard/search")} className="text-sm text-brand-600 font-medium hover:underline">View All</button>

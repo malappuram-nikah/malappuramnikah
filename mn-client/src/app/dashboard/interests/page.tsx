@@ -223,7 +223,7 @@ export default function InterestsPage() {
       {/* Modern Tabs */}
       <div className="flex bg-gray-100/80 p-1.5 rounded-2xl w-full max-w-md border border-gray-200/50">
         {[
-          { id: "mutual", label: "Accepted", count: mutualList.length, icon: Sparkles },
+          { id: "mutual", label: "Accepted", count: mutualList.length, icon: Check },
           { id: "received", label: "Received", count: receivedList.length, icon: Inbox },
           { id: "sent", label: "Sent", count: sentList.length, icon: Send },
         ].map((tab) => {
@@ -319,7 +319,7 @@ export default function InterestsPage() {
                   </div>
                   {isMatched && (
                     <span className="absolute top-3 right-3 bg-pink-600 text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1">
-                      <Sparkles className="w-2.5 h-2.5" /> Accepted
+                      <Check className="w-2.5 h-2.5" /> Accepted
                     </span>
                   )}
                 </div>

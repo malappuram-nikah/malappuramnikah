@@ -165,7 +165,7 @@ export default function ReferralDashboardPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-12">
+    <div className="space-y-6 max-w-6xl mx-auto pb-12">
       {/* Title */}
       <div>
         <h1 className="text-2xl md:text-3xl font-bold font-playfair text-gray-900 flex items-center gap-2">
@@ -178,7 +178,7 @@ export default function ReferralDashboardPage() {
 
       {/* Referral Code Box */}
       <div className="grid md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 bg-gradient-to-br from-brand-800 to-brand-650 text-white rounded-xl p-6 shadow-md relative overflow-hidden flex flex-col justify-between min-h-[180px]">
+        <div className="md:col-span-2 bg-[#026d77] text-white rounded-xl p-6 shadow-md relative overflow-hidden flex flex-col justify-between min-h-[180px]">
           <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] bg-[size:16px_16px]" />
           
           <div className="relative z-10 space-y-1">

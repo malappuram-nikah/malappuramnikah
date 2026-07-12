@@ -260,8 +260,8 @@ export default function ProfileBuilderPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto mb-8">
+    <div className="pb-10 relative">
+      <div className="max-w-6xl mx-auto mb-8 px-2 sm:px-4">
 
         {/* Header row with back link + title */}
         <div className="flex items-center gap-3 mb-6">
@@ -276,10 +276,10 @@ export default function ProfileBuilderPage() {
           <span className="text-sm font-semibold text-gray-800">Manage My Profile</span>
         </div>
 
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 font-playfair text-center">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 font-playfair text-left">
           Manage My Profile
         </h1>
-        <p className="text-gray-500 text-center mt-2 text-sm">
+        <p className="text-gray-500 text-left mt-2 text-sm">
           Click any step below to jump directly to it and update your details.
         </p>
 
@@ -428,7 +428,7 @@ export default function ProfileBuilderPage() {
 
         {currentStep === 10 && (
           <motion.div key="step10" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-            <div className="max-w-2xl mx-auto bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
+            <div className="w-full bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
               <IdentityVerificationForm 
                 isWizard={true}
                 onBack={() => setCurrentStep(9)}

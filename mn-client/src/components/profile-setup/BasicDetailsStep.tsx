@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, Save, Sparkles } from "lucide-react";
+import { CheckCircle2, Save, Sparkles, Wand2, FileText } from "lucide-react";
 import { LOCATIONS } from "@/lib/constants";
 
 export interface BasicDetailsData {
@@ -222,7 +222,7 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
   if (!isDraftLoaded) return null; // Avoid hydration mismatch
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden w-full max-w-4xl mx-auto">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden w-full">
       <div className="p-6 md:p-8 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl md:text-2xl font-bold font-playfair text-gray-900">About & Basic Details</h2>
@@ -541,7 +541,7 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
                   onClick={generateDescription}
                   className="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1 transition-colors bg-brand-50 px-2.5 py-1 rounded-lg"
                 >
-                  <Sparkles className="w-3.5 h-3.5" /> Auto-generate description
+                  <FileText className="w-3.5 h-3.5" /> Auto-generate description
                 </button>
               </div>
               <textarea

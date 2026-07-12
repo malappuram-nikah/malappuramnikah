@@ -165,7 +165,7 @@ export default function ProfilePhotosStep({ initialData, onComplete, onBack }: P
   if (!isDraftLoaded) return null;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-150 shadow-sm overflow-hidden w-full max-w-xl mx-auto">
+    <div className="bg-white rounded-xl border border-gray-150 shadow-sm overflow-hidden w-full">
       <div className="p-6 md:p-8 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl md:text-2xl font-bold font-playfair text-gray-900">Profile Photos</h2>
