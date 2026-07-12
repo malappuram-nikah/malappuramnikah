@@ -671,99 +671,108 @@ export default function AiMatchesPage() {
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.1 }}
-                    className="bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-lg hover:border-brand-200 transition-all group cursor-pointer flex flex-col justify-between"
                     onClick={() => setSelectedProfile(profile)}
+                    className="relative h-[440px] rounded-xl border border-gray-100 overflow-hidden hover:shadow-xl hover:border-brand-200 transition-all duration-300 group cursor-pointer flex flex-col justify-end"
                   >
-                    <div>
-                      <div className="h-48 overflow-hidden relative bg-gray-50">
-                        {profile.img ? (
-                          <img 
-                            src={profile.img} 
-                            alt={profile.name} 
-                            className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${!isInterested ? "filter blur-[12px] select-none" : ""}`} 
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-brand-50 flex items-center justify-center text-brand-700 font-extrabold text-4xl uppercase">
-                            {profile.name.charAt(0)}
-                          </div>
-                        )}
-                        {!isInterested && (
-                          <div className="absolute inset-0 bg-black/15 flex items-center justify-center transition-all">
-                            <div className="bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full shadow-sm border border-white/20 flex items-center gap-1">
-                              <Lock className="w-3 h-3 text-brand-600" />
-                              <span className="text-[9px] font-bold text-gray-700">Connect to view photo</span>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Status Badges Overlay */}
-                        <div className="absolute bottom-3 left-3 flex flex-wrap gap-1 z-10">
-                          {profile.is_online && (
-                            <span className="flex items-center gap-1 bg-green-50/95 backdrop-blur-xs text-green-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-green-200 shadow-xs">
-                              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                              Online
-                            </span>
-                          )}
-                          {(profile.is_new_user || (profile.created_at && Math.abs(new Date().getTime() - new Date(profile.created_at).getTime()) / (1000 * 60 * 60 * 24) <= 7)) ? (
-                            <span className="bg-brand-50/95 backdrop-blur-xs text-brand-700 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border border-brand-100 shadow-xs">
-                              New
-                            </span>
-                          ) : (profile.last_login && Math.abs(new Date().getTime() - new Date(profile.last_login).getTime()) / (1000 * 60 * 60) <= 24) ? (
-                            <span className="bg-blue-50/95 backdrop-blur-xs text-blue-700 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border border-blue-100 shadow-xs">
-                              Active
-                            </span>
-                          ) : null}
-                        </div>
-
-                        <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-bold text-brand-700 shadow-sm flex items-center gap-1 z-10">
-                          <Sparkles className="w-3 h-3" /> {profile.matchScore}% Match
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (isCompared(profile.id)) {
-                              removeFromCompare(profile.id);
-                            } else {
-                              addToCompare(profile.id);
-                            }
-                          }}
-                          className={`absolute bottom-3 right-3 p-1.5 rounded-lg backdrop-blur-md transition-all shadow-sm z-10 ${
-                            isCompared(profile.id)
-                              ? "bg-brand-600 text-white"
-                              : "bg-white/80 text-gray-700 hover:bg-white"
-                          }`}
-                          title={isCompared(profile.id) ? "Remove from Compare" : "Compare Profile"}
-                        >
-                          <Layers className="w-3.5 h-3.5" />
-                        </button>
+                    {/* Image Background */}
+                    {profile.img ? (
+                      <img 
+                        src={profile.img} 
+                        alt={profile.name} 
+                        className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 z-0 ${!isInterested ? "filter blur-[12px] select-none" : ""}`} 
+                      />
+                    ) : (
+                      <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-brand-50 to-brand-100 flex items-center justify-center text-brand-700 font-extrabold text-7xl uppercase z-0">
+                        {profile.name.charAt(0)}
                       </div>
-                      <div className="p-5">
-                        <h3 className="font-bold text-gray-900 text-base flex items-center gap-1">
-                          {profile.name}
-                          {profile.kyc_status === "VERIFIED" && (
-                            <span title="ID Verified" className="shrink-0"><ShieldCheck className="w-4 h-4 text-blue-600 fill-blue-100" /></span>
-                          )}
-                        </h3>
-                        <p className="text-xs text-gray-500 mt-1">{profile.age} yrs • {profile.location}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">{profile.education || "No Higher Education"}</p>
-                        
-                        <div className="mt-3 pt-3 border-t border-gray-55">
-                          <p className="text-xs text-brand-600 bg-brand-50 inline-block px-2 py-1 rounded-md mb-2 font-semibold">
-                            {profile.profession}
-                          </p>
-                          <p className="text-xs text-gray-650 leading-relaxed line-clamp-2">
-                            <span className="font-semibold text-gray-700">AI Note:</span> {profile.matchReason}
-                          </p>
+                    )}
+
+                    {/* Lock Screen for Not Interested */}
+                    {!isInterested && (
+                      <div className="absolute inset-0 bg-black/40 backdrop-blur-[6px] flex items-center justify-center transition-all z-10">
+                        <div className="bg-white/95 backdrop-blur-sm px-2.5 py-1.5 rounded-full shadow-sm border border-white/20 flex items-center gap-1.5">
+                          <Lock className="w-3.5 h-3.5 text-brand-600" />
+                          <span className="text-[10px] font-bold text-gray-700">Connect to view photo</span>
                         </div>
+                      </div>
+                    )}
+
+                    {/* Bottom Gradient Shadow Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent z-10 pointer-events-none" />
+
+                    {/* Status Badges Overlay */}
+                    <div className="absolute top-3 left-3 flex flex-wrap gap-1 z-20">
+                      {profile.is_online && (
+                        <span className="flex items-center gap-1 bg-green-500/20 backdrop-blur-md text-green-300 text-[9px] font-bold px-2 py-0.5 rounded-full border border-green-500/30">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                          Online
+                        </span>
+                      )}
+                      {(profile.is_new_user || (profile.created_at && Math.abs(new Date().getTime() - new Date(profile.created_at).getTime()) / (1000 * 60 * 60 * 24) <= 7)) ? (
+                        <span className="bg-brand-500/20 backdrop-blur-md text-white text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border border-white/10">
+                          New
+                        </span>
+                      ) : (profile.last_login && Math.abs(new Date().getTime() - new Date(profile.last_login).getTime()) / (1000 * 60 * 60) <= 24) ? (
+                        <span className="bg-blue-500/20 backdrop-blur-md text-blue-300 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border border-blue-500/30">
+                          Active
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {/* Match Score Badge */}
+                    <div className="absolute top-3 right-12 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-bold text-brand-700 shadow-sm flex items-center gap-1 z-20 pointer-events-none">
+                      <TrendingUp className="w-3 h-3" /> {profile.matchScore}% Match
+                    </div>
+
+                    {/* Compare Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isCompared(profile.id)) {
+                          removeFromCompare(profile.id);
+                        } else {
+                          addToCompare(profile.id);
+                        }
+                      }}
+                      className={`absolute top-3 right-3 p-1.5 rounded-lg backdrop-blur-md transition-all shadow-sm z-20 ${
+                        isCompared(profile.id)
+                          ? "bg-brand-600 text-white"
+                          : "bg-white/80 text-gray-700 hover:bg-white"
+                      }`}
+                      title={isCompared(profile.id) ? "Remove from Compare" : "Compare Profile"}
+                    >
+                      <Layers className="w-3.5 h-3.5" />
+                    </button>
+
+                    {/* Content */}
+                    <div className="relative z-20 p-5 w-full text-white flex flex-col gap-2.5">
+                      <h3 className="font-bold text-white text-base flex items-center gap-1">
+                        {profile.name}
+                        {profile.kyc_status === "VERIFIED" && (
+                          <span title="ID Verified" className="shrink-0"><ShieldCheck className="w-4 h-4 text-blue-400 fill-blue-900/50" /></span>
+                        )}
+                      </h3>
+                      <p className="text-xs text-gray-200">{profile.age} yrs • {profile.location}</p>
+                      <p className="text-xs text-gray-300">{profile.education || "No Higher Education"}</p>
+                      
+                      <div className="mt-1 pt-2 border-t border-white/10 flex flex-col gap-1.5">
+                        <p className="text-[10px] text-brand-300 bg-brand-950/60 border border-brand-500/30 inline-block w-max px-2 py-0.5 rounded-md font-semibold uppercase tracking-wider">
+                          {profile.profession}
+                        </p>
+                        <p className="text-xs text-gray-300 leading-relaxed line-clamp-2">
+                          <span className="font-semibold text-gray-200">AI Note:</span> {profile.matchReason}
+                        </p>
                       </div>
                     </div>
-                    <div className="px-5 pb-5 pt-1">
+
+                    {/* Action Button */}
+                    <div className="relative z-20 px-5 pb-5 pt-1">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedProfile(profile);
                         }}
-                        className="w-full py-2 bg-brand-50 hover:bg-brand-100 text-brand-700 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1"
+                        className="w-full py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1 shadow-md"
                       >
                         <Info className="w-3.5 h-3.5" /> View Analysis & Connect
                       </button>

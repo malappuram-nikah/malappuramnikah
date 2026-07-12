@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, SlidersHorizontal, Loader2, X, Check } from "lucide-react";
+import { Search, SlidersHorizontal, Loader2, X, Check, Lock, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCompare } from "@/context/CompareContext";
 import { useUser } from "@/context/UserContext";
@@ -332,81 +332,101 @@ export default function SearchPage() {
                   <div 
                     key={p.id} 
                     onClick={() => setSelectedProfile(p)}
-                    className="group bg-white rounded-lg border border-gray-200 overflow-hidden cursor-pointer hover:shadow-md hover:border-brand-300 transition-all duration-300 flex flex-col"
+                    className="group relative h-[420px] rounded-xl border border-gray-200 overflow-hidden cursor-pointer hover:shadow-xl hover:border-brand-300 transition-all duration-300 flex flex-col justify-end"
                   >
-                    <div className="relative h-48 bg-gray-100 overflow-hidden select-none">
-                      <img src={p.img || "/placeholder.jpg"} alt={p.name} className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ${p.isBlurred ? 'blur-md scale-110 opacity-80' : ''}`} />
-                      {p.is_premium && (
-                        <div className="absolute top-3 left-3 bg-amber-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider shadow-sm">
-                          Premium
+                    {/* Image Background */}
+                    <img 
+                      src={p.img || "/placeholder.jpg"} 
+                      alt={p.name} 
+                      className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 z-0 ${p.isBlurred ? 'blur-md scale-110 opacity-80 select-none' : ''}`} 
+                    />
+
+                    {/* Premium Label */}
+                    {p.is_premium && (
+                      <div className="absolute top-3 left-3 bg-amber-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider shadow-sm z-20">
+                        Premium
+                      </div>
+                    )}
+
+                    {/* Lock Blur Overlay */}
+                    {p.isBlurred && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/10 backdrop-blur-[2px] z-10">
+                        <div className="bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full text-[10px] font-bold text-gray-800 shadow-lg flex items-center gap-1">
+                          <Lock className="w-3.5 h-3.5 text-amber-500" />
+                          <span>Premium to View Photo</span>
                         </div>
-                      )}
-                      {p.isBlurred && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/10 backdrop-blur-[2px]">
-                          <div className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full text-[10px] font-bold text-gray-800 shadow-lg">
-                            Premium to View Photo
-                          </div>
-                        </div>
-                      )}
-                      {p.kyc_status === "VERIFIED" && (
-                        <div className="absolute top-10 left-3 bg-emerald-500 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm flex items-center gap-1">
-                          <Check className="w-3 h-3" /> Verified
-                        </div>
-                      )}
-                      <label 
-                        onClick={(e) => e.stopPropagation()}
-                        className="absolute top-3 right-3 flex items-center justify-center cursor-pointer z-10"
-                        title="Select for comparison"
-                      >
-                        <input 
-                          type="checkbox" 
-                          checked={isCompared(p.id)} 
-                          onChange={(e) => {
-                            if (e.target.checked) addToCompare(p.id);
-                            else removeFromCompare(p.id);
-                          }}
-                          className="peer sr-only"
-                        />
-                        <div className="w-6 h-6 bg-black/30 backdrop-blur-sm border-2 border-white/80 rounded flex items-center justify-center peer-checked:bg-brand-600 peer-checked:border-brand-600 transition-all shadow-md">
-                          <Check className="w-4 h-4 text-white opacity-0 peer-checked:opacity-100" />
-                        </div>
-                      </label>
-                    </div>
-                    <div className="p-4 flex-1 flex flex-col">
-                      <div className="mb-4">
-                        <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                      </div>
+                    )}
+
+                    {/* Verified Label */}
+                    {p.kyc_status === "VERIFIED" && (
+                      <div className={`absolute ${p.is_premium ? 'top-[42px]' : 'top-3'} left-3 bg-emerald-500 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm flex items-center gap-1 z-20`}>
+                        <Check className="w-3 h-3" /> Verified
+                      </div>
+                    )}
+
+                    {/* Compare Checkbox */}
+                    <label 
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute top-3 right-3 flex items-center justify-center cursor-pointer z-20"
+                      title="Select for comparison"
+                    >
+                      <input 
+                        type="checkbox" 
+                        checked={isCompared(p.id)} 
+                        onChange={(e) => {
+                          if (e.target.checked) addToCompare(p.id);
+                          else removeFromCompare(p.id);
+                        }}
+                        className="peer sr-only"
+                      />
+                      <div className="w-6 h-6 bg-black/30 backdrop-blur-sm border-2 border-white/80 rounded flex items-center justify-center peer-checked:bg-brand-600 peer-checked:border-brand-600 transition-all shadow-md">
+                        <Check className="w-4 h-4 text-white opacity-0 peer-checked:opacity-100" />
+                      </div>
+                    </label>
+
+                    {/* Bottom Gradient Shadow Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/45 to-transparent z-10 pointer-events-none" />
+
+                    {/* Content & Action Button */}
+                    <div className="relative z-20 p-4 w-full text-white flex flex-col gap-2.5">
+                      <div>
+                        <h3 className="text-base font-bold text-white flex items-center gap-2">
                           {p.name}
-                          {p.is_online && <span className="w-2 h-2 bg-green-500 rounded-full" title="Online now" />}
+                          {p.is_online && <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" title="Online now" />}
                         </h3>
-                        <p className="text-xs text-gray-500 font-medium mt-0.5">{p.age} Yrs • {p.height} cm</p>
+                        <p className="text-xs text-gray-200 mt-0.5">{p.age} Yrs • {p.height} cm</p>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-y-2 gap-x-3 text-[11px] text-gray-600 mb-5 flex-1">
+                      <div className="grid grid-cols-2 gap-y-2 gap-x-3 text-[11px] text-gray-300 flex-1">
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-gray-400 font-medium">Education</span>
-                          <span className="font-semibold text-gray-800 truncate">{p.education || "Not specified"}</span>
+                          <span className="text-gray-400 font-medium text-[10px]">Education</span>
+                          <span className="font-semibold text-white truncate">{p.education || "Not specified"}</span>
                         </div>
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-gray-400 font-medium">Profession</span>
-                          <span className="font-semibold text-gray-800 truncate">{p.profession || "Not specified"}</span>
+                          <span className="text-gray-400 font-medium text-[10px]">Profession</span>
+                          <span className="font-semibold text-white truncate">{p.profession || "Not specified"}</span>
                         </div>
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-gray-400 font-medium">Community</span>
-                          <span className="font-semibold text-gray-800 truncate">{p.caste || "Not specified"}</span>
+                          <span className="text-gray-400 font-medium text-[10px]">Community</span>
+                          <span className="font-semibold text-white truncate">{p.caste || "Not specified"}</span>
                         </div>
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-gray-400 font-medium">Location</span>
-                          <span className="font-semibold text-gray-800 truncate">{p.location || "Not specified"}</span>
+                          <span className="text-gray-400 font-medium text-[10px]">Location</span>
+                          <span className="font-semibold text-white truncate">{p.location || "Not specified"}</span>
                         </div>
                       </div>
 
                       <button 
-                        onClick={(e) => { e.stopPropagation(); handleToggleInterest(p.id); }}
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          handleToggleInterest(p.id); 
+                        }}
                         disabled={isSent || isMutual}
-                        className={`w-full py-2 rounded-lg font-semibold text-xs transition-all flex items-center justify-center gap-2 ${
-                          isMutual ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
-                          isSent ? 'bg-gray-50 text-gray-400 border border-gray-100 cursor-not-allowed' :
-                          'bg-brand-50 text-brand-600 hover:bg-brand-600 hover:text-white border border-brand-100 hover:border-brand-600'
+                        className={`w-full py-2 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-md ${
+                          isMutual ? 'bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-500' :
+                          isSent ? 'bg-white/10 text-white/50 border border-white/5 cursor-not-allowed' :
+                          'bg-[#026d77] hover:bg-[#03828e] text-white border border-transparent'
                         }`}
                       >
                         {isMutual ? <><Check className="w-4 h-4" /> Mutual Match</> : 

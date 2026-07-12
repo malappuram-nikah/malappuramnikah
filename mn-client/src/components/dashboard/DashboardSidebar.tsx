@@ -1,4 +1,6 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import Link from "next/link";
 import Image from "next/image";
@@ -77,7 +79,7 @@ export default function DashboardSidebar() {
         collapsed ? "w-20" : "w-64"
       )}>
         {/* Logo */}
-        <div className="flex items-center justify-between px-5 py-5 border-b border-gray-100">
+        <div className="flex items-center justify-between px-5 py-5">
           {!collapsed && (
             <Link href="/">
               <Image
@@ -98,7 +100,7 @@ export default function DashboardSidebar() {
         </div>
 
         {/* Dynamic Context Header */}
-        {!collapsed && (
+        {!collapsed && titlePrefix !== "MATCHMAKER" && (
           <div className="px-5 pt-4 pb-1">
             <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest block">
               {titlePrefix} WORKSPACE
