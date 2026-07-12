@@ -65,7 +65,6 @@ export default function SearchPage() {
       } catch(e) {}
     }
   }, [currentUser]);
->>>>>>> main
 
   const fetchInterests = async (token: string) => {
     try {

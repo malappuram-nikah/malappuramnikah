@@ -6,7 +6,7 @@ export interface User {
   last_name: string;
   cast: string;
   location: string;
-  email?: string;
+  email?: string | null;
   mobile_number: string;
   password: string;
   dob: string;
