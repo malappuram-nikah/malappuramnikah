@@ -15,15 +15,24 @@ import ProfilePhotosStep from "@/components/profile-setup/ProfilePhotosStep";
 import VoiceIntroStep from "@/components/profile-setup/VoiceIntroStep";
 import ReviewStep from "@/components/profile-setup/ReviewStep";
 import IdentityVerificationForm from "@/components/dashboard/IdentityVerificationForm";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, PhoneCall } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { API_URL } from "@/lib/config";
+import { getProfileCompletionStatus } from "@/lib/profile-utils";
 
 export default function ProfileBuilderPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+
+  useEffect(() => {
+    if (user) {
+      const { completedSteps: calcCompleted } = getProfileCompletionStatus(user);
+      setCompletedSteps(calcCompleted);
+    }
+  }, [currentStep, user]);
 
   const basicInitialData = useMemo(() => {
     if (!user) return undefined;
@@ -283,6 +292,22 @@ export default function ProfileBuilderPage() {
           Click any step below to jump directly to it and update your details.
         </p>
 
+        {/* Need Help Block */}
+        <div className="mt-6 mb-2 mx-auto max-w-lg bg-brand-50 border border-brand-100 rounded-xl p-4 flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-brand-100 rounded-full flex items-center justify-center text-brand-600 shrink-0">
+              <PhoneCall className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-gray-900">Need help filling this?</p>
+              <p className="text-xs text-gray-600">Our executives are here to guide you.</p>
+            </div>
+          </div>
+          <a href="tel:+919876543210" className="shrink-0 bg-white border border-gray-200 text-brand-600 font-semibold px-4 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors shadow-sm">
+            Call Executive
+          </a>
+        </div>
+
         {/* Mobile Step Tracker */}
         <div className="block sm:hidden mt-6 bg-white p-4 rounded-2xl border border-gray-200/60 shadow-sm">
           <div className="flex items-center justify-between text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
@@ -301,7 +326,7 @@ export default function ProfileBuilderPage() {
           <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
             {stepNames.slice(0, 12).map((name, idx) => {
               const step = idx + 1;
-              const isDone = currentStep > step;
+              const isDone = completedSteps.includes(step);
               const isCurrent = currentStep === step;
               return (
                 <button
@@ -326,7 +351,7 @@ export default function ProfileBuilderPage() {
         <div className="hidden sm:flex items-start justify-between mt-8 w-full max-w-full px-2">
           {stepNames.slice(0, 12).map((name, idx) => {
             const step = idx + 1;
-            const isDone = currentStep > step;
+            const isDone = completedSteps.includes(step);
             const isCurrent = currentStep === step;
             const isLast = step === 12;
             return (

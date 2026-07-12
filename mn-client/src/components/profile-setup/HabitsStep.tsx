@@ -4,6 +4,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Save } from "lucide-react";
+import { toast } from "sonner";
 
 export interface HabitsData {
   favouriteSports: string;
@@ -96,7 +97,7 @@ export default function HabitsStep({ initialData, onComplete, onBack }: HabitsSt
       if (onComplete) onComplete(formData);
       // Optional: Clear draft after successful completion
       // localStorage.removeItem(DRAFT_KEY);
-    }
+    } else { toast.error("Please fill required details"); }
   };
 
   // Progress calculation
@@ -111,8 +112,8 @@ export default function HabitsStep({ initialData, onComplete, onBack }: HabitsSt
   if (!isDraftLoaded) return null; // Avoid hydration mismatch
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden w-full">
-      <div className="p-6 md:p-8 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden w-full max-w-4xl mx-auto">
+      <div className="p-4 md:p-5 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl md:text-2xl font-bold font-playfair text-gray-900">Hobbies, Likes & Habits</h2>
           <p className="text-sm text-gray-500 mt-1">Let us know about your lifestyle choices and favorites.</p>
@@ -133,13 +134,13 @@ export default function HabitsStep({ initialData, onComplete, onBack }: HabitsSt
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-8">
+      <form onSubmit={handleSubmit} className="p-4 md:p-5 space-y-4">
         
         {/* Hobbies & Likes */}
-        <section className="space-y-6">
+        <section className="space-y-3">
           <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Hobbies & Likes</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Favourite Sports</label>
               <input
@@ -147,7 +148,7 @@ export default function HabitsStep({ initialData, onComplete, onBack }: HabitsSt
                 value={formData.favouriteSports}
                 onChange={(e) => updateForm("favouriteSports", e.target.value)}
                 placeholder="e.g. Cricket, Football, Tennis"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
               />
             </div>
 
@@ -158,7 +159,7 @@ export default function HabitsStep({ initialData, onComplete, onBack }: HabitsSt
                 value={formData.favouritePlaces}
                 onChange={(e) => updateForm("favouritePlaces", e.target.value)}
                 placeholder="e.g. Munnar, Dubai, Paris"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
               />
             </div>
           </div>
@@ -177,7 +178,7 @@ export default function HabitsStep({ initialData, onComplete, onBack }: HabitsSt
                     key={habit}
                     type="button"
                     onClick={() => updateForm("eatingHabits", habit)}
-                    className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all text-left ${
+                    className={`px-3 py-2 rounded-xl border text-sm font-medium transition-all text-left ${
                       formData.eatingHabits === habit
                         ? "border-brand-600 bg-brand-50 text-brand-700 ring-1 ring-brand-600"
                         : "border-gray-200 hover:border-gray-300 text-gray-600"
@@ -198,7 +199,7 @@ export default function HabitsStep({ initialData, onComplete, onBack }: HabitsSt
                     key={habit}
                     type="button"
                     onClick={() => updateForm("smokingHabits", habit)}
-                    className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all text-left ${
+                    className={`px-3 py-2 rounded-xl border text-sm font-medium transition-all text-left ${
                       formData.smokingHabits === habit
                         ? "border-brand-600 bg-brand-50 text-brand-700 ring-1 ring-brand-600"
                         : "border-gray-200 hover:border-gray-300 text-gray-600"
@@ -219,7 +220,7 @@ export default function HabitsStep({ initialData, onComplete, onBack }: HabitsSt
                     key={habit}
                     type="button"
                     onClick={() => updateForm("drinkingHabits", habit)}
-                    className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all text-left ${
+                    className={`px-3 py-2 rounded-xl border text-sm font-medium transition-all text-left ${
                       formData.drinkingHabits === habit
                         ? "border-brand-600 bg-brand-50 text-brand-700 ring-1 ring-brand-600"
                         : "border-gray-200 hover:border-gray-300 text-gray-600"

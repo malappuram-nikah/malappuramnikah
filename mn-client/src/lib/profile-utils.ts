@@ -159,3 +159,76 @@ export function analyzeMatch(profile: EnrichedProfile, myPref: ProfileDetails["m
     }
   };
 }
+
+export interface ProfileSection {
+  key: string;
+  name: string;
+  suggestion: string;
+  step: number;
+  weight: number;
+  check: (p: any) => boolean;
+}
+
+export function getProfileSections(user: any): ProfileSection[] {
+  return [
+    { key: "mn_basic_details_draft", name: "Basic Details", suggestion: "Add your height and marital status.", step: 1, weight: 20, check: (p: any) => p && p.height && p.maritalStatus },
+    { key: "mn_religious_info_draft", name: "Religious Info", suggestion: "Add your prayer habits and religiousness.", step: 2, weight: 15, check: (p: any) => p && p.namaz && p.religiousness },
+    { key: "mn_professional_info_draft", name: "Professional Info", suggestion: "Add your education and profession.", step: 3, weight: 15, check: (p: any) => p && p.highestEducation && p.profession },
+    { key: "mn_family_details_draft", name: "Family Details", suggestion: "Tell us about your family background.", step: 4, weight: 10, check: (p: any) => p && p.familyStatus },
+    { key: "mn_interests_draft", name: "Interests & Personality", suggestion: "Complete Interests & Personality to find like-minded people.", step: 5, weight: 5, check: (p: any) => p && p.interests && p.interests.length > 0 },
+    { key: "mn_habits_draft", name: "Hobbies & Habits", suggestion: "Add your lifestyle habits.", step: 6, weight: 5, check: (p: any) => p && p.eatingHabits && p.smokingHabits && p.drinkingHabits },
+    { key: "mn_partner_preferences_draft", name: "Partner Preferences", suggestion: "Complete Partner Preferences to improve match suggestions.", step: 7, weight: 15, check: (p: any) => p && p.aboutPartner && p.aboutPartner.trim().length > 0 },
+    { key: "mn_profile_photos_draft", name: "Profile Photos", suggestion: "Upload more photos to improve profile visibility.", step: 8, weight: 10, check: (p: any) => p && p.photos && p.photos.length > 0 },
+    { key: "mn_voice_intro_draft", name: "Voice Introduction", suggestion: "Record a voice intro to boost responses.", step: 9, weight: 5, check: (p: any) => p && p.voice },
+    ...(user?.gender?.toLowerCase() === "female" ? [] : [
+      { key: "mn_kyc_status", name: "Identity Verification", suggestion: "Verify your identity to get the 'ID Verified' badge.", step: 10, weight: 10, check: () => {
+          if (typeof window !== "undefined") {
+              return localStorage.getItem("mn_kyc_status") === "VERIFIED";
+          }
+          return false;
+      } }
+    ])
+  ];
+}
+
+export function getProfileCompletionStatus(user: any) {
+  if (typeof window === "undefined") return { percent: 0, missing: [], completedSteps: [] };
+
+  const sections = getProfileSections(user);
+  let earnedWeight = 0;
+  let totalWeight = 0;
+  const missing: ProfileSection[] = [];
+  const completedSteps: number[] = [];
+
+  sections.forEach(section => {
+    totalWeight += section.weight;
+    try {
+      if (section.key === "mn_kyc_status") {
+        if (section.check(null)) {
+          earnedWeight += section.weight;
+          completedSteps.push(section.step);
+        } else {
+          missing.push(section);
+        }
+      } else {
+        const item = localStorage.getItem(section.key);
+        if (item) {
+          const parsed = JSON.parse(item);
+          if (section.check(parsed)) {
+            earnedWeight += section.weight;
+            completedSteps.push(section.step);
+          } else {
+            missing.push(section);
+          }
+        } else {
+          missing.push(section);
+        }
+      }
+    } catch (e) {
+      missing.push(section);
+    }
+  });
+
+  const percent = totalWeight > 0 ? Math.round((earnedWeight / totalWeight) * 100) : 0;
+  return { percent, missing, completedSteps };
+}

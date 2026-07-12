@@ -4,6 +4,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Save } from "lucide-react";
+import { toast } from "sonner";
 
 export interface ReligiousInfoData {
   religion: string;
@@ -110,7 +111,7 @@ export default function ReligiousInfoStep({ initialData, onComplete, onBack }: R
       if (onComplete) onComplete(formData);
       // Optional: Clear draft after successful completion
       // localStorage.removeItem(DRAFT_KEY);
-    }
+    } else { toast.error("Please fill required details"); }
   };
 
   // Progress calculation
@@ -125,8 +126,8 @@ export default function ReligiousInfoStep({ initialData, onComplete, onBack }: R
   if (!isDraftLoaded) return null; // Avoid hydration mismatch
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden w-full">
-      <div className="p-6 md:p-8 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden w-full max-w-4xl mx-auto">
+      <div className="p-4 md:p-5 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl md:text-2xl font-bold font-playfair text-gray-900">Religious Information</h2>
           <p className="text-sm text-gray-500 mt-1">Share your religious background and beliefs.</p>
@@ -148,18 +149,18 @@ export default function ReligiousInfoStep({ initialData, onComplete, onBack }: R
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-8">
+      <form onSubmit={handleSubmit} className="p-4 md:p-5 space-y-4">
         
-        <section className="space-y-6">
+        <section className="space-y-3">
           <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Religious Background</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Religion *</label>
               <select
                 value={formData.religion}
                 onChange={(e) => updateForm("religion", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="Islam">Islam</option>
               </select>
@@ -171,7 +172,7 @@ export default function ReligiousInfoStep({ initialData, onComplete, onBack }: R
               <select
                 value={formData.community}
                 onChange={(e) => updateForm("community", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="" disabled>Select Community</option>
                 {formData.religion === "Islam" ? (
@@ -193,7 +194,7 @@ export default function ReligiousInfoStep({ initialData, onComplete, onBack }: R
               <select
                 value={formData.namaz || ""}
                 onChange={(e) => updateForm("namaz", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="" disabled>Select Namaz Habits</option>
                 {["Five Times Daily", "Most Prayers", "Occasionally", "Rarely"].map((option) => (
@@ -207,7 +208,7 @@ export default function ReligiousInfoStep({ initialData, onComplete, onBack }: R
               <select
                 value={formData.quranReading || ""}
                 onChange={(e) => updateForm("quranReading", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="" disabled>Select Quran Reading Habits</option>
                 {["Daily", "Weekly", "Occasionally", "Rarely"].map((option) => (
@@ -224,7 +225,7 @@ export default function ReligiousInfoStep({ initialData, onComplete, onBack }: R
                     key={level}
                     type="button"
                     onClick={() => updateForm("religiousness", level)}
-                    className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all ${
+                    className={`px-3 py-2 rounded-xl border text-sm font-medium transition-all ${
                       formData.religiousness === level
                         ? "border-brand-600 bg-brand-50 text-brand-700 ring-1 ring-brand-600"
                         : "border-gray-200 hover:border-gray-300 text-gray-600"

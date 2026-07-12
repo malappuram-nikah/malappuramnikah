@@ -51,15 +51,16 @@ export function useProfileActions(): ProfileActionsState {
     return () => ctrl.abort();
   }, []);
 
-  const toggleFavourite = useCallback(async (targetId: number) => {
+  const toggleFavourite = useCallback(async (targetId: number | string) => {
     const token = getToken();
     if (!token) return "UNFAVOURITED" as const;
+    const numericId = Number(targetId);
 
     // Optimistic update
     setFavouriteIds((prev) => {
       const next = new Set(prev);
-      if (next.has(targetId)) next.delete(targetId);
-      else next.add(targetId);
+      if (next.has(numericId)) next.delete(numericId);
+      else next.add(numericId);
       return next;
     });
 
@@ -74,8 +75,8 @@ export function useProfileActions(): ProfileActionsState {
       if (data.success) {
         setFavouriteIds((prev) => {
           const next = new Set(prev);
-          if (data.status === "FAVOURITED") next.add(targetId);
-          else next.delete(targetId);
+          if (data.status === "FAVOURITED") next.add(numericId);
+          else next.delete(numericId);
           return next;
         });
         return data.status as "FAVOURITED" | "UNFAVOURITED";
@@ -84,14 +85,15 @@ export function useProfileActions(): ProfileActionsState {
     return "UNFAVOURITED" as const;
   }, []);
 
-  const toggleBlock = useCallback(async (targetId: number) => {
+  const toggleBlock = useCallback(async (targetId: number | string) => {
     const token = getToken();
     if (!token) return "UNBLOCKED" as const;
+    const numericId = Number(targetId);
 
     setBlockedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(targetId)) next.delete(targetId);
-      else next.add(targetId);
+      if (next.has(numericId)) next.delete(numericId);
+      else next.add(numericId);
       return next;
     });
 
@@ -105,8 +107,8 @@ export function useProfileActions(): ProfileActionsState {
       if (data.success) {
         setBlockedIds((prev) => {
           const next = new Set(prev);
-          if (data.status === "BLOCKED") next.add(targetId);
-          else next.delete(targetId);
+          if (data.status === "BLOCKED") next.add(numericId);
+          else next.delete(numericId);
           return next;
         });
         return data.status as "BLOCKED" | "UNBLOCKED";
@@ -121,7 +123,7 @@ export function useProfileActions(): ProfileActionsState {
     loading,
     toggleFavourite,
     toggleBlock,
-    isFavourite: (id: number) => favouriteIds.has(id),
-    isBlocked: (id: number) => blockedIds.has(id),
+    isFavourite: (id: number | string) => favouriteIds.has(Number(id)),
+    isBlocked: (id: number | string) => blockedIds.has(Number(id)),
   };
 }

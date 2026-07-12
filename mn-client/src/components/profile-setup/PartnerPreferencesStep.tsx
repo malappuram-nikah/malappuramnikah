@@ -4,6 +4,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Save } from "lucide-react";
+import { toast } from "sonner";
 import { LOCATIONS } from "@/lib/constants";
 
 export interface PartnerPreferencesData {
@@ -149,7 +150,7 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
       if (onComplete) onComplete(formData);
       // Optional: Clear draft after successful completion
       // localStorage.removeItem(DRAFT_KEY);
-    }
+    } else { toast.error("Please fill required details"); }
   };
 
   // Progress calculation
@@ -166,8 +167,8 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
   if (!isDraftLoaded) return null; // Avoid hydration mismatch
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden w-full">
-      <div className="p-6 md:p-8 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden w-full max-w-4xl mx-auto">
+      <div className="p-4 md:p-5 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl md:text-2xl font-bold font-playfair text-gray-900">Partner Preferences</h2>
           <p className="text-sm text-gray-500 mt-1">Tell us what you are looking for in a life partner.</p>
@@ -188,10 +189,10 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-10">
+      <form onSubmit={handleSubmit} className="p-4 md:p-5 space-y-5">
         
         {/* About Partner */}
-        <section className="space-y-4">
+        <section className="space-y-2">
           <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">About Partner</h3>
           <div>
             <textarea
@@ -199,7 +200,7 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
               value={formData.aboutPartner}
               onChange={(e) => updateForm("aboutPartner", e.target.value)}
               placeholder="Write a few lines about the kind of partner you are looking for..."
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm resize-none"
+              className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm resize-none"
             />
             {errors.aboutPartner && <p className="text-red-500 text-xs mt-1">{errors.aboutPartner}</p>}
           </div>
@@ -209,7 +210,7 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
         <section className="space-y-6 pt-6 border-t border-gray-50">
           <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Basic Details</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="block text-sm font-medium text-gray-700">Age Range (Years)</label>
               <div className="flex items-center gap-2">
@@ -217,7 +218,7 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
                   type="number"
                   value={formData.minAge}
                   onChange={(e) => updateForm("minAge", e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
                   min="18"
                 />
                 <span className="text-gray-500 text-sm">to</span>
@@ -225,7 +226,7 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
                   type="number"
                   value={formData.maxAge}
                   onChange={(e) => updateForm("maxAge", e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
                   max="100"
                 />
               </div>
@@ -238,7 +239,7 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
                 <select
                   value={formData.minHeight}
                   onChange={(e) => updateForm("minHeight", e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
                 >
                   <option value="Any">Any</option>
                   <option value="4'10&quot;">4'10"</option>
@@ -250,7 +251,7 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
                 <select
                   value={formData.maxHeight}
                   onChange={(e) => updateForm("maxHeight", e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
                 >
                   <option value="Any">Any</option>
                   <option value="5'0&quot;">5'0"</option>
@@ -272,7 +273,7 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
                     updateForm("haveChildren", "Any");
                   }
                 }}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="Any">Doesn't Matter</option>
                 <option value="Never Married">Never Married</option>
@@ -287,7 +288,7 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
               <select
                 value={formData.motherTongue}
                 onChange={(e) => updateForm("motherTongue", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="Any">Doesn't Matter</option>
                 <option value="Malayalam">Malayalam</option>
@@ -302,7 +303,7 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
                 <select
                   value={formData.haveChildren}
                   onChange={(e) => updateForm("haveChildren", e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
                 >
                   <option value="Any">Doesn't Matter</option>
                   <option value="No">No</option>
@@ -317,7 +318,7 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
               <select
                 value={formData.physicalStatus}
                 onChange={(e) => updateForm("physicalStatus", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="Any">Doesn't Matter</option>
                 <option value="Normal">Normal</option>
@@ -331,13 +332,13 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
         <section className="space-y-6 pt-6 border-t border-gray-50">
           <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Religious Information</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Religion</label>
               <select
                 value={formData.religion}
                 onChange={(e) => updateForm("religion", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="Any">Doesn't Matter</option>
                 <option value="Islam">Islam</option>
@@ -349,7 +350,7 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
               <select
                 value={formData.community}
                 onChange={(e) => updateForm("community", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="Any">Doesn't Matter</option>
                 <option value="Sunni">Sunni</option>
@@ -363,7 +364,7 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
               <select
                 value={formData.religiousness}
                 onChange={(e) => updateForm("religiousness", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="Any">Doesn't Matter</option>
                 <option value="Very Religious">Very Religious</option>
@@ -377,7 +378,7 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
               <select
                 value={formData.prefNamaz || "Any"}
                 onChange={(e) => updateForm("prefNamaz", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="Any">Doesn't Matter</option>
                 {["Five Times Daily", "Most Prayers", "Occasionally", "Rarely"].map((option) => (
@@ -391,7 +392,7 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
               <select
                 value={formData.prefQuranReading || "Any"}
                 onChange={(e) => updateForm("prefQuranReading", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="Any">Doesn't Matter</option>
                 {["Daily", "Weekly", "Occasionally", "Rarely"].map((option) => (
@@ -406,13 +407,13 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
         <section className="space-y-6 pt-6 border-t border-gray-50">
           <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Professional Information</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Education</label>
               <select
                 value={formData.education}
                 onChange={(e) => updateForm("education", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="Any">Doesn't Matter</option>
                 <option value="Higher Secondary">Higher Secondary</option>
@@ -430,7 +431,7 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
                 value={formData.occupation}
                 onChange={(e) => updateForm("occupation", e.target.value)}
                 placeholder="e.g. Any, IT, Medical, Government"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
               />
             </div>
 
@@ -439,7 +440,7 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
               <select
                 value={formData.employedIn}
                 onChange={(e) => updateForm("employedIn", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="Any">Doesn't Matter</option>
                 <option value="Private Sector">Private Sector</option>
@@ -453,7 +454,7 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
               <select
                 value={formData.annualIncome}
                 onChange={(e) => updateForm("annualIncome", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="Any">Doesn't Matter</option>
                 <option value="5+ Lakhs">5+ Lakhs</option>
@@ -468,7 +469,7 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
         <section className="space-y-6 pt-6 border-t border-gray-50">
           <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Location & Lifestyle</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-sm font-medium text-gray-700">Preferred Locations (Kerala Districts & Towns)</label>
@@ -581,7 +582,7 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
               <select
                 value={formData.eatingHabits}
                 onChange={(e) => updateForm("eatingHabits", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="Any">Doesn't Matter</option>
                 <option value="Vegetarian Only">Vegetarian Only</option>
@@ -594,7 +595,7 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
               <select
                 value={formData.smokingHabits}
                 onChange={(e) => updateForm("smokingHabits", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="Any">Doesn't Matter</option>
                 <option value="Non-Smoker Only">Non-Smoker Only</option>
@@ -606,7 +607,7 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
               <select
                 value={formData.drinkingHabits}
                 onChange={(e) => updateForm("drinkingHabits", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="Any">Doesn't Matter</option>
                 <option value="Non-Drinker Only">Non-Drinker Only</option>
