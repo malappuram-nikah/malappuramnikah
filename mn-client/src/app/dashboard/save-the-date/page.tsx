@@ -200,7 +200,7 @@ export default function SaveTheDateCreator() {
                 : "text-gray-500 hover:text-gray-700"
             }`}
           >
-            <Sparkles className="w-4 h-4" />
+            <Heart className="w-4 h-4" />
             Invitation Builder
           </button>
           <button

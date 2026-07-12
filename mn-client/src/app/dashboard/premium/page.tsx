@@ -201,8 +201,8 @@ export default function PremiumPage() {
               <div className="px-6 py-6 flex-1 flex flex-col justify-between">
                 <ul className="space-y-3 flex-1 mb-8">
                   {plan.features.map((f, j) => (
-                    <li key={j} className={`flex items-start gap-2.5 text-sm ${plan.name === "Gold" && !isActivePlan ? "text-brand-700 font-medium" : "text-gray-600"}`}>
-                      <Check className={`w-4 h-4 shrink-0 mt-0.5 ${plan.name === "Gold" && !isActivePlan ? "text-brand-600" : "text-brand-500"}`} />
+                    <li key={j} className={`flex items-start gap-2.5 text-sm ${plan.name === "Gold" && !isActivePlan ? "text-white font-medium" : "text-gray-600"}`}>
+                      <Check className={`w-4 h-4 shrink-0 mt-0.5 ${plan.name === "Gold" && !isActivePlan ? "text-teal-200" : "text-brand-500"}`} />
                       {f}
                     </li>
                   ))}

@@ -542,7 +542,7 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
                   onClick={generateDescription}
                   className="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1 transition-colors bg-brand-50 px-2.5 py-1 rounded-lg"
                 >
-                  <Sparkles className="w-3.5 h-3.5" /> Auto-generate description
+                  <FileText className="w-3.5 h-3.5" /> Auto-generate description
                 </button>
               </div>
               <textarea

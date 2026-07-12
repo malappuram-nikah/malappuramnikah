@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Lock, Bell, Shield, ChevronRight, Sparkles, AlertCircle, ArrowRight, Save, CheckCircle2, Phone, Loader2, MessageSquarePlus, Star, Check } from "lucide-react";
+import { User, Lock, Bell, Shield, ChevronRight, Sparkles, AlertCircle, ArrowRight, Save, CheckCircle2, Phone, Loader2, MessageSquarePlus, Star, Check, UserCog } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { LOCATIONS } from "@/lib/constants";
 import { useUser } from "@/context/UserContext";
@@ -654,7 +654,7 @@ export default function SettingsPage() {
 
                   {/* Sleek Completion Ribbon */}
                   <div className={`flex items-center gap-2.5 px-3.5 py-1.5 rounded-full border text-xs font-bold ${strengthColor} shrink-0 w-max`}>
-                    <Sparkles className="w-4 h-4 animate-pulse text-brand-600" />
+                    <CheckCircle2 className="w-4 h-4 text-brand-600" />
                     <span>Profile Complete: {completionPercent}% ({strength})</span>
                   </div>
                 </div>
@@ -662,7 +662,7 @@ export default function SettingsPage() {
                 {/* Advanced Profile Builder redirect card */}
                 <div className="bg-brand-50 rounded-xl p-5 border border-brand-100/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
                   <div className="flex items-start gap-2.5">
-                    <Sparkles className="w-5 h-5 text-brand-600 shrink-0 mt-0.5 animate-pulse" />
+                    <UserCog className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
                     <div>
                       <h4 className="font-bold text-sm text-brand-900">Advanced Profile Settings</h4>
                       <p className="text-xs text-brand-600 mt-0.5 max-w-md leading-relaxed">

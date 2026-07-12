@@ -815,7 +815,7 @@ export default function MyProfilePage() {
       </AnimatePresence>
 
       {/* ── Page ── */}
-      <div className="max-w-5xl mx-auto pb-20 space-y-6">
+      <div className="max-w-6xl mx-auto pb-20 space-y-6">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm">
           <button
