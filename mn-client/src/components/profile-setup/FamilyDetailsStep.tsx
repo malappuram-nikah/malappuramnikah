@@ -4,7 +4,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Save } from "lucide-react";
-import { toast } from "sonner";
 
 export interface FamilyDetailsData {
   familyType: string;
@@ -124,7 +123,7 @@ export default function FamilyDetailsStep({ initialData, onComplete, onBack }: F
       if (onComplete) onComplete(formData);
       // Optional: Clear draft after successful completion
       // localStorage.removeItem(DRAFT_KEY);
-    } else { toast.error("Please fill required details"); }
+    }
   };
 
   // Progress calculation
@@ -139,8 +138,8 @@ export default function FamilyDetailsStep({ initialData, onComplete, onBack }: F
   if (!isDraftLoaded) return null; // Avoid hydration mismatch
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden w-full max-w-4xl mx-auto">
-      <div className="p-4 md:p-5 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden w-full">
+      <div className="p-6 md:p-8 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl md:text-2xl font-bold font-playfair text-gray-900">Family & Living Details</h2>
           <p className="text-sm text-gray-500 mt-1">Tell us about your family background and siblings.</p>
@@ -161,19 +160,19 @@ export default function FamilyDetailsStep({ initialData, onComplete, onBack }: F
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-4 md:p-5 space-y-4">
+      <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-8">
         
         {/* General Family Info */}
-        <section className="space-y-3">
+        <section className="space-y-6">
           <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Family Background</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Family Type *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Family Type <span className="text-red-500">*</span></label>
               <select
                 value={formData.familyType}
                 onChange={(e) => updateForm("familyType", e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="" disabled>Select Family Type</option>
                 <option value="Nuclear">Nuclear</option>
@@ -184,11 +183,11 @@ export default function FamilyDetailsStep({ initialData, onComplete, onBack }: F
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Financial Status *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Financial Status <span className="text-red-500">*</span></label>
               <select
                 value={formData.financialStatus}
                 onChange={(e) => updateForm("financialStatus", e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white"
               >
                 <option value="" disabled>Select Status</option>
                 <option value="Rich">Rich</option>
@@ -201,14 +200,14 @@ export default function FamilyDetailsStep({ initialData, onComplete, onBack }: F
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Family Values *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Family Values <span className="text-red-500">*</span></label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {["Orthodox", "Traditional", "Moderate", "Liberal"].map((val) => (
                   <button
                     key={val}
                     type="button"
                     onClick={() => updateForm("familyValues", val)}
-                    className={`px-3 py-2 rounded-xl border text-sm font-medium transition-all ${
+                    className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all ${
                       formData.familyValues === val
                         ? "border-brand-600 bg-brand-50 text-brand-700 ring-1 ring-brand-600"
                         : "border-gray-200 hover:border-gray-300 text-gray-600"
@@ -250,7 +249,7 @@ export default function FamilyDetailsStep({ initialData, onComplete, onBack }: F
                 value={formData.fatherName}
                 onChange={(e) => updateForm("fatherName", e.target.value)}
                 placeholder="Name"
-                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
               />
               <div>
                 <input
@@ -258,7 +257,7 @@ export default function FamilyDetailsStep({ initialData, onComplete, onBack }: F
                   value={formData.fatherOccupation}
                   onChange={(e) => updateForm("fatherOccupation", e.target.value)}
                   placeholder="Occupation"
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
                 />
               </div>
             </div>
@@ -285,7 +284,7 @@ export default function FamilyDetailsStep({ initialData, onComplete, onBack }: F
                 value={formData.motherName}
                 onChange={(e) => updateForm("motherName", e.target.value)}
                 placeholder="Name"
-                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
               />
               <div>
                 <input
@@ -293,7 +292,7 @@ export default function FamilyDetailsStep({ initialData, onComplete, onBack }: F
                   value={formData.motherOccupation}
                   onChange={(e) => updateForm("motherOccupation", e.target.value)}
                   placeholder="Occupation"
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
                 />
               </div>
             </div>

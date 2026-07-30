@@ -51,50 +51,17 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left decorative panel — hidden on mobile */}
-      <div className="hidden lg:flex lg:w-1/2 bg-brand-600 flex-col items-center justify-center relative overflow-hidden p-12">
-        {/* Pattern */}
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] bg-[size:28px_28px]" />
-        <div className="absolute top-0 left-0 w-72 h-72 bg-brand-500/40 rounded-full blur-3xl -translate-x-1/3 -translate-y-1/3" />
-        <div className="absolute bottom-0 right-0 w-72 h-72 bg-brand-800/40 rounded-full blur-3xl translate-x-1/3 translate-y-1/3" />
-
-        <div className="relative z-10 text-center">
-          <Image
-            src="/logoMain-01.svg"
-            alt="Malappuram Nikah"
-            width={180}
-            height={90}
-            className="mx-auto mb-8 brightness-200 h-20 w-auto object-contain"
-          />
-          <h2 className="text-4xl font-bold font-playfair text-white mb-4 leading-tight">
-            Welcome Back
-          </h2>
-          <p className="text-brand-200 text-lg max-w-sm mx-auto leading-relaxed">
-            Continue your journey to finding your perfect life partner. Your match could be just a click away.
-          </p>
-
-          {/* Decorative couple image */}
-          <div className="mt-12 w-64 h-72 mx-auto rounded-3xl overflow-hidden border-4 border-white/20 shadow-2xl">
-            <img
-              src="https://images.unsplash.com/photo-1583939003579-730e3918a45a?q=80&w=600&auto=format&fit=crop"
-              alt="Happy couple"
-              className="w-full h-full object-cover"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Right login form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-10 bg-white">
+    <div className="min-h-screen flex bg-gray-50 items-center justify-center p-6 sm:p-10">
+      {/* Centered login form */}
+      <div className="w-full max-w-md bg-white rounded-2xl border border-gray-150 shadow-xl p-8 sm:p-10">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="w-full max-w-md"
+          className="w-full"
         >
-          {/* Mobile logo */}
-          <div className="lg:hidden flex justify-center mb-8">
+          {/* Logo */}
+          <div className="flex justify-center mb-8">
             <Image
               src="/logoMain-01.svg"
               alt="Malappuram Nikah"

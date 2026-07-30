@@ -2,7 +2,6 @@
 
 import { motion } from "framer-motion";
 import { BookOpen } from "lucide-react";
-import CalligraphicL from "@/components/ui/CalligraphicL";
 
 export default function HeroSection() {
   return (
@@ -19,10 +18,7 @@ export default function HeroSection() {
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold font-playfair text-gray-900 leading-[1.1] tracking-tight"
           >
-            <span className="inline-flex items-center align-middle">
-              <CalligraphicL className="w-[1.05em] h-[1.05em] -mr-[0.04em] -ml-[0.08em] text-[#026d77] inline-block align-middle" />
-              <span>et&apos;s help you to meet</span>
-            </span>
+            <span>Let&apos;s help you to meet</span>
             <br />
             <span>someone who truly gets you</span>
           </motion.h1>
