@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster } from "sonner";
 
 const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -19,7 +19,7 @@ export default function RootLayout({
     <html lang="en" className={`${dmSans.variable}`}>
       <body className="font-sans bg-background text-text-primary antialiased min-h-screen flex flex-col">
         {children}
-        <Toaster position="bottom-right" />
+        <Toaster position="bottom-left" />
       </body>
     </html>
   );

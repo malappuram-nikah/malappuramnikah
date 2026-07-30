@@ -22,7 +22,16 @@ interface Profile {
 export default function InterestsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"mutual" | "received" | "sent">("mutual");
+  const [activeTab, setActiveTab] = useState<"mutual" | "received" | "sent">((() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get("tab");
+      if (tab === "mutual" || tab === "received" || tab === "sent") {
+        return tab;
+      }
+    }
+    return "mutual";
+  })());
   
   const [mutualList, setMutualList] = useState<any[]>([]);
   const [receivedList, setReceivedList] = useState<any[]>([]);

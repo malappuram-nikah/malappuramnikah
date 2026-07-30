@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useUser } from "./UserContext";
-import PremiumUpgradeModal from "@/components/dashboard/PremiumUpgradeModal";
 
 interface CompareContextType {
   compareIds: number[];
@@ -19,10 +18,8 @@ const CompareContext = createContext<CompareContextType | undefined>(undefined);
 export function CompareProvider({ children }: { children: React.ReactNode }) {
   const [compareIds, setCompareIds] = useState<number[]>([]);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
-  const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   const { currentUser } = useUser();
-  const isPremium = currentUser?.is_premium || currentUser?.premium_status === "active";
 
   const getStorageKey = useCallback(() => {
     if (currentUser?.id) {
@@ -58,11 +55,6 @@ export function CompareProvider({ children }: { children: React.ReactNode }) {
   }, [getStorageKey]);
 
   const addToCompare = (id: number) => {
-    if (!isPremium) {
-      setShowPremiumModal(true);
-      return;
-    }
-    
     if (compareIds.includes(id)) return;
     if (compareIds.length >= 3) {
       setAlertMsg("You can compare up to 3 profiles at a time.");
@@ -113,11 +105,6 @@ export function CompareProvider({ children }: { children: React.ReactNode }) {
       }}
     >
       {children}
-      <PremiumUpgradeModal 
-        isOpen={showPremiumModal} 
-        onClose={() => setShowPremiumModal(false)} 
-        featureName="profile comparison" 
-      />
     </CompareContext.Provider>
   );
 }

@@ -4,7 +4,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Save, UploadCloud, Trash2, Mic, Square, Play, Pause, RefreshCw } from "lucide-react";
-import { toast } from "sonner";
 
 export interface VoiceData {
   id: string;
@@ -201,7 +200,7 @@ export default function VoiceIntroStep({ initialData, onComplete, onBack }: Voic
     if (e) e.preventDefault();
     if (validate()) {
       if (onComplete) onComplete(formData);
-    } else { toast.error("Please fill required details"); }
+    }
   };
 
   const progressPercent = formData.voice ? 100 : 0;
@@ -209,8 +208,8 @@ export default function VoiceIntroStep({ initialData, onComplete, onBack }: Voic
   if (!isDraftLoaded) return null;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden w-full max-w-4xl mx-auto">
-      <div className="p-4 md:p-5 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden w-full">
+      <div className="p-6 md:p-8 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl md:text-2xl font-bold font-playfair text-gray-900">Voice Introduction</h2>
           <p className="text-sm text-gray-500 mt-1">Let potential matches hear your voice and personality.</p>
@@ -231,10 +230,10 @@ export default function VoiceIntroStep({ initialData, onComplete, onBack }: Voic
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-4 md:p-5 space-y-4">
+      <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-8">
         
         {!formData.voice ? (
-          <section className="space-y-3">
+          <section className="space-y-6">
             
             {/* Record Option */}
             <div className={`w-full border-2 border-dashed rounded-2xl flex flex-col items-center justify-center py-12 px-4 text-center transition-all ${
@@ -314,8 +313,8 @@ export default function VoiceIntroStep({ initialData, onComplete, onBack }: Voic
           </section>
         ) : (
           /* Audio Preview Area */
-          <section className="space-y-3">
-            <div className="bg-brand-50/50 rounded-2xl p-4 md:p-5 border border-brand-100 flex flex-col items-center">
+          <section className="space-y-6">
+            <div className="bg-brand-50/50 rounded-2xl p-6 md:p-8 border border-brand-100 flex flex-col items-center">
               <div className="w-16 h-16 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center mb-6">
                 <Mic className="w-8 h-8" />
               </div>

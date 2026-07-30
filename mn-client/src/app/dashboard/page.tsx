@@ -29,10 +29,10 @@ export default function DashboardPage() {
   
   // Real Statistics state — no hardcoded/dummy values
   const [stats, setStats] = useState([
-    { label: "Interests Sent",    value: "—", icon: Heart,         color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10" },
-    { label: "Mutual Matches",    value: "—", icon: Star,          color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10" },
-    { label: "Requests Received", value: "—", icon: MessageCircle, color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10" },
-    { label: "Profile Views",     value: "—", icon: Eye,           color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10" },
+    { label: "Interests Sent",    value: "—", icon: Heart,         color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10", href: "/dashboard/interests?tab=sent" },
+    { label: "Mutual Matches",    value: "—", icon: Star,          color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10", href: "/dashboard/interests?tab=mutual" },
+    { label: "Requests Received", value: "—", icon: MessageCircle, color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10", href: "/dashboard/interests?tab=received" },
+    { label: "Profile Views",     value: "—", icon: Eye,           color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10", href: "/dashboard/my-profile" },
   ]);
 
   const [suggestedMatches, setSuggestedMatches] = useState<any[]>([]);
@@ -72,10 +72,10 @@ export default function DashboardPage() {
 
         // Update statistics with real data only — no dummy profile views
         setStats([
-          { label: "Interests Sent",    value: String(sentIds.length),      icon: Heart,         color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10" },
-          { label: "Mutual Matches",    value: String(mutualIds.length),    icon: Star,          color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10" },
-          { label: "Requests Received", value: String(receivedIds.length),  icon: MessageCircle, color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10" },
-          { label: "Profile Views",     value: "N/A",                       icon: Eye,           color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10" },
+          { label: "Interests Sent",    value: String(sentIds.length),      icon: Heart,         color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10", href: "/dashboard/interests?tab=sent" },
+          { label: "Mutual Matches",    value: String(mutualIds.length),    icon: Star,          color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10", href: "/dashboard/interests?tab=mutual" },
+          { label: "Requests Received", value: String(receivedIds.length),  icon: MessageCircle, color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10", href: "/dashboard/interests?tab=received" },
+          { label: "Profile Views",     value: "N/A",                       icon: Eye,           color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10", href: "/dashboard/my-profile" },
         ]);
       }
     } catch (e) {
@@ -226,7 +226,8 @@ export default function DashboardPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.07, type: "spring", stiffness: 80 }}
-              className="bg-white rounded-2xl p-5 border border-gray-100/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_30px_-5px_rgba(2,109,119,0.06)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center gap-4 cursor-default group"
+              onClick={() => router.push((stat as any).href)}
+              className="bg-white rounded-2xl p-5 border border-gray-100/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_30px_-5px_rgba(2,109,119,0.06)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center gap-4 cursor-pointer group"
             >
               <div className={cn(
                 "w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 group-hover:scale-110",
