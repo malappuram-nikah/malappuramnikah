@@ -3,10 +3,10 @@ import { IOtpRepository } from "../../../domain/interfaces/IOtpRepository";
 export class VerifyOtpUseCase {
   constructor(private otpRepository: IOtpRepository) {}
 
-  async execute(phoneNumber: string, otpCode: string[]): Promise<boolean> {
+  async execute(phoneNumber: string, otpCode: string | string[]): Promise<boolean> {
     const storedOtp = await this.otpRepository.getOtp(phoneNumber);
 
-    const otpString = otpCode.join("");
+    const otpString = Array.isArray(otpCode) ? otpCode.join("") : String(otpCode);
 
     console.log(storedOtp, "lllll");
 

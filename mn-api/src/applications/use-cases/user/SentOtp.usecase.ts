@@ -6,7 +6,7 @@ import otpGenerator from "otp-generator";
 export class SendOtpUseCase {
   constructor(private otpRepository: IOtpRepository) {}
 
-  async execute(phoneNumber: string): Promise<void> {
+  async execute(phoneNumber: string): Promise<string> {
     const otpCode = otpGenerator.generate(6, {
       upperCaseAlphabets: false,
       specialChars: false,
@@ -20,5 +20,6 @@ export class SendOtpUseCase {
       otp.expiresIn
     );
     // return await sendOtp(phoneNumber, otpCode);
+    return otpCode;
   }
 }

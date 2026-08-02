@@ -310,6 +310,10 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
         throw new Error(data.message || "Registration failed. Please check your details.");
       }
 
+      if (data.otp && typeof data.otp === "string") {
+        setOtpDigits(data.otp.split(""));
+      }
+
       if (data.user?.id) {
         setRegisteredUserId(data.user.id);
       }
@@ -418,13 +422,17 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
   const handleResendOtp = async () => {
     if (resendCooldown > 0) return;
     try {
-      await fetch(`${API_URL}/otp/resend-otp`, {
+      const response = await fetch(`${API_URL}/otp/resend-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           phoneNumber: formData.countryCode + formData.mobile,
         })
       });
+      const data = await response.json();
+      if (data.otp && typeof data.otp === "string") {
+        setOtpDigits(data.otp.split(""));
+      }
       setResendCooldown(30);
       setOtpError(null);
     } catch {

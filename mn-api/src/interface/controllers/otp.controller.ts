@@ -15,10 +15,10 @@ export class OtpController {
     try {
       const { phoneNumber } = req.body;
 
-      await this.sendOtpUseCase.execute(phoneNumber);
+      const generatedOtp = await this.sendOtpUseCase.execute(phoneNumber);
       return res
         .status(200)
-        .json({ success: true, message: "OTP sent successfully" });
+        .json({ success: true, otp: generatedOtp, message: "OTP sent successfully" });
     } catch (error) {
       return res
         .status(500)
@@ -29,7 +29,8 @@ export class OtpController {
   async verifyOtp(req: Request, res: Response) {
     try {
       const { phoneNumber, otpCode, userId } = req.body;
-      const isValid = await this.verifyOtpUseCase.execute(phoneNumber, otpCode);
+      const codeString = Array.isArray(otpCode) ? otpCode.join("") : String(otpCode);
+      const isValid = await this.verifyOtpUseCase.execute(phoneNumber, codeString);
 
       if (isValid) {
         // Activate the existing user account
