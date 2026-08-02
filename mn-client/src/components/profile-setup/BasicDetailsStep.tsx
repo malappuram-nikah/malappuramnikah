@@ -4,6 +4,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Save, Sparkles, Wand2, FileText } from "lucide-react";
+import { toast } from "sonner";
 import { LOCATIONS } from "@/lib/constants";
 
 export interface BasicDetailsData {

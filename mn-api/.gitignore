@@ -15,3 +15,4 @@ package-lock.json
 .agents
 .skills
 .gemini
+dist/
