@@ -18,12 +18,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
-          cache-dependency-path: mn-api/package-lock.json
 
       - name: Install Backend Dependencies
         working-directory: mn-api
-        run: npm ci
+        run: npm install
 
       - name: Build Backend
         working-directory: mn-api
@@ -40,12 +38,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
-          cache-dependency-path: mn-client/package-lock.json
 
       - name: Install Frontend Dependencies
         working-directory: mn-client
-        run: npm ci
+        run: npm install
 
       - name: Build Frontend
         working-directory: mn-client
