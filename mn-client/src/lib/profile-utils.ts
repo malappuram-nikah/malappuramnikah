@@ -159,3 +159,47 @@ export function analyzeMatch(profile: EnrichedProfile, myPref: ProfileDetails["m
     }
   };
 }
+
+export function getProfileCompletionStatus(u: any) {
+  if (!u) {
+    return { percentage: 0, completedSteps: [], totalSteps: 10, isComplete: false };
+  }
+  const details = u.profile_details || {};
+  const completedSteps: number[] = [];
+
+  const basic = details.mn_basic_details_draft || {};
+  if (basic.name || basic.aboutMe || u.first_name) completedSteps.push(1);
+
+  const religious = details.mn_religious_info_draft || {};
+  if (religious.religion || religious.community || u.cast) completedSteps.push(2);
+
+  const prof = details.mn_professional_info_draft || {};
+  if (prof.education || prof.profession) completedSteps.push(3);
+
+  const family = details.mn_family_details_draft || {};
+  if (family.familyType || family.financialStatus || family.fatherOccupation) completedSteps.push(4);
+
+  const interests = details.mn_interests_draft || {};
+  if (interests.interests?.length || interests.aboutMe) completedSteps.push(5);
+
+  const habits = details.mn_habits_draft || {};
+  if (habits.eatingHabits || habits.smokingHabits || habits.drinkingHabits) completedSteps.push(6);
+
+  const partner = details.mn_partner_preferences_draft || {};
+  if (partner.aboutPartner || partner.religion || partner.minAge) completedSteps.push(7);
+
+  const photos = details.mn_profile_photos_draft?.photos;
+  if (photos?.length) completedSteps.push(8);
+
+  const voice = details.mn_voice_intro_draft;
+  if (voice) completedSteps.push(9);
+
+  if (u.is_verified || u.kyc_status === "VERIFIED" || details.mn_identity_draft) completedSteps.push(10);
+
+  const totalSteps = 10;
+  const percentage = Math.round((completedSteps.length / totalSteps) * 100);
+  const isComplete = completedSteps.length >= 7;
+
+  return { percentage, completedSteps, totalSteps, isComplete };
+}
+
