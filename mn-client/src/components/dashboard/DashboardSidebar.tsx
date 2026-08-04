@@ -111,14 +111,13 @@ export default function DashboardSidebar() {
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {activeNavItems.map((item) => {
-            // Match active states exactly or by base path + tab parameters
-            const isTabActive = pathname === item.href || 
-              (typeof window !== "undefined" && 
-               item.href.includes("?tab=") && 
-               pathname === item.href.split("?")[0] && 
-               window.location.search === "?" + item.href.split("?")[1]);
-
-            const isActive = isTabActive || (pathname === item.href);
+            // Exact match for root dashboard, prefix match for all sub-paths
+            // For tab-based URLs (e.g. /dashboard/admin?tab=users), match on base path
+            const baseHref = item.href.split("?")[0];
+            const isActive =
+              item.href === "/dashboard"
+                ? pathname === "/dashboard"
+                : pathname === baseHref || (pathname?.startsWith(baseHref + "/") ?? false) || pathname?.startsWith(baseHref + "?") || (item.href.includes("?tab=") && pathname === baseHref);
             const isAccent = (item as any).accent;
 
             return (
@@ -147,7 +146,11 @@ export default function DashboardSidebar() {
       {pathname === "/dashboard" || pathname?.startsWith("/dashboard/") && !pathname?.startsWith("/dashboard/admin") && !pathname?.startsWith("/dashboard/business") ? (
         <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 flex items-center justify-around px-2 py-2 safe-area-pb">
           {memberNavItems.slice(0, 5).map((item) => {
-            const isActive = pathname === item.href;
+            const baseHref = item.href.split("?")[0];
+            const isActive =
+              item.href === "/dashboard"
+                ? pathname === "/dashboard"
+                : pathname === baseHref || (pathname?.startsWith(baseHref + "/") ?? false);
             return (
               <Link
                 key={item.href}

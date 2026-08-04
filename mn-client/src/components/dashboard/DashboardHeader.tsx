@@ -254,12 +254,17 @@ export default function DashboardHeader() {
       console.error(err);
     }
 
-    // Smart Redirect based on notification trigger type
-    if (notif.type === "NEW_MESSAGE") {
-      router.push("/dashboard/chat");
-    } else {
-      router.push("/dashboard/search");
-    }
+    // Smart Redirect based on notification trigger type — delay 150ms to let drawer exit animation complete
+    const interestTypes = ["INTEREST_RECEIVED", "INTEREST_ACCEPTED", "INTEREST_WITHDRAWN", "MUTUAL_MATCH"];
+    setTimeout(() => {
+      if (notif.type === "NEW_MESSAGE") {
+        router.push("/dashboard/chat");
+      } else if (interestTypes.includes(notif.type)) {
+        router.push("/dashboard/interests");
+      } else {
+        router.push("/dashboard/search");
+      }
+    }, 150);
   };
 
   // Profile Image Resolver

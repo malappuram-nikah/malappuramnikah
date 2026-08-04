@@ -169,11 +169,9 @@ export default function ProfessionalInfoStep({ initialData, onComplete, onBack }
                 <option value="B.Tech">B.Tech</option>
                 <option value="MBBS">MBBS</option>
                 <option value="MBA">MBA</option>
-                <option value="B.Sc">B.Sc</option>
-                <option value="B.Com">B.Com</option>
-                <option value="B.A">B.A</option>
+                <option value="UG Degree">UG Degree (B.Sc / B.Com / B.A)</option>
                 <option value="M.Tech">M.Tech</option>
-                <option value="M.Sc">M.Sc</option>
+                <option value="PG Degree">PG Degree (M.Sc / M.A / M.Com)</option>
                 <option value="Ph.D">Ph.D</option>
                 <option value="Diploma">Diploma</option>
                 <option value="High School">High School</option>

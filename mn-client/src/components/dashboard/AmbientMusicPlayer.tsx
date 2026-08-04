@@ -115,26 +115,14 @@ export default function AmbientMusicPlayer() {
   if (!enabled || !trackUrl) return null;
 
   return (
-    <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-xl p-1 shadow-sm text-gray-500 hover:text-gray-700 transition-all select-none">
-      {/* Play/Pause (Music) Toggle */}
-      <button
-        onClick={togglePlay}
-        className={`p-1.5 rounded-lg transition-all active:scale-95 ${
-          isPlaying ? "bg-brand-50 text-brand-600 animate-pulse" : "bg-transparent text-gray-400 hover:text-gray-600"
-        }`}
-        title={isPlaying ? "Pause Ambient Music" : "Play Ambient Music"}
-      >
-        <Music className="w-4 h-4" />
-      </button>
-
-      {/* Mute/Unmute (Sound) Toggle */}
-      <button
-        onClick={toggleMute}
-        className="p-1.5 rounded-lg hover:bg-gray-100 transition-all text-gray-400 hover:text-gray-600 active:scale-95"
-        title={isMuted ? "Unmute" : "Mute"}
-      >
-        {isMuted || volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-      </button>
-    </div>
+    <button
+      onClick={togglePlay}
+      className={`p-1.5 rounded-lg transition-all active:scale-95 ${
+        isPlaying ? "bg-brand-50 text-brand-600" : "text-gray-400 hover:text-gray-600"
+      }`}
+      title={isPlaying ? "Pause Ambient Music" : "Play Ambient Music"}
+    >
+      <Music className={`w-4 h-4 ${isPlaying ? "animate-pulse" : ""}`} />
+    </button>
   );
 }

@@ -94,7 +94,6 @@ export default function ProfileSlideOver({
             caste: enriched.community,
             matchScore: profile.matchScore || profile.match || 82,
             photos: allPhotos,
-            video: data.user.profile_details?.mn_video_intro_draft?.video?.dataUrl || null,
             voice: data.user.profile_details?.mn_voice_intro_draft?.voice?.dataUrl || null,
             aboutMe: enriched.aboutMe || enriched.personalityDescription,
             aiExplanation: data.user.profile_details?.mn_partner_preferences_draft?.explanation || "Highly compatible profile based on your preferences.",

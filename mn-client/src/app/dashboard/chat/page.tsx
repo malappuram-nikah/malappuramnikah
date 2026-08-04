@@ -6,6 +6,7 @@ import { Send, Search, Phone, Video, MessageSquare, AlertCircle } from "lucide-r
 import { useState, useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { API_URL } from "@/lib/config";
 
 interface PeerProfile {
@@ -350,10 +351,18 @@ export default function ChatPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button className="p-2.5 rounded-xl hover:bg-gray-50 text-gray-500 transition-colors">
+                <button
+                  onClick={() => toast.info("Audio calls coming soon!")}
+                  className="p-2.5 rounded-xl hover:bg-gray-50 text-gray-500 transition-colors"
+                  title="Audio Call (Coming Soon)"
+                >
                   <Phone className="w-4 h-4" />
                 </button>
-                <button className="p-2.5 rounded-xl hover:bg-gray-50 text-gray-500 transition-colors">
+                <button
+                  onClick={() => toast.info("Video calls coming soon!")}
+                  className="p-2.5 rounded-xl hover:bg-gray-50 text-gray-500 transition-colors"
+                  title="Video Call (Coming Soon)"
+                >
                   <Video className="w-4 h-4" />
                 </button>
               </div>

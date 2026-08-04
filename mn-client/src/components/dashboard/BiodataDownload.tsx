@@ -46,12 +46,37 @@ export default function BiodataDownload({ profile, enriched }: BiodataDownloadPr
   /* ---------- Build HTML content ---------- */
   const buildHTML = (forPrint = false) => {
     const d = profile?.profile_details || {};
-    const basic = d.mn_basic_details_draft || {};
-    const rel = d.mn_religious_info_draft || {};
-    const prof = d.mn_professional_info_draft || {};
-    const fam = d.mn_family_details_draft || {};
-    const interests = d.mn_interests_draft || {};
-    const partner = d.mn_partner_preferences_draft || {};
+
+    // Helper: safely read a localStorage draft as fallback when API data is missing
+    const readLocalDraft = (key: string): Record<string, any> => {
+      try {
+        const raw = typeof window !== "undefined" ? localStorage.getItem(key) : null;
+        return raw ? JSON.parse(raw) : {};
+      } catch {
+        return {};
+      }
+    };
+
+    // Use API data first, fall back to localStorage drafts
+    const basic    = Object.keys(d.mn_basic_details_draft || {}).length > 0
+      ? d.mn_basic_details_draft
+      : readLocalDraft("mn_basic_details_draft");
+    const rel      = Object.keys(d.mn_religious_info_draft || {}).length > 0
+      ? d.mn_religious_info_draft
+      : readLocalDraft("mn_religious_info_draft");
+    const prof     = Object.keys(d.mn_professional_info_draft || {}).length > 0
+      ? d.mn_professional_info_draft
+      : readLocalDraft("mn_professional_info_draft");
+    const fam      = Object.keys(d.mn_family_details_draft || {}).length > 0
+      ? d.mn_family_details_draft
+      : readLocalDraft("mn_family_details_draft");
+    const interests = Object.keys(d.mn_interests_draft || {}).length > 0
+      ? d.mn_interests_draft
+      : readLocalDraft("mn_interests_draft");
+    const partner  = Object.keys(d.mn_partner_preferences_draft || {}).length > 0
+      ? d.mn_partner_preferences_draft
+      : readLocalDraft("mn_partner_preferences_draft");
+
 
     const e = enriched || {};
     const name = e.name || profile?.name || `${profile?.first_name || ""} ${profile?.last_name || ""}`.trim() || "Member";

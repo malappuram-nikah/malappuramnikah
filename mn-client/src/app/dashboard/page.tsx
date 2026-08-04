@@ -113,7 +113,6 @@ export default function DashboardPage() {
             match: 82 + (i % 15),
             matchScore: 82 + (i % 15),
             photos: u.profile_details?.mn_profile_photos_draft?.photos || [],
-            video: u.profile_details?.mn_video_intro_draft?.video?.dataUrl || null,
             voice: u.profile_details?.mn_voice_intro_draft?.voice?.dataUrl || null,
             aboutMe: enriched.aboutMe || enriched.personalityDescription,
             aiExplanation: u.profile_details?.mn_partner_preferences_draft?.explanation || "Highly compatible profile based on your preferences.",

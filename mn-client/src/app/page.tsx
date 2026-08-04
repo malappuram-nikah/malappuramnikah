@@ -17,7 +17,7 @@ export default function Home() {
     <>
       <Navbar />
       <main className="flex-1 flex flex-col">
-        <HeroSection />
+        <HeroSection onJoinNow={() => setRegisterOpen(true)} />
         <StatsSection />
         <FeaturesSection />
         <SuccessStoriesSection />

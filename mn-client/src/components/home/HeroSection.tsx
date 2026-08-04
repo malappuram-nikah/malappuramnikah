@@ -3,7 +3,11 @@
 import { motion } from "framer-motion";
 import { BookOpen } from "lucide-react";
 
-export default function HeroSection() {
+interface HeroSectionProps {
+  onJoinNow?: () => void;
+}
+
+export default function HeroSection({ onJoinNow }: HeroSectionProps) {
   return (
     <section className="relative pt-24 pb-20 overflow-hidden bg-white">
       {/* Premium subtle warm/purple background glow */}
@@ -38,7 +42,10 @@ export default function HeroSection() {
             transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
             className="mt-8 flex justify-center"
           >
-            <button className="bg-[#111827] hover:bg-black text-white px-8 py-3.5 rounded-full text-sm font-semibold flex items-center gap-2 transition-all shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]">
+            <button
+              onClick={onJoinNow}
+              className="bg-[#111827] hover:bg-black text-white px-8 py-3.5 rounded-full text-sm font-semibold flex items-center gap-2 transition-all shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
+            >
               Join Now
               <span className="text-base font-normal">→</span>
             </button>

@@ -4,6 +4,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Save } from "lucide-react";
+import { toast } from "sonner";
 
 export interface ReligiousInfoData {
   religion: string;
@@ -59,6 +60,14 @@ export default function ReligiousInfoStep({ initialData, onComplete, onBack }: R
       if (initialData.namaz) mergedData.namaz = initialData.namaz;
       if (initialData.quranReading) mergedData.quranReading = initialData.quranReading;
     }
+    // Pre-persist religion: "Islam" so it's never missing from the draft
+    try {
+      const existingDraft = localStorage.getItem(DRAFT_KEY);
+      const parsedDraft = existingDraft ? JSON.parse(existingDraft) : {};
+      if (!parsedDraft.religion) {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...parsedDraft, religion: mergedData.religion || "Islam" }));
+      }
+    } catch {}
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setFormData(mergedData);
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -110,6 +119,15 @@ export default function ReligiousInfoStep({ initialData, onComplete, onBack }: R
       if (onComplete) onComplete(formData);
       // Optional: Clear draft after successful completion
       // localStorage.removeItem(DRAFT_KEY);
+    } else {
+      // Show toast and scroll to first error field
+      toast.error("Please fill in all required fields before continuing.");
+      setTimeout(() => {
+        const firstError = document.querySelector(".text-red-500");
+        if (firstError) {
+          firstError.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 50);
     }
   };
 
