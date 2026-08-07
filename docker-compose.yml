@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mn-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_password}
+      POSTGRES_DB: ${POSTGRES_DB:-malappuramnikah}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  mn-api:
+    build:
+      context: ./mn-api
+      dockerfile: Dockerfile
+    container_name: mn-api
+    restart: always
+    ports:
+      - "3333:3333"
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_password}@postgres:5432/${POSTGRES_DB:-malappuramnikah}?sslmode=disable"
+      PORT: 3333
+      NODE_ENV: production
+    depends_on:
+      - postgres
+
+  mn-client:
+    build:
+      context: ./mn-client
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3333}
+    container_name: mn-client
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3333}
+      NODE_ENV: production
+    depends_on:
+      - mn-api
+
+volumes:
+  postgres_data:
