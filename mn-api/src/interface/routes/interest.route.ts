@@ -272,7 +272,31 @@ interest_route.get("/", async (req: Request, res: Response) => {
         });
         // Deduplicate peers to protect against bidirectional ACCEPTED rows in the database
         const uniqueMutualUsers = Array.from(new Map(rawMutualUsers.map(u => [u.id, u])).values());
-        res.status(200).json({ success: true, users: uniqueMutualUsers, hasMore });
+      } else if (type === "viewed_me") {
+        const views = await prisma.profileView.findMany({
+          where: { viewed_id: userId },
+          include: { viewer: { select: selectUserFields } },
+          skip,
+          take: limit + 1,
+          orderBy: { updated_at: 'desc' }
+        });
+        const hasMore = views.length > limit;
+        const rawUsers = views.slice(0, limit).map(v => v.viewer ? ({ ...v.viewer, viewed_at: v.updated_at }) : null).filter(Boolean);
+        const uniqueUsers = Array.from(new Map(rawUsers.map(u => [u!.id, u])).values());
+        res.status(200).json({ success: true, users: uniqueUsers, hasMore });
+        return;
+      } else if (type === "visited") {
+        const views = await prisma.profileView.findMany({
+          where: { viewer_id: userId },
+          include: { viewed: { select: selectUserFields } },
+          skip,
+          take: limit + 1,
+          orderBy: { updated_at: 'desc' }
+        });
+        const hasMore = views.length > limit;
+        const rawUsers = views.slice(0, limit).map(v => v.viewed ? ({ ...v.viewed, viewed_at: v.updated_at }) : null).filter(Boolean);
+        const uniqueUsers = Array.from(new Map(rawUsers.map(u => [u!.id, u])).values());
+        res.status(200).json({ success: true, users: uniqueUsers, hasMore });
         return;
       }
     }

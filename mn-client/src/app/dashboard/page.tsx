@@ -28,12 +28,13 @@ export default function DashboardPage() {
   const { toggleFavourite, isFavourite } = useProfileActions();
   
   // Real Statistics state — no hardcoded/dummy values
+  // Real Statistics state — no hardcoded/dummy values
   const [stats, setStats] = useState([
     { label: "Interests Sent",    value: "—", icon: Heart,         color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10", href: "/dashboard/interests?tab=sent" },
     { label: "Mutual Matches",    value: "—", icon: Star,          color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10", href: "/dashboard/interests?tab=mutual" },
     { label: "Requests Received", value: "—", icon: MessageCircle, color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10", href: "/dashboard/interests?tab=received" },
-    { label: "Who Viewed Me",     value: "—", icon: Eye,           color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10", href: "/dashboard/my-profile" },
-    { label: "Profiles Visited",  value: "—", icon: Eye,           color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10", href: "/dashboard/my-profile" },
+    { label: "Who Viewed Me",     value: "—", icon: Eye,           color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10", href: "/dashboard/interests?tab=viewed_me" },
+    { label: "Profiles Visited",  value: "—", icon: Eye,           color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10", href: "/dashboard/interests?tab=visited" },
   ]);
 
   const [suggestedMatches, setSuggestedMatches] = useState<any[]>([]);
@@ -76,8 +77,8 @@ export default function DashboardPage() {
           { label: "Interests Sent",    value: String(sentIds.length),                      icon: Heart,         color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10", href: "/dashboard/interests?tab=sent" },
           { label: "Mutual Matches",    value: String(mutualIds.length),                    icon: Star,          color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10", href: "/dashboard/interests?tab=mutual" },
           { label: "Requests Received", value: String(receivedIds.length),                  icon: MessageCircle, color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10", href: "/dashboard/interests?tab=received" },
-          { label: "Who Viewed Me",     value: String(data.views_received_count ?? 0),      icon: Eye,           color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10", href: "/dashboard/my-profile" },
-          { label: "Profiles Visited",  value: String(data.views_sent_count ?? 0),          icon: Eye,           color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10", href: "/dashboard/my-profile" },
+          { label: "Who Viewed Me",     value: String(data.views_received_count ?? 0),      icon: Eye,           color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10", href: "/dashboard/interests?tab=viewed_me" },
+          { label: "Profiles Visited",  value: String(data.views_sent_count ?? 0),          icon: Eye,           color: "bg-[#026d77]/5 text-[#026d77] border-[#026d77]/10", href: "/dashboard/interests?tab=visited" },
         ]);
       }
     } catch (e) {
