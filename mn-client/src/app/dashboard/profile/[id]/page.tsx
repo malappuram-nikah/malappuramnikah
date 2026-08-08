@@ -672,32 +672,19 @@ export default function ProfileDetailPage({ params }: PageProps) {
               </div>
             </div>
 
-            {/* Media intros (Voice/Video) */}
-            {(profile.voice || profile.video) && (
+            {/* Media intros (Voice) */}
+            {profile.voice && (
               <div className="bg-white p-5 rounded-2xl border border-gray-150/80 shadow-xs space-y-4">
                 <h3 className="text-sm font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2">
-                  <Volume2 className="w-4 h-4 text-brand-600" /> Media Introductions
+                  <Volume2 className="w-4 h-4 text-brand-600" /> Voice Introduction
                 </h3>
                 
-                {profile.voice && (
-                  <div className="bg-brand-50/40 p-4 rounded-xl border border-brand-100/20 flex flex-col gap-1.5">
-                    <span className="text-xs font-bold text-brand-700 flex items-center gap-1.5">
-                      <Volume2 className="w-4 h-4" /> Audio Voice Bio
-                    </span>
-                    <audio src={profile.voice} controls className="w-full h-8 mt-1 accent-brand-600" />
-                  </div>
-                )}
-
-                {profile.video && (
-                  <div className="bg-brand-50/40 p-4 rounded-xl border border-brand-100/20 flex flex-col gap-1.5">
-                    <span className="text-xs font-bold text-brand-700 flex items-center gap-1.5">
-                      <Video className="w-4 h-4" /> Video Onboarding / Introduction
-                    </span>
-                    <div className="relative rounded-xl overflow-hidden aspect-video bg-black mt-1.5 max-w-lg mx-auto w-full">
-                      <video src={profile.video} controls className="w-full h-full object-contain" />
-                    </div>
-                  </div>
-                )}
+                <div className="bg-brand-50/40 p-4 rounded-xl border border-brand-100/20 flex flex-col gap-1.5">
+                  <span className="text-xs font-bold text-brand-700 flex items-center gap-1.5">
+                    <Volume2 className="w-4 h-4" /> Audio Voice Bio
+                  </span>
+                  <audio src={profile.voice} controls className="w-full h-8 mt-1 accent-brand-600" />
+                </div>
               </div>
             )}
           </div>

@@ -235,7 +235,8 @@ interest_route.get("/", async (req: Request, res: Response) => {
         });
         const hasMore = interests.length > limit;
         const users = interests.slice(0, limit).map(i => ({...i.receiver, interest_status: i.status}));
-        return res.status(200).json({ success: true, users, hasMore });
+        res.status(200).json({ success: true, users, hasMore });
+        return;
       } else if (type === "received") {
         const interests = await prisma.interest.findMany({
           where: { receiver_id: userId, status: "PENDING" },
@@ -246,7 +247,8 @@ interest_route.get("/", async (req: Request, res: Response) => {
         });
         const hasMore = interests.length > limit;
         const users = interests.slice(0, limit).map(i => ({...i.sender, interest_status: i.status}));
-        return res.status(200).json({ success: true, users, hasMore });
+        res.status(200).json({ success: true, users, hasMore });
+        return;
       } else if (type === "mutual") {
         const interests = await prisma.interest.findMany({
           where: {
@@ -270,7 +272,8 @@ interest_route.get("/", async (req: Request, res: Response) => {
         });
         // Deduplicate peers to protect against bidirectional ACCEPTED rows in the database
         const uniqueMutualUsers = Array.from(new Map(rawMutualUsers.map(u => [u.id, u])).values());
-        return res.status(200).json({ success: true, users: uniqueMutualUsers, hasMore });
+        res.status(200).json({ success: true, users: uniqueMutualUsers, hasMore });
+        return;
       }
     }
 
@@ -309,11 +312,21 @@ interest_route.get("/", async (req: Request, res: Response) => {
       const uniqueReceived = Array.from(new Map(received.map(m => [m.id, m])).values());
       const uniqueMutual = Array.from(new Map(mutual.map(m => [m.id, m])).values());
 
+      // Query profile view counts
+      const viewsSentCount = await prisma.profileView.count({
+        where: { viewer_id: userId }
+      });
+      const viewsReceivedCount = await prisma.profileView.count({
+        where: { viewed_id: userId }
+      });
+
       res.status(200).json({
         success: true,
         sent: uniqueSent,
         received: uniqueReceived,
-        mutual: uniqueMutual
+        mutual: uniqueMutual,
+        views_sent_count: viewsSentCount,
+        views_received_count: viewsReceivedCount
       });
       return;
     }

@@ -60,9 +60,10 @@ user_route.get('/:id', async (req: Request, res: Response) => {
       return;
     }
 
+    let reqIsAdmin = false;
     const requester = await userRepository.findById(requesterId);
     if (requester) {
-      const reqIsAdmin = (requester.profile_details as any)?.isAdmin === true || requester.mobile_number === "+911212121212" || requester.mobile_number === "+919876543210";
+      reqIsAdmin = (requester.profile_details as any)?.isAdmin === true || requester.mobile_number === "+911212121212" || requester.mobile_number === "+919876543210";
       if (!reqIsAdmin && requesterId !== id) {
         const reqGender = (requester.gender || "").toLowerCase();
         const targetGender = (user.gender || "").toLowerCase();
@@ -70,6 +71,27 @@ user_route.get('/:id', async (req: Request, res: Response) => {
           res.status(403).json({ success: false, message: "Access forbidden. Same-gender profile visibility is restricted." });
           return;
         }
+      }
+    }
+
+    // Record profile view
+    if (requesterId && requesterId !== id && !reqIsAdmin) {
+      try {
+        await prisma.profileView.upsert({
+          where: {
+            viewer_id_viewed_id: {
+              viewer_id: requesterId,
+              viewed_id: id,
+            },
+          },
+          update: {},
+          create: {
+            viewer_id: requesterId,
+            viewed_id: id,
+          },
+        });
+      } catch (viewError) {
+        console.error("Failed to record profile view:", viewError);
       }
     }
 

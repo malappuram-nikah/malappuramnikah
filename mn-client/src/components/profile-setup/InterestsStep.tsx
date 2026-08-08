@@ -160,7 +160,9 @@ export default function InterestsStep({ initialData, onComplete, onBack }: Inter
         {/* Interests */}
         <section className="space-y-6">
           <div>
-            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">Your Interests *</h3>
+            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">
+              Your Interests <span className="text-red-500">*</span>
+            </h3>
             <p className="text-sm text-gray-500 mb-4">Select the activities and hobbies you enjoy, or add your own.</p>
             
             <div className="flex flex-wrap gap-3 mb-6">
@@ -230,7 +232,9 @@ export default function InterestsStep({ initialData, onComplete, onBack }: Inter
 
         {/* Personality */}
         <section className="space-y-6 pt-6 border-t border-gray-50">
-          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Personality Description *</h3>
+          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">
+            Personality Description <span className="text-red-500">*</span>
+          </h3>
           
           <div>
             <textarea

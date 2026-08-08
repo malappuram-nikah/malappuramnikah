@@ -816,17 +816,31 @@ export default function MyProfilePage() {
 
       {/* ── Page ── */}
       <div className="max-w-6xl mx-auto pb-20 space-y-6">
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm">
+        {/* Breadcrumb & Top Actions */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-sm">
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="flex items-center gap-1.5 font-medium text-gray-400 hover:text-brand-600 transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Dashboard
+            </button>
+            <span className="text-gray-200">/</span>
+            <span className="font-bold text-gray-800">My Profile</span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-green-50 text-green-700 border border-green-200 rounded-full text-[11px] font-bold shadow-xs ml-2">
+              <CheckCircle2 className="w-3 h-3 text-green-600" />
+              Profile Completed
+            </span>
+          </div>
+
           <button
-            onClick={() => router.push("/dashboard")}
-            className="flex items-center gap-1.5 font-medium text-gray-400 hover:text-brand-600 transition-colors"
+            onClick={() => router.push("/dashboard/profile-builder")}
+            className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer shrink-0"
           >
-            <ArrowLeft className="w-4 h-4" />
-            Dashboard
+            <Edit2 className="w-3.5 h-3.5" />
+            Edit Profile
           </button>
-          <span className="text-gray-200">/</span>
-          <span className="font-bold text-gray-800">My Profile</span>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6 items-start">
@@ -1038,8 +1052,8 @@ export default function MyProfilePage() {
               </div>
             </SectionCard>
 
-            {/* Voice & Video */}
-            {(profile.voice || profile.video) && (
+            {/* Voice Introduction */}
+            {profile.voice && (
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1048,7 +1062,7 @@ export default function MyProfilePage() {
                 <div className="flex items-center justify-between">
                   <h3 className="text-[13px] font-bold text-gray-800 flex items-center gap-2">
                     <Smile className="w-4 h-4 text-purple-500" />
-                    Voice & Video Introduction
+                    Voice Introduction
                   </h3>
                   <button
                     onClick={() => router.push("/dashboard/profile-builder?step=9")}
@@ -1057,24 +1071,12 @@ export default function MyProfilePage() {
                     Update →
                   </button>
                 </div>
-                {profile.voice && (
-                  <div>
-                    <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5 flex items-center gap-1">
-                      <Volume2 className="w-3 h-3" /> Voice
-                    </p>
-                    <audio src={profile.voice} controls className="w-full h-8 accent-brand-600" />
-                  </div>
-                )}
-                {profile.video && (
-                  <div>
-                    <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5 flex items-center gap-1">
-                      <Video className="w-3 h-3" /> Video
-                    </p>
-                    <div className="rounded-xl overflow-hidden aspect-video bg-black">
-                      <video src={profile.video} controls className="w-full h-full object-contain" />
-                    </div>
-                  </div>
-                )}
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5 flex items-center gap-1">
+                    <Volume2 className="w-3 h-3" /> Voice
+                  </p>
+                  <audio src={profile.voice} controls className="w-full h-8 accent-brand-600" />
+                </div>
               </motion.div>
             )}
 

@@ -14,7 +14,18 @@ export class UserRepository implements IUserRepository {
         } catch (error: any) {
             console.error('Error storing user:', error);
             if (error.code === 'P2002' || (error.message && error.message.includes('Unique constraint failed'))) {
-                throw new Error('Mobile number already registered');
+                const target = error.meta?.target;
+                const targetStr = Array.isArray(target) ? target.join(',') : String(target || '');
+                if (targetStr.includes('email') || (error.message && error.message.includes('email'))) {
+                    throw new Error('Email address already registered');
+                }
+                if (targetStr.includes('mobile_number') || (error.message && error.message.includes('mobile_number'))) {
+                    throw new Error('Mobile number already registered');
+                }
+                if (targetStr.includes('referral_code') || (error.message && error.message.includes('referral_code'))) {
+                    throw new Error('Referral code already exists');
+                }
+                throw new Error('User with these details already registered');
             }
             throw error;
         }

@@ -71,7 +71,15 @@ export class UserController {
       
       let message = "Registration failed";
       if (error.code === 'P2002' || (error.message && error.message.includes('Unique constraint failed'))) {
-        message = "Mobile number already exists. Please log in instead.";
+        const target = error.meta?.target;
+        const targetStr = Array.isArray(target) ? target.join(',') : String(target || '');
+        if (targetStr.includes('email') || (error.message && error.message.includes('email'))) {
+          message = "Email address is already registered. Please log in or use a different email.";
+        } else if (targetStr.includes('mobile_number') || (error.message && error.message.includes('mobile_number'))) {
+          message = "Mobile number is already registered. Please log in instead.";
+        } else {
+          message = "An account with these details already exists. Please log in instead.";
+        }
       } else if (error.message) {
         message = error.message;
       }

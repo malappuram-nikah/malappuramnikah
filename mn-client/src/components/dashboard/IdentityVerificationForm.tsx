@@ -209,7 +209,13 @@ export default function IdentityVerificationForm({ isWizard = false, onBack, onN
         setForceShowForm(false);
         setFrontFile(null);
         setBackFile(null);
+        localStorage.setItem("mn_kyc_status", "PENDING");
         await fetchKycStatus();
+        if (isWizard && onNext) {
+          setTimeout(() => {
+            onNext();
+          }, 600);
+        }
       } else {
         setError(data.message || "Failed to submit request.");
       }

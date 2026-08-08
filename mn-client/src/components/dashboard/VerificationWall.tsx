@@ -10,7 +10,16 @@ export default function VerificationWall({ children }: { children: React.ReactNo
   const pathname = usePathname();
   const router = useRouter();
 
-  if (loadingUser) {
+  React.useEffect(() => {
+    if (!loadingUser && !currentUser) {
+      const token = typeof window !== "undefined" ? localStorage.getItem("mn_token") : null;
+      if (!token) {
+        window.location.href = "/login";
+      }
+    }
+  }, [currentUser, loadingUser]);
+
+  if (loadingUser || (!currentUser && typeof window !== "undefined" && !localStorage.getItem("mn_token"))) {
     return (
       <div className="py-24 flex flex-col items-center justify-center text-gray-400">
         <Loader2 className="w-8 h-8 animate-spin text-brand-500" />

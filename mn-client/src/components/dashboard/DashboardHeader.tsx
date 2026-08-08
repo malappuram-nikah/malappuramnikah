@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import { io, Socket } from "socket.io-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { handleSignOut } from "@/lib/auth";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
 import { Photo } from "@/types";
@@ -572,26 +573,9 @@ export default function DashboardHeader() {
                           <button
                             onClick={() => {
                               setShowProfileDropdown(false);
-                              localStorage.removeItem("mn_token");
-                              localStorage.removeItem("mn_logged_in_user_id");
-                              const draftKeys = [
-                                "mn_basic_details_draft",
-                                "mn_religious_info_draft",
-                                "mn_professional_info_draft",
-                                "mn_family_details_draft",
-                                "mn_interests_draft",
-                                "mn_habits_draft",
-                                "mn_partner_preferences_draft",
-                                "mn_profile_photos_draft",
-                                "mn_video_intro_draft",
-                                "mn_voice_intro_draft",
-                              ];
-                              draftKeys.forEach((key) =>
-                                localStorage.removeItem(key),
-                              );
-                              window.location.href = "/login";
+                              handleSignOut();
                             }}
-                            className="w-full text-left px-3 py-2.5 text-xs font-bold text-red-650 hover:bg-red-50 hover:text-red-700 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-red-100 group cursor-pointer"
+                            className="w-full text-left px-3 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 hover:text-red-700 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-red-100 group cursor-pointer"
                           >
                             <div className="flex items-center gap-2.5 pointer-events-none">
                               <LogOut className="w-4 h-4 text-red-400 group-hover:text-red-600 transition-colors" />

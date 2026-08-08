@@ -47,8 +47,14 @@ export default function ProfessionalInfoStep({ initialData, onComplete, onBack }
     const draft = localStorage.getItem(DRAFT_KEY);
     if (draft && !initialData) {
       try {
+        const parsed = JSON.parse(draft);
+        if (parsed.education === "UG Degree" || parsed.education === "UG Degree (B.Sc / B.Com / B.A)") {
+          parsed.education = "UG Degree(Eg:Bsc,Bcom,BA,etc..)";
+        } else if (parsed.education === "PG Degree" || parsed.education === "PG Degree (M.Sc / M.A / M.Com)") {
+          parsed.education = "PG Degree(Eg:Msc,Mcom,MA,etc..)";
+        }
         // eslint-disable-next-line react-hooks/set-state-in-effect
-        setFormData(JSON.parse(draft));
+        setFormData(parsed);
       } catch (e) {
         console.error("Failed to parse draft", e);
       }
@@ -169,9 +175,9 @@ export default function ProfessionalInfoStep({ initialData, onComplete, onBack }
                 <option value="B.Tech">B.Tech</option>
                 <option value="MBBS">MBBS</option>
                 <option value="MBA">MBA</option>
-                <option value="UG Degree">UG Degree (B.Sc / B.Com / B.A)</option>
+                <option value="UG Degree(Eg:Bsc,Bcom,BA,etc..)">UG Degree(Eg:Bsc,Bcom,BA,etc..)</option>
                 <option value="M.Tech">M.Tech</option>
-                <option value="PG Degree">PG Degree (M.Sc / M.A / M.Com)</option>
+                <option value="PG Degree(Eg:Msc,Mcom,MA,etc..)">PG Degree(Eg:Msc,Mcom,MA,etc..)</option>
                 <option value="Ph.D">Ph.D</option>
                 <option value="Diploma">Diploma</option>
                 <option value="High School">High School</option>

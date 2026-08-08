@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, ChevronRight, Edit3, User, Heart, BookOpen, Users, MapPin, Briefcase, Camera, Video, Mic } from "lucide-react";
+import { CheckCircle2, ChevronRight, Edit3, User, Heart, BookOpen, Users, MapPin, Briefcase, Camera, Mic } from "lucide-react";
 import { showChildrenField } from "./BasicDetailsStep";
 import { showPartnerChildrenField } from "./PartnerPreferencesStep";
 import { API_URL } from "@/lib/config";
@@ -149,7 +149,6 @@ export default function ReviewStep({ onComplete, onBack, onEditSection }: Review
   const habits = drafts["mn_habits_draft"] || {};
   const partner = drafts["mn_partner_preferences_draft"] || {};
   const photos = drafts["mn_profile_photos_draft"] || { photos: [] };
-  const video = drafts["mn_video_intro_draft"] || {};
   const voice = drafts["mn_voice_intro_draft"] || {};
 
 
@@ -255,23 +254,13 @@ export default function ReviewStep({ onComplete, onBack, onEditSection }: Review
               <h3 className="font-bold text-gray-900">Media Summary</h3>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="bg-white p-4 rounded-xl border border-gray-200 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Camera className="w-4 h-4 text-gray-400" />
                 <span className="text-sm font-medium text-gray-700">Photos</span>
               </div>
               <span className="text-sm font-bold text-brand-600">{photos.photos.length} Added</span>
-            </div>
-            
-            <div className="bg-white p-4 rounded-xl border border-gray-200 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Video className="w-4 h-4 text-gray-400" />
-                <span className="text-sm font-medium text-gray-700">Video Intro</span>
-              </div>
-              <span className={`text-sm font-bold ${video.video ? "text-green-600" : "text-gray-400"}`}>
-                {video.video ? "Added" : "None"}
-              </span>
             </div>
 
             <div className="bg-white p-4 rounded-xl border border-gray-200 flex items-center justify-between">

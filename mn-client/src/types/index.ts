@@ -83,11 +83,6 @@ export interface ProfileDetails {
   mn_profile_photos_draft?: {
     photos?: Photo[];
   };
-  mn_video_intro_draft?: {
-    video?: {
-      dataUrl?: string;
-    };
-  };
   mn_voice_intro_draft?: {
     voice?: {
       dataUrl?: string;

@@ -59,7 +59,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             "mn_habits_draft",
             "mn_partner_preferences_draft",
             "mn_profile_photos_draft",
-            "mn_video_intro_draft",
             "mn_voice_intro_draft"
           ];
           draftKeys.forEach(k => localStorage.removeItem(k));

@@ -4,16 +4,17 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Heart, Search, MessageCircle,
   Crown, Settings, LogOut, Menu, X, Bell, Radar, Calendar, ShieldCheck, Briefcase,
   BarChart3, Users, AlertTriangle, CreditCard, LayoutGrid, DollarSign, Layers, User, Award, Edit2,
-  MessageSquarePlus
+  MessageSquarePlus, ChevronRight
 } from "lucide-react";
 
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { handleSignOut } from "@/lib/auth";
 
 // 1. Matrimonial Member Navigation Items
 const memberNavItems = [
@@ -24,7 +25,6 @@ const memberNavItems = [
   { href: "/dashboard/interests",icon: Heart,            label: "Interests" },
   { href: "/dashboard/chat",     icon: MessageCircle,    label: "Chat"      },
   { href: "/dashboard/my-profile",     icon: User,      label: "Manage My Profile" },
-  { href: "/dashboard/profile-builder", icon: Edit2,      label: "Edit Profile" },
   { href: "/dashboard/referral", icon: Award,            label: "Referral & Earn" },
   { href: "/dashboard/premium",  icon: Crown,            label: "Premium"   },
   { href: "/dashboard/save-the-date", icon: Calendar,    label: "Save the Date" },
@@ -57,6 +57,7 @@ const businessNavItems = [
 
 export default function DashboardSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
 
   // Determine active nav items based on page context
@@ -71,31 +72,40 @@ export default function DashboardSidebar() {
     titlePrefix = "B2B WEDDING";
   }
 
+  const navigateTo = (href: string) => {
+    router.push(href);
+  };
+
   return (
     <>
       {/* Desktop Sidebar */}
       <aside className={cn(
-        "hidden lg:flex flex-col bg-white border-r border-gray-100 transition-all duration-300 h-screen sticky top-0 shrink-0",
+        "hidden lg:flex flex-col bg-white border-r border-gray-100 transition-all duration-300 h-screen sticky top-0 shrink-0 z-30 select-none",
         collapsed ? "w-20" : "w-64"
       )}>
         {/* Logo */}
         <div className="flex items-center justify-between px-5 py-5">
           {!collapsed && (
-            <Link href="/">
+            <div
+              onClick={() => navigateTo("/")}
+              className="cursor-pointer block"
+            >
               <Image
                 src="/logoMain-01.svg"
                 alt="Malappuram Nikah"
                 width={110}
                 height={55}
-                className="h-10 w-auto object-contain"
+                className="h-10 w-auto object-contain pointer-events-none"
               />
-            </Link>
+            </div>
           )}
           <button
+            type="button"
             onClick={() => setCollapsed(!collapsed)}
-            className="p-1.5 rounded-lg hover:bg-brand-50 text-gray-400 hover:text-brand-600 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-brand-50 text-gray-400 hover:text-brand-600 transition-colors cursor-pointer"
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="w-5 h-5 pointer-events-none" />
           </button>
         </div>
 
@@ -121,11 +131,12 @@ export default function DashboardSidebar() {
             const isAccent = (item as any).accent;
 
             return (
-              <Link
+              <button
                 key={item.href}
-                href={item.href}
+                type="button"
+                onClick={() => navigateTo(item.href)}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all group",
+                  "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all group cursor-pointer text-left relative",
                   isActive
                     ? "bg-brand-600 text-white shadow-sm font-semibold"
                     : isAccent
@@ -133,18 +144,63 @@ export default function DashboardSidebar() {
                     : "text-gray-600 hover:bg-brand-50 hover:text-brand-700"
                 )}
               >
-                <item.icon className={cn("w-5 h-5 shrink-0", isActive ? "text-white" : isAccent ? "text-brand-600" : "text-gray-400 group-hover:text-brand-600")} strokeWidth={1.5} />
-                {!collapsed && <span>{item.label}</span>}
-              </Link>
+                <div className="flex items-center justify-center shrink-0 pointer-events-none">
+                  <item.icon
+                    className={cn(
+                      "w-5 h-5 shrink-0",
+                      isActive ? "text-white" : isAccent ? "text-brand-600" : "text-gray-400 group-hover:text-brand-600"
+                    )}
+                    strokeWidth={1.5}
+                  />
+                </div>
+                {!collapsed && (
+                  <span className="flex-1 truncate pointer-events-none text-left">
+                    {item.label}
+                  </span>
+                )}
+                {!collapsed && (
+                  <ChevronRight
+                    className={cn(
+                      "w-4 h-4 shrink-0 transition-all pointer-events-none",
+                      isActive
+                        ? "text-white/80 opacity-100"
+                        : "text-gray-300 group-hover:text-brand-500 group-hover:translate-x-0.5"
+                    )}
+                  />
+                )}
+              </button>
             );
           })}
         </nav>
+        {/* Sign Out Button */}
+        <div className="p-3 border-t border-gray-100 mt-auto">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              handleSignOut();
+            }}
+            className={cn(
+              "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-red-600 hover:bg-red-50 hover:text-red-700 group cursor-pointer text-left",
+              collapsed && "justify-center px-0"
+            )}
+            title="Sign Out"
+          >
+            <div className="flex items-center justify-center shrink-0 pointer-events-none">
+              <LogOut className="w-5 h-5 text-red-500 group-hover:text-red-600 transition-colors" strokeWidth={1.5} />
+            </div>
+            {!collapsed && <span className="flex-1 text-left truncate pointer-events-none">Sign Out</span>}
+            {!collapsed && (
+              <ChevronRight className="w-4 h-4 shrink-0 text-red-300 group-hover:text-red-600 transition-all pointer-events-none group-hover:translate-x-0.5" />
+            )}
+          </button>
+        </div>
 
       </aside>
 
       {/* Mobile Bottom Nav (Strictly Matrimonial Users Only) */}
       {pathname === "/dashboard" || pathname?.startsWith("/dashboard/") && !pathname?.startsWith("/dashboard/admin") && !pathname?.startsWith("/dashboard/business") ? (
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 flex items-center justify-around px-2 py-2 safe-area-pb">
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 flex items-center justify-around px-2 py-2 safe-area-pb select-none">
           {memberNavItems.slice(0, 5).map((item) => {
             const baseHref = item.href.split("?")[0];
             const isActive =
@@ -152,17 +208,18 @@ export default function DashboardSidebar() {
                 ? pathname === "/dashboard"
                 : pathname === baseHref || (pathname?.startsWith(baseHref + "/") ?? false);
             return (
-              <Link
+              <button
                 key={item.href}
-                href={item.href}
+                type="button"
+                onClick={() => navigateTo(item.href)}
                 className={cn(
-                  "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all",
+                  "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl transition-all w-full cursor-pointer",
                   isActive ? "text-brand-600" : "text-gray-400"
                 )}
               >
-                <item.icon className="w-5 h-5" />
-                <span className="text-[10px] font-medium">{item.label}</span>
-              </Link>
+                <item.icon className="w-5 h-5 pointer-events-none" />
+                <span className="text-[10px] font-medium pointer-events-none">{item.label}</span>
+              </button>
             );
           })}
         </nav>

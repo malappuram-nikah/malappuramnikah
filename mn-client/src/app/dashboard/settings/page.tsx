@@ -103,7 +103,6 @@ export default function SettingsPage() {
               "mn_habits_draft",
               "mn_partner_preferences_draft",
               "mn_profile_photos_draft",
-              "mn_video_intro_draft",
               "mn_voice_intro_draft"
             ];
             draftKeys.forEach((key) => localStorage.removeItem(key));
@@ -257,8 +256,6 @@ export default function SettingsPage() {
           const parsed = JSON.parse(item);
           if (section.key === "mn_profile_photos_draft" && (!parsed.photos || parsed.photos.length === 0)) {
             missing.push(section);
-          } else if (section.key === "mn_video_intro_draft" && !parsed.video) {
-            missing.push(section);
           } else if (section.key === "mn_voice_intro_draft" && !parsed.voice) {
             missing.push(section);
           } else {
@@ -352,7 +349,6 @@ export default function SettingsPage() {
       "mn_habits_draft",
       "mn_partner_preferences_draft",
       "mn_profile_photos_draft",
-      "mn_video_intro_draft",
       "mn_voice_intro_draft"
     ];
 
@@ -666,7 +662,7 @@ export default function SettingsPage() {
                     <div>
                       <h4 className="font-bold text-sm text-brand-900">Advanced Profile Settings</h4>
                       <p className="text-xs text-brand-600 mt-0.5 max-w-md leading-relaxed">
-                        Update your Religious Info, Career & Education, Family Details, Hobbies, Partner Preferences, and upload Photos/Videos.
+                        Update your Religious Info, Career & Education, Family Details, Hobbies, Partner Preferences, and upload Photos.
                       </p>
                     </div>
                   </div>
