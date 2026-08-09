@@ -278,10 +278,10 @@ interest_route.get("/", async (req: Request, res: Response) => {
           include: { viewer: { select: selectUserFields } },
           skip,
           take: limit + 1,
-          orderBy: { updated_at: 'desc' }
+          orderBy: { created_at: 'desc' }
         });
         const hasMore = views.length > limit;
-        const rawUsers = views.slice(0, limit).map(v => v.viewer ? ({ ...v.viewer, viewed_at: v.updated_at }) : null).filter(Boolean);
+        const rawUsers = views.slice(0, limit).map(v => v.viewer ? ({ ...v.viewer, viewed_at: v.created_at }) : null).filter(Boolean);
         const uniqueUsers = Array.from(new Map(rawUsers.map(u => [u!.id, u])).values());
         res.status(200).json({ success: true, users: uniqueUsers, hasMore });
         return;
@@ -291,10 +291,10 @@ interest_route.get("/", async (req: Request, res: Response) => {
           include: { viewed: { select: selectUserFields } },
           skip,
           take: limit + 1,
-          orderBy: { updated_at: 'desc' }
+          orderBy: { created_at: 'desc' }
         });
         const hasMore = views.length > limit;
-        const rawUsers = views.slice(0, limit).map(v => v.viewed ? ({ ...v.viewed, viewed_at: v.updated_at }) : null).filter(Boolean);
+        const rawUsers = views.slice(0, limit).map(v => v.viewed ? ({ ...v.viewed, viewed_at: v.created_at }) : null).filter(Boolean);
         const uniqueUsers = Array.from(new Map(rawUsers.map(u => [u!.id, u])).values());
         res.status(200).json({ success: true, users: uniqueUsers, hasMore });
         return;
