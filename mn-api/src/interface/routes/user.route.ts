@@ -15,6 +15,7 @@ import { getUserIdFromRequest } from "./interest.route";
 import prisma from "../../infrastructure/prisma/prisamClient";
 import { io } from "../../index";
 import { MediaStorageService } from "../../infrastructure/service/MediaStorageService";
+import bcrypt from "bcryptjs";
 
 
 const user_route = express.Router();
@@ -42,9 +43,9 @@ user_route.get('/profiles', async (req: Request, res: Response) => { await userC
 user_route.put('/:id/profile', async (req: Request, res: Response) => { await userController.updateProfile(req, res)});
 user_route.get('/:id', async (req: Request, res: Response) => {
   try {
-    const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
-    if (isNaN(id)) {
-      res.status(400).json({ success: false, message: "Invalid user ID" });
+    const idParam = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    if (!idParam) {
+      res.status(400).json({ success: false, message: "Invalid user identifier" });
       return;
     }
 
@@ -54,17 +55,19 @@ user_route.get('/:id', async (req: Request, res: Response) => {
       return;
     }
 
-    const user = await userRepository.findById(id);
-    if (!user) {
+    const user = await userRepository.findById(idParam);
+    if (!user || user.id === undefined) {
       res.status(404).json({ success: false, message: "User not found" });
       return;
     }
+
+    const targetUserId: number = user.id;
 
     let reqIsAdmin = false;
     const requester = await userRepository.findById(requesterId);
     if (requester) {
       reqIsAdmin = (requester.profile_details as any)?.isAdmin === true || requester.mobile_number === "+911212121212" || requester.mobile_number === "+919876543210";
-      if (!reqIsAdmin && requesterId !== id) {
+      if (!reqIsAdmin && requesterId !== targetUserId) {
         const reqGender = (requester.gender || "").toLowerCase();
         const targetGender = (user.gender || "").toLowerCase();
         if (reqGender && targetGender && reqGender === targetGender) {
@@ -75,19 +78,19 @@ user_route.get('/:id', async (req: Request, res: Response) => {
     }
 
     // Record profile view
-    if (requesterId && requesterId !== id && !reqIsAdmin) {
+    if (requesterId && requesterId !== targetUserId && !reqIsAdmin) {
       try {
         await prisma.profileView.upsert({
           where: {
             viewer_id_viewed_id: {
               viewer_id: requesterId,
-              viewed_id: id,
+              viewed_id: targetUserId,
             },
           },
           update: {},
           create: {
             viewer_id: requesterId,
-            viewed_id: id,
+            viewed_id: targetUserId,
           },
         });
       } catch (viewError) {
@@ -98,7 +101,7 @@ user_route.get('/:id', async (req: Request, res: Response) => {
     // Remove password hash from response for security
     const { password, ...safeUser } = user as any;
     const { onlineUsers } = require("../../infrastructure/onlineTracker");
-    res.status(200).json({ success: true, user: { ...safeUser, is_online: onlineUsers.has(id) } });
+    res.status(200).json({ success: true, user: { ...safeUser, is_online: onlineUsers.has(targetUserId) } });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || "Failed to fetch user" });
   }
@@ -617,6 +620,156 @@ user_route.post('/feedback', async (req: Request, res: Response) => {
       success: false,
       message: error.message || "Failed to submit feedback. Please try again."
     });
+  }
+});
+
+// Password Reset - Step 1: Send OTP to Email
+user_route.post("/forgot-password", async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    if (!email || typeof email !== "string" || !email.trim() || !email.includes("@")) {
+      res.status(400).json({ success: false, message: "Please provide a valid email address." });
+      return;
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    // Find user by email (case-insensitive in email or profile_details)
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: { equals: cleanEmail, mode: "insensitive" } },
+          {
+            profile_details: {
+              path: ["mn_basic_details_draft", "email"],
+              equals: cleanEmail
+            }
+          }
+        ]
+      }
+    });
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: "No account found with this email address. Please check your email or register."
+      });
+      return;
+    }
+
+    // Generate 6-digit OTP
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 mins expiry
+
+    // Clear previous verification records for user
+    await prisma.verify.deleteMany({ where: { user_id: user.id } });
+
+    // Create new verify record
+    await prisma.verify.create({
+      data: {
+        user_id: user.id,
+        otp_code: otpCode,
+        expires_at: expiresAt,
+        is_verified: false
+      }
+    });
+
+    console.log(`[PASSWORD RESET OTP] Sent to ${cleanEmail} (User #${user.id}): ${otpCode}`);
+
+    if (user.mobile_number) {
+      const { Msg91Service } = require("../../infrastructure/service/Msg91Service");
+      Msg91Service.sendOtp(user.mobile_number, otpCode).catch((e: any) =>
+        console.error("Failed to send MSG91 OTP for forgot password:", e)
+      );
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Password reset code sent to ${cleanEmail}. Check your inbox.`,
+      email: cleanEmail,
+      devOtp: process.env.NODE_ENV !== "production" ? otpCode : undefined
+    });
+  } catch (err: any) {
+    console.error("Forgot password error:", err);
+    res.status(500).json({ success: false, message: err.message || "Failed to process request." });
+  }
+});
+
+// Password Reset - Step 2: Verify OTP & Reset Password
+user_route.post("/reset-password", async (req: Request, res: Response) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    if (!email || typeof email !== "string" || !email.trim()) {
+      res.status(400).json({ success: false, message: "Email address is required." });
+      return;
+    }
+
+    if (!otp || typeof otp !== "string" || !otp.trim()) {
+      res.status(400).json({ success: false, message: "Verification code is required." });
+      return;
+    }
+
+    if (!newPassword || typeof newPassword !== "string" || newPassword.trim().length < 6) {
+      res.status(400).json({ success: false, message: "New password must be at least 6 characters long." });
+      return;
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    // Find user
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: { equals: cleanEmail, mode: "insensitive" } },
+          {
+            profile_details: {
+              path: ["mn_basic_details_draft", "email"],
+              equals: cleanEmail
+            }
+          }
+        ]
+      }
+    });
+
+    if (!user) {
+      res.status(404).json({ success: false, message: "User account not found." });
+      return;
+    }
+
+    // Verify OTP record
+    const verifyRecord = await prisma.verify.findFirst({
+      where: {
+        user_id: user.id,
+        otp_code: otp.trim(),
+        is_verified: false,
+        expires_at: { gte: new Date() }
+      }
+    });
+
+    if (!verifyRecord) {
+      res.status(400).json({ success: false, message: "Invalid or expired verification code." });
+      return;
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword.trim(), 10);
+
+    // Update user password
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashedPassword }
+    });
+
+    // Clear verification records
+    await prisma.verify.deleteMany({ where: { user_id: user.id } });
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset successfully! You can now log in with your new password."
+    });
+  } catch (err: any) {
+    console.error("Reset password error:", err);
+    res.status(500).json({ success: false, message: err.message || "Failed to reset password." });
   }
 });
 

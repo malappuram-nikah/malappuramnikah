@@ -348,7 +348,7 @@ export default function InterestsPage() {
                 className="bg-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-lg hover:shadow-brand-900/5 hover:border-brand-100 transition-all duration-300 flex flex-col"
               >
                 {/* Profile Card Header with Photo */}
-                <div className="h-44 relative bg-gray-50 overflow-hidden cursor-pointer" onClick={() => router.push(`/dashboard/profile/${p.id}`)}>
+                <div className="h-44 relative bg-gray-50 overflow-hidden cursor-pointer" onClick={() => router.push(`/dashboard/profile/${p.uuid || p.id}`)}>
                   <img
                     src={p.img}
                     alt={p.name}
@@ -413,7 +413,7 @@ export default function InterestsPage() {
                         {(activeTab === "viewed_me" || activeTab === "visited") && (
                           <div className="flex w-full gap-2">
                             <button
-                              onClick={() => router.push(`/dashboard/profile/${p.id}`)}
+                              onClick={() => router.push(`/dashboard/profile/${p.uuid || p.id}`)}
                               className="flex-1 py-2.5 bg-brand-600 text-white hover:bg-brand-700 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                             >
                               View Profile

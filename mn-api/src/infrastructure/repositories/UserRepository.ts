@@ -66,7 +66,7 @@ export class UserRepository implements IUserRepository {
             const limitStr = filters.limit ? `LIMIT ${filters.limit}` : '';
             
             const query = `
-              SELECT u.id, u.first_name, u.last_name, u.gender, u.cast, u.location, u.dob, u.status, u.is_premium, u.profile_for, u.mobile_number, u.kyc_status, u.kyc_document_type, u.kyc_front_url, u.kyc_back_url, u.kyc_rejected_reason, u.kyc_submitted_at, u.kyc_verified_at, u.created_at, u.updated_at,
+              SELECT u.id, u.uuid, u.first_name, u.last_name, u.gender, u.cast, u.location, u.dob, u.status, u.is_premium, u.profile_for, u.mobile_number, u.kyc_status, u.kyc_document_type, u.kyc_front_url, u.kyc_back_url, u.kyc_rejected_reason, u.kyc_submitted_at, u.kyc_verified_at, u.created_at, u.updated_at,
               jsonb_build_object(
                 'mn_basic_details_draft', u.profile_details->'mn_basic_details_draft',
                 'mn_profile_photos_draft', u.profile_details->'mn_profile_photos_draft',
@@ -86,6 +86,7 @@ export class UserRepository implements IUserRepository {
             take: filters?.limit,
             select: {
                 id: true,
+                uuid: true,
                 first_name: true,
                 last_name: true,
                 gender: true,
@@ -170,13 +171,31 @@ export class UserRepository implements IUserRepository {
         }
     }
 
-    async findById(id: number): Promise<User | null> {
+    async findById(identifier: number | string): Promise<User | null> {
         try {
+            if (typeof identifier === "number") {
+                return await prisma.user.findUnique({
+                    where: { id: identifier }
+                }) as unknown as User | null;
+            }
+
+            const numericId = parseInt(identifier, 10);
+            if (!isNaN(numericId) && String(numericId) === String(identifier)) {
+                return await prisma.user.findFirst({
+                    where: {
+                        OR: [
+                            { id: numericId },
+                            { uuid: identifier }
+                        ]
+                    }
+                }) as unknown as User | null;
+            }
+
             return await prisma.user.findUnique({
-                where: { id }
+                where: { uuid: identifier }
             }) as unknown as User | null;
         } catch (error) {
-            console.error('Error finding user by ID:', error);
+            console.error('Error finding user by ID or UUID:', error);
             throw new Error('Failed to find user');
         }
     }

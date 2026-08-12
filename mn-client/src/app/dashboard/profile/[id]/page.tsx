@@ -24,7 +24,7 @@ interface PageProps {
 export default function ProfileDetailPage({ params }: PageProps) {
   const router = useRouter();
   const resolvedParams = use(params);
-  const profileId = parseInt(resolvedParams.id, 10);
+  const profileIdParam = resolvedParams.id;
   
   const { currentUser } = useUser();
   const { addToCompare, removeFromCompare, isCompared, setAlertMsg: setCompareAlert } = useCompare();
@@ -68,16 +68,22 @@ export default function ProfileDetailPage({ params }: PageProps) {
         await fetchInterests(storedToken);
       }
 
-      const res = await fetch(`${API_URL}/user/${profileId}`, {
+      const res = await fetch(`${API_URL}/user/${profileIdParam}`, {
         headers: storedToken ? { "Authorization": `Bearer ${storedToken}` } : {}
       });
       const data = await res.json();
       
       if (data.success && data.user) {
+        // Automatically replace numeric ID in browser address bar with UUID
+        if (data.user.uuid && profileIdParam !== data.user.uuid && typeof window !== "undefined") {
+          window.history.replaceState(null, "", `/dashboard/profile/${data.user.uuid}`);
+        }
+
         const enriched = getEnrichedProfile(data.user);
         // Map any extra fields we need
         const mapped = {
           ...enriched,
+          uuid: data.user.uuid || enriched.uuid,
           img: enriched.photo,
           caste: enriched.community,
           matchScore: 82 + (enriched.id % 15), // Stable mock AI match score
@@ -103,13 +109,13 @@ export default function ProfileDetailPage({ params }: PageProps) {
   };
 
   useEffect(() => {
-    if (!isNaN(profileId)) {
+    if (profileIdParam) {
       fetchProfileData();
     } else {
-      setAlertMsg("Invalid Profile ID.");
+      setAlertMsg("Invalid Profile Identifier.");
       setLoading(false);
     }
-  }, [profileId]);
+  }, [profileIdParam]);
 
   const handleToggleInterest = async () => {
     if (!profile) return;
@@ -416,7 +422,13 @@ export default function ProfileDetailPage({ params }: PageProps) {
               )}
 
               <div className="pt-2 border-t border-gray-50 flex justify-center">
-                <BiodataDownload profile={profile} enriched={getEnrichedProfile(profile)} />
+                <BiodataDownload 
+                  profile={profile} 
+                  enriched={getEnrichedProfile(profile)} 
+                  isAccepted={isMutual || isSelf}
+                  isPending={isSent || isReceived}
+                  onExpressInterest={handleToggleInterest}
+                />
               </div>
             </div>
           </div>

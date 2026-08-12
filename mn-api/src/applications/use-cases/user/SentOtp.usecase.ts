@@ -1,6 +1,6 @@
 import { Otp } from "../../../domain/entities/otp.interface";
 import { IOtpRepository } from "../../../domain/interfaces/IOtpRepository";
-import { sendOtp } from "../../../infrastructure/config/twilio.config";
+import { Msg91Service } from "../../../infrastructure/service/Msg91Service";
 import otpGenerator from "otp-generator";
 
 export class SendOtpUseCase {
@@ -19,7 +19,10 @@ export class SendOtpUseCase {
       otp.phoneNumber,
       otp.expiresIn
     );
-    // return await sendOtp(phoneNumber, otpCode);
+    
+    // Dispatch OTP via MSG91
+    await Msg91Service.sendOtp(phoneNumber, otpCode);
+
     return otpCode;
   }
 }

@@ -32,6 +32,7 @@ export function getEnrichedProfile(u: User): EnrichedProfile {
 
   return {
     id: u.id,
+    uuid: u.uuid || (u as any).uuid || "",
     name: `${u.first_name || ""} ${u.last_name || ""}`.trim() || "",
     photo: avatar,
     gender: basic.gender || u.gender || "",

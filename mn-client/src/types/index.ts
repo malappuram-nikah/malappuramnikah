@@ -92,6 +92,7 @@ export interface ProfileDetails {
 
 export interface User {
   id: number;
+  uuid?: string;
   first_name: string;
   last_name?: string;
   gender: string;
@@ -110,6 +111,7 @@ export interface User {
 
 export interface EnrichedProfile {
   id: number;
+  uuid?: string;
   name: string;
   photo: string;
   gender: string;

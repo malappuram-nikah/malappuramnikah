@@ -518,7 +518,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
                 )}
 
                 {/* OTP input boxes */}
-                <div className="flex gap-3 mb-8">
+                <div className="flex gap-1.5 sm:gap-3 mb-6 sm:mb-8 justify-center w-full">
                   {otpDigits.map((digit, i) => (
                     <input
                       key={i}
@@ -529,7 +529,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
                       value={digit}
                       onChange={(e) => handleOtpChange(i, e.target.value)}
                       onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                      className={`w-12 h-14 text-center text-xl font-semibold rounded-xl border-2 transition-all focus:outline-none ${digit
+                      className={`w-10 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-semibold rounded-xl border-2 transition-all focus:outline-none shrink-0 ${digit
                           ? "border-brand-500 bg-brand-50/50 text-brand-700"
                           : "border-gray-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
                         }`}

@@ -47,7 +47,28 @@ notification_route.get("/", async (req: Request, res: Response) => {
   }
 });
 
-// 2. Mark Notification as Read (PUT /user/notifications/:id/read)
+// 2. Mark All Notifications as Read (PUT /user/notifications/read-all)
+notification_route.put("/read-all", async (req: Request, res: Response) => {
+  try {
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    await prisma.notification.updateMany({
+      where: { user_id: userId, is_read: false },
+      data: { is_read: true }
+    });
+
+    res.status(200).json({ success: true, message: "All notifications marked as read" });
+  } catch (err: any) {
+    console.error("Error marking all read:", err);
+    res.status(500).json({ success: false, message: err.message || "Server error" });
+  }
+});
+
+// 3. Mark Single Notification as Read (PUT /user/notifications/:id/read)
 notification_route.put("/:id/read", async (req: Request, res: Response) => {
   try {
     const userId = getUserIdFromRequest(req);
@@ -80,27 +101,6 @@ notification_route.put("/:id/read", async (req: Request, res: Response) => {
     res.status(200).json({ success: true, notification: updated });
   } catch (err: any) {
     console.error("Error updating notification read state:", err);
-    res.status(500).json({ success: false, message: err.message || "Server error" });
-  }
-});
-
-// 3. Mark All Notifications as Read (PUT /user/notifications/read-all)
-notification_route.put("/read-all", async (req: Request, res: Response) => {
-  try {
-    const userId = getUserIdFromRequest(req);
-    if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
-    }
-
-    await prisma.notification.updateMany({
-      where: { user_id: userId, is_read: false },
-      data: { is_read: true }
-    });
-
-    res.status(200).json({ success: true, message: "All notifications marked as read" });
-  } catch (err: any) {
-    console.error("Error marking all read:", err);
     res.status(500).json({ success: false, message: err.message || "Server error" });
   }
 });

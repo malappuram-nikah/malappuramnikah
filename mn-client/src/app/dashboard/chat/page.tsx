@@ -11,6 +11,7 @@ import { API_URL } from "@/lib/config";
 
 interface PeerProfile {
   id: number;
+  uuid?: string;
   first_name: string;
   last_name: string;
   cast: string;
@@ -409,7 +410,7 @@ export default function ChatPage() {
               <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                 <button
                   type="button"
-                  onClick={() => router.push(`/dashboard/profile/${selectedPeer.id}`)}
+                  onClick={() => router.push(`/dashboard/profile/${selectedPeer.uuid || selectedPeer.id}`)}
                   className="px-2.5 py-1.5 text-[11px] font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
                   title="View Full Profile"
                 >

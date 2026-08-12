@@ -1,5 +1,6 @@
 export interface User {
   id?: number;
+  uuid?: string | null;
   profile_for: string;
   gender: string;
   first_name: string;

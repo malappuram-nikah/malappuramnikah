@@ -13,6 +13,7 @@ import { API_URL } from "@/lib/config";
 interface ProfileSlideOverProps {
   profile: {
     id: number;
+    uuid?: string;
     name: string;
     age?: number | string;
     location?: string;
@@ -153,7 +154,7 @@ export default function ProfileSlideOver({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -169,7 +170,7 @@ export default function ProfileSlideOver({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.92, y: 20 }}
           transition={{ type: "spring", damping: 28, stiffness: 260 }}
-          className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl flex flex-col z-10 max-h-[90vh] overflow-hidden"
+          className="relative w-full max-w-md bg-white rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col z-10 max-h-[94vh] sm:max-h-[90vh] overflow-hidden"
         >
           {/* ─── PHOTO CAROUSEL ─── */}
           <div className="relative h-64 sm:h-72 bg-gray-100 flex-shrink-0 overflow-hidden rounded-t-2xl">
@@ -512,7 +513,8 @@ export default function ProfileSlideOver({
               <button
                 onClick={() => {
                   onClose();
-                  router.push(`/dashboard/profile/${profile.id}`);
+                  const targetUuid = fullUser?.uuid || profile.uuid;
+                  router.push(`/dashboard/profile/${targetUuid || profile.id}`);
                 }}
                 className="flex-1 py-2.5 bg-gray-50 text-gray-700 hover:bg-gray-100 text-xs font-bold rounded-xl border border-gray-200 transition-colors flex items-center justify-center gap-1.5"
               >
@@ -523,7 +525,13 @@ export default function ProfileSlideOver({
 
             {fullUser && (
               <div className="w-full flex justify-center">
-                <BiodataDownload profile={fullUser} enriched={fullUser} />
+                <BiodataDownload 
+                  profile={fullUser} 
+                  enriched={fullUser} 
+                  isAccepted={isMutual}
+                  isPending={isSent || isReceived}
+                  onExpressInterest={() => onToggleInterest(profile.id, profile.name)}
+                />
               </div>
             )}
           </div>

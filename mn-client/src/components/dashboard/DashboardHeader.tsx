@@ -217,42 +217,37 @@ export default function DashboardHeader() {
   }
 
   const handleMarkAllRead = async () => {
+    // Optimistically set all local notifications to is_read: true immediately
+    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+
     if (!token) return;
     try {
-      const res = await fetch(
-        `${API_URL}/user/notifications/read-all`,
-        {
-          method: "PUT",
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-      const data = await res.json();
-      if (data.success) {
-        // Optimistically set all local notifications to is_read: true
-        setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleNotificationClick = async (notif: Notification) => {
-    setShowDropdown(false);
-    if (!token) return;
-
-    // Mark as read in DB
-    try {
-      await fetch(`${API_URL}/user/notifications/${notif.id}/read`, {
+      await fetch(`${API_URL}/user/notifications/read-all`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      // Update local state
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === notif.id ? { ...n, is_read: true } : n)),
-      );
     } catch (err) {
-      console.error(err);
+      console.error("Failed to mark notifications as read:", err);
+    }
+  };
+
+  const handleToggleNotifications = () => {
+    setShowDropdown((prev) => !prev);
+  };
+
+  const handleNotificationClick = async (notif: Notification) => {
+    // 1. Optimistically mark read in local state immediately
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === notif.id ? { ...n, is_read: true } : n)),
+    );
+    setShowDropdown(false);
+
+    // 2. Dispatch DB update asynchronously in background
+    if (token) {
+      fetch(`${API_URL}/user/notifications/${notif.id}/read`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch((err) => console.error("Failed to mark notification read:", err));
     }
 
     // Smart Redirect based on notification trigger type — delay 150ms to let drawer exit animation complete
@@ -287,7 +282,9 @@ export default function DashboardHeader() {
         userPhotos[0].dataUrl
       : null;
 
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
+  const unreadCount = notifications.filter(
+    (n) => n.is_read !== true && (n as any).is_read !== "true" && (n as any).is_read !== 1
+  ).length;
 
   return (
     <header className="bg-white border-b border-gray-100 px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between shrink-0 relative z-30">
@@ -319,7 +316,7 @@ export default function DashboardHeader() {
 
         {/* Notification Bell with counter */}
         <button
-          onClick={() => setShowDropdown(!showDropdown)}
+          onClick={handleToggleNotifications}
           className={`relative p-2.5 rounded-xl hover:bg-gray-50 text-gray-500 hover:text-gray-700 transition-colors ${
             showDropdown ? "bg-gray-50 text-brand-600" : ""
           }`}
@@ -327,7 +324,7 @@ export default function DashboardHeader() {
           <Bell className="w-5 h-5" />
           {unreadCount > 0 && (
             <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-brand-600 text-white text-[9px] font-extrabold rounded-full flex items-center justify-center animate-pulse border border-white">
-              {unreadCount}
+              {unreadCount > 99 ? "99+" : unreadCount}
             </span>
           )}
         </button>
@@ -509,7 +506,7 @@ export default function DashboardHeader() {
                           <button
                             onClick={() => {
                               setShowProfileDropdown(false);
-                              router.push(`/dashboard/profile/${user?.id}`);
+                              router.push(`/dashboard/profile/${user?.uuid || user?.id}`);
                             }}
                             className="w-full text-left px-3 py-2.5 text-xs font-bold text-gray-700 hover:bg-brand-50 hover:text-brand-700 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-brand-100 group cursor-pointer"
                           >

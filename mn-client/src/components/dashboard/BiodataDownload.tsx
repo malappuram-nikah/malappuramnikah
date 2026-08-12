@@ -13,9 +13,21 @@ interface BiodataDownloadProps {
   profile: any;
   /** Optional: raw enriched profile (from getEnrichedProfile). Falls back to raw. */
   enriched?: any;
+  /** Whether the interest has been ACCEPTED (mutual match) or is own profile */
+  isAccepted?: boolean;
+  /** Optional: whether interest is pending (sent/received but not accepted) */
+  isPending?: boolean;
+  /** Optional callback to express or accept interest directly */
+  onExpressInterest?: () => void;
 }
 
-export default function BiodataDownload({ profile, enriched }: BiodataDownloadProps) {
+export default function BiodataDownload({ 
+  profile, 
+  enriched, 
+  isAccepted = true,
+  isPending = false,
+  onExpressInterest 
+}: BiodataDownloadProps) {
   const [open, setOpen] = useState(false);
   const [downloadEnabled, setDownloadEnabled] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -359,10 +371,18 @@ ${forPrint ? `<div class="actions no-print">
       {/* Trigger button */}
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 text-amber-800 hover:bg-amber-100 text-sm font-semibold rounded-xl border border-amber-200 transition-all active:scale-[0.98]"
+        className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all active:scale-[0.98] ${
+          !isAccepted
+            ? "bg-amber-50/70 text-amber-900 border-amber-200/80 hover:bg-amber-100/80"
+            : "bg-amber-50 text-amber-800 hover:bg-amber-100 border-amber-200"
+        }`}
       >
-        <FileText className="w-4 h-4" />
-        Biodata PDF
+        {!isAccepted ? (
+          <Lock className="w-4 h-4 text-amber-700 shrink-0" />
+        ) : (
+          <FileText className="w-4 h-4 shrink-0" />
+        )}
+        <span>{!isAccepted ? "Biodata PDF (Locked)" : "Biodata PDF"}</span>
       </button>
 
       {/* Modal */}
@@ -402,6 +422,34 @@ ${forPrint ? `<div class="actions no-print">
                       </div>
                       <p className="font-semibold text-gray-800">Downloads Disabled</p>
                       <p className="text-sm text-gray-500">The administrator has temporarily disabled biodata downloads. Please check back later.</p>
+                    </div>
+                  ) : !isAccepted ? (
+                    <div className="flex flex-col items-center gap-3 py-6 text-center">
+                      <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center border border-amber-200">
+                        <Lock className="w-7 h-7 text-amber-600" />
+                      </div>
+                      <p className="font-bold text-gray-900 text-base">Biodata Download Locked</p>
+                      <p className="text-xs text-gray-600 leading-relaxed max-w-xs">
+                        {isPending
+                          ? `Interest request is pending. Biodata PDF download will be unlocked once ${profile?.name || profile?.first_name || "this member"} accepts your interest request.`
+                          : `You can download ${profile?.name || profile?.first_name || "this member"}'s biodata PDF once an interest request has been sent and accepted.`}
+                      </p>
+                      {onExpressInterest && !isPending && (
+                        <button
+                          onClick={() => {
+                            setOpen(false);
+                            onExpressInterest();
+                          }}
+                          className="mt-2 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all active:scale-[0.98]"
+                        >
+                          Express Interest Request
+                        </button>
+                      )}
+                      {isPending && (
+                        <span className="mt-1 px-3.5 py-1.5 bg-amber-100 text-amber-800 font-semibold text-[11px] rounded-full border border-amber-200">
+                          ⏳ Waiting for acceptance
+                        </span>
+                      )}
                     </div>
                   ) : done ? (
                     <div className="flex flex-col items-center gap-3 py-6 text-center">
