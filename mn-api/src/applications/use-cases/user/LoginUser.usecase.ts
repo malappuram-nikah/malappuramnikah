@@ -14,6 +14,10 @@ export class LoginUser {
       return { status: 404, message: "User not found" };
     }
 
+    if (user.status === "in_active") {
+      return { status: 403, message: "Your account is not verified. Please complete OTP verification to activate your account." };
+    }
+
     const isValidPassword = await this.userRepository.validatePassword(data.password, user.password);
     if (!isValidPassword) {
       return { status: 401, message: 'Incorrect password' };

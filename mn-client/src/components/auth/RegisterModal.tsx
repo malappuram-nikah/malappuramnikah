@@ -7,6 +7,12 @@ import { X, ArrowLeft, CheckCircle2, ShieldCheck } from "lucide-react";
 
 import { LOCATIONS } from "@/lib/constants";
 import { API_URL } from "@/lib/config";
+import {
+  getMobileMaxLength,
+  validateEmail,
+  validateMobile,
+  validatePassword,
+} from "@/lib/registration-validation";
 
 interface RegisterModalProps {
   isOpen: boolean;
@@ -42,7 +48,45 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
   }, []);
 
   const updateForm = (key: string, value: string) => {
+    if (key === "mobile") {
+      value = value.replace(/\D/g, "").slice(0, getMobileMaxLength(formData.countryCode));
+    }
+
     setFormData((prev) => ({ ...prev, [key]: value }));
+
+    if (key === "mobile" || key === "password" || key === "email") {
+      setFieldErrors((prev) => ({ ...prev, [key]: undefined }));
+    }
+  };
+
+  const validateStep4Fields = () => {
+    const errors = {
+      mobile: validateMobile(formData.countryCode, formData.mobile) || undefined,
+      password: validatePassword(formData.password) || undefined,
+      email: validateEmail(formData.email) || undefined,
+    };
+
+    setFieldErrors(errors);
+    return !errors.mobile && !errors.password && !errors.email;
+  };
+
+  const touchField = (field: "mobile" | "password" | "email") => {
+    if (field === "mobile") {
+      setFieldErrors((prev) => ({
+        ...prev,
+        mobile: validateMobile(formData.countryCode, formData.mobile) || undefined,
+      }));
+    } else if (field === "password") {
+      setFieldErrors((prev) => ({
+        ...prev,
+        password: validatePassword(formData.password) || undefined,
+      }));
+    } else {
+      setFieldErrors((prev) => ({
+        ...prev,
+        email: validateEmail(formData.email) || undefined,
+      }));
+    }
   };
 
   const nextStep = () => setStep((p) => Math.min(p + 1, 4));
@@ -50,6 +94,11 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{
+    mobile?: string;
+    password?: string;
+    email?: string;
+  }>({});
   const [success, setSuccess] = useState(false);
 
   // OTP verification state
@@ -218,7 +267,15 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
               <div className="flex gap-2">
                 <select
                   value={formData.countryCode}
-                  onChange={(e) => updateForm("countryCode", e.target.value)}
+                  onChange={(e) => {
+                    const countryCode = e.target.value;
+                    setFormData((prev) => ({
+                      ...prev,
+                      countryCode,
+                      mobile: prev.mobile.slice(0, getMobileMaxLength(countryCode)),
+                    }));
+                    setFieldErrors((prev) => ({ ...prev, mobile: undefined }));
+                  }}
                   className="w-24 px-3 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white text-center"
                 >
                   <option value="+91">+91 (IN)</option>
@@ -227,12 +284,22 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
                 </select>
                 <input
                   type="tel"
+                  inputMode="numeric"
                   value={formData.mobile}
                   onChange={(e) => updateForm("mobile", e.target.value)}
-                  placeholder="Enter 10 digit number"
-                  className="flex-1 px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                  onBlur={() => touchField("mobile")}
+                  placeholder={formData.countryCode === "+91" ? "10 digit number" : "9 digit number"}
+                  maxLength={getMobileMaxLength(formData.countryCode)}
+                  className={`flex-1 px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 transition-all text-sm ${
+                    fieldErrors.mobile
+                      ? "border-red-300 focus:border-red-500 focus:ring-red-500/20"
+                      : "border-gray-200 focus:ring-brand-500/20 focus:border-brand-500"
+                  }`}
                 />
               </div>
+              {fieldErrors.mobile && (
+                <p className="mt-1.5 text-xs text-red-600">{fieldErrors.mobile}</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Email Address (Optional)</label>
@@ -240,9 +307,17 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
                 type="email"
                 value={formData.email}
                 onChange={(e) => updateForm("email", e.target.value)}
+                onBlur={() => touchField("email")}
                 placeholder="Enter your email"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 transition-all text-sm ${
+                  fieldErrors.email
+                    ? "border-red-300 focus:border-red-500 focus:ring-red-500/20"
+                    : "border-gray-200 focus:ring-brand-500/20 focus:border-brand-500"
+                }`}
               />
+              {fieldErrors.email && (
+                <p className="mt-1.5 text-xs text-red-600">{fieldErrors.email}</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
@@ -250,9 +325,19 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
                 type="password"
                 value={formData.password}
                 onChange={(e) => updateForm("password", e.target.value)}
+                onBlur={() => touchField("password")}
                 placeholder="Minimum 6 characters"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 transition-all text-sm ${
+                  fieldErrors.password
+                    ? "border-red-300 focus:border-red-500 focus:ring-red-500/20"
+                    : "border-gray-200 focus:ring-brand-500/20 focus:border-brand-500"
+                }`}
               />
+              {fieldErrors.password ? (
+                <p className="mt-1.5 text-xs text-red-600">{fieldErrors.password}</p>
+              ) : (
+                <p className="mt-1.5 text-xs text-gray-400">Use at least 6 characters with no spaces.</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Referral Code (Optional)</label>
@@ -274,16 +359,23 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
       case 1: return formData.profileFor && formData.gender;
       case 2: return formData.first_name.trim().length >= 2 && formData.last_name.trim().length >= 1 && formData.dateOfBirth;
       case 3: return formData.location && formData.caste;
-      case 4: 
-        const isEmailValid = !formData.email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
-        return formData.mobile.length >= 8 && formData.password.length >= 6 && isEmailValid;
+      case 4:
+        return (
+          !validateMobile(formData.countryCode, formData.mobile) &&
+          !validatePassword(formData.password) &&
+          !validateEmail(formData.email)
+        );
       default: return false;
     }
   };
 
   const handleSubmit = async () => {
-    setIsSubmitting(true);
     setError(null);
+    if (!validateStep4Fields()) {
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
       const payload = {
         profile_for: formData.profileFor,
@@ -333,6 +425,14 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
     } catch (err) {
       const msg = err instanceof Error ? err.message : "An unexpected error occurred";
       setError(msg);
+
+      if (/mobile/i.test(msg)) {
+        setFieldErrors((prev) => ({ ...prev, mobile: msg }));
+      } else if (/password/i.test(msg)) {
+        setFieldErrors((prev) => ({ ...prev, password: msg }));
+      } else if (/email/i.test(msg)) {
+        setFieldErrors((prev) => ({ ...prev, email: msg }));
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -380,30 +480,26 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
     setIsVerifying(true);
     setOtpError(null);
     try {
-      try {
-        const response = await fetch(`${API_URL}/otp/verify-otp`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            phoneNumber: formData.countryCode + formData.mobile,
-            otpCode: otpDigits,
-            userId: registeredUserId,
-          })
-        });
+      const response = await fetch(`${API_URL}/otp/verify-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phoneNumber: formData.countryCode + formData.mobile,
+          otpCode: otpDigits,
+          userId: registeredUserId,
+        })
+      });
 
-        const data = await response.json();
+      const data = await response.json();
 
-        // Store access token if returned
-        if (data.accessToken) {
-          localStorage.setItem("mn_token", data.accessToken);
-        }
-      } catch (apiErr) {
-        console.warn("Backend OTP verification failed or offline. Simulating success.", apiErr);
-        // Fallback token for testing
-        localStorage.setItem("mn_token", "simulated_token_123");
+      if (!response.ok || data.success === false) {
+        throw new Error(data.message || "Invalid OTP. Please try again.");
       }
 
-      // Show verified state, then redirect regardless of backend success
+      if (data.accessToken) {
+        localStorage.setItem("mn_token", data.accessToken);
+      }
+
       setVerified(true);
       setTimeout(() => {
         onClose();
@@ -430,6 +526,9 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
         })
       });
       const data = await response.json();
+      if (!response.ok || data.success === false) {
+        throw new Error(data.message || "Failed to resend OTP");
+      }
       if (data.otp && typeof data.otp === "string") {
         setOtpDigits(data.otp.split(""));
       }

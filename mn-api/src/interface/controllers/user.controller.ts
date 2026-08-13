@@ -50,6 +50,7 @@ export class UserController {
       console.log("User from use case:", user);
 
       const generatedOtp = await this.sendOtp.execute(phoneNumber);
+      const { password: _password, ...safeUser } = user as any;
 
       if (isUnverified) {
         return res
@@ -58,14 +59,19 @@ export class UserController {
             success: true,
             unverified: true,
             message: "Your account has already been created but is not yet verified. Please verify your OTP to activate your account.",
-            otp: generatedOtp,
-            user
+            ...(process.env.NODE_ENV !== "production" ? { otp: generatedOtp } : {}),
+            user: safeUser
           });
       }
 
       return res
         .status(200)
-        .json({ success: true, message: "Registration successful", otp: generatedOtp, user });
+        .json({
+          success: true,
+          message: "Registration successful",
+          ...(process.env.NODE_ENV !== "production" ? { otp: generatedOtp } : {}),
+          user: safeUser
+        });
     } catch (error: any) {
       console.error("Error during registration:", error);
       

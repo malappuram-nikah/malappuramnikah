@@ -8,10 +8,6 @@ export class VerifyOtpUseCase {
 
     const otpString = Array.isArray(otpCode) ? otpCode.join("") : String(otpCode);
 
-    console.log(storedOtp, "lllll");
-
-    console.log(otpCode, "ssss");
-
     if (storedOtp && storedOtp === otpString) {
       await this.otpRepository.deleteOtp(phoneNumber);
       return true;

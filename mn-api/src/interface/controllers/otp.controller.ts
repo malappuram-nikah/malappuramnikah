@@ -15,11 +15,26 @@ export class OtpController {
     try {
       const { phoneNumber } = req.body;
 
+      if (!phoneNumber) {
+        return res.status(400).json({ success: false, message: "Phone number is required" });
+      }
+
+      const user = await prisma.user.findUnique({ where: { mobile_number: phoneNumber } });
+      if (!user) {
+        return res.status(404).json({ success: false, message: "No account found for this mobile number" });
+      }
+
       const generatedOtp = await this.sendOtpUseCase.execute(phoneNumber);
-      return res
-        .status(200)
-        .json({ success: true, otp: generatedOtp, message: "OTP sent successfully" });
+      const responseBody: Record<string, unknown> = {
+        success: true,
+        message: "OTP sent successfully",
+      };
+      if (process.env.NODE_ENV !== "production") {
+        responseBody.otp = generatedOtp;
+      }
+      return res.status(200).json(responseBody);
     } catch (error) {
+      console.error("Resend OTP error:", error);
       return res
         .status(500)
         .json({ success: false, message: "Error sending OTP" });
@@ -29,39 +44,44 @@ export class OtpController {
   async verifyOtp(req: Request, res: Response) {
     try {
       const { phoneNumber, otpCode, userId } = req.body;
+
+      if (!phoneNumber || !otpCode) {
+        return res.status(400).json({ success: false, message: "Phone number and OTP are required" });
+      }
+
       const codeString = Array.isArray(otpCode) ? otpCode.join("") : String(otpCode);
       const isValid = await this.verifyOtpUseCase.execute(phoneNumber, codeString);
 
-      if (isValid) {
-        // Activate the existing user account
-        if (userId) {
-          await prisma.user.update({
-            where: { id: Number(userId) },
-            data: { status: "active" }
-          });
-        } else {
-          await prisma.user.update({
-            where: { mobile_number: phoneNumber },
-            data: { status: "active" }
-          });
-        }
-
-        const accessToken = AuthService.generateToken(
-          { userId },
-          accessTokenConfig
-        );
-
-        return res
-          .status(200)
-          .json({
-            accessToken,
-            success: true,
-            message: "OTP verified successfully",
-          });
+      if (!isValid) {
+        return res.status(400).json({ success: false, message: "Invalid OTP" });
       }
 
-      return res.status(400).json({ success: false, message: "Invalid OTP" });
+      const user = await prisma.user.findUnique({ where: { mobile_number: phoneNumber } });
+      if (!user) {
+        return res.status(404).json({ success: false, message: "User not found" });
+      }
+
+      if (userId && Number(userId) !== user.id) {
+        return res.status(400).json({ success: false, message: "User does not match the provided phone number" });
+      }
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { status: "active" },
+      });
+
+      const accessToken = AuthService.generateToken(
+        { userId: user.id },
+        accessTokenConfig
+      );
+
+      return res.status(200).json({
+        accessToken,
+        success: true,
+        message: "OTP verified successfully",
+      });
     } catch (error) {
+      console.error("Verify OTP error:", error);
       return res
         .status(500)
         .json({ success: false, message: "Error verifying OTP" });

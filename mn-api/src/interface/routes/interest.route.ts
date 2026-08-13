@@ -5,6 +5,8 @@ import { io } from "../../index";
 
 const interest_route = Router();
 
+import { accessTokenConfig } from "../../infrastructure/config/jwt.config";
+
 // Safely extract user ID from JWT token (supports real verify and base64 decode for dev fallback)
 export function getUserIdFromRequest(req: Request): number | null {
   try {
@@ -18,7 +20,7 @@ export function getUserIdFromRequest(req: Request): number | null {
     if (!token) return null;
     
     try {
-      const payload: any = jwt.verify(token, process.env.JWT_SECRET || "fallback_secret");
+      const payload: any = jwt.verify(token, accessTokenConfig.secret);
       return payload.userId || null;
     } catch (verifyErr) {
       // Base64 fallback for dev-constructed JWTs

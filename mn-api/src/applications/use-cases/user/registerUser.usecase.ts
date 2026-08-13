@@ -268,5 +268,68 @@ export class RegisterUser {
                 throw new Error(`Missing required field: ${field}`);
             }
         }
+
+        this.validateMobileNumber(data.mobile_number!);
+        this.validatePassword(data.password!);
+
+        if (data.email) {
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+                throw new Error("Enter a valid email address");
+            }
+        }
+    }
+
+    private validateMobileNumber(mobileNumber: string): void {
+        const knownCodes = ["+966", "+971", "+91"];
+        const countryCode = knownCodes.find((code) => mobileNumber.startsWith(code));
+
+        if (!countryCode) {
+            throw new Error("Enter a valid mobile number with country code");
+        }
+
+        const digits = mobileNumber.slice(countryCode.length).replace(/\D/g, "");
+
+        if (countryCode === "+91") {
+            if (digits.length !== 10) {
+                throw new Error("Indian mobile number must be exactly 10 digits");
+            }
+            if (!/^[6-9]/.test(digits)) {
+                throw new Error("Indian mobile number must start with 6, 7, 8, or 9");
+            }
+            return;
+        }
+
+        if (countryCode === "+971") {
+            if (digits.length !== 9) {
+                throw new Error("UAE mobile number must be exactly 9 digits");
+            }
+            return;
+        }
+
+        if (countryCode === "+966") {
+            if (digits.length !== 9) {
+                throw new Error("Saudi mobile number must be exactly 9 digits");
+            }
+            if (!/^5/.test(digits)) {
+                throw new Error("Saudi mobile number must start with 5");
+            }
+            return;
+        }
+
+        if (digits.length < 8 || digits.length > 15) {
+            throw new Error("Enter a valid mobile number");
+        }
+    }
+
+    private validatePassword(password: string): void {
+        if (password.length < 6) {
+            throw new Error("Password must be at least 6 characters");
+        }
+        if (password.length > 64) {
+            throw new Error("Password must be 64 characters or fewer");
+        }
+        if (/\s/.test(password)) {
+            throw new Error("Password cannot contain spaces");
+        }
     }
 }

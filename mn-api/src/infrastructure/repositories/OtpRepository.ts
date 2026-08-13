@@ -7,7 +7,15 @@ export class OtpRepository implements IOtpRepository {
     phoneNumber: string,
     expiresIn: number
   ): Promise<void> {
-    const expiresAt = new Date(Date.now() + expiresIn * 1000); // Calculate expiration time
+    const expiresAt = new Date(Date.now() + expiresIn * 1000);
+
+    // Remove stale OTP records so resend always verifies against the latest code
+    await prisma.verify.deleteMany({
+      where: {
+        user: { mobile_number: phoneNumber },
+        is_verified: false,
+      },
+    });
 
     await prisma.verify.create({
       data: {
@@ -28,6 +36,7 @@ export class OtpRepository implements IOtpRepository {
         is_verified: false,
         expires_at: { gte: new Date() },
       },
+      orderBy: { created_at: "desc" },
     });
 
     return verifyRecord ? verifyRecord.otp_code : null;
