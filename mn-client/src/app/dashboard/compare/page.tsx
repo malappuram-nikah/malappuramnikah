@@ -418,8 +418,8 @@ function CompareContent() {
                               className="w-12 h-12 rounded-full object-cover border border-gray-200 shadow-sm bg-gray-50 hover:scale-105 transition-transform"
                             />
                           ) : (
-                            <div className="w-12 h-12 rounded-full bg-brand-50 border border-brand-100 shadow-sm flex items-center justify-center text-brand-700 font-bold text-sm uppercase">
-                              {p.name.charAt(0)}
+                            <div className="w-12 h-12 rounded-full bg-brand-50 border border-brand-100 shadow-sm flex items-center justify-center p-2 hover:scale-105 transition-transform">
+                              <img src="/logoMain-01.svg" alt="MN Logo" className="w-full h-full object-contain opacity-75" />
                             </div>
                           )}
                           <div className="min-w-0 pr-4">
@@ -1087,11 +1087,17 @@ function CompareSearchSelector({
                   }}
                   className="w-full text-left px-3 py-2 hover:bg-brand-50 rounded-xl flex items-center gap-2.5 transition-colors"
                 >
-                  <img
-                    src={u.profile_details?.mn_profile_photos_draft?.photos?.[0]?.dataUrl || `https://i.pravatar.cc/100?img=${45 + (u.id % 20)}`}
-                    alt=""
-                    className="w-8 h-8 rounded-lg object-cover bg-gray-100"
-                  />
+                  {u.profile_details?.mn_profile_photos_draft?.photos?.[0]?.dataUrl ? (
+                    <img
+                      src={u.profile_details.mn_profile_photos_draft.photos[0].dataUrl}
+                      alt=""
+                      className="w-8 h-8 rounded-lg object-cover bg-gray-100 shrink-0"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-lg bg-brand-50 border border-brand-100 p-1 flex items-center justify-center shrink-0">
+                      <img src="/logoMain-01.svg" alt="MN Logo" className="w-full h-full object-contain opacity-75" />
+                    </div>
+                  )}
                   <div className="min-w-0 flex-1">
                     <span className="text-xs font-bold text-gray-800 block truncate">{u.first_name} {u.last_name}</span>
                     <span className="text-[10px] text-gray-500 block">{u.profile_details?.mn_basic_details_draft?.age || 25} yrs · {u.location || "Kerala"}</span>
@@ -1144,11 +1150,17 @@ function EmptyState({
                 className="flex items-center justify-between p-3 border border-gray-100 hover:border-brand-200 rounded-2xl hover:bg-brand-50/10 transition-all group"
               >
                 <div className="flex items-center gap-3">
-                  <img
-                    src={u.profile_details?.mn_profile_photos_draft?.photos?.[0]?.dataUrl || `https://i.pravatar.cc/100?img=${45 + (u.id % 20)}`}
-                    alt=""
-                    className="w-10 h-10 rounded-xl object-cover bg-gray-100"
-                  />
+                  {u.profile_details?.mn_profile_photos_draft?.photos?.[0]?.dataUrl ? (
+                    <img
+                      src={u.profile_details.mn_profile_photos_draft.photos[0].dataUrl}
+                      alt=""
+                      className="w-10 h-10 rounded-xl object-cover bg-gray-100 shrink-0"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-xl bg-brand-50 border border-brand-100 p-1.5 flex items-center justify-center shrink-0">
+                      <img src="/logoMain-01.svg" alt="MN Logo" className="w-full h-full object-contain opacity-75" />
+                    </div>
+                  )}
                   <div>
                     <h4 className="text-xs font-extrabold text-gray-900">{u.first_name} {u.last_name}</h4>
                     <p className="text-[11px] text-gray-500">{u.dob ? Math.floor((new Date().getTime() - new Date(u.dob).getTime()) / 31557600000) : 25} yrs · {u.location || "Kerala"} · {u.cast || "Sunni"}</p>

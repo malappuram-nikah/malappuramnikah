@@ -347,7 +347,9 @@ export default function DashboardHeader() {
                 className="w-full h-full object-cover pointer-events-none"
               />
             ) : (
-              <span className="pointer-events-none">{userName.charAt(0)}</span>
+              <div className="w-full h-full bg-brand-50 p-1 flex items-center justify-center pointer-events-none">
+                <img src="/logoMain-01.svg" alt="MN Logo" className="w-full h-full object-contain opacity-80" />
+              </div>
             )}
           </button>
 
@@ -403,7 +405,9 @@ export default function DashboardHeader() {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform pointer-events-none"
                           />
                         ) : (
-                          <span className="pointer-events-none">{userName.charAt(0)}</span>
+                          <div className="w-full h-full bg-brand-50 p-2 flex items-center justify-center pointer-events-none">
+                            <img src="/logoMain-01.svg" alt="MN Logo" className="w-full h-full object-contain opacity-80" />
+                          </div>
                         )}
                         <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[10px] text-white font-bold pointer-events-none">
                           Edit
@@ -692,12 +696,8 @@ export default function DashboardHeader() {
                                     className="w-10 h-10 rounded-full object-cover border border-gray-100 shadow-sm"
                                   />
                                 ) : (
-                                  <div className="w-10 h-10 rounded-full bg-brand-100 border border-brand-200 flex items-center justify-center text-brand-700 font-extrabold text-sm uppercase shrink-0">
-                                    {(
-                                      notif.sender?.first_name ||
-                                      notif.title ||
-                                      "U"
-                                    ).charAt(0)}
+                                  <div className="w-10 h-10 rounded-full bg-brand-50 border border-brand-100 flex items-center justify-center p-1.5 shrink-0">
+                                    <img src="/logoMain-01.svg" alt="MN Logo" className="w-full h-full object-contain opacity-80" />
                                   </div>
                                 )}
                                 <span

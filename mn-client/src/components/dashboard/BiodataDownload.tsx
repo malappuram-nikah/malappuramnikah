@@ -33,6 +33,12 @@ export default function BiodataDownload({
   const [isGenerating, setIsGenerating] = useState(false);
   const [done, setDone] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isAcceptedState, setIsAcceptedState] = useState<boolean>(isAccepted);
+  const [deniedMessage, setDeniedMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    setIsAcceptedState(isAccepted);
+  }, [isAccepted]);
 
   // Fetch admin setting on mount
   useEffect(() => {
@@ -45,12 +51,58 @@ export default function BiodataDownload({
       .catch(() => {});
   }, []);
 
+  // Synchronize interest permission from backend when modal opens
+  useEffect(() => {
+    if (open && profile?.id) {
+      const token = typeof window !== "undefined" ? localStorage.getItem("mn_token") : null;
+      if (token) {
+        fetch(`${API_BASE}/user/biodata/check-permission/${profile.id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.success && data.allowed) {
+              setIsAcceptedState(true);
+              setDeniedMessage(null);
+            } else if (!data.allowed) {
+              setIsAcceptedState(false);
+              setDeniedMessage(data.message || "Access denied. Biodata is available after the profile owner accepts your invite.");
+            }
+          })
+          .catch(() => {});
+      }
+    }
+  }, [open, profile?.id]);
+
+  const verifyAndTrackDownload = async (): Promise<boolean> => {
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("mn_token") : null;
+      const targetId = profile?.id || profile?.uuid;
+      if (!targetId) return false;
+
+      const res = await fetch(`${API_BASE}/user/biodata/download/${targetId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (!data.success || !data.isAccepted) {
+        setIsAcceptedState(false);
+        setDeniedMessage(data.message || "Access denied. Biodata is available after the profile owner accepts your invite.");
+        return false;
+      }
+      return true;
+    } catch (e) {
+      console.error("Biodata authorization check failed:", e);
+      return false;
+    }
+  };
+
   const trackDownload = async () => {
     try {
       const token = localStorage.getItem("mn_token");
       await fetch(`${API_BASE}/user/admin/biodata/track`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ target_user_id: profile?.id })
       });
     } catch {}
   };
@@ -198,7 +250,7 @@ export default function BiodataDownload({
 
   <!-- Hero -->
   <div class="hero">
-    ${photo ? `<img class="avatar" src="${photo}" alt="${name}"/>` : `<div class="avatar-placeholder">${name.charAt(0).toUpperCase()}</div>`}
+    ${photo ? `<img class="avatar" src="${photo}" alt="${name}"/>` : `<div class="avatar-placeholder" style="background:#f0faf9;border:3px solid #026d77;padding:15px"><img src="/logoMain-01.svg" style="width:100%;height:100%;object-fit:contain" alt="MN Logo"/></div>`}
     <div>
       <div class="hero-name">${name}</div>
       <div class="hero-sub">${age} yrs &nbsp;·&nbsp; ${gender} &nbsp;·&nbsp; ${location}</div>
@@ -314,7 +366,11 @@ ${forPrint ? `<div class="actions no-print">
   const openPrintWindow = async () => {
     if (!downloadEnabled) return;
     setIsGenerating(true);
-    await trackDownload();
+    const authorized = await verifyAndTrackDownload();
+    if (!authorized) {
+      setIsGenerating(false);
+      return;
+    }
 
     const html = buildHTML(true);
     const win = window.open("", "_blank", "width=900,height=700");
@@ -331,7 +387,11 @@ ${forPrint ? `<div class="actions no-print">
   const downloadHTML = async () => {
     if (!downloadEnabled) return;
     setIsGenerating(true);
-    await trackDownload();
+    const authorized = await verifyAndTrackDownload();
+    if (!authorized) {
+      setIsGenerating(false);
+      return;
+    }
 
     const html = buildHTML(false);
     const blob = new Blob([html], { type: "text/html" });
@@ -350,6 +410,13 @@ ${forPrint ? `<div class="actions no-print">
 
   const handleShare = async () => {
     if (!downloadEnabled) return;
+    setIsGenerating(true);
+    const authorized = await verifyAndTrackDownload();
+    if (!authorized) {
+      setIsGenerating(false);
+      return;
+    }
+
     const html = buildHTML(false);
     const blob = new Blob([html], { type: "text/html" });
     const file = new File([blob], "biodata.html", { type: "text/html" });
@@ -358,12 +425,12 @@ ${forPrint ? `<div class="actions no-print">
     try {
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({ title: `${name} – Matrimonial Biodata`, files: [file] });
-        await trackDownload();
       } else {
-        // Fallback: open print window for manual save
         await openPrintWindow();
       }
-    } catch {}
+    } catch {} finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -372,17 +439,17 @@ ${forPrint ? `<div class="actions no-print">
       <button
         onClick={() => setOpen(true)}
         className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all active:scale-[0.98] ${
-          !isAccepted
+          !isAcceptedState
             ? "bg-amber-50/70 text-amber-900 border-amber-200/80 hover:bg-amber-100/80"
             : "bg-amber-50 text-amber-800 hover:bg-amber-100 border-amber-200"
         }`}
       >
-        {!isAccepted ? (
+        {!isAcceptedState ? (
           <Lock className="w-4 h-4 text-amber-700 shrink-0" />
         ) : (
           <FileText className="w-4 h-4 shrink-0" />
         )}
-        <span>{!isAccepted ? "Biodata PDF (Locked)" : "Biodata PDF"}</span>
+        <span>{!isAcceptedState ? "Biodata PDF (Locked)" : "Biodata PDF"}</span>
       </button>
 
       {/* Modal */}
@@ -423,16 +490,16 @@ ${forPrint ? `<div class="actions no-print">
                       <p className="font-semibold text-gray-800">Downloads Disabled</p>
                       <p className="text-sm text-gray-500">The administrator has temporarily disabled biodata downloads. Please check back later.</p>
                     </div>
-                  ) : !isAccepted ? (
+                  ) : !isAcceptedState ? (
                     <div className="flex flex-col items-center gap-3 py-6 text-center">
                       <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center border border-amber-200">
                         <Lock className="w-7 h-7 text-amber-600" />
                       </div>
                       <p className="font-bold text-gray-900 text-base">Biodata Download Locked</p>
                       <p className="text-xs text-gray-600 leading-relaxed max-w-xs">
-                        {isPending
+                        {deniedMessage || (isPending
                           ? `Interest request is pending. Biodata PDF download will be unlocked once ${profile?.name || profile?.first_name || "this member"} accepts your interest request.`
-                          : `You can download ${profile?.name || profile?.first_name || "this member"}'s biodata PDF once an interest request has been sent and accepted.`}
+                          : `You can download ${profile?.name || profile?.first_name || "this member"}'s biodata PDF once an interest request has been sent and accepted.`)}
                       </p>
                       {onExpressInterest && !isPending && (
                         <button

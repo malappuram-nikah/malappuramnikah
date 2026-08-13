@@ -55,7 +55,7 @@ export default function InterestsPage() {
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
 
   const resolveAvatar = (u: any, index: number) => {
-    let avatar = `https://i.pravatar.cc/200?img=${30 + (index % 30)}`;
+    let avatar = "";
     const photos = u.profile_details?.mn_profile_photos_draft?.photos;
     if (photos && photos.length > 0) {
       const primary = photos.find((p: any) => p.isPrimary);
@@ -349,11 +349,18 @@ export default function InterestsPage() {
               >
                 {/* Profile Card Header with Photo */}
                 <div className="h-44 relative bg-gray-50 overflow-hidden cursor-pointer" onClick={() => router.push(`/dashboard/profile/${p.uuid || p.id}`)}>
-                  <img
-                    src={p.img}
-                    alt={p.name}
-                    className="w-full h-full object-cover"
-                  />
+                  {p.img ? (
+                    <img
+                      src={p.img}
+                      alt={p.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-[#026d77]/10 to-[#026d77]/25 flex flex-col items-center justify-center p-4">
+                      <img src="/logoMain-01.svg" alt="MN Logo" className="w-16 h-16 object-contain opacity-60 mb-1" />
+                      <span className="text-[10px] font-semibold text-[#026d77]/60 tracking-wider">Malappuram Nikah</span>
+                    </div>
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/10 to-transparent" />
                   <div className="absolute bottom-3 left-4 right-4 text-white">
                     <h3 className="font-bold text-sm truncate">{p.name}</h3>

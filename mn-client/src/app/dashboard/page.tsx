@@ -310,8 +310,9 @@ export default function DashboardPage() {
                       className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 z-0 ${!isInterested ? "filter blur-[16px] select-none" : ""}`} 
                     />
                   ) : (
-                    <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#026d77]/10 to-[#026d77]/30 flex items-center justify-center text-[#026d77]/40 font-extrabold text-7xl uppercase font-playfair z-0">
-                      {match.name.charAt(0)}
+                    <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#026d77]/10 via-[#026d77]/20 to-[#026d77]/35 flex flex-col items-center justify-center p-6 text-center z-0">
+                      <img src="/logoMain-01.svg" alt="MN Logo" className="w-20 h-20 object-contain opacity-55 mb-2" />
+                      <span className="text-[10px] font-bold text-[#026d77]/70 uppercase tracking-widest">Malappuram Nikah</span>
                     </div>
                   )}
 

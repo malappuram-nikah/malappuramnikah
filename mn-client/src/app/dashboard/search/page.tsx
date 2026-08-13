@@ -335,11 +335,18 @@ export default function SearchPage() {
                     className="group relative h-[420px] rounded-xl border border-gray-200 overflow-hidden cursor-pointer hover:shadow-xl hover:border-brand-300 transition-all duration-300 flex flex-col justify-end"
                   >
                     {/* Image Background */}
-                    <img 
-                      src={p.img || "/placeholder.jpg"} 
-                      alt={p.name} 
-                      className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 z-0 ${p.isBlurred ? 'blur-md scale-110 opacity-80 select-none' : ''}`} 
-                    />
+                    {p.img ? (
+                      <img 
+                        src={p.img} 
+                        alt={p.name} 
+                        className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 z-0 ${p.isBlurred ? 'blur-md scale-110 opacity-80 select-none' : ''}`} 
+                      />
+                    ) : (
+                      <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#026d77]/10 via-[#026d77]/20 to-[#026d77]/35 flex flex-col items-center justify-center p-6 text-center z-0">
+                        <img src="/logoMain-01.svg" alt="MN Logo" className="w-20 h-20 object-contain opacity-55 mb-2" />
+                        <span className="text-[10px] font-bold text-[#026d77]/70 uppercase tracking-widest">Malappuram Nikah</span>
+                      </div>
+                    )}
 
                     {/* Premium Label */}
                     {p.is_premium && (

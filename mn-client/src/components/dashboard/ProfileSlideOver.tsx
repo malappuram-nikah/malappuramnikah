@@ -10,6 +10,8 @@ import { SlideOverSkeleton } from "./Skeleton";
 import { useProfileActions } from "@/hooks/useProfileActions";
 import { API_URL } from "@/lib/config";
 
+import { useUser } from "@/context/UserContext";
+
 interface ProfileSlideOverProps {
   profile: {
     id: number;
@@ -40,6 +42,7 @@ export default function ProfileSlideOver({
   onToggleInterest,
 }: ProfileSlideOverProps) {
   const router = useRouter();
+  const { currentUser } = useUser();
   const [fullUser, setFullUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [photoIndex, setPhotoIndex] = useState(0);
@@ -191,8 +194,9 @@ export default function ProfileSlideOver({
                     className={`w-full h-full object-cover ${!isInterested ? "filter blur-[16px] scale-110 select-none" : ""}`}
                   />
                 ) : (
-                  <div className="w-full h-full bg-brand-50 flex items-center justify-center text-brand-700 font-extrabold text-6xl uppercase">
-                    {profile.name.charAt(0)}
+                  <div className="w-full h-full bg-gradient-to-br from-[#026d77]/10 via-[#026d77]/20 to-[#026d77]/35 flex flex-col items-center justify-center p-6 text-center">
+                    <img src="/logoMain-01.svg" alt="MN Logo" className="w-20 h-20 object-contain opacity-55 mb-2" />
+                    <span className="text-[10px] font-bold text-[#026d77]/70 uppercase tracking-widest">Malappuram Nikah</span>
                   </div>
                 )}
               </motion.div>
@@ -528,7 +532,7 @@ export default function ProfileSlideOver({
                 <BiodataDownload 
                   profile={fullUser} 
                   enriched={fullUser} 
-                  isAccepted={isMutual}
+                  isAccepted={isMutual || (currentUser && profile ? currentUser.id === profile.id : false)}
                   isPending={isSent || isReceived}
                   onExpressInterest={() => onToggleInterest(profile.id, profile.name)}
                 />

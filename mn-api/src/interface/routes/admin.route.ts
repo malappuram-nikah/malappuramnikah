@@ -506,6 +506,28 @@ admin_route.post("/biodata/track", async (req: Request, res: Response) => {
       return;
     }
 
+    const targetUserIdRaw = req.body?.target_user_id || req.body?.targetId;
+    if (targetUserIdRaw) {
+      const targetUserId = parseInt(targetUserIdRaw, 10);
+      if (!isNaN(targetUserId) && targetUserId !== userId) {
+        const interest = await prisma.interest.findFirst({
+          where: {
+            OR: [
+              { sender_id: userId, receiver_id: targetUserId },
+              { sender_id: targetUserId, receiver_id: userId }
+            ]
+          }
+        });
+        if (!interest || interest.status !== "ACCEPTED") {
+          res.status(403).json({
+            success: false,
+            message: "Access denied. Biodata is available after the profile owner accepts your invite."
+          });
+          return;
+        }
+      }
+    }
+
     const user = await prisma.user.findUnique({ where: { id: userId } });
     const userName = user ? `${user.first_name} ${user.last_name}` : `User #${userId}`;
 

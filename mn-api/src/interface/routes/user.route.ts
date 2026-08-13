@@ -785,4 +785,204 @@ user_route.post("/reset-password", async (req: Request, res: Response) => {
   }
 });
 
+// ==========================================
+// BIODATA ACCESS CONTROL & DOWNLOAD ENDPOINTS
+// ==========================================
+
+export async function checkBiodataAccessPermission(requesterId: number, targetUserId: number): Promise<{ allowed: boolean; status: string; isSelf: boolean; message?: string }> {
+  if (requesterId === targetUserId) {
+    return { allowed: true, status: "ACCEPTED", isSelf: true };
+  }
+
+  const interest = await prisma.interest.findFirst({
+    where: {
+      OR: [
+        { sender_id: requesterId, receiver_id: targetUserId },
+        { sender_id: targetUserId, receiver_id: requesterId }
+      ]
+    }
+  });
+
+  if (interest && interest.status === "ACCEPTED") {
+    return { allowed: true, status: "ACCEPTED", isSelf: false };
+  }
+
+  const currentStatus = interest ? interest.status : "NONE";
+  return {
+    allowed: false,
+    status: currentStatus,
+    isSelf: false,
+    message: "Access denied. Biodata is available after the profile owner accepts your invite."
+  };
+}
+
+// 1. GET /user/biodata/check-permission/:targetId
+user_route.get('/biodata/check-permission/:targetId', async (req: Request, res: Response) => {
+  try {
+    const requesterId = getUserIdFromRequest(req);
+    if (!requesterId) {
+      res.status(401).json({ success: false, message: "Unauthorized. Missing or invalid token." });
+      return;
+    }
+
+    const targetParam = Array.isArray(req.params.targetId) ? req.params.targetId[0] : req.params.targetId;
+    const targetUser = await userRepository.findById(targetParam);
+    if (!targetUser || !targetUser.id) {
+      res.status(404).json({ success: false, message: "Profile not found." });
+      return;
+    }
+
+    const perm = await checkBiodataAccessPermission(requesterId, targetUser.id);
+    res.status(200).json({
+      success: perm.allowed,
+      allowed: perm.allowed,
+      status: perm.status,
+      isSelf: perm.isSelf,
+      message: perm.message || (perm.allowed ? "Biodata download allowed." : "Biodata access restricted.")
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || "Failed to check biodata permission." });
+  }
+});
+
+// 2. GET /user/biodata/download/:targetId
+user_route.get('/biodata/download/:targetId', async (req: Request, res: Response) => {
+  try {
+    const requesterId = getUserIdFromRequest(req);
+    if (!requesterId) {
+      res.status(401).json({ success: false, message: "Unauthorized. Missing or invalid token." });
+      return;
+    }
+
+    const targetParam = Array.isArray(req.params.targetId) ? req.params.targetId[0] : req.params.targetId;
+    const targetUser = await userRepository.findById(targetParam);
+    if (!targetUser || !targetUser.id) {
+      res.status(404).json({ success: false, message: "Profile not found." });
+      return;
+    }
+
+    // Check system-wide admin setting
+    const storePath = path.join(__dirname, "../../../src/infrastructure/data/adminStore.json");
+    if (fs.existsSync(storePath)) {
+      try {
+        const store = JSON.parse(fs.readFileSync(storePath, "utf-8"));
+        if (store.biodata_settings?.enable_download === false) {
+          res.status(403).json({
+            success: false,
+            message: "Biodata downloads are currently disabled by the administrator.",
+            code: "BIODATA_DISABLED"
+          });
+          return;
+        }
+      } catch {}
+    }
+
+    // Enforce permission rule: Must be self OR interest must be ACCEPTED
+    const perm = await checkBiodataAccessPermission(requesterId, targetUser.id);
+    if (!perm.allowed) {
+      res.status(403).json({
+        success: false,
+        message: "Access denied. Biodata is available after the profile owner accepts your invite.",
+        code: "BIODATA_ACCESS_DENIED",
+        status: perm.status
+      });
+      return;
+    }
+
+    // Track download in admin store
+    if (fs.existsSync(storePath)) {
+      try {
+        const store = JSON.parse(fs.readFileSync(storePath, "utf-8"));
+        const requester = await prisma.user.findUnique({ where: { id: requesterId } });
+        const requesterName = requester ? `${requester.first_name} ${requester.last_name}` : `User #${requesterId}`;
+
+        if (!store.biodata_downloads) store.biodata_downloads = [];
+        store.biodata_downloads.unshift({
+          id: Date.now(),
+          user_id: requesterId,
+          user_name: requesterName,
+          target_user_id: targetUser.id,
+          target_user_name: `${targetUser.first_name} ${targetUser.last_name}`,
+          downloaded_at: new Date().toISOString().replace("T", " ").substring(0, 19)
+        });
+        if (store.biodata_downloads.length > 500) {
+          store.biodata_downloads = store.biodata_downloads.slice(0, 500);
+        }
+        fs.writeFileSync(storePath, JSON.stringify(store, null, 2));
+      } catch {}
+    }
+
+    const { password, ...safeUser } = targetUser as any;
+
+    res.status(200).json({
+      success: true,
+      message: "Biodata download authorized.",
+      isAccepted: true,
+      user: safeUser
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || "Failed to process biodata download." });
+  }
+});
+
+// 3. POST /user/biodata/download (handles JSON body targetId)
+user_route.post('/biodata/download', async (req: Request, res: Response) => {
+  const targetId = req.body.targetId || req.body.receiver_id || req.body.user_id;
+  if (!targetId) {
+    res.status(400).json({ success: false, message: "Target profile ID is required." });
+    return;
+  }
+  req.params.targetId = String(targetId);
+  
+  try {
+    const requesterId = getUserIdFromRequest(req);
+    if (!requesterId) {
+      res.status(401).json({ success: false, message: "Unauthorized. Missing or invalid token." });
+      return;
+    }
+
+    const targetUser = await userRepository.findById(String(targetId));
+    if (!targetUser || !targetUser.id) {
+      res.status(404).json({ success: false, message: "Profile not found." });
+      return;
+    }
+
+    const storePath = path.join(__dirname, "../../../src/infrastructure/data/adminStore.json");
+    if (fs.existsSync(storePath)) {
+      try {
+        const store = JSON.parse(fs.readFileSync(storePath, "utf-8"));
+        if (store.biodata_settings?.enable_download === false) {
+          res.status(403).json({
+            success: false,
+            message: "Biodata downloads are currently disabled by the administrator.",
+            code: "BIODATA_DISABLED"
+          });
+          return;
+        }
+      } catch {}
+    }
+
+    const perm = await checkBiodataAccessPermission(requesterId, targetUser.id);
+    if (!perm.allowed) {
+      res.status(403).json({
+        success: false,
+        message: "Access denied. Biodata is available after the profile owner accepts your invite.",
+        code: "BIODATA_ACCESS_DENIED",
+        status: perm.status
+      });
+      return;
+    }
+
+    const { password, ...safeUser } = targetUser as any;
+    res.status(200).json({
+      success: true,
+      message: "Biodata download authorized.",
+      isAccepted: true,
+      user: safeUser
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || "Failed to process biodata download." });
+  }
+});
+
 export default user_route;

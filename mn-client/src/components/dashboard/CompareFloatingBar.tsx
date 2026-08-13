@@ -30,7 +30,7 @@ export default function CompareFloatingBar() {
         if (data.success && data.users) {
           const matched = data.users.filter((u: any) => compareIds.includes(u.id));
           const mapped = matched.map((u: any, i: number) => {
-            let avatar = `https://i.pravatar.cc/200?img=${45 + (u.id % 20)}`;
+            let avatar = "";
             const photos = u.profile_details?.mn_profile_photos_draft?.photos;
             if (photos && photos.length > 0) {
               const primary = photos.find((p: any) => p.isPrimary);
@@ -82,11 +82,17 @@ export default function CompareFloatingBar() {
                 key={p.id}
                 className="flex items-center gap-2 bg-gray-805 px-2.5 py-1.5 rounded-xl border border-gray-800 text-xs shrink-0"
               >
-                <img
-                  src={p.img}
-                  alt={p.name}
-                  className="w-6 h-6 rounded-full object-cover"
-                />
+                {p.img ? (
+                  <img
+                    src={p.img}
+                    alt={p.name}
+                    className="w-6 h-6 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-brand-50/20 border border-brand-200/30 flex items-center justify-center p-0.5">
+                    <img src="/logoMain-01.svg" alt="MN Logo" className="w-full h-full object-contain opacity-80" />
+                  </div>
+                )}
                 <span className="font-medium truncate max-w-[80px]">{p.name}</span>
                 <button
                   onClick={() => removeFromCompare(p.id)}

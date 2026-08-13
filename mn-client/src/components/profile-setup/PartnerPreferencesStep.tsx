@@ -475,7 +475,17 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
                 <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={() => updateForm("preferredLocations", "All Kerala")}
+                    onClick={() => {
+                      const currentList = formData.preferredLocations
+                        ? formData.preferredLocations.split(",").map((s: string) => s.trim()).filter(Boolean)
+                        : [];
+                      const selectedTowns = currentList.filter((item: string) => LOCATIONS.includes(item));
+                      if (selectedTowns.length > 0) {
+                        updateForm("preferredLocations", ["All Kerala", ...selectedTowns].join(", "));
+                      } else {
+                        updateForm("preferredLocations", "All Kerala");
+                      }
+                    }}
                     className="text-xs text-brand-600 hover:text-brand-700 font-bold"
                   >
                     Select All Districts
@@ -495,82 +505,93 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
                 <div>
                   <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Districts</h4>
                   <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-2xl border border-gray-100">
-                    {KERALA_DISTRICTS.map((district) => {
+                    {(() => {
                       const currentList = formData.preferredLocations
-                        ? formData.preferredLocations.split(",").map((s: string) => s.trim())
+                        ? formData.preferredLocations.split(",").map((s: string) => s.trim()).filter(Boolean)
                         : [];
-                      const isAll = formData.preferredLocations === "All Kerala";
-                      const isSelected = isAll || currentList.includes(district);
+                      const isAllDistricts = currentList.includes("All Kerala");
+                      const selectedTowns = currentList.filter((item: string) => LOCATIONS.includes(item));
 
-                      return (
-                        <button
-                          key={district}
-                          type="button"
-                          onClick={() => {
-                            if (isAll) {
-                              const nextList = KERALA_DISTRICTS.filter(d => d !== district);
-                              updateForm("preferredLocations", nextList.join(", "));
-                            } else if (isSelected) {
-                              const nextList = currentList.filter((d: string) => d !== district);
-                              updateForm("preferredLocations", nextList.join(", "));
-                            } else {
-                              const nextList = [...currentList, district];
-                              if (nextList.length === KERALA_DISTRICTS.length) {
-                                updateForm("preferredLocations", "All Kerala");
+                      return KERALA_DISTRICTS.map((district) => {
+                        const isSelected = isAllDistricts || currentList.includes(district);
+
+                        return (
+                          <button
+                            key={district}
+                            type="button"
+                            onClick={() => {
+                              if (isSelected) {
+                                if (isAllDistricts) {
+                                  const remainingDistricts = KERALA_DISTRICTS.filter(d => d !== district);
+                                  const nextList = [...remainingDistricts, ...selectedTowns];
+                                  updateForm("preferredLocations", nextList.join(", "));
+                                } else {
+                                  const nextList = currentList.filter((d: string) => d !== district);
+                                  updateForm("preferredLocations", nextList.join(", "));
+                                }
                               } else {
-                                updateForm("preferredLocations", nextList.join(", "));
+                                const activeDistricts = isAllDistricts
+                                  ? KERALA_DISTRICTS
+                                  : currentList.filter((d: string) => KERALA_DISTRICTS.includes(d));
+                                const nextDistricts = [...activeDistricts, district];
+                                if (nextDistricts.length === KERALA_DISTRICTS.length) {
+                                  const nextList = ["All Kerala", ...selectedTowns];
+                                  updateForm("preferredLocations", nextList.join(", "));
+                                } else {
+                                  const nextList = [...nextDistricts, ...selectedTowns];
+                                  updateForm("preferredLocations", nextList.join(", "));
+                                }
                               }
-                            }
-                          }}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
-                            isSelected
-                              ? "bg-brand-600 text-white border-brand-600 shadow-sm"
-                              : "bg-white text-gray-700 border-gray-200 hover:bg-brand-50 hover:border-brand-200"
-                          }`}
-                        >
-                          {district}
-                        </button>
-                      );
-                    })}
+                            }}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+                              isSelected
+                                ? "bg-brand-600 text-white border-brand-600 shadow-sm"
+                                : "bg-white text-gray-700 border-gray-200 hover:bg-brand-50 hover:border-brand-200"
+                            }`}
+                          >
+                            {district}
+                          </button>
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
 
                 <div>
                   <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Malappuram Towns / Areas</h4>
                   <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-2xl border border-gray-100">
-                    {LOCATIONS.map((loc) => {
+                    {(() => {
                       const currentList = formData.preferredLocations
-                        ? formData.preferredLocations.split(",").map((s: string) => s.trim())
+                        ? formData.preferredLocations.split(",").map((s: string) => s.trim()).filter(Boolean)
                         : [];
-                      const isAll = formData.preferredLocations === "All Kerala";
-                      const isSelected = isAll || currentList.includes(loc);
 
-                      return (
-                        <button
-                          key={loc}
-                          type="button"
-                          onClick={() => {
-                            if (isAll) {
-                              const nextList = [...KERALA_DISTRICTS, ...LOCATIONS].filter(d => d !== loc);
-                              updateForm("preferredLocations", nextList.join(", "));
-                            } else if (isSelected) {
-                              const nextList = currentList.filter((d: string) => d !== loc);
-                              updateForm("preferredLocations", nextList.join(", "));
-                            } else {
-                              const nextList = [...currentList, loc];
-                              updateForm("preferredLocations", nextList.join(", "));
-                            }
-                          }}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
-                            isSelected
-                              ? "bg-brand-600 text-white border-brand-600 shadow-sm"
-                              : "bg-white text-gray-700 border-gray-200 hover:bg-brand-50 hover:border-brand-200"
-                          }`}
-                        >
-                          {loc}
-                        </button>
-                      );
-                    })}
+                      return LOCATIONS.map((loc) => {
+                        const isSelected = currentList.includes(loc);
+
+                        return (
+                          <button
+                            key={loc}
+                            type="button"
+                            onClick={() => {
+                              if (isSelected) {
+                                const nextList = currentList.filter((item: string) => item !== loc);
+                                updateForm("preferredLocations", nextList.join(", "));
+                              } else {
+                                const nextList = [...currentList, loc];
+                                updateForm("preferredLocations", nextList.join(", "));
+                              }
+                            }}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+                              isSelected
+                                ? "bg-brand-600 text-white border-brand-600 shadow-sm"
+                                : "bg-white text-gray-700 border-gray-200 hover:bg-brand-50 hover:border-brand-200"
+                            }`}
+                          >
+                            {loc}
+                          </button>
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
               </div>

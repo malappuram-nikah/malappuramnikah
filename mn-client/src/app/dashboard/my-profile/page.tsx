@@ -861,8 +861,9 @@ export default function MyProfilePage() {
                     {activePhoto ? (
                       <img src={activePhoto} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center text-brand-600 font-extrabold text-6xl uppercase">
-                        {profile.name?.charAt(0) ?? "?"}
+                      <div className="w-full h-full bg-gradient-to-br from-[#026d77]/10 via-[#026d77]/20 to-[#026d77]/35 flex flex-col items-center justify-center p-6 text-center">
+                        <img src="/logoMain-01.svg" alt="MN Logo" className="w-20 h-20 object-contain opacity-55 mb-2" />
+                        <span className="text-[10px] font-bold text-[#026d77]/70 uppercase tracking-widest">Malappuram Nikah</span>
                       </div>
                     )}
                   </motion.div>
