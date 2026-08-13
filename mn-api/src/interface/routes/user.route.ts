@@ -115,12 +115,24 @@ user_route.put('/:id/premium', async (req: Request, res: Response) => {
       res.status(400).json({ success: false, message: "Invalid user ID" });
       return;
     }
+
+    const requesterId = getUserIdFromRequest(req);
+    if (!requesterId) {
+      res.status(401).json({ success: false, message: "Unauthorized. Missing or invalid token." });
+      return;
+    }
+    if (requesterId !== id) {
+      res.status(403).json({ success: false, message: "You can only update your own premium status." });
+      return;
+    }
+
     const { is_premium } = req.body;
     const updatedUser = await prisma.user.update({
       where: { id },
       data: { is_premium: !!is_premium }
     });
-    res.status(200).json({ success: true, user: updatedUser });
+    const { password: _password, ...safeUser } = updatedUser;
+    res.status(200).json({ success: true, user: safeUser });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || "Failed to update premium status" });
   }

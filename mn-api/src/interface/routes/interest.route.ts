@@ -7,7 +7,7 @@ const interest_route = Router();
 
 import { accessTokenConfig } from "../../infrastructure/config/jwt.config";
 
-// Safely extract user ID from JWT token (supports real verify and base64 decode for dev fallback)
+// Safely extract user ID from JWT token
 export function getUserIdFromRequest(req: Request): number | null {
   try {
     let token: string | undefined;
@@ -18,15 +18,9 @@ export function getUserIdFromRequest(req: Request): number | null {
       token = req.query.token as string;
     }
     if (!token) return null;
-    
-    try {
-      const payload: any = jwt.verify(token, accessTokenConfig.secret);
-      return payload.userId || null;
-    } catch (verifyErr) {
-      // Base64 fallback for dev-constructed JWTs
-      const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-      return payload.userId || null;
-    }
+
+    const payload: any = jwt.verify(token, accessTokenConfig.secret);
+    return payload.userId || null;
   } catch (err) {
     console.error("JWT extraction failed:", err);
     return null;
@@ -274,6 +268,8 @@ interest_route.get("/", async (req: Request, res: Response) => {
         });
         // Deduplicate peers to protect against bidirectional ACCEPTED rows in the database
         const uniqueMutualUsers = Array.from(new Map(rawMutualUsers.map(u => [u.id, u])).values());
+        res.status(200).json({ success: true, users: uniqueMutualUsers, hasMore });
+        return;
       } else if (type === "viewed_me") {
         const views = await prisma.profileView.findMany({
           where: { viewed_id: userId },

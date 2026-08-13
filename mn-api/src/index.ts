@@ -70,7 +70,12 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 app.use((req, res, next) => {
-  console.log("Incoming Request Body:", req.body);
+  const sensitivePaths = ["/user/register", "/user/login", "/user/reset-password"];
+  if (sensitivePaths.some((p) => req.path.endsWith(p.split("/").pop()!))) {
+    console.log(`${req.method} ${req.path}`);
+  } else {
+    console.log(`${req.method} ${req.path}`, req.body);
+  }
   next();
 });
 

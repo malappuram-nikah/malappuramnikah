@@ -105,9 +105,10 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
   const [showOtpScreen, setShowOtpScreen] = useState(false);
   const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
   const [otpError, setOtpError] = useState<string | null>(null);
+  const [otpInfo, setOtpInfo] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [verified, setVerified] = useState(false);
-  const [registeredUserId, setRegisteredUserId] = useState<string | null>(null);
+  const [registeredUserId, setRegisteredUserId] = useState<number | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -141,6 +142,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
                 {["Myself", "Son", "Daughter", "Brother", "Sister", "Relative"].map((rel) => (
                   <button
                     key={rel}
+                    type="button"
                     onClick={() => updateForm("profileFor", rel)}
                     className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all ${formData.profileFor === rel
                         ? "border-brand-600 bg-brand-50 text-brand-700 ring-1 ring-brand-600"
@@ -159,6 +161,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
                 {["Male", "Female"].map((g) => (
                   <button
                     key={g}
+                    type="button"
                     onClick={() => updateForm("gender", g)}
                     className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all ${formData.gender === g
                         ? "border-brand-600 bg-brand-50 text-brand-700 ring-1 ring-brand-600"
@@ -397,7 +400,13 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
         body: JSON.stringify(payload)
       });
 
-      const data = await response.json();
+      let data: { success?: boolean; message?: string; otp?: string; unverified?: boolean; user?: { id?: number } };
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error("Unable to reach the server. Please try again.");
+      }
+
       if (!response.ok || data.success === false) {
         throw new Error(data.message || "Registration failed. Please check your details.");
       }
@@ -406,15 +415,17 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
         setOtpDigits(data.otp.split(""));
       }
 
-      if (data.user?.id) {
+      if (data.user?.id != null) {
         setRegisteredUserId(data.user.id);
       }
 
       if (data.unverified) {
-        setOtpError(data.message);
+        setOtpInfo(data.message || null);
+        setOtpError(null);
         setResendCooldown(30);
         setShowOtpScreen(true);
       } else {
+        setOtpInfo(null);
         setSuccess(true);
         setResendCooldown(30);
         setTimeout(() => {
@@ -490,7 +501,12 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
         })
       });
 
-      const data = await response.json();
+      let data: { success?: boolean; message?: string; accessToken?: string };
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error("Unable to reach the server. Please try again.");
+      }
 
       if (!response.ok || data.success === false) {
         throw new Error(data.message || "Invalid OTP. Please try again.");
@@ -534,8 +550,10 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
       }
       setResendCooldown(30);
       setOtpError(null);
-    } catch {
-      setOtpError("Failed to resend OTP. Please try again.");
+      setOtpInfo(null);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to resend OTP. Please try again.";
+      setOtpError(msg);
     }
   };
 
@@ -610,8 +628,14 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
                   We&apos;ve sent a 6-digit verification code to your mobile number. Enter it below to verify your account.
                 </p>
 
+                {otpInfo && (
+                  <div className="w-full mb-5 p-3 bg-blue-50 text-blue-700 text-sm rounded-xl border border-blue-100 text-center">
+                    {otpInfo}
+                  </div>
+                )}
+
                 {otpError && (
-                  <div className="w-full mb-5 p-3 bg-brand-50 text-brand-700 text-sm rounded-xl border border-brand-100 text-center">
+                  <div className="w-full mb-5 p-3 bg-red-50 text-red-700 text-sm rounded-xl border border-red-100 text-center">
                     {otpError}
                   </div>
                 )}

@@ -22,6 +22,7 @@ export default function SettingsPage() {
   const { currentUser, refreshUser } = useUser();
   const [activeTab, setActiveTab] = useState("profile");
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [userId, setUserId] = useState<number | null>(null);
   
@@ -337,6 +338,7 @@ export default function SettingsPage() {
 
   const handleSave = async () => {
     setSaved(false);
+    setSaveError(null);
     
     // Read current drafts from localStorage
     const profileDetails: Record<string, any> = {};
@@ -400,9 +402,7 @@ export default function SettingsPage() {
     try {
       const token = localStorage.getItem("mn_token");
       if (!token || !userId) {
-        console.warn("No authentication details found.");
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2500);
+        setSaveError("You must be logged in to save changes.");
         return;
       }
 
@@ -420,16 +420,16 @@ export default function SettingsPage() {
       const data = await res.json();
       if (data.success) {
         setSaved(true);
+        setSaveError(null);
         setTimeout(() => setSaved(false), 2500);
         await refreshUser();
         calculateCompletion();
       } else {
-        console.error("Profile save rejected by API:", data.message);
+        setSaveError(data.message || "Failed to save profile changes.");
       }
     } catch (err) {
       console.error("Failed to save profile changes:", err);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2500);
+      setSaveError("Failed to save profile changes. Please try again.");
     }
   };
 
@@ -451,8 +451,8 @@ export default function SettingsPage() {
   };
 
   const handleAadhaarVerifyConfirm = async () => {
-    if (aadhaarOtp !== "987654") {
-      setVerificationError("Invalid verification code. Use code: 987654");
+    if (!aadhaarOtp || aadhaarOtp.length < 6) {
+      setVerificationError("Please enter the complete verification code.");
       return;
     }
     setVerificationError("");
@@ -464,18 +464,22 @@ export default function SettingsPage() {
         body: JSON.stringify({
           userId: userId,
           aadhaarNumber: aadhaarNumber,
+          otpCode: aadhaarOtp,
         })
       });
 
       const data = await response.json();
+      if (!response.ok || data.success === false) {
+        throw new Error(data.message || "Aadhaar verification is not available yet.");
+      }
+
       if (data.accessToken) {
         localStorage.setItem("mn_token", data.accessToken);
       }
       setUserStatus("active");
       setVerificationMethod("aadhaar");
     } catch (err) {
-      setUserStatus("active");
-      setVerificationMethod("aadhaar");
+      setVerificationError(err instanceof Error ? err.message : "Aadhaar verification failed. Please try again.");
     } finally {
       setIsVerifying(false);
     }
@@ -486,17 +490,20 @@ export default function SettingsPage() {
     setVerificationError("");
     setIsVerifying(true);
     try {
-      await fetch(`${API_URL}/otp/resend-otp`, {
+      const response = await fetch(`${API_URL}/otp/resend-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phoneNumber: mobile })
       });
+      const data = await response.json();
+      if (!response.ok || data.success === false) {
+        throw new Error(data.message || "Failed to send OTP");
+      }
       setMobileOtpSent(true);
       setShowMobileOtpBanner(true);
       setTimeout(() => setShowMobileOtpBanner(false), 6000);
     } catch (err) {
-      setMobileOtpSent(true);
-      setShowMobileOtpBanner(true);
+      setVerificationError(err instanceof Error ? err.message : "Failed to send OTP. Please try again.");
     } finally {
       setIsVerifying(false);
     }
@@ -517,14 +524,17 @@ export default function SettingsPage() {
       });
 
       const data = await response.json();
+      if (!response.ok || data.success === false) {
+        throw new Error(data.message || "Invalid OTP. Please try again.");
+      }
+
       if (data.accessToken) {
         localStorage.setItem("mn_token", data.accessToken);
       }
       setUserStatus("active");
       setVerificationMethod("mobile");
     } catch (err) {
-      setUserStatus("active");
-      setVerificationMethod("mobile");
+      setVerificationError(err instanceof Error ? err.message : "OTP verification failed. Please try again.");
     } finally {
       setIsVerifying(false);
     }
@@ -1061,6 +1071,7 @@ export default function SettingsPage() {
             {activeTab !== "feedback" && (
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
                 {saved && <span className="text-sm text-brand-600 font-medium">✓ Changes saved!</span>}
+                {saveError && <span className="text-sm text-red-600 font-medium">{saveError}</span>}
                 <button
                   onClick={handleSave}
                   className="px-6 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 active:scale-[0.98] transition-all shadow-sm"

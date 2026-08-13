@@ -101,16 +101,24 @@ export default function ReviewStep({ onComplete, onBack, onEditSection }: Review
     
     try {
       const token = localStorage.getItem("mn_token");
-      let userId = 1; // Default fallback for development/testing if token parsing fails
-      if (token) {
-        try {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          if (payload.userId) {
-            userId = payload.userId;
-          }
-        } catch (e) {
-          console.error("Failed to parse token for user ID");
+      if (!token) {
+        alert("You must be logged in to submit your profile.");
+        return;
+      }
+
+      let userId: number | null = null;
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.userId) {
+          userId = Number(payload.userId);
         }
+      } catch (e) {
+        console.error("Failed to parse token for user ID", e);
+      }
+
+      if (!userId) {
+        alert("Your session is invalid. Please log in again.");
+        return;
       }
 
       const response = await fetch(`${API_URL}/user/${userId}/profile`, {

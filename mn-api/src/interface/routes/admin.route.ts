@@ -204,7 +204,37 @@ admin_route.get("/stats", adminGuard, async (req: Request, res: Response) => {
 admin_route.get("/users", adminGuard, async (req: Request, res: Response) => {
   try {
     const users = await prisma.user.findMany({
-      orderBy: { created_at: "desc" }
+      orderBy: { created_at: "desc" },
+      select: {
+        id: true,
+        uuid: true,
+        profile_for: true,
+        gender: true,
+        first_name: true,
+        last_name: true,
+        cast: true,
+        location: true,
+        email: true,
+        mobile_number: true,
+        dob: true,
+        status: true,
+        is_premium: true,
+        is_new_user: true,
+        last_login: true,
+        profile_details: true,
+        search_preferences: true,
+        kyc_status: true,
+        kyc_document_type: true,
+        kyc_front_url: true,
+        kyc_back_url: true,
+        kyc_rejected_reason: true,
+        kyc_submitted_at: true,
+        kyc_verified_at: true,
+        created_at: true,
+        updated_at: true,
+        referral_code: true,
+        referral_points: true,
+      },
     });
     res.status(200).json({ success: true, users });
   } catch (err: any) {
