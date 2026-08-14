@@ -43,14 +43,14 @@ export class WhatsappOtpService {
   public static async sendOtp(mobileNumber: string, otpCode: string): Promise<WhatsappOtpResponse> {
     const formattedPhone = this.formatPhoneNumber(mobileNumber);
 
-    // 1. Meta WhatsApp Cloud API Option
-    if (this.metaAccessToken && this.metaPhoneNumberId) {
-      return this.sendViaMetaCloudApi(formattedPhone, otpCode);
-    }
-
-    // 2. UltraMsg Option
+    // 1. UltraMsg Option (Instant launch setup)
     if (this.ultraMsgInstanceId && this.ultraMsgToken) {
       return this.sendViaUltraMsg(formattedPhone, otpCode);
+    }
+
+    // 2. Meta WhatsApp Cloud API Option
+    if (this.metaAccessToken && this.metaPhoneNumberId) {
+      return this.sendViaMetaCloudApi(formattedPhone, otpCode);
     }
 
     // 3. Dev / Mock Mode Fallback
