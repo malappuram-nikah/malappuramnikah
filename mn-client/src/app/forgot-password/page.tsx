@@ -42,8 +42,8 @@ export default function ForgotPasswordPage() {
   // Step 1: Request Password Reset OTP
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !email.includes("@")) {
-      setError("Please enter a valid email address.");
+    if (!email || !email.trim()) {
+      setError("Please enter your registered mobile number or email address.");
       return;
     }
 
@@ -238,21 +238,21 @@ export default function ForgotPasswordPage() {
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
             <h1 className="text-2xl font-bold font-playfair text-gray-900 mb-2">Forgot Password?</h1>
             <p className="text-xs text-gray-500 mb-6 leading-relaxed">
-              Enter your registered email address and we'll send you a 6-digit verification code to reset your password.
+              Enter your registered mobile number or email address and we'll send a 6-digit verification code to reset your password.
             </p>
 
             <form onSubmit={handleSendOtp} className="space-y-5">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Email Address</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Mobile Number or Email</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
                     <Mail className="h-5 w-5" />
                   </div>
                   <input
-                    type="email"
+                    type="text"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="name@example.com"
+                    placeholder="Mobile number (+91...) or email address"
                     required
                     className="w-full pl-10 pr-4 py-3.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
                   />
