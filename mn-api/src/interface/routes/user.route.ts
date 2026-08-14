@@ -689,9 +689,9 @@ user_route.post("/forgot-password", async (req: Request, res: Response) => {
     console.log(`[PASSWORD RESET OTP] Sent to ${cleanEmail} (User #${user.id}): ${otpCode}`);
 
     if (user.mobile_number) {
-      const { Msg91Service } = require("../../infrastructure/service/Msg91Service");
-      Msg91Service.sendOtp(user.mobile_number, otpCode).catch((e: any) =>
-        console.error("Failed to send MSG91 OTP for forgot password:", e)
+      const { WhatsappOtpService } = require("../../infrastructure/service/WhatsappOtpService");
+      WhatsappOtpService.sendOtp(user.mobile_number, otpCode).catch((e: any) =>
+        console.error("Failed to send WhatsApp OTP for forgot password:", e)
       );
     }
 
