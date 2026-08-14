@@ -50,7 +50,6 @@ export default function Navbar() {
           <nav className="hidden md:flex items-center gap-8">
             <Link href="/" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Home</Link>
             <Link href="/matches" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Matches</Link>
-            <Link href="/success-stories" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Success Stories</Link>
             <Link href="/pricing" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Pricing</Link>
           </nav>
 
@@ -94,7 +93,6 @@ export default function Navbar() {
               <div className="container mx-auto px-4 py-4 flex flex-col gap-1">
                 <Link href="/" className="block px-4 py-3 text-gray-700 font-medium hover:bg-gray-50 rounded-xl transition-colors">Home</Link>
                 <Link href="/matches" className="block px-4 py-3 text-gray-700 font-medium hover:bg-gray-50 rounded-xl transition-colors">Matches</Link>
-                <Link href="/success-stories" className="block px-4 py-3 text-gray-700 font-medium hover:bg-gray-50 rounded-xl transition-colors">Success Stories</Link>
                 <Link href="/pricing" className="block px-4 py-3 text-gray-700 font-medium hover:bg-gray-50 rounded-xl transition-colors">Pricing</Link>
                 <div className="h-px bg-gray-100 my-2 mx-4" />
                 <button 
