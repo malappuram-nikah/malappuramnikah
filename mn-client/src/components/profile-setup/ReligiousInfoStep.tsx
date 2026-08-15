@@ -60,14 +60,14 @@ export default function ReligiousInfoStep({ initialData, onComplete, onBack }: R
       if (initialData.namaz) mergedData.namaz = initialData.namaz;
       if (initialData.quranReading) mergedData.quranReading = initialData.quranReading;
     }
+    // Ensure religion is strictly non-empty (defaults to Islam)
+    mergedData.religion = mergedData.religion || "Islam";
+
     // Pre-persist religion: "Islam" so it's never missing from the draft
     try {
-      const existingDraft = localStorage.getItem(DRAFT_KEY);
-      const parsedDraft = existingDraft ? JSON.parse(existingDraft) : {};
-      if (!parsedDraft.religion) {
-        localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...parsedDraft, religion: mergedData.religion || "Islam" }));
-      }
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(mergedData));
     } catch {}
+
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setFormData(mergedData);
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -86,7 +86,8 @@ export default function ReligiousInfoStep({ initialData, onComplete, onBack }: R
 
     autosaveTimeout.current = setTimeout(() => {
       setIsSaving(true);
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
+      const dataToSave = { ...formData, religion: formData.religion || "Islam" };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(dataToSave));
       setLastSaved(new Date());
       setIsSaving(false);
     }, 1000); // 1s debounce
@@ -104,8 +105,9 @@ export default function ReligiousInfoStep({ initialData, onComplete, onBack }: R
   };
 
   const validate = () => {
+    const activeReligion = formData.religion || "Islam";
     const newErrors: Partial<Record<keyof ReligiousInfoData, string>> = {};
-    if (!formData.religion) newErrors.religion = "Religion is required";
+    if (!activeReligion) newErrors.religion = "Religion is required";
     if (!formData.community) newErrors.community = "Community is required";
     if (!formData.religiousness) newErrors.religiousness = "Religiousness is required";
 
@@ -115,8 +117,9 @@ export default function ReligiousInfoStep({ initialData, onComplete, onBack }: R
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    const finalData = { ...formData, religion: formData.religion || "Islam" };
     if (validate()) {
-      if (onComplete) onComplete(formData);
+      if (onComplete) onComplete(finalData);
       // Optional: Clear draft after successful completion
       // localStorage.removeItem(DRAFT_KEY);
     } else {
