@@ -4,11 +4,11 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Users, UserCheck, ShieldCheck, Heart, Sparkles,
+  Users, UserCheck, ShieldCheck, Heart, Sparkles, User, KeyRound, Camera,
   DollarSign, ShoppingBag, Calendar, Image, FileText,
   AlertTriangle, CreditCard, LayoutGrid, BarChart3,
   TrendingUp, Download, Plus, Check, X, Search,
-  Lock, Unlock, Award, Settings, Layers, Megaphone,
+  Lock, Unlock, Award, Settings, Layers, Megaphone, Eye, Phone, Mail, GraduationCap, Volume2, Video, Percent, Clock,
   Briefcase, Star, MapPin, ChevronRight, HelpCircle, Music, MessageSquarePlus, Loader2
 } from "lucide-react";
 
@@ -74,6 +74,177 @@ export default function AdminDashboardPage() {
   const [loadingFeedbacks, setLoadingFeedbacks] = useState(false);
 
 
+  // User Inspection States
+  const [inspectUserId, setInspectUserId] = useState<number | null>(null);
+  const [inspectUserLoading, setInspectUserLoading] = useState(false);
+  const [inspectUser, setInspectUser] = useState<any | null>(null);
+
+  // Server-Side Search, Filter & Pagination States
+  const [userPage, setUserPage] = useState(1);
+  const [userTotalPages, setUserTotalPages] = useState(1);
+  const [userTotal, setUserTotal] = useState(0);
+  const [userStatusFilter, setUserStatusFilter] = useState("ALL");
+  const [userGenderFilter, setUserGenderFilter] = useState("ALL");
+  const [userLoading, setUserLoading] = useState(false);
+
+  const [kycPage, setKycPage] = useState(1);
+  const [kycTotalPages, setKycTotalPages] = useState(1);
+  const [kycTotal, setKycTotal] = useState(0);
+  const [kycDocTypeFilter, setKycDocTypeFilter] = useState("ALL");
+  const [kycLoading, setKycLoading] = useState(false);
+
+  // Admin Profile States
+  const [adminProfile, setAdminProfile] = useState<any>(null);
+  const [profileForm, setProfileForm] = useState({
+    first_name: "",
+    last_name: "",
+    email: "",
+    mobile_number: "",
+    avatar_url: ""
+  });
+  const [passwordForm, setPasswordForm] = useState({
+    current_password: "",
+    new_password: "",
+    confirm_password: ""
+  });
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+
+  const loadAdminProfile = async () => {
+    try {
+      const storedToken = localStorage.getItem("mn_token");
+      if (!storedToken) return;
+      const res = await fetch(`${API_URL}/user/admin/me`, {
+        headers: { "Authorization": `Bearer ${storedToken}` }
+      });
+      const data = await res.json();
+      if (data.success && data.admin) {
+        setAdminProfile(data.admin);
+        setProfileForm({
+          first_name: data.admin.first_name || "",
+          last_name: data.admin.last_name || "",
+          email: data.admin.email || "",
+          mobile_number: data.admin.mobile_number || "",
+          avatar_url: data.admin.avatar_url || ""
+        });
+      }
+    } catch (e) {
+      console.error("Failed to load admin profile", e);
+    }
+  };
+
+  const handleUpdateAdminProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profileForm.first_name.trim()) {
+      triggerAlert("First name is required.", "error");
+      return;
+    }
+    setSavingProfile(true);
+    try {
+      const token = localStorage.getItem("mn_token");
+      const res = await fetch(`${API_URL}/user/admin/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(profileForm)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAdminProfile(data.admin);
+        triggerAlert(data.message || "Admin profile updated successfully!");
+        await loadAdminData();
+      } else {
+        triggerAlert(data.message || "Failed to update profile.", "error");
+      }
+    } catch (err) {
+      triggerAlert("Server error updating profile.", "error");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!passwordForm.current_password) {
+      triggerAlert("Current password is required.", "error");
+      return;
+    }
+    if (!passwordForm.new_password || passwordForm.new_password.length < 6) {
+      triggerAlert("New password must be at least 6 characters long.", "error");
+      return;
+    }
+    if (passwordForm.new_password !== passwordForm.confirm_password) {
+      triggerAlert("New password and confirm password do not match.", "error");
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const token = localStorage.getItem("mn_token");
+      const res = await fetch(`${API_URL}/user/admin/change-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          current_password: passwordForm.current_password,
+          new_password: passwordForm.new_password
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        triggerAlert(data.message || "Password changed successfully!");
+        setPasswordForm({ current_password: "", new_password: "", confirm_password: "" });
+      } else {
+        triggerAlert(data.message || "Password change failed.", "error");
+      }
+    } catch (err) {
+      triggerAlert("Server error changing password.", "error");
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
+  const handleAdminAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      triggerAlert("Please select an image file (JPG, PNG, WebP).", "error");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setProfileForm(prev => ({ ...prev, avatar_url: reader.result as string }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleOpenInspectUser = async (userId: number) => {
+    setInspectUserId(userId);
+    setInspectUserLoading(true);
+    setInspectUser(null);
+    try {
+      const token = localStorage.getItem("mn_token");
+      const res = await fetch(`${API_URL}/user/admin/users/${userId}`, {
+        headers: token ? { "Authorization": `Bearer ${token}` } : {}
+      });
+      const data = await res.json();
+      if (data.success && data.user) {
+        setInspectUser(data.user);
+      } else {
+        triggerAlert(data.message || "Failed to fetch user profile.", "error");
+      }
+    } catch (err: any) {
+      console.error(err);
+      triggerAlert("Failed to load user details from database.", "error");
+    } finally {
+      setInspectUserLoading(false);
+    }
+  };
+
   const triggerAlert = (text: string, type: "success" | "error" = "success") => {
     setAlertMsg({ text, type });
     setTimeout(() => setAlertMsg(null), 4000);
@@ -111,7 +282,7 @@ export default function AdminDashboardPage() {
     try {
       const storedToken = localStorage.getItem("mn_token");
       if (!storedToken) {
-        router.push("/login");
+        router.push("/admin/login");
         return;
       }
 
@@ -120,8 +291,9 @@ export default function AdminDashboardPage() {
         headers: { "Authorization": `Bearer ${storedToken}` }
       });
       if (statsRes.status === 403 || statsRes.status === 401) {
+        localStorage.removeItem("mn_token");
         triggerAlert("Access denied. Admin privileges required.", "error");
-        router.push("/dashboard");
+        router.push("/admin/login");
         return;
       }
 
@@ -143,32 +315,99 @@ export default function AdminDashboardPage() {
         setDefaultTrackUrl(storeDataJson.store.music_settings?.default_track || "");
       }
 
-      // 3. Fetch Database Users List
-      const usersRes = await fetch(`${API_URL}/user/admin/users`, {
-        headers: { "Authorization": `Bearer ${storedToken}` }
-      });
-      const usersData = await usersRes.json();
-      if (usersData.success) {
-        setDbUsers(usersData.users);
-      }
+      // 3. Fetch Database Users List with Server-Side Pagination & Filters
+      await loadUsersData(1, "", "ALL", "ALL");
 
-      // 4. Fetch KYC Requests List
-      const kycRes = await fetch(`${API_URL}/user/admin/kyc/requests`, {
-        headers: { "Authorization": `Bearer ${storedToken}` }
-      });
-      const kycData = await kycRes.json();
-      if (kycData.success) {
-        setKycRequests(kycData.requests);
-      }
+      // 4. Fetch KYC Requests List with Server-Side Pagination & Filters
+      await loadKycRequestsData(1, "", "ALL", "ALL");
 
       // 5. Fetch User Feedbacks & Stats
       await loadFeedbacksData();
+
+      // 6. Fetch Admin Profile
+      await loadAdminProfile();
 
     } catch (e) {
       console.error("Admin data loading failed:", e);
       triggerAlert("Server communication error.", "error");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadUsersData = async (
+    pageVal = userPage,
+    searchVal = searchQuery,
+    statusVal = userStatusFilter,
+    genderVal = userGenderFilter
+  ) => {
+    setUserLoading(true);
+    try {
+      const storedToken = localStorage.getItem("mn_token");
+      if (!storedToken) return;
+
+      const queryParams = new URLSearchParams({
+        page: pageVal.toString(),
+        limit: "10",
+        search: searchVal,
+        status: statusVal,
+        gender: genderVal
+      });
+
+      const usersRes = await fetch(`${API_URL}/user/admin/users?${queryParams.toString()}`, {
+        headers: { "Authorization": `Bearer ${storedToken}` }
+      });
+      const usersData = await usersRes.json();
+      if (usersData.success) {
+        setDbUsers(usersData.users);
+        if (usersData.pagination) {
+          setUserPage(usersData.pagination.page);
+          setUserTotalPages(usersData.pagination.totalPages);
+          setUserTotal(usersData.pagination.total);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load users:", e);
+    } finally {
+      setUserLoading(false);
+    }
+  };
+
+  const loadKycRequestsData = async (
+    pageVal = kycPage,
+    searchVal = searchQuery,
+    statusVal = kycStatusFilter,
+    docTypeVal = kycDocTypeFilter
+  ) => {
+    setKycLoading(true);
+    try {
+      const storedToken = localStorage.getItem("mn_token");
+      if (!storedToken) return;
+
+      const queryParams = new URLSearchParams({
+        page: pageVal.toString(),
+        limit: "10",
+        search: searchVal,
+        status: statusVal,
+        docType: docTypeVal
+      });
+
+      const kycRes = await fetch(`${API_URL}/user/admin/kyc/requests?${queryParams.toString()}`, {
+        headers: { "Authorization": `Bearer ${storedToken}` }
+      });
+      const kycData = await kycRes.json();
+      if (kycData.success) {
+        setKycRequests(kycData.requests);
+        if (kycData.pagination) {
+          setKycPage(kycData.pagination.page);
+          setKycTotalPages(kycData.pagination.totalPages);
+          setKycTotal(kycData.pagination.total);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load KYC requests:", e);
+    } finally {
+      setKycLoading(false);
     }
   };
 
@@ -409,12 +648,14 @@ export default function AdminDashboardPage() {
     { id: "users",         icon: Users,          label: "User Accounts",       color: "border-teal-500/20 text-teal-600" },
     { id: "profiles",      icon: Heart,          label: "Matrimony Profiles",  color: "border-pink-500/20 text-pink-600" },
     { id: "kyc",           icon: ShieldCheck,    label: "Identity KYC",        color: "border-blue-500/20 text-blue-600" },
+    { id: "referrals",     icon: Award,          label: "Referrals & Wallet",  color: "border-amber-500/20 text-amber-600" },
     { id: "reports",       icon: AlertTriangle,  label: "Complaints Grid",     color: "border-red-500/20 text-red-600" },
     { id: "feedbacks",     icon: MessageSquarePlus, label: "User Feedbacks",    color: "border-teal-500/20 text-teal-600" },
     { id: "subscriptions", icon: CreditCard,     label: "Premium Plans",       color: "border-indigo-500/20 text-indigo-600" },
     { id: "cms",           icon: Megaphone,      label: "CMS & Story Sliders", color: "border-cyan-500/20 text-cyan-600" },
     { id: "biodata",       icon: FileText,       label: "Biodata Downloads",   color: "border-amber-500/20 text-amber-600" },
-    { id: "music",         icon: Music,          label: "Ambient Music",       color: "border-purple-500/20 text-purple-600" }
+    { id: "music",         icon: Music,          label: "Ambient Music",       color: "border-purple-500/20 text-purple-600" },
+    { id: "profile",       icon: User,           label: "Admin Profile",       color: "border-slate-500/20 text-slate-600" }
   ];
 
 
@@ -470,6 +711,26 @@ export default function AdminDashboardPage() {
           </div>
           <div className="flex items-center gap-3 self-start md:self-center">
             <button
+              onClick={() => setActiveTab("profile")}
+              className={`px-3 py-2 border text-xs font-bold rounded-xl transition-all flex items-center gap-2 active:scale-[0.98] ${
+                activeTab === "profile"
+                  ? "bg-brand-50 border-brand-300 text-brand-700 shadow-sm"
+                  : "bg-white border-gray-200 hover:bg-gray-50 text-gray-700 shadow-sm"
+              }`}
+              title="View and Edit Admin Profile"
+            >
+              <div className="w-5 h-5 rounded-md bg-brand-600 text-white font-extrabold flex items-center justify-center text-[10px] overflow-hidden">
+                {adminProfile?.avatar_url ? (
+                  <img src={adminProfile.avatar_url} alt="Admin Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  adminProfile?.first_name?.[0]?.toUpperCase() || "A"
+                )}
+              </div>
+              <span className="truncate max-w-[120px]">
+                {adminProfile ? `${adminProfile.first_name} ${adminProfile.last_name || ""}`.trim() : "Admin Profile"}
+              </span>
+            </button>
+            <button
               onClick={() => handleExportData("users")}
               className="px-3.5 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5 active:scale-[0.98]"
             >
@@ -481,6 +742,16 @@ export default function AdminDashboardPage() {
             >
               <FileText className="w-4 h-4" /> Export Orders
             </button>
+            <button
+              onClick={() => {
+                localStorage.removeItem("mn_token");
+                triggerAlert("Admin logged out successfully.");
+                setTimeout(() => router.push("/admin/login"), 500);
+              }}
+              className="px-3.5 py-2.5 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold rounded-xl transition-all border border-red-200 flex items-center gap-1.5 active:scale-[0.98]"
+            >
+              <Unlock className="w-4 h-4 text-red-600" /> Admin Logout
+            </button>
           </div>
         </div>
       </header>
@@ -488,10 +759,10 @@ export default function AdminDashboardPage() {
       {/* Key Metric Overview Cards */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {[
-          { label: "Total Platform Users", value: stats.totalUsers, desc: `${stats.pendingApproval} awaiting approval`, icon: Users, color: "bg-teal-50 text-teal-600" },
-          { label: "Premium Subscribers", value: stats.premiumUsers, desc: "Gold & Diamond levels", icon: Award, color: "bg-brand-50 text-brand-600" },
-          { label: "Total Gross Revenue", value: `INR ${stats.totalRevenue}`, desc: "Matrimony + Commission", icon: DollarSign, color: "bg-emerald-50 text-emerald-600" },
-          { label: "Active Vendor Bookings", value: stats.totalBookings, desc: `${stats.pendingBookings} pending execution`, icon: ShoppingBag, color: "bg-purple-50 text-purple-600" }
+          { label: "Total Platform Users", value: stats.totalUsers || 0, desc: `${stats.activeUsers || 0} active • ${stats.pendingApproval || 0} pending`, icon: Users, color: "bg-teal-50 text-teal-600" },
+          { label: "Verified Member Profiles", value: stats.verifiedUsers || 0, desc: `${stats.newUsers || 0} new user registrations`, icon: UserCheck, color: "bg-pink-50 text-pink-600" },
+          { label: "Pending ID Verifications", value: stats.pendingKyc || 0, desc: `${stats.verifiedKyc || 0} verified • ${stats.rejectedKyc || 0} rejected`, icon: ShieldCheck, color: "bg-blue-50 text-blue-600" },
+          { label: "Total Revenue & Premium", value: `INR ${stats.totalRevenue || 0}`, desc: `${stats.premiumUsers || 0} Gold subscribers`, icon: DollarSign, color: "bg-emerald-50 text-emerald-600" }
         ].map((item, i) => (
           <div key={i} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-start justify-between hover:shadow-md transition-shadow group">
             <div>
@@ -517,7 +788,14 @@ export default function AdminDashboardPage() {
               return (
                 <button
                   key={item.id}
-                  onClick={() => { setActiveTab(item.id); setSearchQuery(""); }}
+                  onClick={() => {
+                    if (item.id === "referrals") {
+                      router.push("/dashboard/admin/referrals");
+                    } else {
+                      setActiveTab(item.id);
+                      setSearchQuery("");
+                    }
+                  }}
                   className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-xs font-semibold transition-all group ${
                     isActive 
                       ? "bg-brand-600 text-white shadow-md shadow-brand-600/10" 
@@ -618,17 +896,31 @@ export default function AdminDashboardPage() {
                     <div className="border border-gray-100 rounded-xl p-4">
                       <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">New Member Growth</h4>
                       <div className="h-32 w-full flex items-end justify-between px-2 gap-1.5">
-                        {[40, 65, 80, 50, 95, 110].map((h, i) => (
-                          <div key={i} className="flex-1 flex flex-col items-center">
-                            <div className="w-full bg-brand-500/10 hover:bg-brand-500/25 rounded-t-md transition-colors relative group" style={{ height: `${h}px` }}>
-                              <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[8px] px-1 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                                {h} users
+                        {(stats.monthlyRegistrations && stats.monthlyRegistrations.length > 0
+                          ? stats.monthlyRegistrations
+                          : [
+                              { month: "Jan", count: 40 },
+                              { month: "Feb", count: 65 },
+                              { month: "Mar", count: 80 },
+                              { month: "Apr", count: 50 },
+                              { month: "May", count: 95 },
+                              { month: "Jun", count: 110 }
+                            ]
+                        ).map((item: any, i: number) => {
+                          const maxVal = Math.max(...(stats.monthlyRegistrations?.map((m: any) => m.count) || [110]), 10);
+                          const barHeight = Math.max(Math.min(Math.round((item.count / maxVal) * 90) + 15, 100), 15);
+                          return (
+                            <div key={i} className="flex-1 flex flex-col items-center">
+                              <div className="w-full bg-brand-500/10 hover:bg-brand-500/25 rounded-t-md transition-colors relative group" style={{ height: `${barHeight}px` }}>
+                                <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[8px] px-1 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                                  {item.count} users
+                                </div>
+                                <div className="w-full bg-brand-600 rounded-t-md absolute bottom-0" style={{ height: "45%" }} />
                               </div>
-                              <div className="w-full bg-brand-600 rounded-t-md absolute bottom-0" style={{ height: "45%" }} />
+                              <span className="text-[8px] text-gray-400 font-bold mt-1.5 uppercase">{item.month}</span>
                             </div>
-                            <span className="text-[8px] text-gray-400 font-bold mt-1.5">M{i+1}</span>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
 
@@ -646,6 +938,93 @@ export default function AdminDashboardPage() {
                         </div>
                       </div>
                       <p className="text-[9px] text-gray-500 font-medium text-center mt-3">Overall profile field density rate</p>
+                    </div>
+                  </div>
+
+                  {/* Real Database Recent Activity Grids */}
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {/* Recent Registrations */}
+                    <div className="border border-gray-100 rounded-xl p-5 bg-white space-y-3">
+                      <div className="flex items-center justify-between border-b border-gray-100 pb-2.5">
+                        <h3 className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                          <Users className="w-4 h-4 text-teal-600" /> Recent Registrations
+                        </h3>
+                        <button onClick={() => setActiveTab("users")} className="text-[10px] font-semibold text-brand-600 hover:underline">
+                          View All ({stats.totalUsers || 0})
+                        </button>
+                      </div>
+
+                      {(!stats.recentRegistrations || stats.recentRegistrations.length === 0) ? (
+                        <div className="py-8 text-center text-gray-400 text-xs font-medium bg-gray-50 rounded-xl">
+                          No recent member registrations found.
+                        </div>
+                      ) : (
+                        <div className="space-y-2.5">
+                          {stats.recentRegistrations.map((u: any) => (
+                            <div key={u.id} className="flex items-center justify-between p-2.5 rounded-xl bg-gray-50/60 border border-gray-100 text-xs hover:bg-gray-50 transition-colors">
+                              <div>
+                                <p className="font-bold text-gray-900 text-xs">{u.first_name} {u.last_name}</p>
+                                <p className="text-[10px] text-gray-400 font-semibold">{u.mobile_number} • ID: #MN-{u.id}</p>
+                              </div>
+                              <div className="text-right">
+                                <span className={`text-[8px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                                  u.status === "active" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
+                                }`}>
+                                  {u.status === "active" ? "Active" : "Pending"}
+                                </span>
+                                <p className="text-[9px] text-gray-400 font-semibold mt-1">
+                                  {new Date(u.created_at).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Recent ID Verification Requests */}
+                    <div className="border border-gray-100 rounded-xl p-5 bg-white space-y-3">
+                      <div className="flex items-center justify-between border-b border-gray-100 pb-2.5">
+                        <h3 className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                          <ShieldCheck className="w-4 h-4 text-blue-600" /> Recent ID Verification Requests
+                        </h3>
+                        <button onClick={() => setActiveTab("kyc")} className="text-[10px] font-semibold text-blue-600 hover:underline">
+                          Inspect All ({stats.pendingKyc || 0} Pending)
+                        </button>
+                      </div>
+
+                      {(!stats.recentKycRequests || stats.recentKycRequests.length === 0) ? (
+                        <div className="py-8 text-center text-gray-400 text-xs font-medium bg-gray-50 rounded-xl">
+                          No recent ID verification submissions.
+                        </div>
+                      ) : (
+                        <div className="space-y-2.5">
+                          {stats.recentKycRequests.map((k: any) => (
+                            <div key={k.id} className="flex items-center justify-between p-2.5 rounded-xl bg-gray-50/60 border border-gray-100 text-xs hover:bg-gray-50 transition-colors">
+                              <div>
+                                <p className="font-bold text-gray-900 text-xs">{k.first_name} {k.last_name}</p>
+                                <p className="text-[10px] text-gray-400 font-semibold">{k.kyc_document_type || "Aadhaar Card"} • {k.mobile_number}</p>
+                              </div>
+                              <div className="text-right">
+                                <span className={`text-[8px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                                  k.kyc_status === "VERIFIED"
+                                    ? "bg-emerald-100 text-emerald-800"
+                                    : k.kyc_status === "PENDING"
+                                    ? "bg-blue-100 text-blue-800"
+                                    : k.kyc_status === "UNDER_REVIEW"
+                                    ? "bg-amber-100 text-amber-800"
+                                    : "bg-red-100 text-red-800"
+                                }`}>
+                                  {k.kyc_status.replace("_", " ")}
+                                </span>
+                                <p className="text-[9px] text-gray-400 font-semibold mt-1">
+                                  {k.kyc_submitted_at ? new Date(k.kyc_submitted_at).toLocaleDateString() : "N/A"}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -675,17 +1054,70 @@ export default function AdminDashboardPage() {
                       <h2 className="text-base font-bold text-gray-900 flex items-center gap-1.5">
                         <Users className="w-5 h-5 text-teal-600" /> User Database Manager
                       </h2>
-                      <p className="text-[10px] text-gray-400 mt-0.5">Toggle membership, upgrade premium limit, or delete profiles.</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">Showing {dbUsers.length} of {userTotal} registered member accounts.</p>
                     </div>
-                    <div className="relative w-full sm:w-64">
-                      <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        placeholder="Search name, phone, city..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 bg-gray-50"
-                      />
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="relative w-full sm:w-56">
+                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          placeholder="Search name, ID, phone..."
+                          value={searchQuery}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setSearchQuery(val);
+                            setUserPage(1);
+                            loadUsersData(1, val, userStatusFilter, userGenderFilter);
+                          }}
+                          className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 bg-gray-50"
+                        />
+                      </div>
+
+                      <select
+                        value={userStatusFilter}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setUserStatusFilter(val);
+                          setUserPage(1);
+                          loadUsersData(1, searchQuery, val, userGenderFilter);
+                        }}
+                        className="p-2 text-xs rounded-xl border border-gray-200 focus:outline-none bg-gray-50 text-gray-700 font-semibold cursor-pointer"
+                      >
+                        <option value="ALL">All Statuses</option>
+                        <option value="active">Active / Verified</option>
+                        <option value="in_active">Pending Approval</option>
+                      </select>
+
+                      <select
+                        value={userGenderFilter}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setUserGenderFilter(val);
+                          setUserPage(1);
+                          loadUsersData(1, searchQuery, userStatusFilter, val);
+                        }}
+                        className="p-2 text-xs rounded-xl border border-gray-200 focus:outline-none bg-gray-50 text-gray-700 font-semibold cursor-pointer"
+                      >
+                        <option value="ALL">All Genders</option>
+                        <option value="MALE">Male</option>
+                        <option value="FEMALE">Female</option>
+                      </select>
+
+                      {(searchQuery || userStatusFilter !== "ALL" || userGenderFilter !== "ALL") && (
+                        <button
+                          onClick={() => {
+                            setSearchQuery("");
+                            setUserStatusFilter("ALL");
+                            setUserGenderFilter("ALL");
+                            setUserPage(1);
+                            loadUsersData(1, "", "ALL", "ALL");
+                          }}
+                          className="px-2.5 py-1.5 text-[10px] font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors border border-red-200"
+                        >
+                          Clear Filters
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -702,59 +1134,120 @@ export default function AdminDashboardPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredUsers.map(user => (
-                          <tr key={user.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                            <td className="p-3.5">
-                              <p className="font-bold text-gray-900">{user.first_name} {user.last_name}</p>
-                              <p className="text-[10px] text-gray-400 font-semibold">{user.mobile_number} • {user.location}</p>
+                        {userLoading ? (
+                          <tr>
+                            <td colSpan={5} className="py-12 text-center text-xs text-gray-400 font-semibold bg-gray-50/50">
+                              <Loader2 className="w-5 h-5 animate-spin mx-auto text-brand-600 mb-2" />
+                              Fetching users from database...
                             </td>
-                            <td className="p-3.5">
-                              <span className="font-semibold text-gray-700 bg-brand-50 px-2 py-0.5 rounded text-[10px]">{user.cast}</span>
-                              <p className="text-[10px] text-gray-400 mt-1 font-bold">Age: {user.dob ? Math.floor((new Date().getTime() - new Date(user.dob).getTime()) / 31557600000) : 25} yrs</p>
-                            </td>
-                            <td className="p-3.5">
-                              <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${
-                                user.status === "active" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
-                              }`}>
-                                {user.status === "active" ? "Verified" : "Pending"}
-                              </span>
-                            </td>
-                            <td className="p-3.5">
-                              <button
-                                onClick={() => handleTogglePremium(user.id)}
-                                className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full shadow-sm hover:scale-105 transition-transform ${
-                                  user.is_premium 
-                                    ? "bg-gradient-to-r from-yellow-400 to-amber-500 text-white" 
-                                    : "bg-gray-100 text-gray-500"
-                                }`}
-                              >
-                                {user.is_premium ? "Active Gold" : "Free Tier"}
-                              </button>
-                            </td>
-                            <td className="p-3.5 text-right space-x-1">
-                              {user.status !== "active" ? (
-                                <button
-                                  onClick={() => handleVerifyUser(user.id, "approve")}
-                                  className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg transition-colors inline-flex items-center"
-                                  title="Approve Member"
-                                >
-                                  <Check className="w-3.5 h-3.5" />
-                                </button>
+                          </tr>
+                        ) : dbUsers.length === 0 ? (
+                          <tr>
+                            <td colSpan={5} className="py-12 text-center text-gray-400 bg-gray-50/50">
+                              <Users className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                              <p className="font-semibold text-xs text-gray-600">No users found.</p>
+                              {searchQuery ? (
+                                <p className="text-[10px] text-gray-400 mt-1">No matching user records found for "{searchQuery}".</p>
                               ) : (
-                                <button
-                                  onClick={() => handleVerifyUser(user.id, "reject")}
-                                  className="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg transition-colors inline-flex items-center"
-                                  title="Deactivate Profile"
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                </button>
+                                <p className="text-[10px] text-gray-400 mt-1">There are no registered users matching your selected filters.</p>
                               )}
                             </td>
                           </tr>
-                        ))}
+                        ) : (
+                          dbUsers.map(user => (
+                            <tr key={user.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                              <td className="p-3.5">
+                                <p className="font-bold text-gray-900">{user.first_name} {user.last_name}</p>
+                                <p className="text-[10px] text-gray-400 font-semibold">{user.mobile_number} • {user.location || "Kerala"} • ID: #MN-{user.id}</p>
+                              </td>
+                              <td className="p-3.5">
+                                <span className="font-semibold text-gray-700 bg-brand-50 px-2 py-0.5 rounded text-[10px]">{user.cast || "General"}</span>
+                                <p className="text-[10px] text-gray-400 mt-1 font-bold">Age: {user.dob ? Math.floor((new Date().getTime() - new Date(user.dob).getTime()) / 31557600000) : 25} yrs</p>
+                              </td>
+                              <td className="p-3.5">
+                                <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                                  user.status === "active" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
+                                }`}>
+                                  {user.status === "active" ? "Verified" : "Pending"}
+                                </span>
+                              </td>
+                              <td className="p-3.5">
+                                <button
+                                  onClick={() => handleTogglePremium(user.id)}
+                                  className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full shadow-sm hover:scale-105 transition-transform ${
+                                    user.is_premium 
+                                      ? "bg-gradient-to-r from-yellow-400 to-amber-500 text-white" 
+                                      : "bg-gray-100 text-gray-500"
+                                  }`}
+                                >
+                                  {user.is_premium ? "Active Gold" : "Free Tier"}
+                                </button>
+                              </td>
+                              <td className="p-3.5 text-right space-x-1">
+                                <button
+                                  onClick={() => handleOpenInspectUser(user.id)}
+                                  className="p-1.5 bg-brand-50 hover:bg-brand-100 text-brand-700 rounded-lg transition-colors inline-flex items-center"
+                                  title="Inspect Full Profile Details"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                </button>
+                                {user.status !== "active" ? (
+                                  <button
+                                    onClick={() => handleVerifyUser(user.id, "approve")}
+                                    className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg transition-colors inline-flex items-center"
+                                    title="Approve Member"
+                                  >
+                                    <Check className="w-3.5 h-3.5" />
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => handleVerifyUser(user.id, "reject")}
+                                    className="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg transition-colors inline-flex items-center"
+                                    title="Deactivate Profile"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
+
+                  {/* Server-Side Pagination Controls */}
+                  {userTotalPages > 1 && (
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-100 text-xs">
+                      <span className="text-gray-400 font-semibold">
+                        Page <strong className="text-gray-900">{userPage}</strong> of <strong className="text-gray-900">{userTotalPages}</strong> ({userTotal} Total Users)
+                      </span>
+                      <div className="flex gap-2">
+                        <button
+                          disabled={userPage <= 1 || userLoading}
+                          onClick={() => {
+                            const newPage = userPage - 1;
+                            setUserPage(newPage);
+                            loadUsersData(newPage, searchQuery, userStatusFilter, userGenderFilter);
+                          }}
+                          className="px-3.5 py-1.5 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl text-xs hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        >
+                          Previous
+                        </button>
+                        <button
+                          disabled={userPage >= userTotalPages || userLoading}
+                          onClick={() => {
+                            const newPage = userPage + 1;
+                            setUserPage(newPage);
+                            loadUsersData(newPage, searchQuery, userStatusFilter, userGenderFilter);
+                          }}
+                          className="px-3.5 py-1.5 bg-brand-600 text-white font-bold rounded-xl text-xs hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        >
+                          Next Page
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               )}
 
@@ -828,51 +1321,96 @@ export default function AdminDashboardPage() {
                         <ShieldCheck className="w-5 h-5 text-blue-600" /> Identity KYC Verification Center
                       </h2>
                       <p className="text-[10px] text-gray-400 mt-0.5">
-                        Review official government issued IDs, verify details, and approve/reject trust badges.
+                        Showing {kycRequests.length} of {kycTotal} verification records in database.
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="relative w-full sm:w-52">
+                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          placeholder="Search name, phone, ID..."
+                          value={searchQuery}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setSearchQuery(val);
+                            setKycPage(1);
+                            loadKycRequestsData(1, val, kycStatusFilter, kycDocTypeFilter);
+                          }}
+                          className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 bg-gray-50"
+                        />
+                      </div>
+
                       <select
                         value={kycStatusFilter}
-                        onChange={(e) => setKycStatusFilter(e.target.value)}
-                        className="p-2 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 bg-gray-50 font-semibold text-gray-700 cursor-pointer"
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setKycStatusFilter(val);
+                          setKycPage(1);
+                          loadKycRequestsData(1, searchQuery, val, kycDocTypeFilter);
+                        }}
+                        className="p-2 text-xs rounded-xl border border-gray-200 focus:outline-none bg-gray-50 font-semibold text-gray-700 cursor-pointer"
                       >
-                        <option value="ALL">All Submissions</option>
+                        <option value="ALL">All Statuses</option>
                         <option value="PENDING">Pending (New)</option>
                         <option value="UNDER_REVIEW">Under Review</option>
                         <option value="VERIFIED">Verified (Approved)</option>
                         <option value="REJECTED">Rejected</option>
                       </select>
+
+                      <select
+                        value={kycDocTypeFilter}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setKycDocTypeFilter(val);
+                          setKycPage(1);
+                          loadKycRequestsData(1, searchQuery, kycStatusFilter, val);
+                        }}
+                        className="p-2 text-xs rounded-xl border border-gray-200 focus:outline-none bg-gray-50 font-semibold text-gray-700 cursor-pointer"
+                      >
+                        <option value="ALL">All ID Types</option>
+                        <option value="Aadhaar Card">Aadhaar Card</option>
+                        <option value="Passport">Passport</option>
+                        <option value="Voter ID">Voter ID</option>
+                        <option value="Driving License">Driving License</option>
+                      </select>
+
+                      {(searchQuery || kycStatusFilter !== "ALL" || kycDocTypeFilter !== "ALL") && (
+                        <button
+                          onClick={() => {
+                            setSearchQuery("");
+                            setKycStatusFilter("ALL");
+                            setKycDocTypeFilter("ALL");
+                            setKycPage(1);
+                            loadKycRequestsData(1, "", "ALL", "ALL");
+                          }}
+                          className="px-2.5 py-1.5 text-[10px] font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors border border-red-200"
+                        >
+                          Clear Filters
+                        </button>
+                      )}
                     </div>
                   </div>
 
                   <div className="grid lg:grid-cols-12 gap-6">
                     {/* Left side: Requests List */}
                     <div className={`${selectedKycRequest ? "lg:col-span-5" : "lg:col-span-12"} space-y-3`}>
-                      {kycRequests.filter(r => {
-                        if (kycStatusFilter === "ALL") return true;
-                        return r.kyc_status === kycStatusFilter;
-                      }).filter(r => {
-                        const fullName = `${r.first_name || ""} ${r.last_name || ""}`.toLowerCase();
-                        const query = searchQuery.toLowerCase();
-                        return fullName.includes(query) || (r.mobile_number || "").includes(query);
-                      }).length === 0 ? (
+                      {kycLoading ? (
+                        <div className="py-16 text-center text-xs text-gray-400 font-semibold bg-gray-50 rounded-2xl border border-gray-100">
+                          <Loader2 className="w-5 h-5 animate-spin mx-auto text-blue-600 mb-2" />
+                          Fetching verification requests...
+                        </div>
+                      ) : kycRequests.length === 0 ? (
                         <div className="py-16 text-center text-gray-400 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
                           <ShieldCheck className="w-10 h-10 mx-auto mb-2 text-blue-500 opacity-60" />
                           <p className="font-semibold text-sm">No verification requests found</p>
-                          <p className="text-[10px] mt-0.5">There are no submissions matching the selected filters.</p>
+                          <p className="text-[10px] mt-0.5">There are no submissions matching your selected search query and filters.</p>
                         </div>
                       ) : (
-                        kycRequests.filter(r => {
-                          if (kycStatusFilter === "ALL") return true;
-                          return r.kyc_status === kycStatusFilter;
-                        }).filter(r => {
-                          const fullName = `${r.first_name || ""} ${r.last_name || ""}`.toLowerCase();
-                          const query = searchQuery.toLowerCase();
-                          return fullName.includes(query) || (r.mobile_number || "").includes(query);
-                        }).map(req => {
+                        kycRequests.map(req => {
                           const isSelected = selectedKycRequest?.id === req.id;
+                          const photo = req.profile_details?.photos?.[0];
                           return (
                             <button
                               key={req.id}
@@ -882,22 +1420,31 @@ export default function AdminDashboardPage() {
                                   handleKycReview(req.id);
                                 }
                               }}
-                              className={`w-full text-left p-4 rounded-xl border transition-all flex items-start justify-between gap-3 ${
+                              className={`w-full text-left p-3.5 rounded-xl border transition-all flex items-center justify-between gap-3 ${
                                 isSelected
                                   ? "border-blue-500 bg-blue-50/20 shadow-sm"
                                   : "border-gray-100 hover:border-gray-200 bg-white"
                               }`}
                             >
-                              <div className="min-w-0 flex-1">
-                                <p className="font-bold text-gray-900 text-xs truncate">
-                                  {req.first_name} {req.last_name}
-                                </p>
-                                <p className="text-[10px] text-gray-500 font-medium mt-0.5">
-                                  {req.kyc_document_type} • {req.mobile_number}
-                                </p>
-                                <p className="text-[9px] text-gray-400 font-semibold mt-1">
-                                  Submitted: {req.kyc_submitted_at ? new Date(req.kyc_submitted_at).toLocaleDateString() : "N/A"}
-                                </p>
+                              <div className="flex items-center gap-3 min-w-0 flex-1">
+                                <div className="w-10 h-10 rounded-xl bg-gray-100 border border-gray-200 shrink-0 overflow-hidden flex items-center justify-center font-bold text-gray-500 text-sm">
+                                  {photo ? (
+                                    <img src={photo} alt="User Profile" className="w-full h-full object-cover" />
+                                  ) : (
+                                    req.first_name?.[0]?.toUpperCase() || "U"
+                                  )}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-bold text-gray-900 text-xs truncate">
+                                    {req.first_name} {req.last_name}
+                                  </p>
+                                  <p className="text-[10px] text-gray-500 font-medium mt-0.5 truncate">
+                                    ID: #MN-{req.id} • {req.kyc_document_type || "Government ID"}
+                                  </p>
+                                  <p className="text-[9px] text-gray-400 font-semibold mt-0.5">
+                                    Submitted: {req.kyc_submitted_at ? new Date(req.kyc_submitted_at).toLocaleDateString() : "N/A"}
+                                  </p>
+                                </div>
                               </div>
 
                               <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full shrink-0 ${
@@ -915,26 +1462,77 @@ export default function AdminDashboardPage() {
                           );
                         })
                       )}
+
+                      {/* KYC Pagination Bar */}
+                      {kycTotalPages > 1 && (
+                        <div className="flex items-center justify-between pt-3 border-t border-gray-100 text-xs mt-4">
+                          <span className="text-gray-400 font-semibold text-[11px]">
+                            Page <strong className="text-gray-900">{kycPage}</strong> of <strong className="text-gray-900">{kycTotalPages}</strong> ({kycTotal} Total Requests)
+                          </span>
+                          <div className="flex gap-2">
+                            <button
+                              disabled={kycPage <= 1 || kycLoading}
+                              onClick={() => {
+                                const newPage = kycPage - 1;
+                                setKycPage(newPage);
+                                loadKycRequestsData(newPage, searchQuery, kycStatusFilter, kycDocTypeFilter);
+                              }}
+                              className="px-3 py-1 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl text-xs hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            >
+                              Prev
+                            </button>
+                            <button
+                              disabled={kycPage >= kycTotalPages || kycLoading}
+                              onClick={() => {
+                                const newPage = kycPage + 1;
+                                setKycPage(newPage);
+                                loadKycRequestsData(newPage, searchQuery, kycStatusFilter, kycDocTypeFilter);
+                              }}
+                              className="px-3 py-1 bg-blue-600 text-white font-bold rounded-xl text-xs hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            >
+                              Next
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Right side: Detailed inspector */}
                     {selectedKycRequest && (
                       <div className="lg:col-span-7 bg-white border border-gray-100 rounded-2xl p-5 space-y-5 shadow-sm">
                         <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                          <div>
-                            <h3 className="font-bold text-gray-900 text-sm">
-                              {selectedKycRequest.first_name} {selectedKycRequest.last_name}
-                            </h3>
-                            <p className="text-[10px] text-gray-500 font-semibold mt-0.5">
-                              User ID: {selectedKycRequest.id} • {selectedKycRequest.gender} • DOB: {selectedKycRequest.dob || "N/A"}
-                            </p>
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-xl bg-gray-100 border border-gray-200 shrink-0 overflow-hidden flex items-center justify-center font-bold text-gray-600 text-base">
+                              {selectedKycRequest.profile_details?.photos?.[0] ? (
+                                <img src={selectedKycRequest.profile_details.photos[0]} alt="Avatar" className="w-full h-full object-cover" />
+                              ) : (
+                                selectedKycRequest.first_name?.[0]?.toUpperCase() || "U"
+                              )}
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-gray-900 text-sm">
+                                {selectedKycRequest.first_name} {selectedKycRequest.last_name}
+                              </h3>
+                              <p className="text-[10px] text-gray-500 font-semibold mt-0.5">
+                                Profile ID: #MN-{selectedKycRequest.id} • {selectedKycRequest.mobile_number} • {selectedKycRequest.location || "N/A"}
+                              </p>
+                            </div>
                           </div>
-                          <button
-                            onClick={() => setSelectedKycRequest(null)}
-                            className="p-1 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600 transition-colors"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleOpenInspectUser(selectedKycRequest.id)}
+                              className="px-2.5 py-1.5 bg-brand-50 hover:bg-brand-100 text-brand-700 text-xs font-bold rounded-xl border border-brand-200 transition-colors flex items-center gap-1"
+                              title="Inspect Full Profile Details"
+                            >
+                              <Eye className="w-3.5 h-3.5" /> View Profile
+                            </button>
+                            <button
+                              onClick={() => setSelectedKycRequest(null)}
+                              className="p-1.5 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
 
                         {/* Document details card */}
@@ -1433,9 +2031,9 @@ export default function AdminDashboardPage() {
                             </button>
                             <button
                               onClick={() => {
-                                const userIdMatch = rep.reported_user.match(/id:\s*(\d+)/);
-                                if (userIdMatch) {
-                                  handleVerifyUser(parseInt(userIdMatch[1], 10), "reject");
+                                const targetId = rep.reported_user_id || (rep.reported_user.match(/id:\s*(\d+)/)?.[1] ? parseInt(rep.reported_user.match(/id:\s*(\d+)/)![1], 10) : null);
+                                if (targetId) {
+                                  handleVerifyUser(targetId, "reject");
                                 } else {
                                   triggerAlert("Reported user ID could not be matched.", "error");
                                 }
@@ -1985,11 +2583,570 @@ export default function AdminDashboardPage() {
                 </motion.div>
               )}
 
+              {/* Tab: Admin Profile & Security Settings */}
+              {activeTab === "profile" && (
+                <motion.div key="profile" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+                  <div className="border-b border-gray-100 pb-4 flex items-center justify-between">
+                    <div>
+                      <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                        <User className="w-5 h-5 text-brand-600" /> Admin Account Profile & Security
+                      </h2>
+                      <p className="text-[10px] text-gray-400 mt-0.5">
+                        Manage your administrator details, security credentials, and system activity profile.
+                      </p>
+                    </div>
+                    <span className="px-2.5 py-1 bg-brand-50 border border-brand-200 text-brand-700 text-[10px] font-bold rounded-full uppercase tracking-wider">
+                      Super Administrator
+                    </span>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {/* Left Card: Profile Information Form */}
+                    <div className="bg-white border border-gray-150 rounded-2xl p-5 shadow-xs space-y-4 flex flex-col justify-between">
+                      <form onSubmit={handleUpdateAdminProfile} className="space-y-4">
+                        <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
+                          <User className="w-4 h-4 text-brand-600" />
+                          <h3 className="font-bold text-gray-900 text-sm">Personal Information</h3>
+                        </div>
+
+                        {/* Avatar Image Picker */}
+                        <div className="flex items-center gap-4">
+                          <div className="relative w-16 h-16 rounded-2xl bg-brand-100 border border-brand-200 flex items-center justify-center text-brand-700 font-extrabold text-xl overflow-hidden shrink-0 shadow-xs">
+                            {profileForm.avatar_url ? (
+                              <img src={profileForm.avatar_url} alt="Admin Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                              profileForm.first_name?.[0]?.toUpperCase() || "A"
+                            )}
+                            <label className="absolute inset-0 bg-black/40 hover:bg-black/50 transition-colors flex items-center justify-center cursor-pointer opacity-0 hover:opacity-100">
+                              <Camera className="w-5 h-5 text-white" />
+                              <input type="file" accept="image/*" className="hidden" onChange={handleAdminAvatarUpload} />
+                            </label>
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold text-gray-800 block">Profile Picture</span>
+                            <span className="text-[10px] text-gray-400 block mt-0.5">Upload a new photo (JPG, PNG, WebP)</span>
+                            <label className="inline-block text-[10px] font-bold text-brand-600 hover:text-brand-700 cursor-pointer mt-1">
+                              Browse Computer
+                              <input type="file" accept="image/*" className="hidden" onChange={handleAdminAvatarUpload} />
+                            </label>
+                          </div>
+                        </div>
+
+                        {/* First & Last Name */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                              First Name *
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={profileForm.first_name}
+                              onChange={(e) => setProfileForm({ ...profileForm, first_name: e.target.value })}
+                              className="w-full p-2.5 border border-gray-200 rounded-xl text-xs bg-gray-50 text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                              Last Name
+                            </label>
+                            <input
+                              type="text"
+                              value={profileForm.last_name}
+                              onChange={(e) => setProfileForm({ ...profileForm, last_name: e.target.value })}
+                              className="w-full p-2.5 border border-gray-200 rounded-xl text-xs bg-gray-50 text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:bg-white"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Mobile Number & Email */}
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                            Mobile Contact Number
+                          </label>
+                          <input
+                            type="text"
+                            value={profileForm.mobile_number}
+                            onChange={(e) => setProfileForm({ ...profileForm, mobile_number: e.target.value })}
+                            className="w-full p-2.5 border border-gray-200 rounded-xl text-xs bg-gray-50 text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                            Email Address
+                          </label>
+                          <input
+                            type="email"
+                            placeholder="admin@malappuramnikah.com"
+                            value={profileForm.email}
+                            onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                            className="w-full p-2.5 border border-gray-200 rounded-xl text-xs bg-gray-50 text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:bg-white"
+                          />
+                        </div>
+
+                        <div className="pt-2">
+                          <button
+                            type="submit"
+                            disabled={savingProfile}
+                            className="w-full py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-brand-600/10 flex items-center justify-center gap-2 active:scale-[0.98]"
+                          >
+                            {savingProfile ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin" /> Saving Changes...
+                              </>
+                            ) : (
+                              <>
+                                <Check className="w-4 h-4" /> Save Profile Details
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+
+                    {/* Right Card: Password & Security Form */}
+                    <div className="bg-white border border-gray-150 rounded-2xl p-5 shadow-xs space-y-4 flex flex-col justify-between">
+                      <form onSubmit={handleChangePassword} className="space-y-4">
+                        <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
+                          <Lock className="w-4 h-4 text-brand-600" />
+                          <h3 className="font-bold text-gray-900 text-sm">Security & Password Change</h3>
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                            Current Password *
+                          </label>
+                          <input
+                            type="password"
+                            required
+                            placeholder="Enter current password"
+                            value={passwordForm.current_password}
+                            onChange={(e) => setPasswordForm({ ...passwordForm, current_password: e.target.value })}
+                            className="w-full p-2.5 border border-gray-200 rounded-xl text-xs bg-gray-50 text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                            New Password * (Min 6 chars)
+                          </label>
+                          <input
+                            type="password"
+                            required
+                            placeholder="Enter new strong password"
+                            value={passwordForm.new_password}
+                            onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
+                            className="w-full p-2.5 border border-gray-200 rounded-xl text-xs bg-gray-50 text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                            Confirm New Password *
+                          </label>
+                          <input
+                            type="password"
+                            required
+                            placeholder="Confirm new password"
+                            value={passwordForm.confirm_password}
+                            onChange={(e) => setPasswordForm({ ...passwordForm, confirm_password: e.target.value })}
+                            className="w-full p-2.5 border border-gray-200 rounded-xl text-xs bg-gray-50 text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:bg-white"
+                          />
+                        </div>
+
+                        <div className="pt-2">
+                          <button
+                            type="submit"
+                            disabled={changingPassword}
+                            className="w-full py-2.5 bg-slate-800 hover:bg-slate-900 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center justify-center gap-2 active:scale-[0.98]"
+                          >
+                            {changingPassword ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin" /> Updating Password...
+                              </>
+                            ) : (
+                              <>
+                                <KeyRound className="w-4 h-4" /> Update Security Password
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </form>
+
+                      {/* Session Info & Logout Card */}
+                      <div className="border-t border-gray-100 pt-4 mt-2 space-y-3">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-semibold text-gray-400">Account ID:</span>
+                          <span className="font-bold text-gray-800 font-mono">#MN-ADMIN-{adminProfile?.id || 2}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-semibold text-gray-400">Created On:</span>
+                          <span className="font-bold text-gray-800">
+                            {adminProfile?.created_at ? new Date(adminProfile.created_at).toLocaleDateString("en-IN", { dateStyle: "medium" }) : "Super Admin"}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            localStorage.removeItem("mn_token");
+                            triggerAlert("Admin logged out successfully.");
+                            setTimeout(() => router.push("/admin/login"), 500);
+                          }}
+                          className="w-full py-2 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold rounded-xl border border-red-200 transition-colors flex items-center justify-center gap-1.5"
+                        >
+                          <Unlock className="w-3.5 h-3.5" /> Logout Admin Session
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
 
             </AnimatePresence>
           </div>
         </main>
-      </div>
+
+      {/* Admin User Details Inspection Overlay Modal */}
+      {inspectUserId !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto bg-gray-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-gray-150 shadow-2xl relative z-10 flex flex-col my-auto">
+            {/* Modal Top Bar */}
+            <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-md px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-teal-600" />
+                <h3 className="text-base font-bold text-gray-900">Admin User Details Inspector</h3>
+                <span className="text-xs font-mono text-gray-400">ID: #{inspectUserId}</span>
+              </div>
+              <button
+                onClick={() => {
+                  setInspectUserId(null);
+                  setInspectUser(null);
+                }}
+                className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {inspectUserLoading ? (
+              <div className="p-16 text-center text-xs text-gray-400 font-semibold space-y-3">
+                <Loader2 className="w-8 h-8 animate-spin mx-auto text-brand-600" />
+                <p>Fetching latest user details directly from database...</p>
+              </div>
+            ) : !inspectUser ? (
+              <div className="p-16 text-center text-xs text-gray-500 font-medium space-y-2">
+                <AlertTriangle className="w-8 h-8 mx-auto text-amber-500" />
+                <p>Failed to retrieve user profile details from database.</p>
+              </div>
+            ) : (
+              <div className="p-6 space-y-6">
+                {/* 1. Header Overview & Badges */}
+                {(() => {
+                  const details = inspectUser.profile_details || {};
+                  const fields = [
+                    details.height, details.weight, details.maritalStatus, details.aboutMe,
+                    details.religion, details.caste, details.sect,
+                    details.education, details.occupation, details.annualIncome,
+                    details.familyType, details.fatherOccupation, details.motherOccupation,
+                    details.partnerAgeMin, details.partnerReligion, details.partnerEducation,
+                    (details.photos && details.photos.length > 0)
+                  ];
+                  const populated = fields.filter(Boolean).length;
+                  const completionPct = Math.round((populated / fields.length) * 100);
+
+                  return (
+                    <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white rounded-2xl p-6 shadow-lg space-y-4">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-xl font-black text-white shrink-0 overflow-hidden">
+                            {details.photos?.[0] ? (
+                              <img src={details.photos[0]} alt="Profile" className="w-full h-full object-cover" />
+                            ) : (
+                              inspectUser.first_name?.[0]?.toUpperCase() || "U"
+                            )}
+                          </div>
+                          <div>
+                            <h2 className="text-xl font-bold">{inspectUser.first_name} {inspectUser.last_name}</h2>
+                            <p className="text-xs text-gray-300 flex items-center gap-2 mt-0.5">
+                              <Phone className="w-3.5 h-3.5" /> {inspectUser.mobile_number}
+                              {inspectUser.email && <>• <Mail className="w-3.5 h-3.5" /> {inspectUser.email}</>}
+                            </p>
+                            <p className="text-[11px] text-gray-400 mt-1">
+                              Gender: <span className="text-white capitalize">{inspectUser.gender}</span> • Profile For: <span className="text-white capitalize">{inspectUser.profile_for}</span> • DOB: <span className="text-white">{inspectUser.dob || "N/A"}</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Admin Action Buttons */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {inspectUser.status !== "active" ? (
+                            <button
+                              onClick={async () => {
+                                await handleVerifyUser(inspectUser.id, "approve");
+                                handleOpenInspectUser(inspectUser.id);
+                              }}
+                              className="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-1.5"
+                            >
+                              <Check className="w-4 h-4" /> Approve Profile
+                            </button>
+                          ) : (
+                            <button
+                              onClick={async () => {
+                                await handleVerifyUser(inspectUser.id, "reject");
+                                handleOpenInspectUser(inspectUser.id);
+                              }}
+                              className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-1.5"
+                            >
+                              <X className="w-4 h-4" /> Deactivate Profile
+                            </button>
+                          )}
+                          <button
+                            onClick={async () => {
+                              await handleTogglePremium(inspectUser.id);
+                              handleOpenInspectUser(inspectUser.id);
+                            }}
+                            className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-1.5 ${
+                              inspectUser.is_premium
+                                ? "bg-amber-400 text-gray-900 hover:bg-amber-300"
+                                : "bg-white/10 text-white hover:bg-white/20 border border-white/20"
+                            }`}
+                          >
+                            <Award className="w-4 h-4" /> {inspectUser.is_premium ? "Active Gold Tier" : "Upgrade Gold"}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Status Badges & Dynamic Completion */}
+                      <div className="pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                            inspectUser.status === "active" ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                          }`}>
+                            Account: {inspectUser.status === "active" ? "Verified Active" : "Pending Approval"}
+                          </span>
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                            inspectUser.kyc_status === "VERIFIED" ? "bg-blue-500/20 text-blue-300 border border-blue-500/30" : "bg-gray-500/20 text-gray-300 border border-gray-500/30"
+                          }`}>
+                            ID KYC: {inspectUser.kyc_status || "NOT_SUBMITTED"}
+                          </span>
+                        </div>
+
+                        {/* Profile Completion Bar */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold text-gray-300">Profile Completion:</span>
+                          <div className="w-28 bg-white/20 h-2 rounded-full overflow-hidden">
+                            <div className="bg-emerald-400 h-full rounded-full" style={{ width: `${completionPct}%` }} />
+                          </div>
+                          <span className="text-xs font-extrabold text-emerald-400">{completionPct}%</span>
+                        </div>
+                      </div>
+
+                      {/* Timestamps */}
+                      <div className="text-[10px] text-gray-400 flex items-center justify-between pt-1">
+                        <span>Registration Date: <span className="text-gray-200">{new Date(inspectUser.created_at).toLocaleString()}</span></span>
+                        <span>Last Updated: <span className="text-gray-200">{new Date(inspectUser.updated_at).toLocaleString()}</span></span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* 2. Structured Section Grid */}
+                <div className="grid md:grid-cols-2 gap-6 text-xs">
+                  {/* Basic Details */}
+                  <div className="border border-gray-100 rounded-2xl p-4 space-y-2 bg-gray-50/50">
+                    <h4 className="font-bold text-gray-900 text-xs border-b border-gray-200 pb-2 flex items-center gap-1.5">
+                      <Users className="w-4 h-4 text-teal-600" /> Basic Details & Bio
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2 text-gray-600 pt-1">
+                      <div><span className="font-semibold text-gray-400">Height:</span> {inspectUser.profile_details?.height || inspectUser.height || "N/A"}</div>
+                      <div><span className="font-semibold text-gray-400">Weight:</span> {inspectUser.profile_details?.weight || inspectUser.weight || "N/A"}</div>
+                      <div><span className="font-semibold text-gray-400">Marital Status:</span> {inspectUser.profile_details?.maritalStatus || "N/A"}</div>
+                      <div><span className="font-semibold text-gray-400">Body Type:</span> {inspectUser.profile_details?.bodyType || "N/A"}</div>
+                      <div><span className="font-semibold text-gray-400">Complexion:</span> {inspectUser.profile_details?.complexion || "N/A"}</div>
+                      <div><span className="font-semibold text-gray-400">Mother Tongue:</span> {inspectUser.profile_details?.motherTongue || "N/A"}</div>
+                      <div><span className="font-semibold text-gray-400">Physical Status:</span> {inspectUser.profile_details?.physicalStatus || "Normal"}</div>
+                      <div><span className="font-semibold text-gray-400">Languages:</span> {inspectUser.profile_details?.languagesSpoken?.join(", ") || "N/A"}</div>
+                    </div>
+                    {inspectUser.profile_details?.aboutMe && (
+                      <div className="pt-2 border-t border-gray-200/60">
+                        <span className="font-semibold text-gray-400 block mb-1">About Me:</span>
+                        <p className="text-gray-700 bg-white p-2.5 rounded-xl border border-gray-200/50 text-[11px] leading-relaxed">{inspectUser.profile_details.aboutMe}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Religious Information */}
+                  <div className="border border-gray-100 rounded-2xl p-4 space-y-2 bg-gray-50/50">
+                    <h4 className="font-bold text-gray-900 text-xs border-b border-gray-200 pb-2 flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-amber-500" /> Religious & Cultural Details
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2 text-gray-600 pt-1">
+                      <div><span className="font-semibold text-gray-400">Religion:</span> {inspectUser.profile_details?.religion || "Islam"}</div>
+                      <div><span className="font-semibold text-gray-400">Caste / Community:</span> {inspectUser.cast || inspectUser.profile_details?.caste || "N/A"}</div>
+                      <div><span className="font-semibold text-gray-400">Sub-Caste:</span> {inspectUser.profile_details?.subCaste || "N/A"}</div>
+                      <div><span className="font-semibold text-gray-400">Sect:</span> {inspectUser.profile_details?.sect || "N/A"}</div>
+                      <div><span className="font-semibold text-gray-400">Religious Values:</span> {inspectUser.profile_details?.religiousValues || "N/A"}</div>
+                      <div><span className="font-semibold text-gray-400">Horoscope / Star:</span> {inspectUser.profile_details?.horoscope || "N/A"}</div>
+                    </div>
+                  </div>
+
+                  {/* Professional Information */}
+                  <div className="border border-gray-100 rounded-2xl p-4 space-y-2 bg-gray-50/50">
+                    <h4 className="font-bold text-gray-900 text-xs border-b border-gray-200 pb-2 flex items-center gap-1.5">
+                      <Briefcase className="w-4 h-4 text-brand-600" /> Professional & Education
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2 text-gray-600 pt-1">
+                      <div><span className="font-semibold text-gray-400">Highest Education:</span> {inspectUser.profile_details?.education || "N/A"}</div>
+                      <div><span className="font-semibold text-gray-400">Education Detail:</span> {inspectUser.profile_details?.educationDetail || "N/A"}</div>
+                      <div><span className="font-semibold text-gray-400">Occupation:</span> {inspectUser.profile_details?.occupation || "N/A"}</div>
+                      <div><span className="font-semibold text-gray-400">Employed In:</span> {inspectUser.profile_details?.employedIn || "N/A"}</div>
+                      <div><span className="font-semibold text-gray-400">Annual Income:</span> {inspectUser.profile_details?.annualIncome || "N/A"}</div>
+                      <div><span className="font-semibold text-gray-400">Company Name:</span> {inspectUser.profile_details?.companyName || "N/A"}</div>
+                    </div>
+                  </div>
+
+                  {/* Family & Living Details */}
+                  <div className="border border-gray-100 rounded-2xl p-4 space-y-2 bg-gray-50/50">
+                    <h4 className="font-bold text-gray-900 text-xs border-b border-gray-200 pb-2 flex items-center gap-1.5">
+                      <Heart className="w-4 h-4 text-pink-600" /> Family & Living Details
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2 text-gray-600 pt-1">
+                      <div><span className="font-semibold text-gray-400">Family Type:</span> {inspectUser.profile_details?.familyType || "N/A"}</div>
+                      <div><span className="font-semibold text-gray-400">Family Status:</span> {inspectUser.profile_details?.familyStatus || "N/A"}</div>
+                      <div><span className="font-semibold text-gray-400">Father Occupation:</span> {inspectUser.profile_details?.fatherOccupation || "N/A"}</div>
+                      <div><span className="font-semibold text-gray-400">Mother Occupation:</span> {inspectUser.profile_details?.motherOccupation || "N/A"}</div>
+                      <div><span className="font-semibold text-gray-400">Brothers:</span> {inspectUser.profile_details?.brothersCount ?? "N/A"}</div>
+                      <div><span className="font-semibold text-gray-400">Sisters:</span> {inspectUser.profile_details?.sistersCount ?? "N/A"}</div>
+                      <div><span className="font-semibold text-gray-400">Ancestral Origin:</span> {inspectUser.profile_details?.ancestralOrigin || "N/A"}</div>
+                      <div><span className="font-semibold text-gray-400">Location:</span> {inspectUser.location || inspectUser.profile_details?.currentCity || "N/A"}</div>
+                    </div>
+                  </div>
+
+                  {/* Interests, Hobbies & Habits */}
+                  <div className="border border-gray-100 rounded-2xl p-4 space-y-2 bg-gray-50/50">
+                    <h4 className="font-bold text-gray-900 text-xs border-b border-gray-200 pb-2 flex items-center gap-1.5">
+                      <Star className="w-4 h-4 text-yellow-500" /> Hobbies & Habits
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2 text-gray-600 pt-1">
+                      <div><span className="font-semibold text-gray-400">Dietary Habits:</span> {inspectUser.profile_details?.dietaryHabits || "N/A"}</div>
+                      <div><span className="font-semibold text-gray-400">Drinking Habits:</span> {inspectUser.profile_details?.drinkingHabits || "No"}</div>
+                      <div><span className="font-semibold text-gray-400">Smoking Habits:</span> {inspectUser.profile_details?.smokingHabits || "No"}</div>
+                      <div><span className="font-semibold text-gray-400">Interests:</span> {inspectUser.profile_details?.interests?.join(", ") || "N/A"}</div>
+                      <div><span className="font-semibold text-gray-400">Hobbies:</span> {inspectUser.profile_details?.hobbies?.join(", ") || "N/A"}</div>
+                    </div>
+                  </div>
+
+                  {/* Partner Preferences */}
+                  <div className="border border-gray-100 rounded-2xl p-4 space-y-2 bg-gray-50/50">
+                    <h4 className="font-bold text-gray-900 text-xs border-b border-gray-200 pb-2 flex items-center gap-1.5">
+                      <Award className="w-4 h-4 text-purple-600" /> Partner Preferences
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2 text-gray-600 pt-1">
+                      <div><span className="font-semibold text-gray-400">Age Range:</span> {inspectUser.profile_details?.partnerAgeMin || 20} - {inspectUser.profile_details?.partnerAgeMax || 35} yrs</div>
+                      <div><span className="font-semibold text-gray-400">Height Range:</span> {inspectUser.profile_details?.partnerHeightMin || "N/A"} - {inspectUser.profile_details?.partnerHeightMax || "N/A"}</div>
+                      <div><span className="font-semibold text-gray-400">Marital Status:</span> {inspectUser.profile_details?.partnerMaritalStatus || "Any"}</div>
+                      <div><span className="font-semibold text-gray-400">Religion:</span> {inspectUser.profile_details?.partnerReligion || "Islam"}</div>
+                      <div><span className="font-semibold text-gray-400">Caste / Community:</span> {inspectUser.profile_details?.partnerCaste || "Any"}</div>
+                      <div><span className="font-semibold text-gray-400">Education:</span> {inspectUser.profile_details?.partnerEducation || "Any"}</div>
+                      <div><span className="font-semibold text-gray-400">Occupation:</span> {inspectUser.profile_details?.partnerOccupation || "Any"}</div>
+                      <div><span className="font-semibold text-gray-400">Preferred Location:</span> {inspectUser.profile_details?.partnerLocation || "Any"}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Media & Introductions Section */}
+                <div className="border border-gray-100 rounded-2xl p-5 bg-gray-50/50 space-y-3">
+                  <h4 className="font-bold text-gray-900 text-xs flex items-center gap-1.5 border-b border-gray-200 pb-2">
+                    <Image className="w-4 h-4 text-teal-600" /> Photos & Media Introductions
+                  </h4>
+                  <div className="grid md:grid-cols-3 gap-4">
+                    {/* Photos Gallery */}
+                    <div className="md:col-span-2 space-y-2">
+                      <span className="font-semibold text-gray-500 text-xs">Profile Gallery:</span>
+                      {(!inspectUser.profile_details?.photos || inspectUser.profile_details.photos.length === 0) ? (
+                        <p className="text-gray-400 text-xs italic bg-white p-3 rounded-xl border border-gray-200/50">No photos uploaded by member.</p>
+                      ) : (
+                        <div className="flex gap-2 overflow-x-auto pb-2">
+                          {inspectUser.profile_details.photos.map((p: string, idx: number) => (
+                            <img key={idx} src={p} alt={`Photo ${idx + 1}`} className="w-24 h-24 object-cover rounded-xl border border-gray-200 shrink-0" />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Audio & Video Intro */}
+                    <div className="space-y-3">
+                      <div>
+                        <span className="font-semibold text-gray-500 text-xs flex items-center gap-1 mb-1">
+                          <Video className="w-3.5 h-3.5 text-red-500" /> Video Intro:
+                        </span>
+                        {inspectUser.profile_details?.videoIntroUrl || inspectUser.profile_details?.videoUrl ? (
+                          <video src={inspectUser.profile_details.videoIntroUrl || inspectUser.profile_details.videoUrl} controls className="w-full rounded-xl max-h-32 bg-black" />
+                        ) : (
+                          <p className="text-gray-400 text-[11px] italic bg-white p-2.5 rounded-xl border border-gray-200/50">No video intro provided.</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <span className="font-semibold text-gray-500 text-xs flex items-center gap-1 mb-1">
+                          <Volume2 className="w-3.5 h-3.5 text-blue-500" /> Voice Intro:
+                        </span>
+                        {inspectUser.profile_details?.voiceIntroUrl || inspectUser.profile_details?.audioUrl ? (
+                          <audio src={inspectUser.profile_details.voiceIntroUrl || inspectUser.profile_details.audioUrl} controls className="w-full" />
+                        ) : (
+                          <p className="text-gray-400 text-[11px] italic bg-white p-2.5 rounded-xl border border-gray-200/50">No voice intro recorded.</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. Identity Verification Scans */}
+                <div className="border border-gray-100 rounded-2xl p-5 bg-gray-50/50 space-y-3">
+                  <h4 className="font-bold text-gray-900 text-xs flex items-center gap-1.5 border-b border-gray-200 pb-2">
+                    <ShieldCheck className="w-4 h-4 text-blue-600" /> Identity Verification Scans (KYC)
+                  </h4>
+                  <div className="grid md:grid-cols-3 gap-4 text-xs">
+                    <div>
+                      <span className="font-semibold text-gray-400">Document Type:</span>
+                      <p className="font-bold text-gray-900 mt-0.5">{inspectUser.kyc_document_type || "N/A"}</p>
+                      <span className="font-semibold text-gray-400 block mt-2">Submission Date:</span>
+                      <p className="font-medium text-gray-700">{inspectUser.kyc_submitted_at ? new Date(inspectUser.kyc_submitted_at).toLocaleString() : "N/A"}</p>
+                      {inspectUser.kyc_rejected_reason && (
+                        <div className="mt-2 text-red-700 bg-red-50 p-2 rounded-xl border border-red-100">
+                          <span className="font-bold block">Rejection Reason:</span>
+                          {inspectUser.kyc_rejected_reason}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Front Scan */}
+                    <div>
+                      <span className="font-semibold text-gray-500 block mb-1">Front Document Scan:</span>
+                      {inspectUser.kyc_front_url ? (
+                        <img src={inspectUser.kyc_front_url} alt="Front Document" className="w-full h-32 object-cover rounded-xl border border-gray-200" />
+                      ) : (
+                        <div className="h-32 bg-white rounded-xl border border-gray-200/60 flex items-center justify-center text-gray-400 text-[11px]">No Front Scan</div>
+                      )}
+                    </div>
+
+                    {/* Back Scan */}
+                    <div>
+                      <span className="font-semibold text-gray-500 block mb-1">Back Document Scan:</span>
+                      {inspectUser.kyc_back_url ? (
+                        <img src={inspectUser.kyc_back_url} alt="Back Document" className="w-full h-32 object-cover rounded-xl border border-gray-200" />
+                      ) : (
+                        <div className="h-32 bg-white rounded-xl border border-gray-200/60 flex items-center justify-center text-gray-400 text-[11px]">No Back Scan</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
     </div>
   );
 }

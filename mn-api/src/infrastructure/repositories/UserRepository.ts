@@ -66,7 +66,7 @@ export class UserRepository implements IUserRepository {
             const limitStr = filters.limit ? `LIMIT ${filters.limit}` : '';
             
             const query = `
-              SELECT u.id, u.uuid, u.first_name, u.last_name, u.gender, u.cast, u.location, u.dob, u.status, u.is_premium, u.profile_for, u.mobile_number, u.kyc_status, u.kyc_document_type, u.kyc_front_url, u.kyc_back_url, u.kyc_rejected_reason, u.kyc_submitted_at, u.kyc_verified_at, u.created_at, u.updated_at,
+              SELECT u.id, u.uuid, u.first_name, u.last_name, u.gender, u.cast, u.location, u.dob, u.status, u.is_premium, u.profile_for, u.mobile_number, u.kyc_status, u.kyc_document_type, u.kyc_rejected_reason, u.kyc_submitted_at, u.kyc_verified_at, u.created_at, u.updated_at,
               jsonb_build_object(
                 'mn_basic_details_draft', u.profile_details->'mn_basic_details_draft',
                 'mn_profile_photos_draft', u.profile_details->'mn_profile_photos_draft',
@@ -99,8 +99,6 @@ export class UserRepository implements IUserRepository {
                 mobile_number: true,
                 kyc_status: true,
                 kyc_document_type: true,
-                kyc_front_url: true,
-                kyc_back_url: true,
                 kyc_rejected_reason: true,
                 kyc_submitted_at: true,
                 kyc_verified_at: true,

@@ -98,10 +98,16 @@ user_route.get('/:id', async (req: Request, res: Response) => {
       }
     }
 
-    // Remove password hash from response for security
-    const { password, ...safeUser } = user as any;
+    // Remove password hash and sensitive KYC document URLs from response for non-admin/non-owner requesters
+    const { password, kyc_front_url, kyc_back_url, ...safeUser } = user as any;
+    const canSeeKycDocs = reqIsAdmin || requesterId === targetUserId;
+    
+    const finalUser = canSeeKycDocs 
+      ? { ...safeUser, kyc_front_url, kyc_back_url } 
+      : safeUser;
+
     const { onlineUsers } = require("../../infrastructure/onlineTracker");
-    res.status(200).json({ success: true, user: { ...safeUser, is_online: onlineUsers.has(targetUserId) } });
+    res.status(200).json({ success: true, user: { ...finalUser, is_online: onlineUsers.has(targetUserId) } });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || "Failed to fetch user" });
   }

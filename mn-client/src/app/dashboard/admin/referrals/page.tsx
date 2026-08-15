@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { 
-  Award, ShieldCheck, ShieldAlert, Trash2, ArrowLeft, 
+  Award, ShieldCheck, ShieldAlert, Trash2, ArrowLeft, Unlock,
   Settings, Users, CheckCircle2, Clock, Plus, Minus, Search, 
   AlertTriangle, CreditCard, Loader2, RefreshCw, X 
 } from "lucide-react";
@@ -76,6 +77,7 @@ interface AdminTransactionItem {
 }
 
 export default function AdminReferralsPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<ReferralUser[]>([]);
   const [stats, setStats] = useState<AdminStats>({
@@ -113,21 +115,36 @@ export default function AdminReferralsPage() {
   const [ptsType, setPtsType] = useState<"BONUS" | "DEDUCT">("BONUS");
   const [ptsActionLoading, setPtsActionLoading] = useState(false);
 
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
   const fetchReferrals = async () => {
     setLoading(true);
+    setFetchError(null);
     try {
       const token = localStorage.getItem("mn_token");
+      if (!token) {
+        router.push("/admin/login");
+        return;
+      }
       const res = await fetch(`${API_URL}/user/admin/referrals?page=${page}&search=${searchQuery}`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
+      if (res.status === 401 || res.status === 403) {
+        localStorage.removeItem("mn_token");
+        router.push("/admin/login");
+        return;
+      }
       const data = await res.json();
       if (data.success) {
         setUsers(data.referrals);
         setStats(data.stats);
         setTotalPages(data.pagination.totalPages);
+      } else {
+        setFetchError(data.message || "Failed to load referral records.");
       }
     } catch (err) {
       console.error(err);
+      setFetchError("Unable to communicate with referral service.");
     } finally {
       setLoading(false);
     }
@@ -291,12 +308,29 @@ export default function AdminReferralsPage() {
             Configure system conditions, manage referral point transactions, and block abuses.
           </p>
         </div>
-        <button
-          onClick={fetchReferrals}
-          className="flex items-center justify-center gap-1.5 px-4 py-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer active:scale-95 shrink-0"
-        >
-          <RefreshCw className="w-3.5 h-3.5" /> Refresh List
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => router.push("/dashboard/admin")}
+            className="flex items-center justify-center gap-1.5 px-4 py-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer active:scale-95 shrink-0"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" /> Command Center
+          </button>
+          <button
+            onClick={fetchReferrals}
+            className="flex items-center justify-center gap-1.5 px-4 py-2 border border-brand-200 bg-brand-50 hover:bg-brand-100 text-brand-700 text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer active:scale-95 shrink-0"
+          >
+            <RefreshCw className="w-3.5 h-3.5" /> Refresh List
+          </button>
+          <button
+            onClick={() => {
+              localStorage.removeItem("mn_token");
+              router.push("/admin/login");
+            }}
+            className="flex items-center justify-center gap-1.5 px-4 py-2 border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer active:scale-95 shrink-0"
+          >
+            <Unlock className="w-3.5 h-3.5" /> Admin Logout
+          </button>
+        </div>
       </div>
 
       {/* Admin stats */}
