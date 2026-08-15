@@ -8,6 +8,11 @@ const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-sans" });
 export const metadata: Metadata = {
   title: "Malappuram Nikah | Premium Matrimony",
   description: "Find your perfect life partner with our premium, secure, and trusted matchmaking service.",
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
+  },
 };
 
 export default function RootLayout({
