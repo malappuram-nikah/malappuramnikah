@@ -111,7 +111,7 @@ export default function AdminDashboardPage() {
     try {
       const storedToken = localStorage.getItem("mn_token");
       if (!storedToken) {
-        router.push("/login");
+        router.push("/admin/login");
         return;
       }
 
@@ -121,7 +121,7 @@ export default function AdminDashboardPage() {
       });
       if (statsRes.status === 403 || statsRes.status === 401) {
         triggerAlert("Access denied. Admin privileges required.", "error");
-        router.push("/dashboard");
+        router.push("/admin/login");
         return;
       }
 

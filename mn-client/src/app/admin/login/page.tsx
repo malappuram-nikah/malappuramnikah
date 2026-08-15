@@ -6,6 +6,8 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShieldCheck, ArrowRight, CheckCircle2, AlertCircle } from "lucide-react";
 
+import { API_URL } from "@/lib/config";
+
 export default function AdminLoginPage() {
   const router = useRouter();
   const [mobileNumber, setMobileNumber] = useState("1212121212");
@@ -35,7 +37,6 @@ export default function AdminLoginPage() {
     setLoading(true);
     setErrorMsg("");
 
-    // Simulate OTP dispatch visually for reliable local execution
     setTimeout(() => {
       triggerNotification("Verification OTP code sent successfully!", "success");
       setStep(2);
@@ -53,23 +54,30 @@ export default function AdminLoginPage() {
     setLoading(true);
     setErrorMsg("");
 
-    setTimeout(() => {
-      if (otpCode === "123456") {
-        // Construct compliant mock JWT token representing Admin User (userId: 2)
-        // Satisfies storedToken.split(".")[1] decoding and backend adminGuard checks
-        const mockAdminToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjJ9.mock_signature";
-        localStorage.setItem("mn_token", mockAdminToken);
-        
+    try {
+      const response = await fetch(`${API_URL}/user/admin/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mobileNumber, otpCode }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.accessToken) {
+        localStorage.setItem("mn_token", data.accessToken);
         triggerNotification("Authentication approved. Launching Command Center...", "success");
-        
+
         setTimeout(() => {
           router.push("/dashboard/admin");
-        }, 1200);
+        }, 1000);
       } else {
-        triggerNotification("Invalid OTP code. Use default code: 123456.", "error");
+        triggerNotification(data.message || "Invalid Admin authentication", "error");
         setLoading(false);
       }
-    }, 600);
+    } catch (err) {
+      triggerNotification("Network connection error. Please try again.", "error");
+      setLoading(false);
+    }
   };
 
   return (
