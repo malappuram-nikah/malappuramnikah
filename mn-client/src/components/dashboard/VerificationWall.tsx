@@ -30,10 +30,11 @@ export default function VerificationWall({ children }: { children: React.ReactNo
   const isMale = currentUser?.gender?.toLowerCase() === "male";
   const isVerified = currentUser?.kyc_status === "VERIFIED";
   const isUnderReview = currentUser?.kyc_status === "UNDER_REVIEW" || currentUser?.kyc_status === "PENDING";
-  const isBypassedPath = pathname === "/dashboard/settings" || pathname === "/dashboard/profile-builder";
+  const isAdminOrBusiness = currentUser?.isAdmin || currentUser?.role === "admin" || pathname.startsWith("/dashboard/admin") || pathname.startsWith("/dashboard/business");
+  const isBypassedPath = isAdminOrBusiness || pathname === "/dashboard/settings" || pathname === "/dashboard/profile-builder";
 
   // If user is male and NOT verified and not on a bypassed settings/wizard page, enforce the verification wall
-  if (isMale && !isVerified && !isBypassedPath) {
+  if (!isAdminOrBusiness && isMale && !isVerified && !isBypassedPath) {
     return (
       <div className="max-w-md mx-auto my-12 bg-white rounded-xl border border-gray-150 p-8 shadow-sm space-y-6 text-center animate-pulse">
         <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600 border border-amber-100 mx-auto">
