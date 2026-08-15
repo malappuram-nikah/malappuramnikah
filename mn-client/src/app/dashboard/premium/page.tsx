@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Crown, Check, Zap, Shield, Star, Loader2 } from "lucide-react";
+import { Crown, Check, Zap, Shield, Star, Loader2, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/context/UserContext";
 import { API_URL } from "@/lib/config";
@@ -62,17 +62,8 @@ const plans = [
 
 export default function PremiumPage() {
   const router = useRouter();
-  const { currentUser, loadingUser, refreshUser } = useUser();
-  const [userId, setUserId] = useState<number | null>(null);
-  const [isPremium, setIsPremium] = useState<boolean>(false);
+  const { currentUser, loadingUser } = useUser();
   const [loading, setLoading] = useState<boolean>(true);
-  const [upgrading, setUpgrading] = useState<string | null>(null);
-  const [alertMsg, setAlertMsg] = useState<{ text: string; type: "success" | "error" } | null>(null);
-
-  const triggerAlert = (text: string, type: "success" | "error" = "success") => {
-    setAlertMsg({ text, type });
-    setTimeout(() => setAlertMsg(null), 4000);
-  };
 
   useEffect(() => {
     if (loadingUser) return;
@@ -80,168 +71,82 @@ export default function PremiumPage() {
       router.push("/login");
       return;
     }
-    setUserId(currentUser.id);
-    setIsPremium(!!currentUser.is_premium);
     setLoading(false);
   }, [currentUser, loadingUser, router]);
-
-  const handleUpgradePlan = async (planName: string) => {
-    if (!userId) {
-      triggerAlert("Please log in to upgrade.", "error");
-      return;
-    }
-    setUpgrading(planName);
-    try {
-      const token = localStorage.getItem("mn_token");
-      const res = await fetch(`${API_URL}/user/${userId}/premium`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({ is_premium: true })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setIsPremium(true);
-        triggerAlert(`Congratulations! You have successfully upgraded to the ${planName} Plan! 🎉`);
-        await refreshUser();
-      } else {
-        triggerAlert(data.message || "Upgrade failed.", "error");
-      }
-    } catch (e) {
-      triggerAlert("Connection failed. Try again.", "error");
-    } finally {
-      setUpgrading(null);
-    }
-  };
 
   if (loading) {
     return (
       <div className="py-24 flex flex-col items-center justify-center text-gray-400">
         <Loader2 className="w-10 h-10 animate-spin mb-3 text-brand-500" />
-        <p className="font-semibold text-sm">Checking subscription state...</p>
+        <p className="font-semibold text-sm">Loading launch offers...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 relative">
-      {/* Toast Alert Banner */}
-      <AnimatePresence>
-        {alertMsg && (
-          <motion.div
-            initial={{ opacity: 0, y: -40 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -40 }}
-            className={`fixed top-24 left-1/2 -translate-x-1/2 z-50 text-white text-xs font-semibold px-5 py-3 rounded-full shadow-xl flex items-center gap-2 border ${
-              alertMsg.type === "success" ? "bg-gray-900 border-gray-800" : "bg-red-600 border-red-500"
-            }`}
-          >
-            <span>{alertMsg.text}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <div className="space-y-8 max-w-4xl mx-auto py-6">
+      {/* Launch Day Free Banner */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-gradient-to-r from-brand-600 via-brand-700 to-teal-700 text-white rounded-3xl p-8 sm:p-10 shadow-xl relative overflow-hidden text-center"
+      >
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+        
+        <div className="relative z-10 space-y-4">
+          <div className="inline-flex items-center gap-2 bg-amber-400/20 border border-amber-300/30 text-amber-200 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider">
+            <Sparkles className="w-4 h-4 text-amber-300" /> Launch Celebration Special
+          </div>
+          
+          <h1 className="text-3xl sm:text-4xl font-extrabold font-playfair tracking-tight">
+            100% FREE Access for All Members! 🎉
+          </h1>
+          
+          <p className="text-brand-100 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
+            To celebrate the official launch of <strong className="text-white">Malappuram Nikah</strong>, paid premium plans are currently disabled. All matching, chatting, search filters, and profile details are <strong>completely FREE</strong> for all registered users!
+          </p>
 
-      <div className="text-center max-w-2xl mx-auto">
-        <div className="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center mx-auto mb-5 relative">
-          <Crown className={`w-7 h-7 ${isPremium ? "text-amber-500 fill-amber-500" : "text-brand-600"}`} />
-          {isPremium && (
-            <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-amber-500"></span>
-            </span>
-          )}
-        </div>
-        <h1 className="text-3xl font-bold font-playfair text-gray-900 mb-3">
-          {isPremium ? "You are a Premium Member! 🌟" : "Upgrade Your Experience"}
-        </h1>
-        <p className="text-gray-500">
-          {isPremium 
-            ? "Your premium benefits are fully active. You have unlimited visibility, premium search options, and matchmaker support." 
-            : "Unlock premium features to find your perfect match faster with greater privacy and visibility."}
-        </p>
-      </div>
-
-      {/* Plans */}
-      <div className="grid md:grid-cols-3 gap-6 items-stretch">
-        {plans.map((plan, i) => {
-          // If user is premium, Gold counts as active premium tier
-          const isActivePlan = isPremium && plan.name === "Gold";
-          return (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className={`rounded-2xl border-2 overflow-hidden flex flex-col relative transition-all ${
-                isActivePlan 
-                  ? "border-amber-500 ring-4 ring-amber-500/10 shadow-lg scale-[1.02]" 
-                  : plan.color
-              }`}
+          <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <button
+              onClick={() => router.push("/dashboard/matches")}
+              className="px-8 py-3.5 bg-amber-400 hover:bg-amber-300 text-gray-900 font-bold text-sm rounded-xl transition-all shadow-lg active:scale-95 flex items-center gap-2"
             >
-              {isActivePlan ? (
-                <div className="absolute top-4 right-4 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">
-                  Active Subscription
-                </div>
-              ) : plan.badge ? (
-                <div className="absolute top-4 right-4 bg-white text-brand-700 text-xs font-bold px-3 py-1 rounded-full shadow-sm">
-                  {plan.badge}
-                </div>
-              ) : null}
-              
-              <div className={`px-6 py-7 ${isActivePlan ? "bg-amber-500" : plan.headerColor}`}>
-                <p className={`text-lg font-bold font-playfair mb-2 ${plan.name === "Gold" || isActivePlan ? "text-white" : "text-gray-900"}`}>{plan.name}</p>
-                <div className="flex items-end gap-1">
-                  <span className={`text-4xl font-bold ${plan.name === "Gold" || isActivePlan ? "text-white" : "text-gray-900"}`}>{plan.price}</span>
-                  <span className={`text-sm pb-1 ${plan.name === "Gold" || isActivePlan ? "text-brand-200" : "text-gray-500"}`}>{plan.period}</span>
-                </div>
-              </div>
-              
-              <div className="px-6 py-6 flex-1 flex flex-col justify-between">
-                <ul className="space-y-3 flex-1 mb-8">
-                  {plan.features.map((f, j) => (
-                    <li key={j} className={`flex items-start gap-2.5 text-sm ${plan.name === "Gold" && !isActivePlan ? "text-white font-medium" : "text-gray-600"}`}>
-                      <Check className={`w-4 h-4 shrink-0 mt-0.5 ${plan.name === "Gold" && !isActivePlan ? "text-teal-200" : "text-brand-500"}`} />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                
-                <button
-                  onClick={() => handleUpgradePlan(plan.name)}
-                  disabled={isPremium || upgrading !== null}
-                  className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 ${
-                    isActivePlan 
-                      ? "bg-amber-500 text-white" 
-                      : plan.btnClass
-                  }`}
-                >
-                  {upgrading === plan.name ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Activating...
-                    </>
-                  ) : isActivePlan ? (
-                    "Current Plan"
-                  ) : isPremium ? (
-                    "Premium Enabled"
-                  ) : (
-                    `Choose ${plan.name}`
-                  )}
-                </button>
-              </div>
-            </motion.div>
-          );
-        })}
+              <Crown className="w-5 h-5 text-amber-800" />
+              Explore Free Matches
+            </button>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Included Free Features Grid */}
+      <div className="bg-white rounded-3xl border border-gray-150 p-8 shadow-sm space-y-6">
+        <h3 className="text-lg font-bold text-gray-900 font-playfair text-center">
+          Features Currently Unlocked For You
+        </h3>
+
+        <div className="grid sm:grid-cols-2 gap-4">
+          {[
+            "Unlimited Profile Search & Browsing",
+            "Direct Interest Expressing & Mutual Acceptances",
+            "Real-time Chat with Accepted Matches",
+            "High-Quality Profile Photo Access",
+            "Detailed Religious & Caste Preferences Filter",
+            "Instant PDF Biodata Download"
+          ].map((feature, i) => (
+            <div key={i} className="flex items-center gap-3 p-3.5 bg-gray-50 rounded-xl border border-gray-100">
+              <Check className="w-5 h-5 text-emerald-600 shrink-0" />
+              <span className="text-xs font-semibold text-gray-700">{feature}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Trust badges */}
-      <div className="grid sm:grid-cols-3 gap-4 mt-4">
+      {/* Trust Guarantee */}
+      <div className="grid sm:grid-cols-3 gap-4">
         {[
-          { icon: Shield, title: "Secure Payment",   desc: "SSL encrypted, 100% safe" },
-          { icon: Zap,    title: "Instant Activation", desc: "Account upgraded immediately" },
-          { icon: Star,   title: "7-Day Refund",     desc: "Not satisfied? Full refund" },
+          { icon: Shield, title: "100% Verified Profiles", desc: "Monitored community safety" },
+          { icon: Zap,    title: "Instant Match Delivery",  desc: "Zero waiting period" },
+          { icon: Star,   title: "No Hidden Charges",      desc: "Free launch guarantee" },
         ].map((b, i) => (
           <div key={i} className="bg-white rounded-2xl p-5 border border-gray-100 flex items-start gap-4">
             <div className="w-10 h-10 bg-brand-50 rounded-xl flex items-center justify-center shrink-0">
