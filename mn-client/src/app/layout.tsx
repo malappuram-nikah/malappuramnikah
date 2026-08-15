@@ -9,9 +9,12 @@ export const metadata: Metadata = {
   title: "Malappuram Nikah | Premium Matrimony",
   description: "Find your perfect life partner with our premium, secure, and trusted matchmaking service.",
   icons: {
-    icon: "/favicon.png",
+    icon: [
+      { url: "/favicon.png", type: "image/png" },
+      { url: "/favicon.ico" }
+    ],
     shortcut: "/favicon.png",
-    apple: "/favicon.png",
+    apple: "/apple-icon.png",
   },
 };
 
