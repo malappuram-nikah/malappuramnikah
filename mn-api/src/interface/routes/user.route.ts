@@ -641,26 +641,32 @@ user_route.post('/feedback', async (req: Request, res: Response) => {
   }
 });
 
-// Password Reset - Step 1: Send OTP to Email
+// Password Reset - Step 1: Send OTP to Mobile Number or Email
 user_route.post("/forgot-password", async (req: Request, res: Response) => {
   try {
-    const { email } = req.body;
-    if (!email || typeof email !== "string" || !email.trim() || !email.includes("@")) {
-      res.status(400).json({ success: false, message: "Please provide a valid email address." });
+    const { email, identifier, mobile_number } = req.body;
+    const input = (identifier || email || mobile_number || "").toString().trim();
+    if (!input) {
+      res.status(400).json({ success: false, message: "Please provide your mobile number or email address." });
       return;
     }
 
-    const cleanEmail = email.trim().toLowerCase();
+    const cleanInput = input.toLowerCase();
+    const digitsOnly = input.replace(/[^0-9]/g, "");
 
-    // Find user by email (case-insensitive in email or profile_details)
+    // Find user by mobile_number (exact, formatted with +91 or raw) OR email
     const user = await prisma.user.findFirst({
       where: {
         OR: [
-          { email: { equals: cleanEmail, mode: "insensitive" } },
+          { email: { equals: cleanInput, mode: "insensitive" } },
+          { mobile_number: { equals: input } },
+          { mobile_number: { equals: `+91${digitsOnly}` } },
+          { mobile_number: { equals: `+${digitsOnly}` } },
+          { mobile_number: { endsWith: digitsOnly.length >= 10 ? digitsOnly.slice(-10) : digitsOnly } },
           {
             profile_details: {
               path: ["mn_basic_details_draft", "email"],
-              equals: cleanEmail
+              equals: cleanInput
             }
           }
         ]
@@ -670,7 +676,7 @@ user_route.post("/forgot-password", async (req: Request, res: Response) => {
     if (!user) {
       res.status(404).json({
         success: false,
-        message: "No account found with this email address. Please check your email or register."
+        message: "No account found matching this mobile number or email address."
       });
       return;
     }
@@ -692,19 +698,21 @@ user_route.post("/forgot-password", async (req: Request, res: Response) => {
       }
     });
 
-    console.log(`[PASSWORD RESET OTP] Sent to ${cleanEmail} (User #${user.id}): ${otpCode}`);
+    console.log(`[PASSWORD RESET OTP] Sent to ${user.mobile_number || cleanInput} (User #${user.id}): ${otpCode}`);
 
-    if (user.mobile_number) {
-      const { Msg91Service } = require("../../infrastructure/service/Msg91Service");
-      Msg91Service.sendOtp(user.mobile_number, otpCode).catch((e: any) =>
-        console.error("Failed to send MSG91 OTP for forgot password:", e)
+    const targetPhone = user.mobile_number || (digitsOnly ? `+91${digitsOnly.slice(-10)}` : "");
+    if (targetPhone) {
+      const { WhatsappOtpService } = require("../../infrastructure/service/WhatsappOtpService");
+      WhatsappOtpService.sendOtp(targetPhone, otpCode).catch((e: any) =>
+        console.error("Failed to send WhatsApp OTP for forgot password:", e)
       );
     }
 
     res.status(200).json({
       success: true,
-      message: `Password reset code sent to ${cleanEmail}. Check your inbox.`,
-      email: cleanEmail,
+      message: `Password reset code sent to your WhatsApp (${targetPhone || cleanInput}).`,
+      email: cleanInput,
+      identifier: input,
       devOtp: process.env.NODE_ENV !== "production" ? otpCode : undefined
     });
   } catch (err: any) {
@@ -716,9 +724,10 @@ user_route.post("/forgot-password", async (req: Request, res: Response) => {
 // Password Reset - Step 2: Verify OTP & Reset Password
 user_route.post("/reset-password", async (req: Request, res: Response) => {
   try {
-    const { email, otp, newPassword } = req.body;
-    if (!email || typeof email !== "string" || !email.trim()) {
-      res.status(400).json({ success: false, message: "Email address is required." });
+    const { email, identifier, mobile_number, otp, newPassword } = req.body;
+    const input = (identifier || email || mobile_number || "").toString().trim();
+    if (!input) {
+      res.status(400).json({ success: false, message: "Mobile number or email address is required." });
       return;
     }
 
@@ -732,17 +741,22 @@ user_route.post("/reset-password", async (req: Request, res: Response) => {
       return;
     }
 
-    const cleanEmail = email.trim().toLowerCase();
+    const cleanInput = input.toLowerCase();
+    const digitsOnly = input.replace(/[^0-9]/g, "");
 
     // Find user
     const user = await prisma.user.findFirst({
       where: {
         OR: [
-          { email: { equals: cleanEmail, mode: "insensitive" } },
+          { email: { equals: cleanInput, mode: "insensitive" } },
+          { mobile_number: { equals: input } },
+          { mobile_number: { equals: `+91${digitsOnly}` } },
+          { mobile_number: { equals: `+${digitsOnly}` } },
+          { mobile_number: { endsWith: digitsOnly.length >= 10 ? digitsOnly.slice(-10) : digitsOnly } },
           {
             profile_details: {
               path: ["mn_basic_details_draft", "email"],
-              equals: cleanEmail
+              equals: cleanInput
             }
           }
         ]

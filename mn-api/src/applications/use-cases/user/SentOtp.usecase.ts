@@ -1,6 +1,6 @@
 import { Otp } from "../../../domain/entities/otp.interface";
 import { IOtpRepository } from "../../../domain/interfaces/IOtpRepository";
-import { Msg91Service } from "../../../infrastructure/service/Msg91Service";
+import { WhatsappOtpService } from "../../../infrastructure/service/WhatsappOtpService";
 import otpGenerator from "otp-generator";
 
 export class SendOtpUseCase {
@@ -20,8 +20,8 @@ export class SendOtpUseCase {
       otp.expiresIn
     );
     
-    // Dispatch OTP via MSG91
-    await Msg91Service.sendOtp(phoneNumber, otpCode);
+    // Dispatch OTP via WhatsApp (Meta API / UltraMsg / Dev fallback)
+    await WhatsappOtpService.sendOtp(phoneNumber, otpCode);
 
     return otpCode;
   }

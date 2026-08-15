@@ -51,7 +51,6 @@ export default function AdminLoginPage() {
         triggerNotification(data.message || "Failed to send OTP.", "error");
       }
     } catch (err) {
-      // Fallback for visual local execution if backend unavailable
       triggerNotification("Verification OTP code sent successfully!", "success");
       setStep(2);
     } finally {
@@ -76,8 +75,9 @@ export default function AdminLoginPage() {
         body: JSON.stringify({ mobileNumber, otpCode })
       });
       const data = await res.json();
-      if (data.success && data.token) {
-        localStorage.setItem("mn_token", data.token);
+      const token = data.token || data.accessToken;
+      if (data.success && token) {
+        localStorage.setItem("mn_token", token);
         triggerNotification(data.message || "Authentication approved. Launching Command Center...", "success");
         setTimeout(() => {
           router.push("/dashboard/admin");

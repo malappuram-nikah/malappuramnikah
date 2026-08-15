@@ -97,59 +97,49 @@ export default function PricingPage() {
           <div className="w-14 h-14 bg-[#026d77]/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <Crown className="w-7 h-7 text-[#026d77]" />
           </div>
+          <span className="bg-amber-100 text-amber-800 text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider mb-4 inline-block">
+            Launch Special Offer 🎉
+          </span>
           <h1 className="text-3xl sm:text-4xl font-bold font-playfair text-gray-900 mb-4">
-            Simple, Transparent Pricing
+            100% Free Access During Launch!
           </h1>
           <p className="text-gray-500 text-base max-w-lg mx-auto leading-relaxed">
-            Choose the plan that works best for your journey. No hidden fees, cancel anytime.
+            To celebrate our launch, all premium features, profile search, chatting, and matchmaking are <strong>completely FREE</strong> for all users!
           </p>
         </motion.div>
       </div>
 
-      {/* Plans */}
-      <div className="max-w-5xl mx-auto px-6 pb-16 grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-        {plans.map((plan, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: i * 0.1 }}
-            className={`bg-white rounded-2xl border-2 ${plan.color} shadow-sm overflow-hidden ${i === 1 ? "ring-2 ring-[#026d77]/20 scale-[1.02]" : ""}`}
-          >
-            {/* Plan Header */}
-            <div className={`${plan.headerColor} p-6 ${i === 0 ? "text-gray-900" : "text-white"}`}>
-              {plan.badge && (
-                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full mb-3 inline-block ${i === 1 ? "bg-white/20 text-white" : "bg-white text-amber-600"}`}>
-                  {plan.badge}
-                </span>
-              )}
-              <h2 className="text-lg font-bold font-playfair">{plan.name}</h2>
-              <div className="mt-2">
-                <span className="text-3xl font-black">{plan.price}</span>
-                <span className={`text-sm ml-1 ${i === 0 ? "text-gray-500" : "text-white/70"}`}>{plan.period}</span>
+      {/* Free Features Highlights */}
+      <div className="max-w-4xl mx-auto px-6 pb-16">
+        <div className="bg-white rounded-3xl border-2 border-[#026d77] p-8 sm:p-10 shadow-lg text-center space-y-6">
+          <div className="text-3xl font-black text-[#026d77]">₹0 / FREE</div>
+          <p className="text-sm font-semibold text-gray-600">Full Access Unlocked For All Registered Members</p>
+
+          <div className="grid sm:grid-cols-2 gap-4 text-left max-w-2xl mx-auto pt-4 border-t border-gray-100">
+            {[
+              "Unlimited profile browsing & matching",
+              "Direct interest requests & acceptances",
+              "Real-time chat with mutual matches",
+              "Full profile photos & details visibility",
+              "Detailed caste & religious filters",
+              "PDF Biodata downloading"
+            ].map((feature, i) => (
+              <div key={i} className="flex items-center gap-3 text-sm text-gray-700">
+                <CheckCircle2 className="w-5 h-5 text-[#026d77] shrink-0" />
+                <span>{feature}</span>
               </div>
-            </div>
+            ))}
+          </div>
 
-            {/* Features */}
-            <div className="p-6">
-              <ul className="space-y-3 mb-6">
-                {plan.features.map((f, j) => (
-                  <li key={j} className="flex items-start gap-2 text-sm text-gray-600">
-                    <CheckCircle2 className="w-4 h-4 text-[#026d77] shrink-0 mt-0.5" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-
-              <Link
-                href={plan.ctaHref}
-                className={`w-full inline-flex items-center justify-center py-3 rounded-xl text-sm font-semibold transition-all shadow-sm ${plan.ctaStyle}`}
-              >
-                {plan.cta}
-              </Link>
-            </div>
-          </motion.div>
-        ))}
+          <div className="pt-6">
+            <Link
+              href="/"
+              className="inline-flex items-center justify-center px-8 py-3.5 rounded-xl text-sm font-bold text-white bg-[#026d77] hover:bg-[#03828e] transition-all shadow-md active:scale-95"
+            >
+              Get Started Free Now
+            </Link>
+          </div>
+        </div>
       </div>
 
       {/* Trust signals */}

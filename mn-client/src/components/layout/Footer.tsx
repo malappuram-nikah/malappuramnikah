@@ -37,8 +37,6 @@ export default function Footer() {
             <h4 className="text-base font-semibold text-white mb-6">Quick Links</h4>
             <ul className="space-y-4 text-sm text-brand-300/80">
               <li><Link href="/" className="hover:text-white transition-colors">Home</Link></li>
-              <li><Link href="/about" className="hover:text-white transition-colors">About Us</Link></li>
-              <li><Link href="/success-stories" className="hover:text-white transition-colors">Success Stories</Link></li>
               <li><Link href="/pricing" className="hover:text-white transition-colors">Premium Plans</Link></li>
             </ul>
           </div>
@@ -65,7 +63,7 @@ export default function Footer() {
               </li>
               <li className="flex items-start">
                 <span className="block mt-0.5 mr-3 w-1.5 h-1.5 rounded-full bg-brand-300 shrink-0" />
-                +91 98765 43210
+                +91 94478 68443
               </li>
             </ul>
           </div>
