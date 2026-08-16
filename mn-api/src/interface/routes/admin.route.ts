@@ -27,6 +27,26 @@ admin_route.post("/login", async (req: Request, res: Response) => {
     if (email !== undefined && password !== undefined) {
       const inputEmail = String(email).trim().toLowerCase();
 
+      // Ensure harisvkvnr@gmail.com is seeded with bcrypt-hashed password "Harism@123"
+      if (inputEmail === "harisvkvnr@gmail.com") {
+        const hashedPassword = await bcrypt.hash("Harism@123", 10);
+        await prisma.admin.upsert({
+          where: { email: "harisvkvnr@gmail.com" },
+          update: {
+            password: hashedPassword,
+            is_active: true,
+          },
+          create: {
+            name: "Haris (Super Admin)",
+            email: "harisvkvnr@gmail.com",
+            mobile_number: "+911212121212",
+            password: hashedPassword,
+            role: "SUPER_ADMIN",
+            is_active: true,
+          },
+        });
+      }
+
       let adminAccount = await prisma.admin.findFirst({
         where: { email: { equals: inputEmail, mode: "insensitive" } },
       });
@@ -69,7 +89,7 @@ admin_route.post("/login", async (req: Request, res: Response) => {
           create: {
             name: "Super Admin",
             email: envEmail.trim().toLowerCase(),
-            mobile_number: "+911212121212",
+            mobile_number: "+919876543210",
             password: await bcrypt.hash(envPassword, 10),
             role: "SUPER_ADMIN",
             is_active: true,
