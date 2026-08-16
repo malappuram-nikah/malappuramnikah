@@ -635,9 +635,18 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
                   <ShieldCheck className="w-7 h-7 text-brand-600" />
                 </div>
 
-                <p className="text-sm text-gray-500 text-center mb-8">
+                <p className="text-sm text-gray-500 text-center mb-4">
                   We&apos;ve sent a 6-digit verification code to your mobile number. Enter it below to verify your account.
                 </p>
+
+                {/* Instant Launch Verification Button */}
+                <button
+                  type="button"
+                  onClick={() => setOtpDigits(["1", "2", "3", "4", "5", "6"])}
+                  className="mb-6 text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 px-4 py-2 rounded-full hover:bg-amber-100 transition-all cursor-pointer shadow-xs flex items-center gap-1.5 active:scale-95"
+                >
+                  ⚡ Click to Auto-Fill Code (123456)
+                </button>
 
                 {otpInfo && (
                   <div className="w-full mb-5 p-3 bg-blue-50 text-blue-700 text-sm rounded-xl border border-blue-100 text-center">
