@@ -20,6 +20,7 @@ export default function LoginPage() {
   // Form Inputs
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
+  const [emailOtpInput, setEmailOtpInput] = useState("");
   const [otp, setOtp] = useState("");
   const [countryCode, setCountryCode] = useState("+91");
 
@@ -57,9 +58,8 @@ export default function LoginPage() {
       setToken(data.token);
       refreshAuth();
       router.replace(getPostLoginRedirect());
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Login failed. Please try again.";
-      setError(msg);
+    } catch (err: any) {
+      setError(err.message || "Login failed");
     } finally {
       setIsLoading(false);
     }
@@ -68,8 +68,9 @@ export default function LoginPage() {
   // OTP Send Handler (Step 1 of OTP Login)
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!mobile.trim()) {
-      setError("Please enter a valid mobile number.");
+    const target = emailOtpInput.trim();
+    if (!target) {
+      setError("Please enter your registered email address.");
       return;
     }
 
@@ -79,21 +80,20 @@ export default function LoginPage() {
     setDevOtpHint(null);
 
     try {
-      const fullPhone = countryCode + mobile.trim();
       const res = await fetch(`${API_URL}/otp/resend-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phoneNumber: fullPhone }),
+        body: JSON.stringify({ phoneNumber: target }),
       });
 
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        throw new Error(data.message || "Failed to send OTP. Please check your mobile number.");
+        throw new Error(data.message || "Failed to send OTP. Please check your email address.");
       }
 
       setOtpSent(true);
-      setSuccessMsg(data.message || "Verification code sent to your WhatsApp / Phone.");
+      setSuccessMsg(data.message || "Verification code sent to your email inbox.");
       if (data.otp) setDevOtpHint(String(data.otp));
     } catch (err: any) {
       setError(err.message || "Failed to send OTP.");
@@ -114,12 +114,12 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const fullPhone = countryCode + mobile.trim();
+      const target = emailOtpInput.trim();
       const res = await fetch(`${API_URL}/otp/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          phoneNumber: fullPhone,
+          phoneNumber: target,
           otpCode: otp.trim(),
         }),
       });
@@ -323,16 +323,16 @@ export default function LoginPage() {
               {!otpSent ? (
                 <form onSubmit={handleSendOtp} className="space-y-5">
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Registered Email or Mobile</label>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Registered Email Address</label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
                         <Mail className="h-5 w-5" />
                       </div>
                       <input
-                        type="text"
-                        value={mobile}
-                        onChange={(e) => setMobile(e.target.value)}
-                        placeholder="Enter registered email or mobile number"
+                        type="email"
+                        value={emailOtpInput}
+                        onChange={(e) => setEmailOtpInput(e.target.value)}
+                        placeholder="name@example.com"
                         required
                         className="w-full pl-10 pr-4 py-3.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
                       />
@@ -341,7 +341,7 @@ export default function LoginPage() {
 
                   <button
                     type="submit"
-                    disabled={isLoading || !mobile.trim()}
+                    disabled={isLoading || !emailOtpInput.trim()}
                     className="w-full bg-brand-600 text-white font-semibold py-3.5 px-4 rounded-xl hover:bg-brand-700 active:scale-[0.99] transition-all disabled:opacity-50 disabled:pointer-events-none shadow-sm hover:shadow flex items-center justify-center gap-2 text-sm"
                   >
                     {isLoading ? (
