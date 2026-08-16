@@ -205,6 +205,18 @@
   },
   "activity_logs": [
     {
+      "id": 1786871963514,
+      "admin": "muhammed  shibili",
+      "action": "Approved identity verification for user Abdul Vajid (ID: 41)",
+      "time": "2026-08-16 09:19:23"
+    },
+    {
+      "id": 1786871745305,
+      "admin": "Wafa Shabnam",
+      "action": "Approved identity verification for user shibili n (ID: 55)",
+      "time": "2026-08-16 09:15:45"
+    },
+    {
       "id": 1783274671867,
       "admin": "Super Admin",
       "action": "Approved identity verification for user Mohd Salih (ID: 36)",

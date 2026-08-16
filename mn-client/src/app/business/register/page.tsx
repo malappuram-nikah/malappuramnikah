@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Briefcase, ArrowRight, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
 import { LOCATIONS } from "@/lib/constants";
 import { API_URL } from "@/lib/config";
+import { setToken } from "@/lib/auth-session";
 
 export default function BusinessRegisterPage() {
   const router = useRouter();
@@ -63,7 +64,7 @@ export default function BusinessRegisterPage() {
         triggerNotification(`Registration successful! Welcome to Malappuram Nikah B2B.`, "success");
         
         // Log vendor in
-        localStorage.setItem("mn_token", "mock_admin_token_sinan");
+        setToken("mock_admin_token_sinan");
         localStorage.setItem("b2b_vendor_session", JSON.stringify({
           name: formData.name,
           category: formData.category,

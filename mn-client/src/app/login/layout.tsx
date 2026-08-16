@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import GuestAuthLayout from "@/components/auth/GuestAuthLayout";
 
 export const metadata: Metadata = {
   title: "Sign In | Malappuram Nikah",
@@ -6,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function LoginLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return <GuestAuthLayout mode="member">{children}</GuestAuthLayout>;
 }

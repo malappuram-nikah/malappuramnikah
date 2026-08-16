@@ -7,9 +7,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Eye, EyeOff, Phone, Lock, ArrowRight, KeyRound, MessageSquare, ShieldCheck, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { API_URL } from "@/lib/config";
+import { getPostLoginRedirect, setToken } from "@/lib/auth-session";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { refreshAuth } = useAuth();
 
   // Login Mode: "password" or "otp"
   const [loginMode, setLoginMode] = useState<"password" | "otp">("password");
@@ -51,8 +54,9 @@ export default function LoginPage() {
         throw new Error(data.message || "Invalid mobile number or password");
       }
 
-      localStorage.setItem("mn_token", data.token);
-      router.push("/dashboard");
+      setToken(data.token);
+      refreshAuth();
+      router.replace(getPostLoginRedirect());
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Login failed. Please try again.";
       setError(msg);
@@ -127,8 +131,9 @@ export default function LoginPage() {
       }
 
       const authToken = data.accessToken || data.token;
-      localStorage.setItem("mn_token", authToken);
-      router.push("/dashboard");
+      setToken(authToken);
+      refreshAuth();
+      router.replace(getPostLoginRedirect());
     } catch (err: any) {
       setError(err.message || "Failed to verify OTP.");
     } finally {

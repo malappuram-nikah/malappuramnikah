@@ -1,8 +1,10 @@
 import { Router, Request, Response } from "express";
 import prisma from "../../infrastructure/prisma/prisamClient";
 import { getUserIdFromRequest } from "./interest.route";
+import { memberAccountGuard } from "../../infrastructure/middleware/memberAccount.middleware";
 
 const notification_route = Router();
+notification_route.use(memberAccountGuard);
 
 // 1. Fetch User Notifications (GET /user/notifications)
 notification_route.get("/", async (req: Request, res: Response) => {

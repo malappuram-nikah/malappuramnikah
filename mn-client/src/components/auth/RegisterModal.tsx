@@ -13,6 +13,8 @@ import {
   validateMobile,
   validatePassword,
 } from "@/lib/registration-validation";
+import { getPostLoginRedirect, setToken } from "@/lib/auth-session";
+import { useAuth } from "@/context/AuthContext";
 
 interface RegisterModalProps {
   isOpen: boolean;
@@ -21,6 +23,7 @@ interface RegisterModalProps {
 
 export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
   const router = useRouter();
+  const { status, refreshAuth } = useAuth();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     profileFor: "",
@@ -46,6 +49,13 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
       }
     }
   }, []);
+
+  useEffect(() => {
+    if (isOpen && status === "authenticated") {
+      onClose();
+      router.replace(getPostLoginRedirect());
+    }
+  }, [isOpen, status, onClose, router]);
 
   const updateForm = (key: string, value: string) => {
     if (key === "mobile") {
@@ -513,13 +523,14 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
       }
 
       if (data.accessToken) {
-        localStorage.setItem("mn_token", data.accessToken);
+        setToken(data.accessToken);
+        refreshAuth();
       }
 
       setVerified(true);
       setTimeout(() => {
         onClose();
-        router.push("/dashboard");
+        router.replace(getPostLoginRedirect());
       }, 2000);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "OTP verification failed";

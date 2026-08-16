@@ -11,7 +11,8 @@ import { OtpRepository } from "../../infrastructure/repositories/OtpRepository";
 import { UpdateProfileDetailsUseCase } from "../../applications/use-cases/user/UpdateProfileDetails.usecase";
 
 
-import { getUserIdFromRequest } from "./interest.route";
+import { getUserIdFromRequest, isAdminTokenFromRequest } from "./interest.route";
+import { createMemberAccountGuard } from "../../infrastructure/middleware/memberAccount.middleware";
 import prisma from "../../infrastructure/prisma/prisamClient";
 import { io } from "../../index";
 import { MediaStorageService } from "../../infrastructure/service/MediaStorageService";
@@ -39,6 +40,9 @@ generateGuestReferral
 user_route.post('/register', async (req: Request, res: Response) => { await userController.register(req, res)});
 user_route.post('/generate-referral-code', async (req: Request, res: Response) => { await userController.generateReferral(req, res)});
 user_route.post('/login',async (req:Request,res:Response) => {await userController.login(req,res)})
+
+user_route.use(createMemberAccountGuard({ allowSelfProfileGet: true }));
+
 user_route.get('/profiles', async (req: Request, res: Response) => { await userController.getProfiles(req, res)});
 user_route.put('/:id/profile', async (req: Request, res: Response) => { await userController.updateProfile(req, res)});
 user_route.get('/:id', async (req: Request, res: Response) => {
@@ -52,6 +56,14 @@ user_route.get('/:id', async (req: Request, res: Response) => {
     const requesterId = getUserIdFromRequest(req);
     if (!requesterId) {
       res.status(401).json({ success: false, message: "Unauthorized. Missing or invalid token." });
+      return;
+    }
+
+    if (isAdminTokenFromRequest(req) && requesterId === parseInt(idParam, 10)) {
+      res.status(403).json({
+        success: false,
+        message: "Admin accounts must use the admin profile API.",
+      });
       return;
     }
 
@@ -138,7 +150,7 @@ user_route.put('/:id/premium', async (req: Request, res: Response) => {
   }
 });
 
-const KYC_UPLOADS_DIR = path.join(process.cwd(), "kyc-uploads");
+const KYC_UPLOADS_DIR = path.join(process.cwd(), "public", "uploads", "kyc");
 
 async function deleteKycFile(fileName: string | null) {
   if (!fileName) return;

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { API_URL } from "@/lib/config";
+import { clearSession, getToken, isAdminSession } from "@/lib/auth-session";
 
 interface UserContextType {
   currentUser: any;
@@ -16,8 +17,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [loadingUser, setLoadingUser] = useState(true);
 
   const fetchUser = useCallback(async () => {
-    const token = localStorage.getItem("mn_token");
-    if (!token) {
+    const token = getToken();
+    if (!token || isAdminSession()) {
       setCurrentUser(null);
       setLoadingUser(false);
       return null;
@@ -41,6 +42,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         headers: { "Authorization": `Bearer ${token}` },
         cache: "no-store"
       });
+      if (res.status === 401 || res.status === 403) {
+        clearSession();
+        setCurrentUser(null);
+        setLoadingUser(false);
+        return null;
+      }
       const data = await res.json();
       if (data.success && data.user) {
         const user = data.user;

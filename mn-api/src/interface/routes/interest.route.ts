@@ -2,8 +2,10 @@ import { Router, Request, Response } from "express";
 import prisma from "../../infrastructure/prisma/prisamClient";
 import jwt from "jsonwebtoken";
 import { io } from "../../index";
+import { memberAccountGuard } from "../../infrastructure/middleware/memberAccount.middleware";
 
 const interest_route = Router();
+interest_route.use(memberAccountGuard);
 
 import { accessTokenConfig } from "../../infrastructure/config/jwt.config";
 
@@ -24,6 +26,24 @@ export function getUserIdFromRequest(req: Request): number | null {
   } catch (err) {
     console.error("JWT extraction failed:", err);
     return null;
+  }
+}
+
+export function isAdminTokenFromRequest(req: Request): boolean {
+  try {
+    let token: string | undefined;
+    const authHeader = req.headers.authorization;
+    if (authHeader) {
+      token = authHeader.split(" ")[1];
+    } else if (req.query.token) {
+      token = req.query.token as string;
+    }
+    if (!token) return false;
+
+    const payload: any = jwt.verify(token, accessTokenConfig.secret);
+    return payload.isAdmin === true || payload.role === "admin";
+  } catch {
+    return false;
   }
 }
 

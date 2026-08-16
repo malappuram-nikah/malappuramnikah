@@ -1,8 +1,10 @@
 import { Router, Request, Response } from "express";
 import prisma from "../../infrastructure/prisma/prisamClient";
 import { getUserIdFromRequest } from "./interest.route";
+import { memberAccountGuard } from "../../infrastructure/middleware/memberAccount.middleware";
 
 const referral_route = Router();
+referral_route.use(memberAccountGuard);
 
 // Helper to ensure settings exist
 async function getReferralSettings() {

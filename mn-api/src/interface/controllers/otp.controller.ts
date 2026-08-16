@@ -3,6 +3,7 @@ import { SendOtpUseCase } from "../../applications/use-cases/user/SentOtp.usecas
 import { VerifyOtpUseCase } from "../../applications/use-cases/user/VerifyOtp.usecase";
 import { AuthService } from "../../infrastructure/service/AuthService.service";
 import { accessTokenConfig } from "../../infrastructure/config/jwt.config";
+import { getAccountBlockForUser } from "../../infrastructure/helpers/accountStatus.helpers";
 import prisma from "../../infrastructure/prisma/prisamClient";
 
 export class OtpController {
@@ -22,6 +23,15 @@ export class OtpController {
       const user = await prisma.user.findUnique({ where: { mobile_number: phoneNumber } });
       if (!user) {
         return res.status(404).json({ success: false, message: "No account found for this mobile number" });
+      }
+
+      const accountBlock = getAccountBlockForUser(user);
+      if (accountBlock) {
+        return res.status(accountBlock.httpStatus).json({
+          success: false,
+          message: accountBlock.message,
+          code: accountBlock.code,
+        });
       }
 
       const generatedOtp = await this.sendOtpUseCase.execute(phoneNumber);
@@ -61,14 +71,25 @@ export class OtpController {
         return res.status(404).json({ success: false, message: "User not found" });
       }
 
+      const accountBlock = getAccountBlockForUser(user);
+      if (accountBlock) {
+        return res.status(accountBlock.httpStatus).json({
+          success: false,
+          message: accountBlock.message,
+          code: accountBlock.code,
+        });
+      }
+
       if (userId && Number(userId) !== user.id) {
         return res.status(400).json({ success: false, message: "User does not match the provided phone number" });
       }
 
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { status: "active" },
-      });
+      if (user.status === "in_active") {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { status: "active" },
+        });
+      }
 
       const accessToken = AuthService.generateToken(
         { userId: user.id },
