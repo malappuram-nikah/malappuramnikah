@@ -56,12 +56,7 @@ export class WhatsappOtpService {
       return this.sendViaMsg91(formattedPhone, otpCode);
     }
 
-    // 2. UltraMsg Option
-    if (this.ultraMsgInstanceId && this.ultraMsgToken) {
-      return this.sendViaUltraMsg(formattedPhone, otpCode);
-    }
-
-    // 3. Meta WhatsApp Cloud API Option
+    // 2. Meta WhatsApp Cloud API Option
     if (this.metaAccessToken && this.metaPhoneNumberId) {
       return this.sendViaMetaCloudApi(formattedPhone, otpCode);
     }
