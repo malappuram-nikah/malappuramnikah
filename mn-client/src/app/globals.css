@@ -28,6 +28,9 @@
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
   * {
     box-sizing: border-box;
     border-color: var(--color-border);

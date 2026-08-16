@@ -10,43 +10,62 @@ interface HeroSectionProps {
 export default function HeroSection({ onJoinNow }: HeroSectionProps) {
   return (
     <section className="relative pt-24 pb-20 overflow-hidden bg-white">
-      {/* Premium subtle warm/purple background glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full md:w-[90%] h-[700px] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#81c4bd]/60 via-[#026d77]/30 to-transparent -z-10 blur-3xl" />
+      {/* Premium subtle warm/brand background glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full md:w-[90%] h-[700px] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#81c4bd]/60 via-[#026d77]/20 to-transparent -z-10 blur-3xl" />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 max-w-7xl text-center">
-        {/* Header Text Section */}
+        {/* Header Text Section with Scroll Trigger Text & Color Animation */}
         <div className="max-w-4xl mx-auto pt-8 pb-2">
           <motion.h1
-            initial={{ opacity: 0, y: -30 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, y: -25 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold font-playfair text-gray-900 leading-[1.1] tracking-tight"
           >
-            <span>Let&apos;s help you to meet</span>
+            <motion.span
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.7, delay: 0.1 }}
+              className="inline-block"
+            >
+              Let&apos;s help you to meet
+            </motion.span>
             <br />
-            <span>someone who truly gets you</span>
+            <motion.span
+              initial={{ opacity: 0, y: 25, color: "#111827" }}
+              whileInView={{ opacity: 1, y: 0, color: "#026d77" }}
+              viewport={{ once: true }}
+              transition={{ duration: 1.2, delay: 0.3, ease: "easeOut" }}
+              className="inline-block"
+            >
+              someone who truly gets you
+            </motion.span>
           </motion.h1>
 
           <motion.p
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.15, ease: "easeOut" }}
-            className="mt-6 text-sm sm:text-base md:text-lg text-gray-500 font-medium tracking-wide max-w-xl mx-auto"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, delay: 0.45, ease: "easeOut" }}
+            className="mt-6 text-sm sm:text-base md:text-lg text-gray-600 font-medium tracking-wide max-w-xl mx-auto"
           >
             Where Muslims meet with intention, not swipes.
           </motion.p>
 
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
+            initial={{ opacity: 0, scale: 0.9, y: 15 }}
+            whileInView={{ opacity: 1, scale: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.6, ease: "easeOut" }}
             className="mt-8 flex justify-center"
           >
             <button
               onClick={onJoinNow}
-              className="bg-[#111827] hover:bg-black text-white px-8 py-3.5 rounded-full text-sm font-semibold flex items-center gap-2 transition-all shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
+              className="bg-[#026d77] hover:bg-[#03828e] text-white px-8 py-3.5 rounded-full text-sm font-semibold flex items-center gap-2 transition-all shadow-md hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
             >
-              Join Now
+              <span>Join Now</span>
               <span className="text-base font-normal">→</span>
             </button>
           </motion.div>
@@ -61,7 +80,8 @@ export default function HeroSection({ onJoinNow }: HeroSectionProps) {
           {/* Left Card 1 (Outermost): Girl with book */}
           <motion.div
             initial={{ opacity: 0 }}
-            animate={{ opacity: 0.6 }}
+            whileInView={{ opacity: 0.6 }}
+            viewport={{ once: true }}
             transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
             whileHover={{ scale: 1.05, opacity: 0.8, transition: { duration: 0.2 } }}
             className="w-28 h-36 sm:w-36 sm:h-48 md:w-40 md:h-52 rounded-[1.6rem] overflow-hidden bg-white flex-shrink-0 hidden lg:block transform cursor-pointer rotate-[-6deg]"
@@ -76,7 +96,8 @@ export default function HeroSection({ onJoinNow }: HeroSectionProps) {
           {/* Left Card 2 (Middle): Man in teal jacket */}
           <motion.div
             initial={{ opacity: 0 }}
-            animate={{ opacity: 0.75 }}
+            whileInView={{ opacity: 0.75 }}
+            viewport={{ once: true }}
             transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
             whileHover={{ scale: 1.05, opacity: 0.9, transition: { duration: 0.2 } }}
             className="w-32 h-40 sm:w-44 sm:h-56 md:w-48 md:h-60 rounded-[1.8rem] overflow-hidden bg-white flex-shrink-0 hidden sm:block transform cursor-pointer rotate-[-4deg]"
@@ -91,7 +112,8 @@ export default function HeroSection({ onJoinNow }: HeroSectionProps) {
           {/* Left Card 3 (Innermost): Girl in green dress / pink hijab */}
           <motion.div
             initial={{ opacity: 0 }}
-            animate={{ opacity: 0.9 }}
+            whileInView={{ opacity: 0.9 }}
+            viewport={{ once: true }}
             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
             whileHover={{ scale: 1.05, opacity: 1, transition: { duration: 0.2 } }}
             className="w-36 h-44 sm:w-48 sm:h-60 md:w-52 md:h-64 rounded-[2rem] overflow-hidden bg-white flex-shrink-0 cursor-pointer rotate-[-2deg]"
@@ -106,7 +128,8 @@ export default function HeroSection({ onJoinNow }: HeroSectionProps) {
           {/* Center: Premium Smartphone Mockup - animates from bottom to top on entrance */}
           <motion.div
             initial={{ opacity: 0, y: 220 }}
-            animate={{ opacity: 1, y: 0 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
             transition={{ duration: 1.2, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
             className="relative z-10 w-[260px] h-[480px] sm:w-[280px] sm:h-[520px] md:w-[310px] md:h-[580px] rounded-[2.8rem] border-[8px] border-gray-900 bg-gray-900 flex-shrink-0 overflow-hidden"
           >
@@ -172,7 +195,8 @@ export default function HeroSection({ onJoinNow }: HeroSectionProps) {
           {/* Right Card 1 (Innermost): Girl with headphones */}
           <motion.div
             initial={{ opacity: 0 }}
-            animate={{ opacity: 0.9 }}
+            whileInView={{ opacity: 0.9 }}
+            viewport={{ once: true }}
             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
             whileHover={{ scale: 1.05, opacity: 1, transition: { duration: 0.2 } }}
             className="w-36 h-44 sm:w-48 sm:h-60 md:w-52 md:h-64 rounded-[2rem] overflow-hidden bg-white flex-shrink-0 cursor-pointer rotate-[2deg]"
@@ -187,7 +211,8 @@ export default function HeroSection({ onJoinNow }: HeroSectionProps) {
           {/* Right Card 2 (Middle): Man on beach */}
           <motion.div
             initial={{ opacity: 0 }}
-            animate={{ opacity: 0.75 }}
+            whileInView={{ opacity: 0.75 }}
+            viewport={{ once: true }}
             transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
             whileHover={{ scale: 1.05, opacity: 0.9, transition: { duration: 0.2 } }}
             className="w-32 h-40 sm:w-44 sm:h-56 md:w-48 md:h-60 rounded-[1.8rem] overflow-hidden bg-white flex-shrink-0 hidden sm:block transform cursor-pointer rotate-[4deg]"
@@ -202,7 +227,8 @@ export default function HeroSection({ onJoinNow }: HeroSectionProps) {
           {/* Right Card 3 (Outermost): Man with backpack */}
           <motion.div
             initial={{ opacity: 0 }}
-            animate={{ opacity: 0.6 }}
+            whileInView={{ opacity: 0.6 }}
+            viewport={{ once: true }}
             transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
             whileHover={{ scale: 1.05, opacity: 0.8, transition: { duration: 0.2 } }}
             className="w-28 h-36 sm:w-36 sm:h-48 md:w-40 md:h-52 rounded-[1.6rem] overflow-hidden bg-white flex-shrink-0 hidden lg:block transform cursor-pointer rotate-[6deg]"

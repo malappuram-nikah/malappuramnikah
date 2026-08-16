@@ -41,6 +41,52 @@ user_route.post('/register', async (req: Request, res: Response) => { await user
 user_route.post('/generate-referral-code', async (req: Request, res: Response) => { await userController.generateReferral(req, res)});
 user_route.post('/login',async (req:Request,res:Response) => {await userController.login(req,res)})
 
+// Public stats endpoint for home page counters
+user_route.get('/public-stats', async (req: Request, res: Response) => {
+  try {
+    const [totalUsers, activeUsers, verifiedUsers, acceptedMatches] = await Promise.all([
+      prisma.user.count(),
+      prisma.user.count({ where: { status: "active" } }),
+      prisma.user.count({ where: { kyc_status: "VERIFIED" } }),
+      prisma.interest.count({ where: { status: "ACCEPTED" } }),
+    ]);
+
+    const registeredMembers = totalUsers;
+    const happyMarriages = acceptedMatches;
+    
+    // Percentage of verified or active profiles out of total
+    let verifiedPercentage = 98;
+    if (totalUsers > 0) {
+      const verifiedOrActive = Math.max(activeUsers, verifiedUsers);
+      verifiedPercentage = Math.min(100, Math.max(80, Math.round((verifiedOrActive / totalUsers) * 100)));
+    }
+
+    const earliestUser = await prisma.user.findFirst({
+      orderBy: { created_at: "asc" },
+      select: { created_at: true },
+    });
+    
+    let yearsOfTrust = 1;
+    if (earliestUser) {
+      const createdYear = new Date(earliestUser.created_at).getFullYear();
+      const currentYear = new Date().getFullYear();
+      yearsOfTrust = Math.max(1, currentYear - createdYear + 1);
+    }
+
+    res.status(200).json({
+      success: true,
+      stats: {
+        registeredMembers,
+        happyMarriages,
+        verifiedPercentage,
+        yearsOfTrust,
+      }
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || "Failed to fetch public stats" });
+  }
+});
+
 user_route.use(createMemberAccountGuard({ allowSelfProfileGet: true }));
 
 user_route.get('/profiles', async (req: Request, res: Response) => { await userController.getProfiles(req, res)});

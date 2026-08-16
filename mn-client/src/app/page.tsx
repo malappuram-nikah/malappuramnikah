@@ -6,6 +6,7 @@ import HeroSection from "@/components/home/HeroSection";
 import StatsSection from "@/components/home/StatsSection";
 import FeaturesSection from "@/components/home/FeaturesSection";
 import CTASection from "@/components/home/CTASection";
+import UpcomingBusinessSection from "@/components/home/UpcomingBusinessSection";
 import Footer from "@/components/layout/Footer";
 import RegisterModal from "@/components/auth/RegisterModal";
 
@@ -19,6 +20,7 @@ export default function Home() {
         <HeroSection onJoinNow={() => setRegisterOpen(true)} />
         <StatsSection />
         <FeaturesSection />
+        <UpcomingBusinessSection />
         <CTASection onRegisterOpen={() => setRegisterOpen(true)} />
       </main>
       <Footer />
