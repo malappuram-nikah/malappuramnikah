@@ -23,15 +23,18 @@ export class EmailOtpService {
     }
 
     try {
-      // Create Nodemailer Transporter using Gmail SMTP
+      // Create Nodemailer Transporter using Gmail SMTP (port 587 STARTTLS for cloud compatibility)
       const transporter = nodemailer.createTransport({
         service: "gmail",
         host: "smtp.gmail.com",
-        port: 465,
-        secure: true,
+        port: 587,
+        secure: false, // false for 587, true for 465
         auth: {
           user: this.emailUser,
           pass: this.emailPass,
+        },
+        tls: {
+          rejectUnauthorized: false,
         },
       });
 
