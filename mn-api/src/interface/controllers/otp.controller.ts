@@ -34,7 +34,11 @@ export class OtpController {
         });
       }
 
-      const generatedOtp = await this.sendOtpUseCase.execute(phoneNumber);
+      const generatedOtp = await this.sendOtpUseCase.execute(
+        phoneNumber,
+        user.email || undefined,
+        `${user.first_name || ""} ${user.last_name || ""}`
+      );
       const responseBody: Record<string, unknown> = {
         success: true,
         message: "OTP sent successfully",

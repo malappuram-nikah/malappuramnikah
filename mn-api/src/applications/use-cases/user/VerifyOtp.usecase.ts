@@ -8,7 +8,7 @@ export class VerifyOtpUseCase {
 
     const otpString = Array.isArray(otpCode) ? otpCode.join("") : String(otpCode);
 
-    if ((storedOtp && storedOtp === otpString) || otpString === "123456" || otpString === "1234") {
+    if (storedOtp && storedOtp === otpString) {
       await this.otpRepository.deleteOtp(phoneNumber);
       return true;
     }
