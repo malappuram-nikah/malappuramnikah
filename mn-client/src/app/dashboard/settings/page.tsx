@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { LOCATIONS } from "@/lib/constants";
 import { useUser } from "@/context/UserContext";
 import { API_URL } from "@/lib/config";
+import { setToken } from "@/lib/auth-session";
 
 const tabs = [
   { id: "profile", label: "Profile", icon: User },
@@ -474,7 +475,7 @@ export default function SettingsPage() {
       }
 
       if (data.accessToken) {
-        localStorage.setItem("mn_token", data.accessToken);
+        setToken(data.accessToken);
       }
       setUserStatus("active");
       setVerificationMethod("aadhaar");
@@ -529,7 +530,7 @@ export default function SettingsPage() {
       }
 
       if (data.accessToken) {
-        localStorage.setItem("mn_token", data.accessToken);
+        setToken(data.accessToken);
       }
       setUserStatus("active");
       setVerificationMethod("mobile");

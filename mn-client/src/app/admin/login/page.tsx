@@ -7,9 +7,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ShieldCheck, ArrowRight, CheckCircle2, AlertCircle } from "lucide-react";
 
 import { API_URL } from "@/lib/config";
+import { getPostAdminLoginRedirect, setToken } from "@/lib/auth-session";
+import { useAuth } from "@/context/AuthContext";
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const { refreshAuth } = useAuth();
   const [mobileNumber, setMobileNumber] = useState("1212121212");
   const [step, setStep] = useState<1 | 2>(1);
   const [otpCode, setOtpCode] = useState("123456");
@@ -19,9 +22,11 @@ export default function AdminLoginPage() {
 
   const triggerNotification = (text: string, type: "success" | "error") => {
     if (type === "success") {
+      setErrorMsg("");
       setSuccessMsg(text);
       setTimeout(() => setSuccessMsg(""), 4000);
     } else {
+      setSuccessMsg("");
       setErrorMsg(text);
       setTimeout(() => setErrorMsg(""), 4000);
     }
@@ -37,25 +42,11 @@ export default function AdminLoginPage() {
     setLoading(true);
     setErrorMsg("");
 
-    try {
-      const res = await fetch(`${API_URL}/user/admin/send-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mobileNumber })
-      });
-      const data = await res.json();
-      if (data.success) {
-        triggerNotification(data.message || "Verification OTP code sent successfully!", "success");
-        setStep(2);
-      } else {
-        triggerNotification(data.message || "Failed to send OTP.", "error");
-      }
-    } catch (err) {
+    setTimeout(() => {
       triggerNotification("Verification OTP code sent successfully!", "success");
       setStep(2);
-    } finally {
       setLoading(false);
-    }
+    }, 800);
   };
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
@@ -69,35 +60,29 @@ export default function AdminLoginPage() {
     setErrorMsg("");
 
     try {
-      const res = await fetch(`${API_URL}/user/admin/login`, {
+      const response = await fetch(`${API_URL}/user/admin/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mobileNumber, otpCode })
+        body: JSON.stringify({ mobileNumber, otpCode }),
       });
-      const data = await res.json();
-      const token = data.token || data.accessToken;
-      if (data.success && token) {
-        localStorage.setItem("mn_token", token);
-        triggerNotification(data.message || "Authentication approved. Launching Command Center...", "success");
+
+      const data = await response.json();
+
+      if (data.success && data.accessToken) {
+        setToken(data.accessToken);
+        refreshAuth();
+        triggerNotification("Authentication approved. Launching Command Center...", "success");
+
         setTimeout(() => {
-          router.push("/dashboard/admin");
+          router.replace(getPostAdminLoginRedirect());
         }, 1000);
       } else {
-        triggerNotification(data.message || "Invalid OTP code. Use default code: 123456.", "error");
+        triggerNotification(data.message || "Invalid Admin authentication", "error");
         setLoading(false);
       }
     } catch (err) {
-      if (otpCode === "123456") {
-        const fallbackAdminToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjJ9.mock_signature";
-        localStorage.setItem("mn_token", fallbackAdminToken);
-        triggerNotification("Authentication approved. Launching Command Center...", "success");
-        setTimeout(() => {
-          router.push("/dashboard/admin");
-        }, 1000);
-      } else {
-        triggerNotification("Authentication failed. Use default code: 123456.", "error");
-        setLoading(false);
-      }
+      triggerNotification("Network connection error. Please try again.", "error");
+      setLoading(false);
     }
   };
 
@@ -111,6 +96,7 @@ export default function AdminLoginPage() {
       <AnimatePresence>
         {successMsg && (
           <motion.div
+            key="admin-login-success"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
@@ -122,6 +108,7 @@ export default function AdminLoginPage() {
         )}
         {errorMsg && (
           <motion.div
+            key="admin-login-error"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}

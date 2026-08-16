@@ -1,9 +1,11 @@
 import { Router, Request, Response } from "express";
 import prisma from "../../infrastructure/prisma/prisamClient";
 import { getUserIdFromRequest } from "./interest.route";
+import { memberAccountGuard } from "../../infrastructure/middleware/memberAccount.middleware";
 import { io } from "../../index";
 
 const chat_route = Router();
+chat_route.use(memberAccountGuard);
 
 // Helper: Verify if two users have a mutual match (status: ACCEPTED)
 async function verifyMutualMatch(userA: number, userB: number): Promise<boolean> {

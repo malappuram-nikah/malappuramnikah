@@ -7,6 +7,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Briefcase, ArrowRight, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
 import { API_URL } from "@/lib/config";
+import { setToken } from "@/lib/auth-session";
 
 export default function BusinessLoginPage() {
   const router = useRouter();
@@ -54,7 +55,7 @@ export default function BusinessLoginPage() {
           triggerNotification(`Welcome back, ${matchedVendor.name}! Logging into B2B Business Hub...`, "success");
           
           // Store dynamic mock token and session details to localStorage
-          localStorage.setItem("mn_token", "mock_admin_token_sinan"); // Sinan is admin, allowing access to business hub
+          setToken("mock_admin_token_sinan"); // Sinan is admin, allowing access to business hub
           localStorage.setItem("b2b_vendor_session", JSON.stringify(matchedVendor));
 
           setTimeout(() => {

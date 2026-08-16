@@ -5,10 +5,15 @@ import { io } from "../../index";
 import fs from "fs";
 import path from "path";
 import { MediaStorageService } from "../../infrastructure/service/MediaStorageService";
-import { AuthService } from "../../infrastructure/service/AuthService.service";
+import jwt from "jsonwebtoken";
 import { accessTokenConfig } from "../../infrastructure/config/jwt.config";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import {
+  ADMIN_USER_SELECT,
+  averageProfileCompletion,
+  buildKycDocumentUrl,
+  calculateProfileCompletion,
+} from "../../infrastructure/helpers/admin.helpers";
 
 const admin_route = Router();
 const STORE_PATH = path.join(__dirname, "../../../src/infrastructure/data/adminStore.json");
@@ -84,8 +89,8 @@ function getAdminStore() {
           { id: 3, name: "Starry Night Arabesque", theme: "Islamic Geometric", usage: 215, active: true }
         ],
         reports: [
-          { id: 1, reported_user: "Test User (id: 4)", reported_user_id: 4, reason: "Spamming matches with advertisements", reporter: "Aysha K.", date: "2026-05-28", status: "PENDING" },
-          { id: 2, reported_user: "htfhf (id: 3)", reported_user_id: 3, reason: "Inappropriate bio description", reporter: "Sinan", date: "2026-05-30", status: "RESOLVED" }
+          { id: 1, reported_user: "Test User (id: 4)", reason: "Spamming matches with advertisements", reporter: "Aysha K.", date: "2026-05-28", status: "PENDING" },
+          { id: 2, reported_user: "htfhf (id: 3)", reason: "Inappropriate bio description", reporter: "Sinan", date: "2026-05-30", status: "RESOLVED" }
         ],
         subscriptions: [
           { id: "basic", name: "Basic Match", price: 0, duration: "Lifetime", interest_limit: 10, chat_unlocked: false },
@@ -149,413 +154,132 @@ async function adminGuard(req: Request, res: Response, next: Function) {
   try {
     const userId = getUserIdFromRequest(req);
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized. Valid admin session token required." });
+      res.status(401).json({ success: false, message: "Unauthorized admin access." });
+      return;
+    }
+
+    // Make Sinan (2) and Shibili (6) admins by default, or check profile_details.isAdmin
+    if (userId === 2 || userId === 6) {
+      next();
       return;
     }
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      res.status(401).json({ success: false, message: "Unauthorized. User account not found." });
+    const profileDetails = user?.profile_details as any;
+    if (user && (profileDetails?.isAdmin === true || user.mobile_number === "+911212121212" || user.mobile_number === "+919876543210")) {
+      next();
       return;
     }
 
-    const profileDetails = user.profile_details as any;
-    const isAdmin =
-      user.id === 2 ||
-      user.id === 6 ||
-      profileDetails?.isAdmin === true ||
-      user.mobile_number === "+911212121212" ||
-      user.mobile_number === "+919876543210" ||
-      user.mobile_number.includes("1212121212") ||
-      user.mobile_number.includes("9876543210");
-
-    if (!isAdmin) {
-      res.status(403).json({ success: false, message: "Forbidden. Administrator privileges required." });
-      return;
-    }
-
-    (req as any).user = user;
-    next();
+    res.status(403).json({ success: false, message: "Forbidden. Admin privileges required." });
   } catch (err) {
-    res.status(401).json({ success: false, message: "Admin authorization failed or session expired." });
+    res.status(500).json({ success: false, message: "Admin authorization failed." });
   }
 }
-
-// 0. GET Admin Session Verification & Profile (GET /user/admin/me)
-admin_route.get("/me", adminGuard, async (req: Request, res: Response) => {
-  try {
-    const user = (req as any).user;
-    const profileDetails = (user.profile_details as any) || {};
-    res.status(200).json({
-      success: true,
-      admin: {
-        id: user.id,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        mobile_number: user.mobile_number,
-        email: user.email,
-        avatar_url: profileDetails.adminAvatarUrl || null,
-        created_at: user.created_at,
-        is_admin: true
-      }
-    });
-  } catch (err: any) {
-    res.status(500).json({ success: false, message: "Failed to verify admin session." });
-  }
-});
-
-// 0.01. PUT Admin Profile Information (PUT /user/admin/profile)
-admin_route.put("/profile", adminGuard, async (req: Request, res: Response) => {
-  try {
-    const adminUser = (req as any).user;
-    const { first_name, last_name, email, mobile_number, avatar_url } = req.body;
-
-    if (!first_name || !first_name.trim()) {
-      res.status(400).json({ success: false, message: "First name is required." });
-      return;
-    }
-
-    const currentProfileDetails = (adminUser.profile_details as any) || {};
-    if (avatar_url !== undefined) {
-      currentProfileDetails.adminAvatarUrl = avatar_url;
-    }
-
-    const updatedUser = await prisma.user.update({
-      where: { id: adminUser.id },
-      data: {
-        first_name: first_name.trim(),
-        last_name: last_name !== undefined ? (last_name ? last_name.trim() : null) : adminUser.last_name,
-        email: email !== undefined ? (email ? email.trim() : null) : adminUser.email,
-        mobile_number: mobile_number !== undefined ? (mobile_number ? mobile_number.trim() : adminUser.mobile_number) : adminUser.mobile_number,
-        profile_details: currentProfileDetails
-      }
-    });
-
-    const store = getAdminStore();
-    store.activity_logs.unshift({
-      id: Date.now(),
-      admin: `${updatedUser.first_name} ${updatedUser.last_name || ""}`.trim(),
-      action: `Updated personal admin profile information`,
-      time: new Date().toISOString().replace("T", " ").substring(0, 19)
-    });
-    saveAdminStore(store);
-
-    res.status(200).json({
-      success: true,
-      message: "Admin profile updated successfully!",
-      admin: {
-        id: updatedUser.id,
-        first_name: updatedUser.first_name,
-        last_name: updatedUser.last_name,
-        email: updatedUser.email,
-        mobile_number: updatedUser.mobile_number,
-        avatar_url: currentProfileDetails.adminAvatarUrl || null,
-        created_at: updatedUser.created_at,
-        is_admin: true
-      }
-    });
-  } catch (err: any) {
-    res.status(500).json({ success: false, message: err.message || "Failed to update admin profile." });
-  }
-});
-
-// 0.02. POST Admin Password Change (POST /user/admin/change-password)
-admin_route.post("/change-password", adminGuard, async (req: Request, res: Response) => {
-  try {
-    const adminUser = (req as any).user;
-    const { current_password, new_password } = req.body;
-
-    if (!current_password) {
-      res.status(400).json({ success: false, message: "Current password is required." });
-      return;
-    }
-
-    if (!new_password || new_password.length < 6) {
-      res.status(400).json({ success: false, message: "New password must be at least 6 characters long." });
-      return;
-    }
-
-    const user = await prisma.user.findUnique({ where: { id: adminUser.id } });
-    if (!user) {
-      res.status(404).json({ success: false, message: "Admin account not found." });
-      return;
-    }
-
-    if (user.password) {
-      const isPasswordValid = await bcrypt.compare(current_password, user.password);
-      if (!isPasswordValid) {
-        res.status(400).json({ success: false, message: "Current password is incorrect." });
-        return;
-      }
-    }
-
-    const hashedPassword = await bcrypt.hash(new_password, 10);
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { password: hashedPassword }
-    });
-
-    const store = getAdminStore();
-    store.activity_logs.unshift({
-      id: Date.now(),
-      admin: `${user.first_name} ${user.last_name || ""}`.trim(),
-      action: `Changed admin account security password`,
-      time: new Date().toISOString().replace("T", " ").substring(0, 19)
-    });
-    saveAdminStore(store);
-
-    res.status(200).json({ success: true, message: "Password updated successfully!" });
-  } catch (err: any) {
-    res.status(500).json({ success: false, message: err.message || "Failed to update password." });
-  }
-});
-
-// 0.1. POST Admin Request OTP (POST /user/admin/send-otp)
-admin_route.post("/send-otp", async (req: Request, res: Response) => {
-  try {
-    const { mobileNumber, mobile_number } = req.body;
-    const phone = (mobileNumber || mobile_number || "").toString().trim();
-    if (!phone) {
-      res.status(400).json({ success: false, message: "Mobile number is required." });
-      return;
-    }
-    const formattedMobile = phone.startsWith("+") ? phone : `+91${phone}`;
-
-    let user = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { mobile_number: formattedMobile },
-          { mobile_number: phone },
-          { mobile_number: `+91${phone.replace(/^\+91/, "")}` }
-        ]
-      }
-    });
-
-    if (!user && (phone.includes("1212121212") || phone.includes("9876543210"))) {
-      user = await prisma.user.findFirst({ where: { id: 2 } }) || await prisma.user.findFirst({ where: { id: 6 } });
-    }
-
-    if (!user) {
-      res.status(403).json({ success: false, message: "Access denied. Mobile number is not authorized for admin access." });
-      return;
-    }
-
-    const profileDetails = (user.profile_details as any) || {};
-    const isAdmin =
-      user.id === 2 ||
-      user.id === 6 ||
-      profileDetails?.isAdmin === true ||
-      user.mobile_number === "+911212121212" ||
-      user.mobile_number === "+919876543210" ||
-      phone.includes("1212121212") ||
-      phone.includes("9876543210");
-
-    if (!isAdmin) {
-      res.status(403).json({ success: false, message: "Access denied. Mobile number is not authorized for admin access." });
-      return;
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Verification OTP code sent successfully! Default OTP code: 123456"
-    });
-  } catch (err: any) {
-    res.status(500).json({ success: false, message: err.message || "Failed to send admin OTP." });
-  }
-});
-
-// 0.2. POST Admin Login (POST /user/admin/login)
-admin_route.post("/login", async (req: Request, res: Response) => {
-  try {
-    const { mobileNumber, mobile_number, otpCode, otp_code } = req.body;
-    const phone = (mobileNumber || mobile_number || "").toString().trim();
-    const otp = (otpCode || otp_code || "").toString().trim();
-
-    if (!phone) {
-      res.status(400).json({ success: false, message: "Mobile number is required." });
-      return;
-    }
-    if (!otp) {
-      res.status(400).json({ success: false, message: "OTP code is required." });
-      return;
-    }
-
-    if (otp !== "123456") {
-      res.status(400).json({ success: false, message: "Invalid OTP code. Use default code: 123456" });
-      return;
-    }
-
-    const formattedMobile = phone.startsWith("+") ? phone : `+91${phone}`;
-
-    let user = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { mobile_number: formattedMobile },
-          { mobile_number: phone },
-          { mobile_number: `+91${phone.replace(/^\+91/, "")}` }
-        ]
-      }
-    });
-
-    if (!user && (phone.includes("1212121212") || phone.includes("9876543210"))) {
-      user = await prisma.user.findFirst({ where: { id: 2 } }) || await prisma.user.findFirst({ where: { id: 6 } });
-    }
-
-    if (!user) {
-      res.status(403).json({ success: false, message: "Access denied. Admin account not found." });
-      return;
-    }
-
-    const profileDetails = (user.profile_details as any) || {};
-    const isAdmin =
-      user.id === 2 ||
-      user.id === 6 ||
-      profileDetails?.isAdmin === true ||
-      user.mobile_number === "+911212121212" ||
-      user.mobile_number === "+919876543210" ||
-      phone.includes("1212121212") ||
-      phone.includes("9876543210");
-
-    if (!isAdmin) {
-      res.status(403).json({ success: false, message: "Forbidden. Admin privileges required." });
-      return;
-    }
-
-    if (!profileDetails.isAdmin && (user.id === 2 || user.id === 6 || phone.includes("1212121212") || phone.includes("9876543210"))) {
-      profileDetails.isAdmin = true;
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { profile_details: profileDetails }
-      });
-    }
-
-    const token = AuthService.generateToken(
-      { userId: user.id },
-      { secret: accessTokenConfig.secret, expiresIn: "7d" }
-    );
-
-    res.status(200).json({
-      success: true,
-      message: "Authentication approved. Launching Command Center...",
-      token,
-      user: {
-        id: user.id,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        mobile_number: user.mobile_number,
-        is_admin: true
-      }
-    });
-  } catch (err: any) {
-    res.status(500).json({ success: false, message: err.message || "Admin authentication failed." });
-  }
-});
 
 // 1. GET Admin Stats (GET /user/admin/stats)
 admin_route.get("/stats", adminGuard, async (req: Request, res: Response) => {
   try {
-    const store = getAdminStore();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    // Database counts
-    const totalUsers = await prisma.user.count();
-    const activeUsers = await prisma.user.count({ where: { status: "active" } });
-    const newUsers = await prisma.user.count({ where: { is_new_user: true } });
-    const verifiedUsers = activeUsers;
-    const pendingKyc = await prisma.user.count({ where: { OR: [{ kyc_status: "PENDING" }, { kyc_status: "UNDER_REVIEW" }] } });
-    const verifiedKyc = await prisma.user.count({ where: { kyc_status: "VERIFIED" } });
-    const rejectedKyc = await prisma.user.count({ where: { kyc_status: "REJECTED" } });
-    const premiumUsers = await prisma.user.count({ where: { is_premium: true } });
-    const pendingApproval = await prisma.user.count({ where: { status: "in_active" } });
+    const [
+      totalUsers,
+      activeUsers,
+      newUsers,
+      suspendedUsers,
+      inactiveUsers,
+      premiumUsers,
+      kycPending,
+      kycUnderReview,
+      kycVerified,
+      kycRejected,
+      referralTotal,
+      referralSuccess,
+      referralPending,
+      completionSample,
+    ] = await Promise.all([
+      prisma.user.count(),
+      prisma.user.count({ where: { status: "active" } }),
+      prisma.user.count({ where: { created_at: { gte: thirtyDaysAgo } } }),
+      prisma.user.count({ where: { status: "suspended" } }),
+      prisma.user.count({ where: { status: "in_active" } }),
+      prisma.user.count({ where: { is_premium: true } }),
+      prisma.user.count({ where: { kyc_status: "PENDING" } }),
+      prisma.user.count({ where: { kyc_status: "UNDER_REVIEW" } }),
+      prisma.user.count({ where: { kyc_status: "VERIFIED" } }),
+      prisma.user.count({ where: { kyc_status: "REJECTED" } }),
+      prisma.referral.count(),
+      prisma.referral.count({ where: { status: "SUCCESS" } }),
+      prisma.referral.count({ where: { status: "PENDING" } }),
+      prisma.user.findMany({
+        select: { first_name: true, last_name: true, cast: true, location: true, gender: true, kyc_status: true, profile_details: true },
+        take: 500,
+        orderBy: { id: "desc" },
+      }),
+    ]);
 
-    // Calculate monthly user registration growth for past 6 months
-    const now = new Date();
-    const monthlyRegistrations: { month: string; count: number }[] = [];
-    for (let i = 5; i >= 0; i--) {
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const endOfMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
-      const count = await prisma.user.count({
-        where: {
-          created_at: {
-            gte: startOfMonth,
-            lt: endOfMonth
-          }
-        }
+    const averageCompletion = averageProfileCompletion(completionSample);
+
+    const dailyStart = new Date();
+    dailyStart.setDate(dailyStart.getDate() - 29);
+    dailyStart.setHours(0, 0, 0, 0);
+
+    const monthlyStart = new Date();
+    monthlyStart.setMonth(monthlyStart.getMonth() - 11);
+    monthlyStart.setDate(1);
+    monthlyStart.setHours(0, 0, 0, 0);
+
+    const [recentUsers, genderGroups, statusGroups, kycGroups] = await Promise.all([
+      prisma.user.findMany({
+        where: { created_at: { gte: monthlyStart } },
+        select: { created_at: true },
+        orderBy: { created_at: "asc" },
+      }),
+      prisma.user.groupBy({ by: ["gender"], _count: { id: true } }),
+      prisma.user.groupBy({ by: ["status"], _count: { id: true } }),
+      prisma.user.groupBy({ by: ["kyc_status"], _count: { id: true } }),
+    ]);
+
+    const dailyRegistrations: { date: string; label: string; count: number }[] = [];
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(dailyStart);
+      d.setDate(d.getDate() + i);
+      const key = d.toISOString().slice(0, 10);
+      dailyRegistrations.push({
+        date: key,
+        label: d.toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
+        count: 0,
       });
+    }
+
+    const monthlyRegistrations: { month: string; label: string; count: number }[] = [];
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(monthlyStart);
+      d.setMonth(d.getMonth() + i);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       monthlyRegistrations.push({
-        month: startOfMonth.toLocaleString("en-US", { month: "short" }),
-        count
+        month: key,
+        label: d.toLocaleDateString("en-IN", { month: "short", year: "2-digit" }),
+        count: 0,
       });
     }
 
-    // Recent Registrations (5 latest registered users from DB)
-    const recentRegistrations = await prisma.user.findMany({
-      take: 5,
-      orderBy: { created_at: "desc" },
-      select: {
-        id: true,
-        uuid: true,
-        first_name: true,
-        last_name: true,
-        mobile_number: true,
-        created_at: true,
-        status: true,
-        is_premium: true
-      }
-    });
+    for (const u of recentUsers) {
+      const dayKey = new Date(u.created_at).toISOString().slice(0, 10);
+      const dayEntry = dailyRegistrations.find((d) => d.date === dayKey);
+      if (dayEntry) dayEntry.count += 1;
 
-    // Recent ID Verification Requests (5 latest KYC submissions from DB)
-    const recentKycRequests = await prisma.user.findMany({
-      where: { kyc_status: { not: "NOT_SUBMITTED" } },
-      take: 5,
-      orderBy: { kyc_submitted_at: "desc" },
-      select: {
-        id: true,
-        first_name: true,
-        last_name: true,
-        mobile_number: true,
-        kyc_document_type: true,
-        kyc_submitted_at: true,
-        kyc_status: true
-      }
-    });
-
-    // Calculate database completion rates from actual user profile draft objects
-    const dbUsers = await prisma.user.findMany({ select: { profile_details: true } });
-    let totalCompletionPercentageSum = 0;
-
-    if (dbUsers.length > 0) {
-      dbUsers.forEach((u: any) => {
-        const d = (u.profile_details as any) || {};
-        let score = 0;
-        const totalSections = 8;
-        if (d.mn_basic_details_draft && Object.keys(d.mn_basic_details_draft).length > 0) score++;
-        if (d.mn_religious_info_draft && Object.keys(d.mn_religious_info_draft).length > 0) score++;
-        if (d.mn_professional_info_draft && Object.keys(d.mn_professional_info_draft).length > 0) score++;
-        if (d.mn_family_details_draft && Object.keys(d.mn_family_details_draft).length > 0) score++;
-        if (d.mn_interests_draft && Object.keys(d.mn_interests_draft).length > 0) score++;
-        if (d.mn_habits_draft && Object.keys(d.mn_habits_draft).length > 0) score++;
-        if (d.mn_partner_preferences_draft && Object.keys(d.mn_partner_preferences_draft).length > 0) score++;
-        if (d.mn_profile_photos_draft?.photos && d.mn_profile_photos_draft.photos.length > 0) score++;
-
-        totalCompletionPercentageSum += Math.round((score / totalSections) * 100);
-      });
+      const monthKey = `${new Date(u.created_at).getFullYear()}-${String(new Date(u.created_at).getMonth() + 1).padStart(2, "0")}`;
+      const monthEntry = monthlyRegistrations.find((m) => m.month === monthKey);
+      if (monthEntry) monthEntry.count += 1;
     }
 
-    const averageCompletion = dbUsers.length > 0 
-      ? Math.round(totalCompletionPercentageSum / dbUsers.length) 
-      : 0;
-
-    // Calculate booking revenue
-    const totalBookings = store.bookings.length;
-    const pendingBookings = store.bookings.filter((b: any) => b.status === "PENDING").length;
-    const completedBookings = store.bookings.filter((b: any) => b.status === "COMPLETED").length;
-    
-    const totalAmount = store.bookings.reduce((sum: number, b: any) => sum + b.amount, 0);
-    const totalCommission = store.bookings.reduce((sum: number, b: any) => sum + b.commission, 0);
-
-    // Sum template usages
-    const saveTheDateUsage = store.templates_save_the_date.reduce((sum: number, t: any) => sum + t.usage, 0);
-    const invitationUsage = store.templates_wedding_invitation.reduce((sum: number, t: any) => sum + t.usage, 0);
+    const mapGroups = (groups: { _count: { id: number }; [key: string]: unknown }[], field: string) =>
+      groups.map((g) => ({
+        label: String(g[field] || "Unknown").replace("_", " "),
+        value: g._count.id,
+      }));
 
     res.status(200).json({
       success: true,
@@ -563,194 +287,174 @@ admin_route.get("/stats", adminGuard, async (req: Request, res: Response) => {
         totalUsers,
         activeUsers,
         newUsers,
-        verifiedUsers,
-        pendingKyc,
-        verifiedKyc,
-        rejectedKyc,
+        suspendedUsers,
+        inactiveUsers,
         premiumUsers,
-        pendingApproval,
         averageCompletion,
-        totalRevenue: totalCommission + (premiumUsers * 1999),
-        monthlyRevenue: Math.floor((totalCommission + (premiumUsers * 1999)) * 0.4),
-        vendorRevenue: totalAmount,
-        totalBookings,
-        pendingBookings,
-        completedBookings,
-        saveTheDateUsage,
-        invitationUsage,
-        monthlyRegistrations,
-        recentRegistrations,
-        recentKycRequests
+        kycPending,
+        kycUnderReview,
+        kycVerified,
+        kycRejected,
+        referralTotal,
+        referralSuccess,
+        referralPending,
+        analytics: {
+          dailyRegistrations,
+          monthlyRegistrations,
+          usersByGender: mapGroups(genderGroups as any, "gender"),
+          usersByStatus: mapGroups(statusGroups as any, "status"),
+          usersByKyc: mapGroups(kycGroups as any, "kyc_status"),
+        },
       },
-      activityLogs: store.activity_logs
     });
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message || "Failed to load admin stats." });
   }
 });
 
-// 2. GET Users List (GET /user/admin/users)
+// 2. GET Users List (GET /user/admin/users) — paginated + searchable
 admin_route.get("/users", adminGuard, async (req: Request, res: Response) => {
   try {
     const page = Math.max(parseInt(req.query.page as string || "1", 10), 1);
-    const limit = Math.max(parseInt(req.query.limit as string || "10", 10), 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit as string || "10", 10), 1), 100);
+    const search = (req.query.search as string || "").trim();
+    const status = (req.query.status as string || "").trim();
+    const kycStatus = (req.query.kyc_status as string || "").trim();
+    const gender = (req.query.gender as string || "").trim();
+    const dateFrom = (req.query.date_from as string || "").trim();
+    const dateTo = (req.query.date_to as string || "").trim();
     const skip = (page - 1) * limit;
 
-    const search = (req.query.search as string || "").trim();
-    const status = (req.query.status as string || "ALL").trim();
-    const gender = (req.query.gender as string || "ALL").trim();
-    const isPremium = req.query.isPremium;
-
-    const whereClause: any = {};
-
-    if (status && status !== "ALL") {
-      whereClause.status = status;
+    const where: any = {};
+    if (status) where.status = status;
+    if (kycStatus) where.kyc_status = kycStatus;
+    if (gender) where.gender = { equals: gender, mode: "insensitive" };
+    if (dateFrom || dateTo) {
+      where.created_at = {};
+      if (dateFrom) {
+        where.created_at.gte = new Date(`${dateFrom}T00:00:00.000Z`);
+      }
+      if (dateTo) {
+        where.created_at.lte = new Date(`${dateTo}T23:59:59.999Z`);
+      }
     }
-
-    if (gender && gender !== "ALL") {
-      whereClause.gender = { equals: gender, mode: "insensitive" };
-    }
-
-    if (isPremium === "true") {
-      whereClause.is_premium = true;
-    } else if (isPremium === "false") {
-      whereClause.is_premium = false;
-    }
-
     if (search) {
-      const searchNum = parseInt(search.replace(/[^0-9]/g, ""), 10);
-      const isProfileIdFormat = /^#?mn-?\d+$/i.test(search);
-      
-      const orConditions: any[] = [
-        { first_name: { contains: search, mode: "insensitive" } },
-        { last_name: { contains: search, mode: "insensitive" } },
-        { email: { contains: search, mode: "insensitive" } },
-        { mobile_number: { contains: search, mode: "insensitive" } },
-        { location: { contains: search, mode: "insensitive" } },
-        { cast: { contains: search, mode: "insensitive" } },
-        { uuid: { contains: search, mode: "insensitive" } }
-      ];
-
-      const parts = search.split(/\s+/).filter(Boolean);
-      if (parts.length >= 2) {
-        orConditions.push({
-          AND: [
-            { first_name: { contains: parts[0], mode: "insensitive" } },
-            { last_name: { contains: parts.slice(1).join(" "), mode: "insensitive" } }
-          ]
-        });
+      const profileIdMatch = search.match(/^MN-?(\d+)$/i);
+      if (profileIdMatch) {
+        const numericId = parseInt(profileIdMatch[1], 10);
+        const resolvedId = numericId > 100000 ? numericId - 100000 : numericId;
+        where.id = resolvedId;
+      } else {
+        where.OR = [
+          { first_name: { contains: search, mode: "insensitive" } },
+          { last_name: { contains: search, mode: "insensitive" } },
+          { email: { contains: search, mode: "insensitive" } },
+          { mobile_number: { contains: search } },
+          { location: { contains: search, mode: "insensitive" } },
+        ];
       }
-
-      if (!isNaN(searchNum) && (isProfileIdFormat || /^\d+$/.test(search))) {
-        orConditions.push({ id: searchNum });
-      }
-
-      whereClause.OR = orConditions;
     }
 
-    const total = await prisma.user.count({ where: whereClause });
-    const users = await prisma.user.findMany({
-      where: whereClause,
-      orderBy: { created_at: "desc" },
-      skip,
-      take: limit,
-      select: {
-        id: true,
-        uuid: true,
-        profile_for: true,
-        gender: true,
-        first_name: true,
-        last_name: true,
-        cast: true,
-        location: true,
-        email: true,
-        mobile_number: true,
-        dob: true,
-        status: true,
-        is_premium: true,
-        is_new_user: true,
-        last_login: true,
-        profile_details: true,
-        search_preferences: true,
-        kyc_status: true,
-        kyc_document_type: true,
-        kyc_front_url: true,
-        kyc_back_url: true,
-        kyc_rejected_reason: true,
-        kyc_submitted_at: true,
-        kyc_verified_at: true,
-        created_at: true,
-        updated_at: true,
-        referral_code: true,
-        referral_points: true,
-      },
-    });
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        orderBy: { created_at: "desc" },
+        select: ADMIN_USER_SELECT,
+        skip,
+        take: limit,
+      }),
+      prisma.user.count({ where }),
+    ]);
+
+    const enriched = users.map((u) => ({
+      ...u,
+      profileId: `MN-${100000 + u.id}`,
+      profileCompletion: calculateProfileCompletion(u),
+    }));
 
     res.status(200).json({
       success: true,
-      users,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit)
-      }
+      users: enriched,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message || "Failed to load users list." });
   }
 });
 
-// 2.1. GET Single User Details for Admin Inspection (GET /user/admin/users/:id)
+// 2b. GET Single User (GET /user/admin/users/:id)
 admin_route.get("/users/:id", adminGuard, async (req: Request, res: Response) => {
   try {
-    const idParam = req.params.id;
-    const id = parseInt(Array.isArray(idParam) ? idParam[0] : idParam, 10);
+    const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
     if (isNaN(id)) {
       res.status(400).json({ success: false, message: "Invalid user ID" });
       return;
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id }
-    });
-
+    const user = await prisma.user.findUnique({ where: { id }, select: ADMIN_USER_SELECT });
     if (!user) {
-      res.status(404).json({ success: false, message: "User profile not found in database." });
+      res.status(404).json({ success: false, message: "User not found" });
       return;
     }
 
     const token = req.headers.authorization?.split(" ")[1] || (req.query.token as string);
-    let frontUrl = user.kyc_front_url;
-    let backUrl = user.kyc_back_url;
+    res.status(200).json({
+      success: true,
+      user: {
+        ...user,
+        profileId: `MN-${100000 + user.id}`,
+        profileCompletion: calculateProfileCompletion(user),
+        kyc_front_url: buildKycDocumentUrl(user.kyc_front_url, token),
+        kyc_back_url: buildKycDocumentUrl(user.kyc_back_url, token),
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || "Failed to load user." });
+  }
+});
 
-    if (frontUrl && !frontUrl.startsWith("http://") && !frontUrl.startsWith("https://")) {
-      const localFilePath = path.join(process.cwd(), "kyc-uploads", frontUrl);
-      if (fs.existsSync(localFilePath)) {
-        frontUrl = `http://localhost:3333/user/kyc/document/${frontUrl}${token ? `?token=${token}` : ""}`;
-      } else if (MediaStorageService.isCloudinaryConfigured) {
-        frontUrl = MediaStorageService.getPrivateMediaUrl(frontUrl);
-      }
+// 2c. POST User Account Status (POST /user/admin/users/:id/status)
+admin_route.post("/users/:id/status", adminGuard, async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+    const { action } = req.body as { action?: string };
+
+    if (isNaN(id)) {
+      res.status(400).json({ success: false, message: "Invalid user ID" });
+      return;
     }
 
-    if (backUrl && !backUrl.startsWith("http://") && !backUrl.startsWith("https://")) {
-      const localFilePath = path.join(process.cwd(), "kyc-uploads", backUrl);
-      if (fs.existsSync(localFilePath)) {
-        backUrl = `http://localhost:3333/user/kyc/document/${backUrl}${token ? `?token=${token}` : ""}`;
-      } else if (MediaStorageService.isCloudinaryConfigured) {
-        backUrl = MediaStorageService.getPrivateMediaUrl(backUrl);
-      }
-    }
-
-    const safeUser = {
-      ...user,
-      kyc_front_url: frontUrl,
-      kyc_back_url: backUrl
+    const statusMap: Record<string, string> = {
+      activate: "active",
+      deactivate: "in_active",
+      suspend: "suspended",
+      restore: "active",
     };
 
-    res.status(200).json({ success: true, user: safeUser });
+    if (!action || !statusMap[action]) {
+      res.status(400).json({ success: false, message: "Invalid action. Use activate, deactivate, suspend, or restore." });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
+    }
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data: { status: statusMap[action] },
+      select: ADMIN_USER_SELECT,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `User account ${action}d successfully.`,
+      user: { ...updated, profileId: `MN-${100000 + updated.id}`, profileCompletion: calculateProfileCompletion(updated) },
+    });
   } catch (err: any) {
-    res.status(500).json({ success: false, message: err.message || "Failed to fetch user profile details." });
+    res.status(500).json({ success: false, message: err.message || "Failed to update user status." });
   }
 });
 
@@ -877,17 +581,6 @@ admin_route.post("/store/update", adminGuard, async (req: Request, res: Response
           action: `Registered new platform wedding vendor: ${payload.name}`,
           time: new Date().toISOString().replace("T", " ").substring(0, 19)
         });
-      } else if (action === "update_commission") {
-        const vendor = store.vendors.find((v: any) => v.id === payload.id);
-        if (vendor) {
-          vendor.commission_rate = payload.commission_rate;
-          store.activity_logs.unshift({
-            id: Date.now(),
-            admin: adminName,
-            action: `Updated commission rate for vendor ${vendor.name} to ${payload.commission_rate}%`,
-            time: new Date().toISOString().replace("T", " ").substring(0, 19)
-          });
-        }
       }
     } else if (type === "booking") {
       if (action === "status") {
@@ -1108,60 +801,28 @@ admin_route.get("/music/settings", async (_req: Request, res: Response) => {
 // KYC 1. GET KYC Requests List (GET /user/admin/kyc/requests)
 admin_route.get("/kyc/requests", adminGuard, async (req: Request, res: Response) => {
   try {
-    const page = Math.max(parseInt(req.query.page as string || "1", 10), 1);
-    const limit = Math.max(parseInt(req.query.limit as string || "10", 10), 1);
-    const skip = (page - 1) * limit;
-
-    const search = (req.query.search as string || "").trim();
-    const status = (req.query.status as string || "ALL").trim();
-    const docType = (req.query.docType as string || "ALL").trim();
+    const { search, status } = req.query;
     
     const whereClause: any = {};
 
-    if (status && status !== "ALL") {
-      whereClause.kyc_status = status;
+    if (status) {
+      whereClause.kyc_status = status as string;
     } else {
       whereClause.kyc_status = { not: "NOT_SUBMITTED" };
     }
 
-    if (docType && docType !== "ALL") {
-      whereClause.kyc_document_type = { equals: docType, mode: "insensitive" };
-    }
-
     if (search) {
-      const searchNum = parseInt(search.replace(/[^0-9]/g, ""), 10);
-      const isProfileIdFormat = /^#?mn-?\d+$/i.test(search);
-
-      const orConditions: any[] = [
-        { first_name: { contains: search, mode: "insensitive" } },
-        { last_name: { contains: search, mode: "insensitive" } },
-        { mobile_number: { contains: search, mode: "insensitive" } },
-        { kyc_document_type: { contains: search, mode: "insensitive" } }
+      const searchStr = search as string;
+      whereClause.OR = [
+        { first_name: { contains: searchStr, mode: "insensitive" } },
+        { last_name: { contains: searchStr, mode: "insensitive" } },
+        { mobile_number: { contains: searchStr, mode: "insensitive" } }
       ];
-
-      const parts = search.split(/\s+/).filter(Boolean);
-      if (parts.length >= 2) {
-        orConditions.push({
-          AND: [
-            { first_name: { contains: parts[0], mode: "insensitive" } },
-            { last_name: { contains: parts.slice(1).join(" "), mode: "insensitive" } }
-          ]
-        });
-      }
-
-      if (!isNaN(searchNum) && (isProfileIdFormat || /^\d+$/.test(search))) {
-        orConditions.push({ id: searchNum });
-      }
-
-      whereClause.OR = orConditions;
     }
 
-    const total = await prisma.user.count({ where: whereClause });
     const requests = await prisma.user.findMany({
       where: whereClause,
       orderBy: { kyc_submitted_at: "desc" },
-      skip,
-      take: limit,
       select: {
         id: true,
         first_name: true,
@@ -1182,45 +843,30 @@ admin_route.get("/kyc/requests", adminGuard, async (req: Request, res: Response)
     });
 
     const token = req.headers.authorization?.split(" ")[1] || (req.query.token as string);
-    const mappedRequests = requests.map((request) => {
-      let frontUrl = request.kyc_front_url;
-      let backUrl = request.kyc_back_url;
 
-      if (frontUrl) {
-        const localFilePath = path.join(process.cwd(), "kyc-uploads", frontUrl);
-        if (fs.existsSync(localFilePath)) {
-          frontUrl = `http://localhost:3333/user/kyc/document/${frontUrl}${token ? `?token=${token}` : ""}`;
-        } else if (MediaStorageService.isCloudinaryConfigured) {
-          frontUrl = MediaStorageService.getPrivateMediaUrl(frontUrl);
-        }
-      }
+    const statusPriority: Record<string, number> = {
+      PENDING: 0,
+      UNDER_REVIEW: 1,
+      REJECTED: 2,
+      VERIFIED: 3,
+    };
 
-      if (backUrl) {
-        const localFilePath = path.join(process.cwd(), "kyc-uploads", backUrl);
-        if (fs.existsSync(localFilePath)) {
-          backUrl = `http://localhost:3333/user/kyc/document/${backUrl}${token ? `?token=${token}` : ""}`;
-        } else if (MediaStorageService.isCloudinaryConfigured) {
-          backUrl = MediaStorageService.getPrivateMediaUrl(backUrl);
-        }
-      }
-
-      return {
-        ...request,
-        kyc_front_url: frontUrl,
-        kyc_back_url: backUrl
-      };
+    const sortedRequests = [...requests].sort((a, b) => {
+      const pa = statusPriority[a.kyc_status] ?? 99;
+      const pb = statusPriority[b.kyc_status] ?? 99;
+      if (pa !== pb) return pa - pb;
+      const aTime = a.kyc_submitted_at ? new Date(a.kyc_submitted_at).getTime() : 0;
+      const bTime = b.kyc_submitted_at ? new Date(b.kyc_submitted_at).getTime() : 0;
+      return bTime - aTime;
     });
 
-    res.status(200).json({
-      success: true,
-      requests: mappedRequests,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit)
-      }
-    });
+    const mappedRequests = sortedRequests.map((request) => ({
+      ...request,
+      kyc_front_url: buildKycDocumentUrl(request.kyc_front_url, token),
+      kyc_back_url: buildKycDocumentUrl(request.kyc_back_url, token),
+    }));
+
+    res.status(200).json({ success: true, requests: mappedRequests });
   } catch (err: any) {
     console.error("Error fetching KYC requests:", err);
     res.status(500).json({ success: false, message: err.message || "Failed to fetch KYC requests." });
@@ -1541,53 +1187,34 @@ admin_route.get("/referrals/settings", adminGuard, async (req: Request, res: Res
   }
 });
 
-// REFERRAL 3. Update Settings (POST & PUT /user/admin/referrals/settings)
-const handleUpdateReferralSettings = async (req: Request, res: Response) => {
+// REFERRAL 3. PATCH Settings (POST /user/admin/referrals/settings)
+admin_route.post("/referrals/settings", adminGuard, async (req: Request, res: Response) => {
   try {
     const { points_per_referral, reward_condition, enabled, max_referral, daily_limit } = req.body;
-    const current = await prisma.referralSettings.findUnique({ where: { id: 1 } });
-    
-    const pointsPerRef = points_per_referral !== undefined && !isNaN(parseInt(points_per_referral, 10)) 
-      ? parseInt(points_per_referral, 10) 
-      : (current?.points_per_referral || 100);
-      
-    const rewardCond = reward_condition || current?.reward_condition || "SIGNUP";
-    const isEnabled = enabled !== undefined ? enabled === true : (current?.enabled ?? true);
-    
-    const maxRef = max_referral !== undefined && !isNaN(parseInt(max_referral, 10)) 
-      ? parseInt(max_referral, 10) 
-      : (current?.max_referral || 100);
-      
-    const dailyLim = daily_limit !== undefined && !isNaN(parseInt(daily_limit, 10)) 
-      ? parseInt(daily_limit, 10) 
-      : (current?.daily_limit || 10);
-
     const settings = await prisma.referralSettings.upsert({
       where: { id: 1 },
       update: {
-        points_per_referral: pointsPerRef,
-        reward_condition: rewardCond,
-        enabled: isEnabled,
-        max_referral: maxRef,
-        daily_limit: dailyLim
+        points_per_referral: parseInt(points_per_referral, 10),
+        reward_condition,
+        enabled: enabled === true,
+        max_referral: parseInt(max_referral, 10),
+        daily_limit: parseInt(daily_limit, 10)
       },
       create: {
         id: 1,
-        points_per_referral: pointsPerRef,
-        reward_condition: rewardCond,
-        enabled: isEnabled,
-        max_referral: maxRef,
-        daily_limit: dailyLim
+        points_per_referral: parseInt(points_per_referral, 10),
+        reward_condition,
+        enabled: enabled === true,
+        max_referral: parseInt(max_referral, 10),
+        daily_limit: parseInt(daily_limit, 10)
       }
     });
     res.status(200).json({ success: true, settings, message: "Referral settings updated successfully" });
   } catch (err: any) {
-    console.error("Referral settings update error:", err);
-    res.status(500).json({ success: false, message: err.message || "Failed to update settings" });
+    console.error(err);
+    res.status(500).json({ success: false, message: "Failed to update settings" });
   }
-};
-admin_route.post("/referrals/settings", adminGuard, handleUpdateReferralSettings);
-admin_route.put("/referrals/settings", adminGuard, handleUpdateReferralSettings);
+});
 
 // REFERRAL 4. GET Single User Details (GET /user/admin/referrals/:id)
 admin_route.get("/referrals/:id", adminGuard, async (req: Request, res: Response) => {
@@ -1650,8 +1277,8 @@ admin_route.get("/referrals/:id", adminGuard, async (req: Request, res: Response
   }
 });
 
-// REFERRAL 5. Block Referral (PATCH & POST /user/admin/referrals/block)
-const handleBlockReferralCode = async (req: Request, res: Response) => {
+// REFERRAL 5. PATCH Block Referral (PATCH /user/admin/referrals/block)
+admin_route.patch("/referrals/block", adminGuard, async (req: Request, res: Response) => {
   try {
     const { userId, block } = req.body;
     const user = await prisma.user.findUnique({ where: { id: parseInt(userId, 10) } });
@@ -1670,12 +1297,10 @@ const handleBlockReferralCode = async (req: Request, res: Response) => {
   } catch (err: any) {
     res.status(500).json({ success: false, message: "Failed to block/unblock code" });
   }
-};
-admin_route.patch("/referrals/block", adminGuard, handleBlockReferralCode);
-admin_route.post("/referrals/block", adminGuard, handleBlockReferralCode);
+});
 
-// REFERRAL 6. Adjust Points (PATCH & POST /user/admin/referrals/points)
-const handleAdjustReferralPoints = async (req: Request, res: Response) => {
+// REFERRAL 6. PATCH Points (PATCH /user/admin/referrals/points)
+admin_route.patch("/referrals/points", adminGuard, async (req: Request, res: Response) => {
   try {
     const { userId, points, reason, type } = req.body;
     const id = parseInt(userId, 10);
@@ -1731,9 +1356,7 @@ const handleAdjustReferralPoints = async (req: Request, res: Response) => {
     console.error(err);
     res.status(500).json({ success: false, message: "Failed to adjust points" });
   }
-};
-admin_route.patch("/referrals/points", adminGuard, handleAdjustReferralPoints);
-admin_route.post("/referrals/points", adminGuard, handleAdjustReferralPoints);
+});
 
 /* ─── USER FEEDBACK MANAGEMENT ───────────────────────────── */
 
@@ -1817,6 +1440,153 @@ admin_route.delete("/feedback/:id", adminGuard, async (req: Request, res: Respon
       success: false,
       message: error.message || "Failed to delete feedback"
     });
+  }
+});
+
+// Admin profile — GET current admin (GET /user/admin/me)
+admin_route.get("/me", adminGuard, async (req: Request, res: Response) => {
+  try {
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: ADMIN_USER_SELECT,
+    });
+
+    if (!user) {
+      res.status(404).json({ success: false, message: "Admin user not found" });
+      return;
+    }
+
+    const profileDetails = user.profile_details as any;
+    res.status(200).json({
+      success: true,
+      admin: {
+        ...user,
+        profileId: `MN-${100000 + user.id}`,
+        role: profileDetails?.isAdmin || userId === 2 || userId === 6 ? "admin" : "admin",
+        isAdmin: true,
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || "Failed to load admin profile." });
+  }
+});
+
+// Admin profile — PUT update (PUT /user/admin/me)
+admin_route.put("/me", adminGuard, async (req: Request, res: Response) => {
+  try {
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const { first_name, last_name, email } = req.body;
+    const data: any = {};
+    if (first_name) data.first_name = first_name;
+    if (last_name) data.last_name = last_name;
+    if (email !== undefined) data.email = email || null;
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data,
+      select: ADMIN_USER_SELECT,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Admin profile updated successfully.",
+      admin: { ...updated, profileId: `MN-${100000 + updated.id}`, role: "admin", isAdmin: true },
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || "Failed to update admin profile." });
+  }
+});
+
+// Admin profile — PUT change password (PUT /user/admin/me/password)
+admin_route.put("/me/password", adminGuard, async (req: Request, res: Response) => {
+  try {
+    const userId = getUserIdFromRequest(req);
+    const { currentPassword, newPassword } = req.body;
+
+    if (!userId || !currentPassword || !newPassword) {
+      res.status(400).json({ success: false, message: "Current and new password are required." });
+      return;
+    }
+
+    if (String(newPassword).length < 6) {
+      res.status(400).json({ success: false, message: "New password must be at least 6 characters." });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
+    }
+
+    const valid = await bcrypt.compare(currentPassword, user.password);
+    if (!valid) {
+      res.status(400).json({ success: false, message: "Current password is incorrect." });
+      return;
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({ where: { id: userId }, data: { password: hashed } });
+
+    res.status(200).json({ success: true, message: "Password changed successfully." });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || "Failed to change password." });
+  }
+});
+
+// Referral records list (GET /user/admin/referral-records)
+admin_route.get("/referral-records", adminGuard, async (req: Request, res: Response) => {
+  try {
+    const page = Math.max(parseInt(req.query.page as string || "1", 10), 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit as string || "20", 10), 1), 100);
+    const search = (req.query.search as string || "").trim();
+    const status = (req.query.status as string || "").trim();
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (status) where.status = status;
+    if (search) {
+      where.OR = [
+        { referral_code: { contains: search, mode: "insensitive" } },
+        { referrer: { first_name: { contains: search, mode: "insensitive" } } },
+        { referrer: { last_name: { contains: search, mode: "insensitive" } } },
+        { referred_user: { first_name: { contains: search, mode: "insensitive" } } },
+        { referred_user: { last_name: { contains: search, mode: "insensitive" } } },
+      ];
+    }
+
+    const [records, total] = await Promise.all([
+      prisma.referral.findMany({
+        where,
+        include: {
+          referrer: { select: { id: true, first_name: true, last_name: true, mobile_number: true, referral_code: true } },
+          referred_user: { select: { id: true, first_name: true, last_name: true, mobile_number: true, kyc_status: true, created_at: true } },
+        },
+        orderBy: { created_at: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.referral.count({ where }),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      records,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || "Failed to load referral records." });
   }
 });
 

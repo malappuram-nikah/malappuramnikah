@@ -100,14 +100,14 @@ export class UserController {
     try {
       console.log("Request Body:", req.body);
 
-      const { status, message, token, refreshToken } =
+      const { status, message, code, token, refreshToken } =
         await this.loginUser.execute({
           mobile_number: req.body.mobile_number,
           password: req.body.password,
         });
 
       if (status !== 200) {
-        return res.status(status).json({ success: false, message });
+        return res.status(status).json({ success: false, message, code });
       }
 
       res.cookie("refresh_token", refreshToken, {

@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { 
-  Award, ShieldCheck, ShieldAlert, Trash2, ArrowLeft, Unlock,
+  Award, ShieldCheck, ShieldAlert, Trash2, ArrowLeft, 
   Settings, Users, CheckCircle2, Clock, Plus, Minus, Search, 
   AlertTriangle, CreditCard, Loader2, RefreshCw, X 
 } from "lucide-react";
 import { API_URL } from "@/lib/config";
+import { adminApi } from "@/lib/admin-api";
 
 interface AdminStats {
   totalUsers: number;
@@ -77,7 +77,6 @@ interface AdminTransactionItem {
 }
 
 export default function AdminReferralsPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<ReferralUser[]>([]);
   const [stats, setStats] = useState<AdminStats>({
@@ -115,36 +114,27 @@ export default function AdminReferralsPage() {
   const [ptsType, setPtsType] = useState<"BONUS" | "DEDUCT">("BONUS");
   const [ptsActionLoading, setPtsActionLoading] = useState(false);
 
-  const [fetchError, setFetchError] = useState<string | null>(null);
+  // Referral records (Referral model)
+  const [records, setRecords] = useState<any[]>([]);
+  const [recordsPage, setRecordsPage] = useState(1);
+  const [recordsTotalPages, setRecordsTotalPages] = useState(1);
+  const [recordStatusFilter, setRecordStatusFilter] = useState("");
 
   const fetchReferrals = async () => {
     setLoading(true);
-    setFetchError(null);
     try {
       const token = localStorage.getItem("mn_token");
-      if (!token) {
-        router.push("/admin/login");
-        return;
-      }
       const res = await fetch(`${API_URL}/user/admin/referrals?page=${page}&search=${searchQuery}`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
-      if (res.status === 401 || res.status === 403) {
-        localStorage.removeItem("mn_token");
-        router.push("/admin/login");
-        return;
-      }
       const data = await res.json();
       if (data.success) {
         setUsers(data.referrals);
         setStats(data.stats);
         setTotalPages(data.pagination.totalPages);
-      } else {
-        setFetchError(data.message || "Failed to load referral records.");
       }
     } catch (err) {
       console.error(err);
-      setFetchError("Unable to communicate with referral service.");
     } finally {
       setLoading(false);
     }
@@ -169,6 +159,22 @@ export default function AdminReferralsPage() {
     fetchReferrals();
     fetchSettings();
   }, [page]);
+
+  const fetchReferralRecords = async () => {
+    try {
+      const params: Record<string, string | number> = { page: recordsPage, limit: 10 };
+      if (recordStatusFilter) params.status = recordStatusFilter;
+      const res = await adminApi.getReferralRecords(params);
+      setRecords(res.records);
+      setRecordsTotalPages(res.pagination.totalPages);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchReferralRecords();
+  }, [recordsPage, recordStatusFilter]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -297,7 +303,7 @@ export default function AdminReferralsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+    <div className="min-h-screen bg-gray-50/50 pb-20 pt-6 px-4 sm:px-6 lg:px-8 space-y-6 max-w-7xl mx-auto">
       {/* Title */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -308,29 +314,12 @@ export default function AdminReferralsPage() {
             Configure system conditions, manage referral point transactions, and block abuses.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => router.push("/dashboard/admin")}
-            className="flex items-center justify-center gap-1.5 px-4 py-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer active:scale-95 shrink-0"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" /> Command Center
-          </button>
-          <button
-            onClick={fetchReferrals}
-            className="flex items-center justify-center gap-1.5 px-4 py-2 border border-brand-200 bg-brand-50 hover:bg-brand-100 text-brand-700 text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer active:scale-95 shrink-0"
-          >
-            <RefreshCw className="w-3.5 h-3.5" /> Refresh List
-          </button>
-          <button
-            onClick={() => {
-              localStorage.removeItem("mn_token");
-              router.push("/admin/login");
-            }}
-            className="flex items-center justify-center gap-1.5 px-4 py-2 border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer active:scale-95 shrink-0"
-          >
-            <Unlock className="w-3.5 h-3.5" /> Admin Logout
-          </button>
-        </div>
+        <button
+          onClick={fetchReferrals}
+          className="flex items-center justify-center gap-1.5 px-4 py-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer active:scale-95 shrink-0"
+        >
+          <RefreshCw className="w-3.5 h-3.5" /> Refresh List
+        </button>
       </div>
 
       {/* Admin stats */}
@@ -348,6 +337,61 @@ export default function AdminReferralsPage() {
             <span className={`text-lg font-extrabold mt-1 block truncate ${s.color}`}>{s.val}</span>
           </div>
         ))}
+      </div>
+
+      {/* Referral join records from database */}
+      <div className="bg-white border border-gray-150 rounded-xl shadow-sm p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-4 mb-4">
+          <h2 className="text-sm font-bold text-gray-900">Referral Records</h2>
+          <select
+            value={recordStatusFilter}
+            onChange={(e) => { setRecordStatusFilter(e.target.value); setRecordsPage(1); }}
+            className="p-2 text-xs rounded-xl border border-gray-200 bg-gray-50 font-semibold"
+          >
+            <option value="">All Statuses</option>
+            <option value="PENDING">Pending</option>
+            <option value="SUCCESS">Success</option>
+            <option value="REJECTED">Rejected</option>
+          </select>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead>
+              <tr className="bg-gray-50 text-gray-400 font-bold uppercase">
+                <th className="p-3">Referrer</th>
+                <th className="p-3">Referred User</th>
+                <th className="p-3">Code</th>
+                <th className="p-3">Status</th>
+                <th className="p-3">Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {records.map((r) => (
+                <tr key={r.id} className="border-b border-gray-50 hover:bg-gray-50/50">
+                  <td className="p-3 font-semibold">{r.referrer.first_name} {r.referrer.last_name}</td>
+                  <td className="p-3">{r.referred_user.first_name} {r.referred_user.last_name}</td>
+                  <td className="p-3 font-mono text-[10px]">{r.referral_code}</td>
+                  <td className="p-3">
+                    <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                      r.status === "SUCCESS" ? "bg-emerald-100 text-emerald-800" : r.status === "PENDING" ? "bg-amber-100 text-amber-800" : "bg-red-100 text-red-800"
+                    }`}>{r.status}</span>
+                  </td>
+                  <td className="p-3 text-gray-500">{new Date(r.created_at).toLocaleDateString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {records.length === 0 && (
+            <p className="text-center text-gray-400 text-xs py-8">No referral records found.</p>
+          )}
+        </div>
+        {recordsTotalPages > 1 && (
+          <div className="flex justify-between items-center pt-3">
+            <button disabled={recordsPage <= 1} onClick={() => setRecordsPage((p) => p - 1)} className="text-xs font-semibold px-3 py-1 border rounded-lg disabled:opacity-40">Previous</button>
+            <span className="text-xs text-gray-500">Page {recordsPage} of {recordsTotalPages}</span>
+            <button disabled={recordsPage >= recordsTotalPages} onClick={() => setRecordsPage((p) => p + 1)} className="text-xs font-semibold px-3 py-1 border rounded-lg disabled:opacity-40">Next</button>
+          </div>
+        )}
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">

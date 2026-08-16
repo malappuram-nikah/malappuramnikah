@@ -31,28 +31,13 @@ const memberNavItems = [
   { href: "/dashboard/settings", icon: Settings,         label: "Settings"  },
 ];
 
-// 2. Super Admin Navigation Items (Only shown in /dashboard/admin)
-const adminNavItems = [
-  { href: "/dashboard/admin?tab=analytics", icon: BarChart3,     label: "Analytics Core" },
-  { href: "/dashboard/admin?tab=users",      icon: Users,          label: "User Accounts" },
-  { href: "/dashboard/admin?tab=profiles",   icon: ShieldCheck,    label: "Matrimony Profiles" },
-  { href: "/dashboard/admin/referrals",     icon: Award,          label: "Referrals & Wallet" },
-  { href: "/dashboard/admin?tab=complaints", icon: AlertTriangle,  label: "Complaints Grid" },
-  { href: "/dashboard/admin?tab=feedbacks",  icon: MessageSquarePlus, label: "User Feedbacks" },
-  { href: "/dashboard/admin?tab=plans",      icon: CreditCard,     label: "Premium Plans" },
-  { href: "/dashboard/admin?tab=cms",        icon: LayoutGrid,     label: "CMS Management" },
-  { href: "/dashboard/business",             icon: Briefcase,      label: "B2B Creator Hub" },
-];
-
-
-// 3. Wedding Business Creator Navigation Items (Only shown in /dashboard/business)
+// 2. Wedding Business Creator Navigation Items (Only shown in /dashboard/business)
 const businessNavItems = [
   { href: "/dashboard/business?tab=creators",   icon: Briefcase,     label: "Wedding Creators" },
   { href: "/dashboard/business?tab=chat",       icon: MessageCircle, label: "Monitored Chats" },
   { href: "/dashboard/business?tab=templates",  icon: LayoutGrid,    label: "STD & Card Themes" },
   { href: "/dashboard/business?tab=bookings",   icon: Calendar,      label: "B2B Shoot Orders" },
   { href: "/dashboard/business?tab=payouts",    icon: DollarSign,    label: "Commissions Split" },
-  { href: "/dashboard/admin",                   icon: ShieldCheck,   label: "Matrimony Admin" },
 ];
 
 export default function DashboardSidebar() {
@@ -60,14 +45,10 @@ export default function DashboardSidebar() {
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
 
-  // Determine active nav items based on page context
   let activeNavItems = memberNavItems;
   let titlePrefix = "MATCHMAKER";
 
-  if (pathname?.startsWith("/dashboard/admin")) {
-    activeNavItems = adminNavItems;
-    titlePrefix = "SUPER ADMIN";
-  } else if (pathname?.startsWith("/dashboard/business")) {
+  if (pathname?.startsWith("/dashboard/business")) {
     activeNavItems = businessNavItems;
     titlePrefix = "B2B WEDDING";
   }
@@ -199,7 +180,7 @@ export default function DashboardSidebar() {
       </aside>
 
       {/* Mobile Bottom Nav (Strictly Matrimonial Users Only) */}
-      {pathname === "/dashboard" || pathname?.startsWith("/dashboard/") && !pathname?.startsWith("/dashboard/admin") && !pathname?.startsWith("/dashboard/business") ? (
+      {pathname === "/dashboard" || (pathname?.startsWith("/dashboard/") && !pathname?.startsWith("/dashboard/business")) ? (
         <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 flex items-center justify-around px-2 py-2 safe-area-pb select-none">
           {memberNavItems.slice(0, 5).map((item) => {
             const baseHref = item.href.split("?")[0];
