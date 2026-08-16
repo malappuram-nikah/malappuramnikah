@@ -315,13 +315,14 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email Address (Optional)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email Address <span className="text-red-500">*</span></label>
               <input
                 type="email"
+                required
                 value={formData.email}
                 onChange={(e) => updateForm("email", e.target.value)}
                 onBlur={() => touchField("email")}
-                placeholder="Enter your email"
+                placeholder="Enter your email to receive OTP"
                 className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 transition-all text-sm ${
                   fieldErrors.email
                     ? "border-red-300 focus:border-red-500 focus:ring-red-500/20"
@@ -374,6 +375,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
       case 3: return formData.location && formData.caste;
       case 4:
         return (
+          formData.email.trim().length > 0 &&
           !validateMobile(formData.countryCode, formData.mobile) &&
           !validatePassword(formData.password) &&
           !validateEmail(formData.email)
@@ -636,7 +638,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
                 </div>
 
                 <p className="text-sm text-gray-500 text-center mb-6">
-                  We&apos;ve sent a 6-digit verification code to your mobile number / email. Enter it below to verify your account.
+                  We&apos;ve sent a 6-digit verification code to your <strong className="text-gray-900 font-semibold">Email Inbox ({formData.email})</strong>. Enter it below to verify your account.
                 </p>
 
                 {otpInfo && (
