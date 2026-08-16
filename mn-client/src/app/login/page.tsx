@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, EyeOff, Phone, Lock, ArrowRight, KeyRound, MessageSquare, ShieldCheck, RefreshCw } from "lucide-react";
+import { Eye, EyeOff, Phone, Lock, ArrowRight, KeyRound, MessageSquare, ShieldCheck, RefreshCw, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { API_URL } from "@/lib/config";
 import { getPostLoginRedirect, setToken } from "@/lib/auth-session";
@@ -199,7 +199,7 @@ export default function LoginPage() {
                   : "text-gray-500 hover:text-gray-800"
               }`}
             >
-              <MessageSquare className="w-3.5 h-3.5 text-emerald-600" /> WhatsApp OTP
+              <Mail className="w-3.5 h-3.5 text-brand-600" /> Email OTP
             </button>
           </div>
 
