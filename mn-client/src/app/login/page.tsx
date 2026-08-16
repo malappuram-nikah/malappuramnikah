@@ -317,50 +317,39 @@ export default function LoginPage() {
             </form>
           )}
 
-          {/* ─── WHATSAPP OTP LOGIN FORM ─── */}
+          {/* ─── EMAIL OTP LOGIN FORM ─── */}
           {loginMode === "otp" && (
             <div className="space-y-5">
               {!otpSent ? (
                 <form onSubmit={handleSendOtp} className="space-y-5">
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Mobile Number</label>
-                    <div className="flex gap-2">
-                      <select
-                        value={countryCode}
-                        onChange={(e) => setCountryCode(e.target.value)}
-                        className="w-28 px-3 py-3.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-gray-50 text-center font-medium"
-                      >
-                        <option value="+91">+91 (IN)</option>
-                        <option value="+971">+971 (UAE)</option>
-                        <option value="+966">+966 (KSA)</option>
-                      </select>
-                      <div className="relative flex-1">
-                        <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                          <Phone className="h-5 w-5 text-gray-400" />
-                        </div>
-                        <input
-                          type="tel"
-                          value={mobile}
-                          onChange={(e) => setMobile(e.target.value)}
-                          placeholder="Enter registered mobile"
-                          required
-                          className="w-full pl-10 pr-4 py-3.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
-                        />
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Registered Email or Mobile</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                        <Mail className="h-5 w-5" />
                       </div>
+                      <input
+                        type="text"
+                        value={mobile}
+                        onChange={(e) => setMobile(e.target.value)}
+                        placeholder="Enter registered email or mobile number"
+                        required
+                        className="w-full pl-10 pr-4 py-3.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                      />
                     </div>
                   </div>
 
                   <button
                     type="submit"
                     disabled={isLoading || !mobile.trim()}
-                    className="w-full bg-emerald-600 text-white font-semibold py-3.5 px-4 rounded-xl hover:bg-emerald-700 active:scale-[0.99] transition-all disabled:opacity-50 disabled:pointer-events-none shadow-sm hover:shadow flex items-center justify-center gap-2 text-sm"
+                    className="w-full bg-brand-600 text-white font-semibold py-3.5 px-4 rounded-xl hover:bg-brand-700 active:scale-[0.99] transition-all disabled:opacity-50 disabled:pointer-events-none shadow-sm hover:shadow flex items-center justify-center gap-2 text-sm"
                   >
                     {isLoading ? (
                       <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
                       <>
-                        <MessageSquare className="w-4 h-4" />
-                        Send WhatsApp OTP
+                        <Mail className="w-4 h-4" />
+                        Send Email OTP
                       </>
                     )}
                   </button>
