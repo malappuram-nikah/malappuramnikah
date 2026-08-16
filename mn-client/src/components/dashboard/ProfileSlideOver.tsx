@@ -11,6 +11,7 @@ import { useProfileActions } from "@/hooks/useProfileActions";
 import { API_URL } from "@/lib/config";
 
 import { useUser } from "@/context/UserContext";
+import VerificationModal from "./VerificationModal";
 
 interface ProfileSlideOverProps {
   profile: {
@@ -51,6 +52,8 @@ export default function ProfileSlideOver({
   const [toast, setToast] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const { toggleFavourite, toggleBlock, isFavourite, isBlocked } = useProfileActions();
+
+  const [showKycModal, setShowKycModal] = useState(false);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -501,6 +504,10 @@ export default function ProfileSlideOver({
             <div className="flex gap-2.5">
               <button
                 onClick={async () => {
+                  if (currentUser?.kyc_status !== "VERIFIED") {
+                    setShowKycModal(true);
+                    return;
+                  }
                   if (isMutual) {
                     onClose();
                     router.push("/dashboard/chat");
@@ -534,13 +541,25 @@ export default function ProfileSlideOver({
                   enriched={fullUser} 
                   isAccepted={isMutual || (currentUser && profile ? currentUser.id === profile.id : false)}
                   isPending={isSent || isReceived}
-                  onExpressInterest={() => onToggleInterest(profile.id, profile.name)}
+                  onExpressInterest={() => {
+                    if (currentUser?.kyc_status !== "VERIFIED") {
+                      setShowKycModal(true);
+                      return;
+                    }
+                    onToggleInterest(profile.id, profile.name);
+                  }}
                 />
               </div>
             )}
           </div>
         </motion.div>
       </div>
+
+      <VerificationModal
+        isOpen={showKycModal}
+        onClose={() => setShowKycModal(false)}
+        kycStatus={currentUser?.kyc_status}
+      />
     </AnimatePresence>
   );
 }

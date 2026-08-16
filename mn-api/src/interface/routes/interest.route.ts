@@ -71,6 +71,17 @@ interest_route.post("/", async (req: Request, res: Response) => {
       return;
     }
 
+    // Enforce Universal ID Verification check for expressing interest (both Male & Female)
+    if (senderUser.kyc_status !== "VERIFIED") {
+      res.status(403).json({
+        success: false,
+        requireKyc: true,
+        kycStatus: senderUser.kyc_status,
+        message: "Identity verification required. Please upload your ID document (Aadhaar/Passport) to express interest and connect with matches.",
+      });
+      return;
+    }
+
     const senderGender = (senderUser.gender || "").toLowerCase();
     const receiverGender = (receiverUser.gender || "").toLowerCase();
     if (senderGender && receiverGender && senderGender === receiverGender) {

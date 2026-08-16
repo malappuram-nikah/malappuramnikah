@@ -202,6 +202,7 @@ const fallbackMockMaleProfiles = [
 ];
 
 import ProfileSlideOver from "@/components/dashboard/ProfileSlideOver";
+import VerificationModal from "@/components/dashboard/VerificationModal";
 import { MatchesPageSkeleton } from "@/components/dashboard/Skeleton";
 import { API_URL } from "@/lib/config";
 
@@ -215,6 +216,7 @@ export default function AIMatchesLegacy() {
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
   const [activePhoto, setActivePhoto] = useState<string | null>(null);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
+  const [showKycModal, setShowKycModal] = useState(false);
 
   useEffect(() => {
     if (globalAlert) {
@@ -358,6 +360,11 @@ export default function AIMatchesLegacy() {
   }, []);
 
   const handleToggleInterest = async (receiverId: number, profileName: string) => {
+    if (currentUser?.kyc_status !== "VERIFIED") {
+      setShowKycModal(true);
+      return;
+    }
+
     if (receiverId > 100) {
       const isSent = interests.sent.includes(receiverId);
       if (isSent) {
@@ -913,6 +920,11 @@ export default function AIMatchesLegacy() {
           />
         )}
       </AnimatePresence>
+      <VerificationModal
+        isOpen={showKycModal}
+        onClose={() => setShowKycModal(false)}
+        kycStatus={currentUser?.kyc_status}
+      />
     </div>
   );
 }

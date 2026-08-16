@@ -10,6 +10,7 @@ import { useUser } from "@/context/UserContext";
 import { getEnrichedProfile, calculateAge } from "@/lib/profile-utils";
 
 import ProfileSlideOver from "@/components/dashboard/ProfileSlideOver";
+import VerificationModal from "@/components/dashboard/VerificationModal";
 import { CardGridSkeleton } from "@/components/dashboard/Skeleton";
 import FilterSidebar from "@/components/search/FilterSidebar";
 import { API_URL } from "@/lib/config";
@@ -192,7 +193,13 @@ export default function SearchPage() {
     }
   };
 
+  const [showKycModal, setShowKycModal] = useState(false);
+
   const handleToggleInterest = async (receiverId: number) => {
+    if (currentUser?.kyc_status !== "VERIFIED") {
+      setShowKycModal(true);
+      return;
+    }
     try {
       const storedToken = localStorage.getItem("mn_token");
       if (!storedToken) return;
@@ -471,6 +478,12 @@ export default function SearchPage() {
 
         </div>
       </div>
+
+      <VerificationModal
+        isOpen={showKycModal}
+        onClose={() => setShowKycModal(false)}
+        kycStatus={currentUser?.kyc_status}
+      />
 
       <AnimatePresence>
         {selectedProfile && (

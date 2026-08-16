@@ -16,6 +16,7 @@ import { useUser } from "@/context/UserContext";
 import { FullProfileSkeleton } from "@/components/dashboard/Skeleton";
 import { useProfileActions } from "@/hooks/useProfileActions";
 import { API_URL } from "@/lib/config";
+import VerificationModal from "@/components/dashboard/VerificationModal";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -117,8 +118,14 @@ export default function ProfileDetailPage({ params }: PageProps) {
     }
   }, [profileIdParam]);
 
+  const [showKycModal, setShowKycModal] = useState(false);
+
   const handleToggleInterest = async () => {
     if (!profile) return;
+    if (currentUser?.kyc_status !== "VERIFIED") {
+      setShowKycModal(true);
+      return;
+    }
     try {
       const storedToken = localStorage.getItem("mn_token");
       if (!storedToken) {
@@ -703,6 +710,12 @@ export default function ProfileDetailPage({ params }: PageProps) {
           </div>
         </div>
       </div>
+
+      <VerificationModal
+        isOpen={showKycModal}
+        onClose={() => setShowKycModal(false)}
+        kycStatus={currentUser?.kyc_status}
+      />
     </div>
   );
 }

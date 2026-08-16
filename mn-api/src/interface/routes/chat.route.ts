@@ -86,6 +86,17 @@ chat_route.post("/message", async (req: Request, res: Response) => {
       return;
     }
 
+    // Enforce Universal ID Verification check for sending chat messages
+    const senderUserRecord = await prisma.user.findUnique({ where: { id: senderId } });
+    if (!senderUserRecord || senderUserRecord.kyc_status !== "VERIFIED") {
+      res.status(403).json({
+        success: false,
+        requireKyc: true,
+        message: "Identity verification required to send chat messages. Please complete your ID verification in settings."
+      });
+      return;
+    }
+
     // Security Check: Enforce mutual matchmaking rule!
     const isMatched = await verifyMutualMatch(senderId, receiverId);
     if (!isMatched) {
