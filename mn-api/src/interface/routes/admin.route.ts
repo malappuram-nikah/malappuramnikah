@@ -767,7 +767,6 @@ admin_route.post("/store/update", adminGuard, async (req: Request, res: Response
         if (!store.music_settings) {
           store.music_settings = { enable_music: true, default_track: "" };
         }
-        const { MediaStorageService } = require("../../infrastructure/service/MediaStorageService");
         const uploadedUrl = await MediaStorageService.uploadMedia(payload.fileData, "music");
         store.music_settings.default_track = uploadedUrl;
         store.activity_logs.unshift({
