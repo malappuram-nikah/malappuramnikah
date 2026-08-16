@@ -7,7 +7,7 @@ import { Search, SlidersHorizontal, Loader2, X, Check, Lock, ShieldCheck } from 
 import { useRouter } from "next/navigation";
 import { useCompare } from "@/context/CompareContext";
 import { useUser } from "@/context/UserContext";
-import { getEnrichedProfile } from "@/lib/profile-utils";
+import { getEnrichedProfile, calculateAge } from "@/lib/profile-utils";
 
 import ProfileSlideOver from "@/components/dashboard/ProfileSlideOver";
 import { CardGridSkeleton } from "@/components/dashboard/Skeleton";
@@ -268,12 +268,12 @@ export default function SearchPage() {
             
             <button
               onClick={() => setShowFilters(true)}
-              className="lg:hidden w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 font-medium text-sm rounded-lg shadow-sm hover:bg-gray-50 transition-colors"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-[#026d77] hover:bg-[#03828e] text-white font-bold text-sm rounded-xl shadow-md transition-all active:scale-95 cursor-pointer"
             >
               <SlidersHorizontal className="w-4 h-4" />
-              Filters
+              Filter Profiles
               {activeFiltersCount > 0 && (
-                <span className="w-5 h-5 rounded-full bg-brand-600 text-white text-[10px] flex items-center justify-center ml-1">
+                <span className="w-5 h-5 rounded-full bg-amber-400 text-gray-900 font-extrabold text-[10px] flex items-center justify-center ml-1 shadow-sm">
                   {activeFiltersCount}
                 </span>
               )}
@@ -328,6 +328,15 @@ export default function SearchPage() {
               {profiles.map((p) => {
                 const isSent = interests.sent.includes(p.id);
                 const isMutual = interests.mutual.includes(p.id);
+                
+                // Format full name without asterisks
+                const displayName = `${p.first_name || ""} ${p.last_name || ""}`.trim() || p.name || "Member";
+                
+                // Calculate age and height display strings
+                const computedAgeVal = (p.age && p.age > 0) ? p.age : calculateAge(p.dob || p.dateOfBirth);
+                const ageLabel = computedAgeVal > 0 ? `${computedAgeVal} Yrs` : "Age N/A";
+                const heightLabel = p.height ? ` • ${String(p.height).includes("cm") ? p.height : `${p.height} cm`}` : "";
+
                 return (
                   <div 
                     key={p.id} 
@@ -338,7 +347,7 @@ export default function SearchPage() {
                     {p.img ? (
                       <img 
                         src={p.img} 
-                        alt={p.name} 
+                        alt={displayName} 
                         className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 z-0 ${p.isBlurred ? 'blur-md scale-110 opacity-80 select-none' : ''}`} 
                       />
                     ) : (
@@ -399,10 +408,10 @@ export default function SearchPage() {
                     <div className="relative z-20 p-4 w-full text-white flex flex-col gap-2.5">
                       <div>
                         <h3 className="text-base font-bold text-white flex items-center gap-2">
-                          {p.name}
+                          {displayName}
                           {p.is_online && <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" title="Online now" />}
                         </h3>
-                        <p className="text-xs text-gray-200 mt-0.5">{p.age} Yrs • {p.height} cm</p>
+                        <p className="text-xs text-gray-200 mt-0.5">{ageLabel}{heightLabel}</p>
                       </div>
                       
                       <div className="grid grid-cols-2 gap-y-2 gap-x-3 text-[11px] text-gray-300 flex-1">

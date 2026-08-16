@@ -83,17 +83,7 @@ export class SearchController {
           }
         }
 
-        // Premium Restriction: If requester is not premium, mask last name and blur photos
-        if (!isPremiumUser) {
-          if (safeUser.last_name) {
-            safeUser.last_name = safeUser.last_name.charAt(0) + "***";
-          }
-          if (safeUser.profile_details?.mn_profile_photos_draft?.photos) {
-            // Add a blurred flag to instruct the frontend to blur these images
-            safeUser.profile_details.mn_profile_photos_draft.isBlurred = true;
-          }
-        }
-
+        // Return full details without masking last names
         return safeUser;
       });
 

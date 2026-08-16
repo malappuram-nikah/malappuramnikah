@@ -1,5 +1,37 @@
 import { User, EnrichedProfile, ProfileDetails } from "@/types";
 
+export function calculateAge(dobInput: any): number {
+  if (!dobInput) return 0;
+  let birthDate: Date | null = null;
+
+  if (typeof dobInput === "string") {
+    const cleanStr = dobInput.trim();
+    const parts = cleanStr.split(/[-/]/);
+    if (parts.length === 3) {
+      if (parts[0].length === 4) {
+        birthDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+      } else if (parts[2].length === 4) {
+        birthDate = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+      }
+    }
+    if (!birthDate || isNaN(birthDate.getTime())) {
+      birthDate = new Date(cleanStr);
+    }
+  } else if (dobInput instanceof Date) {
+    birthDate = dobInput;
+  }
+
+  if (!birthDate || isNaN(birthDate.getTime())) return 0;
+
+  const today = new Date();
+  let calculated = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    calculated--;
+  }
+  return calculated > 0 && calculated < 120 ? calculated : 0;
+}
+
 export function getEnrichedProfile(u: User): EnrichedProfile {
   const profileDetails = u.profile_details || {};
   const basic = profileDetails.mn_basic_details_draft || {};
@@ -27,7 +59,7 @@ export function getEnrichedProfile(u: User): EnrichedProfile {
     avatar = primary ? primary.dataUrl : photos[0].dataUrl;
   }
 
-  const age = u.dob ? Math.floor((new Date().getTime() - new Date(u.dob).getTime()) / 31557600000) : 0;
+  const computedAge = calculateAge(u.dob || (basic as any).dob || (u as any).dateOfBirth);
   const caste = u.cast || "";
 
   return {
@@ -41,7 +73,7 @@ export function getEnrichedProfile(u: User): EnrichedProfile {
     
     // Core Header fields
     profileId: `MN-${100000 + u.id}`,
-    age: basic.age ? parseInt(basic.age, 10) : (age || 0),
+    age: basic.age ? parseInt(basic.age, 10) : (computedAge || 0),
     height: basic.height || "",
     education: (professional.education === "Others" && professional.customEducation) ? professional.customEducation : (professional.education || ""),
     profession: professional.profession || "",

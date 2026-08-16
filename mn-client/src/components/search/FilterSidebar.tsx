@@ -238,36 +238,44 @@ export default function FilterSidebar({
   );
 
   return (
-    <>
-      {/* Mobile Overlay & Bottom Sheet */}
-      <div className="lg:hidden">
-        <AnimatePresence>
-          {isOpen && (
-            <>
-              <motion.div 
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                onClick={onClose}
-                className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-40"
-              />
-              <motion.div
-                initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-                transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                className="fixed inset-x-0 bottom-0 z-50 h-[85vh] bg-white rounded-t-2xl shadow-2xl overflow-hidden flex flex-col"
-              >
-                <div className="w-full flex justify-center pt-3 pb-1">
-                  <div className="w-12 h-1.5 bg-gray-200 rounded-full" />
-                </div>
-                {sidebarContent}
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
-      </div>
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Backdrop Overlay */}
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-gray-900/40 backdrop-blur-xs z-40 transition-opacity"
+          />
 
-      {/* Desktop Sticky Sidebar */}
-      <div className="hidden lg:block w-72 shrink-0 sticky top-8 h-[calc(100vh-8rem)] rounded-lg overflow-hidden border border-gray-200 shadow-md bg-white">
-        {sidebarContent}
-      </div>
-    </>
+          {/* Desktop & Tablet Slide-Over Drawer */}
+          <motion.div
+            initial={{ x: "-100%" }} 
+            animate={{ x: 0 }} 
+            exit={{ x: "-100%" }}
+            transition={{ type: "spring", damping: 28, stiffness: 280 }}
+            className="fixed top-0 left-0 bottom-0 z-50 w-full max-w-md bg-white shadow-2xl overflow-hidden flex flex-col border-r border-gray-200"
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-150 bg-gray-50/80">
+              <h2 className="text-lg font-bold font-playfair flex items-center gap-2 text-gray-900">
+                <Filter className="w-5 h-5 text-brand-600" />
+                Filter Matrimonial Profiles
+              </h2>
+              <button 
+                onClick={onClose} 
+                className="p-2 rounded-full text-gray-500 hover:text-gray-900 hover:bg-gray-200/60 transition-all active:scale-95 cursor-pointer"
+                title="Close Filters"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {sidebarContent}
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   );
 }
