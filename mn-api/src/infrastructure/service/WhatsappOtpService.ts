@@ -16,6 +16,14 @@ export class WhatsappOtpService {
     return process.env.META_WA_TEMPLATE_NAME || "otp_verification";
   }
 
+  private static get msg91AuthKey(): string {
+    return process.env.MSG91_AUTH_KEY || process.env.MSG90_AUTH_KEY || "";
+  }
+
+  private static get msg91TemplateId(): string {
+    return process.env.MSG91_TEMPLATE_ID || process.env.MSG91_FLOW_ID || "";
+  }
+
   private static get ultraMsgInstanceId(): string {
     return process.env.ULTRAMSG_INSTANCE_ID || "";
   }
@@ -38,17 +46,22 @@ export class WhatsappOtpService {
   }
 
   /**
-   * Send WhatsApp OTP using Meta WhatsApp Cloud API or UltraMsg or Dev Fallback
+   * Send WhatsApp OTP using MSG91, UltraMsg, Meta API, or Dev Fallback
    */
   public static async sendOtp(mobileNumber: string, otpCode: string): Promise<WhatsappOtpResponse> {
     const formattedPhone = this.formatPhoneNumber(mobileNumber);
 
-    // 1. UltraMsg Option (Instant launch setup)
+    // 1. MSG91 Option (Priority)
+    if (this.msg91AuthKey && this.msg91TemplateId) {
+      return this.sendViaMsg91(formattedPhone, otpCode);
+    }
+
+    // 2. UltraMsg Option
     if (this.ultraMsgInstanceId && this.ultraMsgToken) {
       return this.sendViaUltraMsg(formattedPhone, otpCode);
     }
 
-    // 2. Meta WhatsApp Cloud API Option
+    // 3. Meta WhatsApp Cloud API Option
     if (this.metaAccessToken && this.metaPhoneNumberId) {
       return this.sendViaMetaCloudApi(formattedPhone, otpCode);
     }
@@ -62,6 +75,42 @@ export class WhatsappOtpService {
       success: true,
       message: `[DEV MODE] WhatsApp OTP for +${formattedPhone}: ${otpCode}`,
     };
+  }
+
+  /**
+   * Send OTP via MSG91 API (WhatsApp / SMS channel)
+   */
+  private static async sendViaMsg91(phone: string, otpCode: string): Promise<WhatsappOtpResponse> {
+    try {
+      const url = `https://control.msg91.com/api/v5/otp?template_id=${this.msg91TemplateId}&mobile=${phone}&otp=${otpCode}`;
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          authkey: this.msg91AuthKey,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data: any = await response.json();
+
+      if (response.ok && (data?.type === "success" || data?.message?.includes("success"))) {
+        console.log(`[WHATSAPP MSG91 SUCCESS] OTP sent to +${phone}:`, data);
+        return { success: true, message: "WhatsApp OTP sent successfully via MSG91" };
+      } else {
+        console.warn(`[WHATSAPP MSG91 RESPONSE] Error response for +${phone}:`, data);
+        return {
+          success: false,
+          message: data?.message || "Failed to send WhatsApp OTP via MSG91",
+        };
+      }
+    } catch (error: any) {
+      console.error(`[WHATSAPP MSG91 ERROR] Failed for +${phone}:`, error?.message || error);
+      return {
+        success: false,
+        message: error?.message || "MSG91 service unavailable",
+      };
+    }
   }
 
   /**
