@@ -47,6 +47,27 @@ admin_route.post("/login", async (req: Request, res: Response) => {
         });
       }
 
+      // Ensure finacherushola@gmail.com is seeded with bcrypt-hashed password "Fina@123" and role "SUPPORT"
+      if (inputEmail === "finacherushola@gmail.com") {
+        const hashedPassword = await bcrypt.hash("Fina@123", 10);
+        await prisma.admin.upsert({
+          where: { email: "finacherushola@gmail.com" },
+          update: {
+            password: hashedPassword,
+            role: "SUPPORT",
+            is_active: true,
+          },
+          create: {
+            name: "Fina (Support Admin)",
+            email: "finacherushola@gmail.com",
+            mobile_number: "+919876543210",
+            password: hashedPassword,
+            role: "SUPPORT",
+            is_active: true,
+          },
+        });
+      }
+
       let adminAccount = await prisma.admin.findFirst({
         where: { email: { equals: inputEmail, mode: "insensitive" } },
       });
