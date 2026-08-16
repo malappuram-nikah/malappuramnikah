@@ -9,11 +9,17 @@ import { adminApi, AdminUser } from "@/lib/admin-api";
 import { cn } from "@/lib/utils";
 
 const STATUS_OPTIONS = [
-  { id: "ALL", label: "All" },
+  { id: "ALL", label: "All Status" },
   { id: "PENDING", label: "Pending" },
   { id: "UNDER_REVIEW", label: "Under Review" },
   { id: "VERIFIED", label: "Verified" },
   { id: "REJECTED", label: "Rejected" },
+] as const;
+
+const GENDER_OPTIONS = [
+  { id: "ALL", label: "All Genders" },
+  { id: "Male", label: "Male ♂" },
+  { id: "Female", label: "Female ♀" },
 ] as const;
 
 const STATUS_PRIORITY: Record<string, number> = {
@@ -75,6 +81,7 @@ export default function AdminIdVerificationPage() {
   const [requests, setRequests] = useState<AdminUser[]>([]);
   const [selected, setSelected] = useState<AdminUser | null>(null);
   const [statusFilter, setStatusFilter] = useState("PENDING");
+  const [genderFilter, setGenderFilter] = useState("ALL");
   const [search, setSearch] = useState("");
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -88,8 +95,9 @@ export default function AdminIdVerificationPage() {
   const loadRequests = useCallback(async () => {
     setLoading(true);
     try {
-      const params: { search?: string } = {};
+      const params: { search?: string; gender?: string } = {};
       if (search.trim()) params.search = search.trim();
+      if (genderFilter !== "ALL") params.gender = genderFilter;
       const res = await adminApi.getKycRequests(params);
       setRequests(res.requests);
     } catch {
@@ -97,7 +105,7 @@ export default function AdminIdVerificationPage() {
     } finally {
       setLoading(false);
     }
-  }, [search]);
+  }, [search, genderFilter]);
 
   useEffect(() => {
     loadRequests();
@@ -106,6 +114,7 @@ export default function AdminIdVerificationPage() {
   const statusCounts = useMemo(() => {
     const q = search.toLowerCase();
     const base = requests.filter((r) => {
+      if (genderFilter !== "ALL" && (r.gender || "Male").toLowerCase() !== genderFilter.toLowerCase()) return false;
       if (!q) return true;
       const name = `${r.first_name} ${r.last_name}`.toLowerCase();
       return name.includes(q) || r.mobile_number.includes(q);
@@ -115,13 +124,14 @@ export default function AdminIdVerificationPage() {
       counts[req.kyc_status] = (counts[req.kyc_status] || 0) + 1;
     }
     return counts;
-  }, [requests, search]);
+  }, [requests, search, genderFilter]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return requests
       .filter((r) => {
         if (statusFilter !== "ALL" && r.kyc_status !== statusFilter) return false;
+        if (genderFilter !== "ALL" && (r.gender || "Male").toLowerCase() !== genderFilter.toLowerCase()) return false;
         if (!q) return true;
         const name = `${r.first_name} ${r.last_name}`.toLowerCase();
         return name.includes(q) || r.mobile_number.includes(q);
@@ -195,12 +205,25 @@ export default function AdminIdVerificationPage() {
             onChange={(e) => setSearch(e.target.value)}
             className="w-full p-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
           />
-          <FilterBoxes
-            options={STATUS_OPTIONS}
-            value={statusFilter}
-            onChange={setStatusFilter}
-            counts={statusCounts}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Verification status</p>
+              <FilterBoxes
+                options={STATUS_OPTIONS}
+                value={statusFilter}
+                onChange={setStatusFilter}
+                counts={statusCounts}
+              />
+            </div>
+            <div>
+              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Gender</p>
+              <FilterBoxes
+                options={GENDER_OPTIONS}
+                value={genderFilter}
+                onChange={setGenderFilter}
+              />
+            </div>
+          </div>
         </div>
 
         {loading ? (
@@ -219,6 +242,7 @@ export default function AdminIdVerificationPage() {
                       <tr className="bg-gray-50 text-gray-400 font-bold uppercase border-b border-gray-100">
                         <th className="p-3 w-10">#</th>
                         <th className="p-3">Member</th>
+                        <th className="p-3">Gender</th>
                         <th className="p-3">Document</th>
                         <th className="p-3">Status</th>
                       </tr>
@@ -240,6 +264,11 @@ export default function AdminIdVerificationPage() {
                           <td className="p-3">
                             <p className="font-bold text-gray-900">{req.first_name} {req.last_name}</p>
                             <p className="text-[10px] text-gray-500">{req.mobile_number}</p>
+                          </td>
+                          <td className="p-3">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${req.gender?.toLowerCase() === 'female' ? 'bg-pink-50 text-pink-700 border-pink-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                              {req.gender || 'Male'}
+                            </span>
                           </td>
                           <td className="p-3 text-[10px] text-gray-600">{req.kyc_document_type || "—"}</td>
                           <td className="p-3">

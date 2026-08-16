@@ -801,7 +801,7 @@ admin_route.get("/music/settings", async (_req: Request, res: Response) => {
 // KYC 1. GET KYC Requests List (GET /user/admin/kyc/requests)
 admin_route.get("/kyc/requests", adminGuard, async (req: Request, res: Response) => {
   try {
-    const { search, status } = req.query;
+    const { search, status, gender } = req.query;
     
     const whereClause: any = {};
 
@@ -809,6 +809,10 @@ admin_route.get("/kyc/requests", adminGuard, async (req: Request, res: Response)
       whereClause.kyc_status = status as string;
     } else {
       whereClause.kyc_status = { not: "NOT_SUBMITTED" };
+    }
+
+    if (gender) {
+      whereClause.gender = { equals: gender as string, mode: "insensitive" };
     }
 
     if (search) {

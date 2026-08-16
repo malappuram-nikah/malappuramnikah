@@ -16,6 +16,12 @@ const ACCOUNT_STATUS_OPTIONS = [
   { id: "suspended", label: "Suspended" },
 ];
 
+const GENDER_OPTIONS = [
+  { id: "", label: "All Genders" },
+  { id: "Male", label: "Male ♂" },
+  { id: "Female", label: "Female ♀" },
+];
+
 const KYC_STATUS_OPTIONS = [
   { id: "", label: "All KYC" },
   { id: "NOT_SUBMITTED", label: "Not Submitted" },
@@ -83,6 +89,7 @@ export default function AdminUsersPage() {
   const [alert, setAlert] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [statusFilter, setStatusFilter] = useState("");
+  const [genderFilter, setGenderFilter] = useState(searchParams.get("gender") || "");
   const [kycFilter, setKycFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -92,6 +99,7 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     setStatusFilter(searchParams.get("status") || "");
+    setGenderFilter(searchParams.get("gender") || "");
   }, [searchParams]);
 
   const triggerAlert = (text: string, type: "success" | "error" = "success") => {
@@ -105,6 +113,7 @@ export default function AdminUsersPage() {
       const params: Record<string, string | number> = { page, limit: 10 };
       if (search.trim()) params.search = search.trim();
       if (statusFilter) params.status = statusFilter;
+      if (genderFilter) params.gender = genderFilter;
       if (kycFilter) params.kyc_status = kycFilter;
       if (dateFrom) params.date_from = dateFrom;
       if (dateTo) params.date_to = dateTo;
@@ -119,7 +128,7 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, statusFilter, kycFilter, dateFrom, dateTo]);
+  }, [page, search, statusFilter, genderFilter, kycFilter, dateFrom, dateTo]);
 
   useEffect(() => {
     loadUsers();
@@ -172,23 +181,33 @@ export default function AdminUsersPage() {
               className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 bg-gray-50"
             />
           </div>
-          <div>
-            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-2">Account status</p>
-            <FilterBoxes
-              options={ACCOUNT_STATUS_OPTIONS}
-              value={statusFilter}
-              onChange={(v) => { setStatusFilter(v); setPage(1); }}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-2">Account status</p>
+              <FilterBoxes
+                options={ACCOUNT_STATUS_OPTIONS}
+                value={statusFilter}
+                onChange={(v) => { setStatusFilter(v); setPage(1); }}
+              />
+            </div>
+            <div>
+              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-2">Gender</p>
+              <FilterBoxes
+                options={GENDER_OPTIONS}
+                value={genderFilter}
+                onChange={(v) => { setGenderFilter(v); setPage(1); }}
+              />
+            </div>
+            <div>
+              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-2">KYC status</p>
+              <FilterBoxes
+                options={KYC_STATUS_OPTIONS}
+                value={kycFilter}
+                onChange={(v) => { setKycFilter(v); setPage(1); }}
+              />
+            </div>
           </div>
-          <div>
-            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-2">KYC status</p>
-            <FilterBoxes
-              options={KYC_STATUS_OPTIONS}
-              value={kycFilter}
-              onChange={(v) => { setKycFilter(v); setPage(1); }}
-            />
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center pt-2">
             <input
               type="date"
               value={dateFrom}
@@ -228,6 +247,7 @@ export default function AdminUsersPage() {
                   <tr className="bg-gray-50 text-gray-400 font-bold uppercase border-b border-gray-100">
                     <th className="p-3.5 w-10">#</th>
                     <th className="p-3.5">Member</th>
+                    <th className="p-3.5">Gender</th>
                     <th className="p-3.5">Profile ID</th>
                     <th className="p-3.5">Location</th>
                     <th className="p-3.5">Account</th>
@@ -246,6 +266,11 @@ export default function AdminUsersPage() {
                       <td className="p-3.5">
                         <p className="font-bold text-gray-900">{user.first_name} {user.last_name}</p>
                         <p className="text-[10px] text-gray-400">{user.mobile_number}</p>
+                      </td>
+                      <td className="p-3.5">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${user.gender?.toLowerCase() === 'female' ? 'bg-pink-50 text-pink-700 border-pink-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                          {user.gender || 'Male'}
+                        </span>
                       </td>
                       <td className="p-3.5 font-mono text-[10px] text-gray-600">{user.profileId}</td>
                       <td className="p-3.5 text-gray-600">{user.location}</td>

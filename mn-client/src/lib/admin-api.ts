@@ -119,10 +119,11 @@ export const adminApi = {
       { method: "POST" }
     ),
 
-  getKycRequests: (params?: { search?: string; status?: string }) => {
+  getKycRequests: (params?: { search?: string; status?: string; gender?: string }) => {
     const qs = new URLSearchParams();
     if (params?.search) qs.set("search", params.search);
     if (params?.status) qs.set("status", params.status);
+    if (params?.gender) qs.set("gender", params.gender);
     const q = qs.toString();
     return adminFetch<{ success: true; requests: AdminUser[] }>(
       `/user/admin/kyc/requests${q ? `?${q}` : ""}`
