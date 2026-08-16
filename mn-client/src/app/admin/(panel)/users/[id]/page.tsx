@@ -203,7 +203,7 @@ export default function AdminUserDetailPage() {
             {user.first_name} {user.last_name}
           </h1>
           <p className="text-xs text-gray-500 truncate">
-            {user.profileId} · {user.mobile_number}
+            {user.profileId || `MN-${100000 + user.id}`} · {user.mobile_number}
           </p>
         </div>
         <button
@@ -308,7 +308,7 @@ export default function AdminUserDetailPage() {
 
       <div className="grid lg:grid-cols-2 gap-4">
         <Section title="Account Information">
-          <Field label="Profile ID" value={user.profileId} />
+          <Field label="Profile ID" value={user.profileId || `MN-${100000 + user.id}`} />
           <Field label="Internal ID" value={user.id} />
           <Field label="UUID" value={user.uuid} />
           <Field label="Profile created for" value={user.profile_for} />

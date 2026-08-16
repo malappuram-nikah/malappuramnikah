@@ -80,7 +80,7 @@ export default function AdminIdVerificationPage() {
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState<AdminUser[]>([]);
   const [selected, setSelected] = useState<AdminUser | null>(null);
-  const [statusFilter, setStatusFilter] = useState("PENDING");
+  const [statusFilter, setStatusFilter] = useState("ALL");
   const [genderFilter, setGenderFilter] = useState("ALL");
   const [search, setSearch] = useState("");
   const [rejectReason, setRejectReason] = useState("");
@@ -117,7 +117,8 @@ export default function AdminIdVerificationPage() {
       if (genderFilter !== "ALL" && (r.gender || "Male").toLowerCase() !== genderFilter.toLowerCase()) return false;
       if (!q) return true;
       const name = `${r.first_name} ${r.last_name}`.toLowerCase();
-      return name.includes(q) || r.mobile_number.includes(q);
+      const profId = (r.profileId || `mn-${100000 + r.id}`).toLowerCase();
+      return name.includes(q) || r.mobile_number.includes(q) || profId.includes(q);
     });
     const counts: Record<string, number> = { ALL: base.length };
     for (const req of base) {
@@ -134,7 +135,8 @@ export default function AdminIdVerificationPage() {
         if (genderFilter !== "ALL" && (r.gender || "Male").toLowerCase() !== genderFilter.toLowerCase()) return false;
         if (!q) return true;
         const name = `${r.first_name} ${r.last_name}`.toLowerCase();
-        return name.includes(q) || r.mobile_number.includes(q);
+        const profId = (r.profileId || `mn-${100000 + r.id}`).toLowerCase();
+        return name.includes(q) || r.mobile_number.includes(q) || profId.includes(q);
       })
       .sort((a, b) => {
         const pa = STATUS_PRIORITY[a.kyc_status] ?? 99;
@@ -192,7 +194,7 @@ export default function AdminIdVerificationPage() {
       <AdminAlert alert={alert} />
       <AdminPageHeader
         title="Identity KYC Verification"
-        description="Pending requests are shown first. Review documents and approve or reject verification."
+        description="Review uploaded ID proof documents and manage member verification statuses."
         icon={ShieldCheck}
       />
 
@@ -200,7 +202,7 @@ export default function AdminIdVerificationPage() {
         <div className="space-y-3 border-b border-gray-100 pb-4">
           <input
             type="text"
-            placeholder="Search by name or phone..."
+            placeholder="Search by member name, phone, or Profile ID (MN-100001)..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full p-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
@@ -234,14 +236,13 @@ export default function AdminIdVerificationPage() {
           <div className="grid lg:grid-cols-12 gap-6">
             <div className={`${selected ? "lg:col-span-5" : "lg:col-span-12"} max-h-[600px] overflow-y-auto`}>
               {filtered.length === 0 ? (
-                <div className="py-12 text-center text-gray-400 text-sm">No verification requests found.</div>
+                <div className="py-12 text-center text-gray-400 text-sm">No verification requests found for this filter.</div>
               ) : (
                 <div className="border border-gray-100 rounded-xl overflow-hidden">
                   <table className="w-full text-left text-xs">
                     <thead>
                       <tr className="bg-gray-50 text-gray-400 font-bold uppercase border-b border-gray-100">
-                        <th className="p-3 w-10">#</th>
-                        <th className="p-3">Member</th>
+                        <th className="p-3">Profile ID</th>
                         <th className="p-3">Gender</th>
                         <th className="p-3">Document</th>
                         <th className="p-3">Status</th>
@@ -265,12 +266,17 @@ export default function AdminIdVerificationPage() {
                             <p className="font-bold text-gray-900">{req.first_name} {req.last_name}</p>
                             <p className="text-[10px] text-gray-500">{req.mobile_number}</p>
                           </td>
+                          <td className="p-3 font-mono text-[11px] font-semibold text-brand-700">
+                            {req.profileId || `MN-${100000 + req.id}`}
+                          </td>
                           <td className="p-3">
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${req.gender?.toLowerCase() === 'female' ? 'bg-pink-50 text-pink-700 border-pink-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
                               {req.gender || 'Male'}
                             </span>
                           </td>
-                          <td className="p-3 text-[10px] text-gray-600">{req.kyc_document_type || "—"}</td>
+                          <td className="p-3 text-[10px] text-gray-600 font-medium">
+                            {req.kyc_document_type || "Document"}
+                          </td>
                           <td className="p-3">
                             <span className={cn(
                               "text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border",
@@ -289,13 +295,19 @@ export default function AdminIdVerificationPage() {
             </div>
 
             {selected && (
-              <div className="lg:col-span-7 border border-gray-100 rounded-2xl p-5 space-y-4 bg-white">
+              <div className="lg:col-span-7 border border-gray-100 rounded-2xl p-5 space-y-4 bg-white shadow-xs">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="font-bold text-gray-900">{selected.first_name} {selected.last_name}</h3>
-                    <p className="text-[10px] text-gray-500">
-                      <Link href={`/admin/users/${selected.id}`} className="text-brand-600 hover:underline">
-                        View full profile
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-bold text-gray-900 text-sm">{selected.first_name} {selected.last_name}</h3>
+                      <span className="font-mono text-[11px] font-bold text-brand-700 bg-brand-50 border border-brand-200 px-2 py-0.5 rounded-md">
+                        {selected.profileId || `MN-${100000 + selected.id}`}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-gray-500 mt-1">
+                      {selected.mobile_number} ·{" "}
+                      <Link href={`/admin/users/${selected.id}`} className="text-brand-600 hover:underline font-semibold">
+                        View full user profile →
                       </Link>
                     </p>
                   </div>
@@ -304,17 +316,70 @@ export default function AdminIdVerificationPage() {
                   </button>
                 </div>
 
+                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 text-xs flex justify-between items-center">
+                  <div>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase block">Document Type</span>
+                    <span className="font-semibold text-gray-800">{selected.kyc_document_type || "ID Proof"}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase block text-right">Verification Status</span>
+                    <span className={cn(
+                      "text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border inline-block mt-0.5",
+                      statusBadgeClass(selected.kyc_status)
+                    )}>
+                      {selected.kyc_status.replace("_", " ")}
+                    </span>
+                  </div>
+                </div>
+
                 <div className="grid sm:grid-cols-2 gap-4">
                   {selected.kyc_front_url && (
-                    <div className="border rounded-xl overflow-hidden">
-                      <div className="bg-gray-100 px-3 py-1.5 text-[9px] font-bold text-gray-500">Front</div>
-                      <img src={selected.kyc_front_url} alt="Front ID" className="w-full max-h-48 object-contain p-2" />
+                    <div className="border border-gray-200 rounded-xl overflow-hidden bg-gray-50">
+                      <div className="bg-gray-100 px-3 py-1.5 text-[9px] font-bold text-gray-600 flex justify-between items-center">
+                        <span>Front Side</span>
+                        <a
+                          href={selected.kyc_front_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-brand-600 hover:underline text-[9px] font-bold"
+                        >
+                          Open Original ↗
+                        </a>
+                      </div>
+                      <div className="p-2 flex items-center justify-center bg-white min-h-[160px]">
+                        <img
+                          src={selected.kyc_front_url}
+                          alt="Front ID Document"
+                          className="w-full max-h-52 object-contain rounded"
+                        />
+                      </div>
                     </div>
                   )}
                   {selected.kyc_back_url && (
-                    <div className="border rounded-xl overflow-hidden">
-                      <div className="bg-gray-100 px-3 py-1.5 text-[9px] font-bold text-gray-500">Back</div>
-                      <img src={selected.kyc_back_url} alt="Back ID" className="w-full max-h-48 object-contain p-2" />
+                    <div className="border border-gray-200 rounded-xl overflow-hidden bg-gray-50">
+                      <div className="bg-gray-100 px-3 py-1.5 text-[9px] font-bold text-gray-600 flex justify-between items-center">
+                        <span>Back Side</span>
+                        <a
+                          href={selected.kyc_back_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-brand-600 hover:underline text-[9px] font-bold"
+                        >
+                          Open Original ↗
+                        </a>
+                      </div>
+                      <div className="p-2 flex items-center justify-center bg-white min-h-[160px]">
+                        <img
+                          src={selected.kyc_back_url}
+                          alt="Back ID Document"
+                          className="w-full max-h-52 object-contain rounded"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  {!selected.kyc_front_url && !selected.kyc_back_url && (
+                    <div className="col-span-2 py-8 text-center text-xs text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                      No document files uploaded for this user.
                     </div>
                   )}
                 </div>

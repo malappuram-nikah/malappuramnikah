@@ -272,7 +272,9 @@ export default function AdminUsersPage() {
                           {user.gender || 'Male'}
                         </span>
                       </td>
-                      <td className="p-3.5 font-mono text-[10px] text-gray-600">{user.profileId}</td>
+                      <td className="p-3.5 font-mono text-[10px] text-gray-600 font-medium">
+                        {user.profileId || (user.id ? `MN-${100000 + user.id}` : "—")}
+                      </td>
                       <td className="p-3.5 text-gray-600">{user.location}</td>
                       <td className="p-3.5">
                         <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${statusBadge(user.status)}`}>

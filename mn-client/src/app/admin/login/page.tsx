@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShieldCheck, ArrowRight, CheckCircle2, AlertCircle } from "lucide-react";
+import { ShieldCheck, ArrowRight, CheckCircle2, AlertCircle, Mail, Lock, Eye, EyeOff } from "lucide-react";
 
 import { API_URL } from "@/lib/config";
 import { getPostAdminLoginRedirect, setToken } from "@/lib/auth-session";
@@ -13,9 +13,9 @@ import { useAuth } from "@/context/AuthContext";
 export default function AdminLoginPage() {
   const router = useRouter();
   const { refreshAuth } = useAuth();
-  const [mobileNumber, setMobileNumber] = useState("1212121212");
-  const [step, setStep] = useState<1 | 2>(1);
-  const [otpCode, setOtpCode] = useState("123456");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -32,27 +32,10 @@ export default function AdminLoginPage() {
     }
   };
 
-  const handleSendOtp = async (e: React.FormEvent) => {
+  const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!mobileNumber) {
-      triggerNotification("Please enter a valid admin mobile number.", "error");
-      return;
-    }
-
-    setLoading(true);
-    setErrorMsg("");
-
-    setTimeout(() => {
-      triggerNotification("Verification OTP code sent successfully!", "success");
-      setStep(2);
-      setLoading(false);
-    }, 800);
-  };
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!otpCode) {
-      triggerNotification("Please provide the 6-digit verification code.", "error");
+    if (!email || !password) {
+      triggerNotification("Please enter both admin email and password.", "error");
       return;
     }
 
@@ -63,7 +46,7 @@ export default function AdminLoginPage() {
       const response = await fetch(`${API_URL}/user/admin/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mobileNumber, otpCode }),
+        body: JSON.stringify({ email: email.trim(), password }),
       });
 
       const data = await response.json();
@@ -77,10 +60,10 @@ export default function AdminLoginPage() {
           router.replace(getPostAdminLoginRedirect());
         }, 1000);
       } else {
-        triggerNotification(data.message || "Invalid Admin authentication", "error");
+        triggerNotification(data.message || "Invalid Admin credentials.", "error");
         setLoading(false);
       }
-    } catch (err) {
+    } catch {
       triggerNotification("Network connection error. Please try again.", "error");
       setLoading(false);
     }
@@ -138,93 +121,69 @@ export default function AdminLoginPage() {
           <div className="p-3 bg-brand-50 rounded-2xl text-brand-600 mb-3 shadow-inner">
             <ShieldCheck className="w-7 h-7" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 tracking-tight">Super Admin Terminal</h2>
+          <h2 className="text-xl font-bold text-gray-900 tracking-tight">Super Admin Portal</h2>
           <p className="text-xs text-gray-500 mt-1 text-center max-w-[280px]">
-            Please verify your mobile number to launch the admin command center.
+            Enter your admin email and password to access the platform command center.
           </p>
         </div>
 
-        <AnimatePresence mode="wait">
-          {step === 1 ? (
-            <motion.form
-              key="step1"
-              onSubmit={handleSendOtp}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 10 }}
-              className="space-y-5"
-            >
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
-                  Admin Mobile Number
-                </label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">
-                    +91
-                  </span>
-                  <input
-                    type="tel"
-                    required
-                    placeholder="1212121212"
-                    value={mobileNumber}
-                    onChange={(e) => setMobileNumber(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 bg-gray-50/50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-semibold text-gray-800"
-                  />
-                </div>
-              </div>
+        <form onSubmit={handleAdminLogin} className="space-y-5">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+              Admin Email Address
+            </label>
+            <div className="relative">
+              <Mail className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+              <input
+                type="email"
+                required
+                placeholder="Enter admin email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full pl-11 pr-4 py-3 bg-gray-50/50 border border-gray-200 rounded-2xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-gray-800"
+              />
+            </div>
+          </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 bg-brand-600 hover:bg-brand-700 disabled:bg-brand-400 text-white text-xs font-bold rounded-2xl transition-all shadow-lg shadow-brand-600/10 flex items-center justify-center gap-1.5 active:scale-[0.98]"
-              >
-                {loading ? "Requesting OTP..." : "Request Access OTP"}
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </motion.form>
-          ) : (
-            <motion.form
-              key="step2"
-              onSubmit={handleVerifyOtp}
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              className="space-y-5"
-            >
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
-                  Enter 6-Digit OTP Code
-                </label>
-                <input
-                  type="text"
-                  maxLength={6}
-                  required
-                  placeholder="123456"
-                  value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-2xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold tracking-[0.25em] text-gray-800"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white text-xs font-bold rounded-2xl transition-all shadow-lg shadow-emerald-600/10 flex items-center justify-center gap-1.5 active:scale-[0.98]"
-              >
-                {loading ? "Verifying..." : "Verify & Launch"}
-                <ShieldCheck className="w-4 h-4" />
-              </button>
-
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+              Admin Password
+            </label>
+            <div className="relative">
+              <Lock className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                placeholder="Enter password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full pl-11 pr-11 py-3 bg-gray-50/50 border border-gray-200 rounded-2xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-gray-800"
+              />
               <button
                 type="button"
-                onClick={() => setStep(1)}
-                className="w-full py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-500 text-xs font-bold rounded-2xl border border-gray-200 transition-all"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1"
               >
-                Back to Mobile Entry
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
-            </motion.form>
-          )}
-        </AnimatePresence>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3.5 bg-brand-600 hover:bg-brand-700 disabled:bg-brand-400 text-white text-xs font-bold rounded-2xl transition-all shadow-lg shadow-brand-600/10 flex items-center justify-center gap-1.5 active:scale-[0.98] cursor-pointer"
+          >
+            {loading ? "Authenticating..." : "Login to Command Center"}
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </form>
+
+        <div className="pt-2 border-t border-gray-100 text-center">
+          <p className="text-[10px] text-gray-400">
+            Secure Administrator Access · Powered by Malappuram Nikah
+          </p>
+        </div>
       </motion.div>
     </div>
   );

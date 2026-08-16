@@ -75,10 +75,10 @@ user_route.get('/:id', async (req: Request, res: Response) => {
 
     const targetUserId: number = user.id;
 
-    let reqIsAdmin = false;
+    let reqIsAdmin = isAdminTokenFromRequest(req);
     const requester = await userRepository.findById(requesterId);
     if (requester) {
-      reqIsAdmin = (requester.profile_details as any)?.isAdmin === true || requester.mobile_number === "+911212121212" || requester.mobile_number === "+919876543210";
+      reqIsAdmin = reqIsAdmin || (requester.profile_details as any)?.isAdmin === true || requester.mobile_number === "+911212121212" || requester.mobile_number === "+919876543210";
       if (!reqIsAdmin && requesterId !== targetUserId) {
         const reqGender = (requester.gender || "").toLowerCase();
         const targetGender = (user.gender || "").toLowerCase();
@@ -338,27 +338,34 @@ user_route.post('/kyc/submit', async (req: Request, res: Response) => {
 
 user_route.get('/kyc/document/:fileName', async (req: Request, res: Response) => {
   try {
+    const isAdmin = isAdminTokenFromRequest(req);
     const userId = getUserIdFromRequest(req);
-    if (!userId) {
+    if (!userId && !isAdmin) {
       res.status(401).json({ success: false, message: "Unauthorized. Missing or invalid token." });
       return;
     }
 
     const fileName = (Array.isArray(req.params.fileName) ? req.params.fileName[0] : req.params.fileName) as string;
 
-    // Check authorization: must be admin OR the user who owns this document
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      res.status(404).json({ success: false, message: "User not found." });
-      return;
-    }
+    // If not verified admin, check ownership or admin rights in DB
+    if (!isAdmin) {
+      if (!userId) {
+        res.status(401).json({ success: false, message: "Unauthorized. Missing or invalid token." });
+        return;
+      }
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (!user) {
+        res.status(404).json({ success: false, message: "User not found." });
+        return;
+      }
 
-    const isAdmin = (user.profile_details as any)?.isAdmin === true || user.mobile_number === "+911212121212" || user.mobile_number === "+919876543210";
-    const isOwner = user.kyc_front_url === fileName || user.kyc_back_url === fileName;
+      const isDbAdmin = (user.profile_details as any)?.isAdmin === true || user.mobile_number === "+911212121212" || user.mobile_number === "+919876543210";
+      const isOwner = user.kyc_front_url === fileName || user.kyc_back_url === fileName;
 
-    if (!isAdmin && !isOwner) {
-      res.status(403).json({ success: false, message: "Forbidden. You do not have permission to view this document." });
-      return;
+      if (!isDbAdmin && !isOwner) {
+        res.status(403).json({ success: false, message: "Forbidden. You do not have permission to view this document." });
+        return;
+      }
     }
 
     const filePath = path.join(KYC_UPLOADS_DIR, fileName);
