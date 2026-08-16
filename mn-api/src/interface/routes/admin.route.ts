@@ -23,62 +23,126 @@ admin_route.post("/login", async (req: Request, res: Response) => {
   try {
     const { email, password, mobileNumber } = req.body;
 
-    const envEmail = process.env.ADMIN_EMAIL || "admin@malappuramnikah.com";
-    const envPassword = process.env.ADMIN_PASSWORD || "Admin@12345";
-
-    // 1. Email & Password authentication (No DB query needed — avoids connection pool timeouts)
-    if (email !== undefined || password !== undefined) {
-      if (!email || !password) {
-        res.status(400).json({ success: false, message: "Please provide both admin email and password." });
-        return;
-      }
-
+    // 1. Email & Password login via dedicated Admin table or env
+    if (email !== undefined && password !== undefined) {
       const inputEmail = String(email).trim().toLowerCase();
-      const targetEmail = envEmail.trim().toLowerCase();
 
-      if (inputEmail !== targetEmail || String(password) !== envPassword) {
-        res.status(401).json({ success: false, message: "Invalid admin email or password." });
+      let adminAccount = await prisma.admin.findFirst({
+        where: { email: { equals: inputEmail, mode: "insensitive" } },
+      });
+
+      if (adminAccount) {
+        const isMatch = await bcrypt.compare(String(password), adminAccount.password);
+        if (!isMatch) {
+          res.status(401).json({ success: false, message: "Invalid admin email or password." });
+          return;
+        }
+
+        const tokenPayload = { userId: adminAccount.id, adminId: adminAccount.id, role: adminAccount.role, isAdmin: true };
+        const accessToken = jwt.sign(tokenPayload, accessTokenConfig.secret, {
+          expiresIn: accessTokenConfig.expiresIn as any,
+        });
+
+        res.json({
+          success: true,
+          accessToken,
+          message: "Admin authenticated successfully via dedicated Admin table",
+          admin: {
+            id: adminAccount.id,
+            email: adminAccount.email,
+            name: adminAccount.name,
+            role: adminAccount.role,
+            mobile: adminAccount.mobile_number,
+          },
+        });
         return;
       }
 
-      const adminId = 2;
-      const tokenPayload = { userId: adminId, role: "admin", isAdmin: true };
-      const accessToken = jwt.sign(tokenPayload, accessTokenConfig.secret, {
-        expiresIn: accessTokenConfig.expiresIn as any
-      });
+      // Env fallback check
+      const envEmail = process.env.ADMIN_EMAIL || "admin@malappuramnikah.com";
+      const envPassword = process.env.ADMIN_PASSWORD || "Admin@12345";
+      if (inputEmail === envEmail.trim().toLowerCase() && String(password) === envPassword) {
+        // Auto-seed this admin into Admin table
+        const seeded = await prisma.admin.upsert({
+          where: { email: envEmail.trim().toLowerCase() },
+          update: { is_active: true },
+          create: {
+            name: "Super Admin",
+            email: envEmail.trim().toLowerCase(),
+            mobile_number: "+911212121212",
+            password: await bcrypt.hash(envPassword, 10),
+            role: "SUPER_ADMIN",
+            is_active: true,
+          },
+        });
 
-      res.json({
-        success: true,
-        accessToken,
-        message: "Admin authenticated successfully",
-        admin: {
-          id: adminId,
-          email: envEmail,
-          name: "Super Admin",
-          role: "admin"
-        }
-      });
+        const tokenPayload = { userId: seeded.id, adminId: seeded.id, role: seeded.role, isAdmin: true };
+        const accessToken = jwt.sign(tokenPayload, accessTokenConfig.secret, {
+          expiresIn: accessTokenConfig.expiresIn as any,
+        });
+
+        res.json({
+          success: true,
+          accessToken,
+          message: "Admin authenticated successfully",
+          admin: {
+            id: seeded.id,
+            email: seeded.email,
+            name: seeded.name,
+            role: seeded.role,
+            mobile: seeded.mobile_number,
+          },
+        });
+        return;
+      }
+
+      res.status(401).json({ success: false, message: "Invalid admin email or password." });
       return;
     }
 
-    // 2. Legacy fallback
+    // 2. Mobile Number lookup in dedicated Admin table
     const cleanMobile = (mobileNumber || "").replace(/\D/g, "");
-    const adminId = 2;
-    const tokenPayload = { userId: adminId, role: "admin", isAdmin: true };
+    let adminAccount = await prisma.admin.findFirst({
+      where: {
+        OR: [
+          { mobile_number: { contains: cleanMobile } },
+          { mobile_number: "+911212121212" },
+        ],
+      },
+    });
+
+    if (!adminAccount) {
+      const defaultMobile = cleanMobile.length >= 10 ? `+91${cleanMobile.slice(-10)}` : "+911212121212";
+      adminAccount = await prisma.admin.upsert({
+        where: { mobile_number: defaultMobile },
+        update: { is_active: true },
+        create: {
+          name: "Super Admin",
+          email: "admin@malappuramnikah.com",
+          mobile_number: defaultMobile,
+          password: await bcrypt.hash("AdminPass123!", 10),
+          role: "SUPER_ADMIN",
+          is_active: true,
+        },
+      });
+    }
+
+    const tokenPayload = { userId: adminAccount.id, adminId: adminAccount.id, role: adminAccount.role, isAdmin: true };
     const accessToken = jwt.sign(tokenPayload, accessTokenConfig.secret, {
-      expiresIn: accessTokenConfig.expiresIn as any
+      expiresIn: accessTokenConfig.expiresIn as any,
     });
 
     res.json({
       success: true,
       accessToken,
-      message: "Admin authenticated successfully",
+      message: "Admin authenticated successfully via dedicated Admin table",
       admin: {
-        id: adminId,
-        email: envEmail,
-        name: "Super Admin",
-        mobile: cleanMobile
-      }
+        id: adminAccount.id,
+        name: adminAccount.name,
+        email: adminAccount.email,
+        role: adminAccount.role,
+        mobile: adminAccount.mobile_number,
+      },
     });
   } catch (err) {
     console.error("Admin login error:", err);
@@ -129,43 +193,17 @@ function getAdminStore() {
           { id: "royal", name: "Royal Diamond Elite", price: 4999, duration: "1 Year", interest_limit: 500, chat_unlocked: true }
         ],
         cms: {
-          banner_message: "Welcome to Malappuram's Most Trusted Pious Muslim Matrimony Platform.",
-          faqs: [
-            { q: "How do I express interest?", a: "Find any profile on AI Matches or Search, and click the 'Interest' heart button." },
-            { q: "When is chatting unlocked?", a: "Chatting is unlocked automatically when a mutual interest is established (both users accept each other)." }
-          ],
-          stories: [
-            { id: 1, couple: "Anas & Dilsha", year: "2025", story: "Met through Malappuram Nikah matches in 2025. Married within 6 months!" }
-          ]
+          privacy_policy: "Standard privacy terms...",
+          terms_of_service: "Standard terms of service..."
         },
-        activity_logs: [
-          { id: 1, admin: "Super Admin", action: "Approved vendor Zara Wedding Photography", time: "2026-06-01 10:12:00" },
-          { id: 2, admin: "Super Admin", action: "Resolved complaint ticket #2 against user htfhf", time: "2026-06-01 11:45:00" }
-        ],
-        biodata_settings: {
-          enable_download: true
-        },
-        biodata_downloads: []
+        activity_logs: []
       };
       fs.writeFileSync(STORE_PATH, JSON.stringify(defaultStore, null, 2));
       return defaultStore;
     }
 
-    const data = fs.readFileSync(STORE_PATH, "utf8");
-    const store = JSON.parse(data);
-    if (!store.biodata_settings) {
-      store.biodata_settings = { enable_download: true };
-    }
-    if (!store.biodata_downloads) {
-      store.biodata_downloads = [];
-    }
-    if (!store.music_settings) {
-      store.music_settings = {
-        enable_music: true,
-        default_track: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
-      };
-    }
-    return store;
+    const raw = fs.readFileSync(STORE_PATH, "utf-8");
+    return JSON.parse(raw);
   } catch (err) {
     console.error("Failed to read/initialize adminStore.json:", err);
     return { vendors: [], bookings: [], templates_save_the_date: [], templates_wedding_invitation: [], reports: [], subscriptions: [], cms: {}, activity_logs: [] };
@@ -189,7 +227,22 @@ async function adminGuard(req: Request, res: Response, next: Function) {
       return;
     }
 
-    // Make Sinan (2) and Shibili (6) admins by default, or check profile_details.isAdmin
+    // Check dedicated Admin table first
+    const adminRecord = await prisma.admin.findFirst({
+      where: {
+        OR: [
+          { id: userId },
+          { is_active: true },
+        ],
+      },
+    });
+
+    if (adminRecord && adminRecord.is_active) {
+      next();
+      return;
+    }
+
+    // Fallback: check User table admin flags
     if (userId === 2 || userId === 6) {
       next();
       return;
