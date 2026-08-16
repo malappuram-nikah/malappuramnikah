@@ -50,7 +50,7 @@ export default function SuccessStoriesPage() {
           <Link href="/login" className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">
             Log In
           </Link>
-          <Link href="/" className="text-sm font-medium bg-[#026d77] text-white px-5 py-2.5 rounded-xl hover:bg-[#03828e] transition-all shadow-sm">
+          <Link href="/?register=true" className="text-sm font-medium bg-[#026d77] text-white px-5 py-2.5 rounded-xl hover:bg-[#03828e] transition-all shadow-sm">
             Get Started
           </Link>
         </div>
@@ -114,7 +114,7 @@ export default function SuccessStoriesPage() {
           Join thousands of Muslims who found their spouse through Malappuram Nikah.
         </p>
         <Link
-          href="/"
+          href="/?register=true"
           className="inline-flex items-center gap-2 bg-white text-[#026d77] font-semibold px-8 py-3 rounded-xl hover:bg-[#f0fafa] transition-all shadow-sm text-sm"
         >
           Create Free Account →

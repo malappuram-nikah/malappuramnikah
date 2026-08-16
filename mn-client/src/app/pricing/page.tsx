@@ -5,64 +5,6 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { CheckCircle2, Crown, Zap, Heart, Shield } from "lucide-react";
 
-const plans = [
-  {
-    name: "Free",
-    price: "₹0",
-    period: "forever",
-    color: "border-gray-200",
-    headerColor: "bg-gray-50",
-    badge: null,
-    features: [
-      "Browse profiles",
-      "Send up to 5 interests",
-      "Basic profile creation",
-      "View limited profile details",
-    ],
-    cta: "Get Started Free",
-    ctaHref: "/",
-    ctaStyle: "bg-gray-900 text-white hover:bg-black",
-  },
-  {
-    name: "Premium",
-    price: "₹999",
-    period: "/month",
-    color: "border-[#026d77]",
-    headerColor: "bg-[#026d77]",
-    badge: "Most Popular",
-    features: [
-      "Unlimited interest requests",
-      "Full profile visibility",
-      "AI-powered match suggestions",
-      "Chat with mutual matches",
-      "Biodata PDF download",
-      "Voice introduction feature",
-      "Priority support",
-    ],
-    cta: "Upgrade to Premium",
-    ctaHref: "/login",
-    ctaStyle: "bg-[#026d77] text-white hover:bg-[#03828e]",
-  },
-  {
-    name: "Elite",
-    price: "₹2,499",
-    period: "/3 months",
-    color: "border-amber-400",
-    headerColor: "bg-gradient-to-br from-amber-500 to-amber-600",
-    badge: "Best Value",
-    features: [
-      "Everything in Premium",
-      "Profile highlighted in search",
-      "Dedicated matchmaker assistance",
-      "Family verification badge",
-      "Wedding planner connections",
-    ],
-    cta: "Get Elite Plan",
-    ctaHref: "/login",
-    ctaStyle: "bg-amber-500 text-white hover:bg-amber-600",
-  },
-];
-
 export default function PricingPage() {
   return (
     <div className="min-h-screen bg-gray-50">
@@ -81,7 +23,7 @@ export default function PricingPage() {
           <Link href="/login" className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">
             Log In
           </Link>
-          <Link href="/" className="text-sm font-medium bg-[#026d77] text-white px-5 py-2.5 rounded-xl hover:bg-[#03828e] transition-all shadow-sm">
+          <Link href="/?register=true" className="text-sm font-medium bg-[#026d77] text-white px-5 py-2.5 rounded-xl hover:bg-[#03828e] transition-all shadow-sm">
             Get Started
           </Link>
         </div>
@@ -133,7 +75,7 @@ export default function PricingPage() {
 
           <div className="pt-6">
             <Link
-              href="/"
+              href="/?register=true"
               className="inline-flex items-center justify-center px-8 py-3.5 rounded-xl text-sm font-bold text-white bg-[#026d77] hover:bg-[#03828e] transition-all shadow-md active:scale-95"
             >
               Get Started Free Now

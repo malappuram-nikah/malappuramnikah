@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import HeroSection from "@/components/home/HeroSection";
 import StatsSection from "@/components/home/StatsSection";
@@ -12,6 +12,15 @@ import RegisterModal from "@/components/auth/RegisterModal";
 
 export default function Home() {
   const [registerOpen, setRegisterOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("register") === "true" || params.get("ref")) {
+        setRegisterOpen(true);
+      }
+    }
+  }, []);
 
   return (
     <>
