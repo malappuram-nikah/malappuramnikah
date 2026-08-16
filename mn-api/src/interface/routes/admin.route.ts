@@ -227,17 +227,15 @@ async function adminGuard(req: Request, res: Response, next: Function) {
       return;
     }
 
-    // Check dedicated Admin table first
+    // Check dedicated Admin table first by specific user/admin ID
     const adminRecord = await prisma.admin.findFirst({
       where: {
-        OR: [
-          { id: userId },
-          { is_active: true },
-        ],
+        id: userId,
+        is_active: true,
       },
     });
 
-    if (adminRecord && adminRecord.is_active) {
+    if (adminRecord) {
       next();
       return;
     }
