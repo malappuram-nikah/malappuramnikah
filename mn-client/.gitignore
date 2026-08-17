@@ -28,3 +28,7 @@ dist-ssr
 .agents
 .skills
 .gemini
+skills-lock.json
+
+# Build artifacts
+*.tsbuildinfo

@@ -16,3 +16,12 @@ package-lock.json
 .skills
 .gemini
 dist/
+
+# Runtime uploads (keep directory structure only)
+kyc-uploads/
+public/uploads/**/*
+!public/uploads/**/
+!public/uploads/**/.gitkeep
+
+# Build artifacts
+*.tsbuildinfo
