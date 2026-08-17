@@ -7,6 +7,8 @@ import { User, Lock, Bell, Shield, ChevronRight, Sparkles, AlertCircle, ArrowRig
 import { useRouter } from "next/navigation";
 import { LOCATIONS } from "@/lib/constants";
 import { useUser } from "@/context/UserContext";
+import { useProfileCompletion } from "@/hooks/useProfileCompletion";
+import { updateProfileSection, updateUserCoreFields } from "@/lib/profile-api";
 import { API_URL } from "@/lib/config";
 import { setToken } from "@/lib/auth-session";
 
@@ -21,6 +23,7 @@ const tabs = [
 export default function SettingsPage() {
   const router = useRouter();
   const { currentUser, refreshUser } = useUser();
+  const { completion, percentage: completionPercent, strength, incompleteSections: missingSections, refreshCompletion } = useProfileCompletion();
   const [activeTab, setActiveTab] = useState("profile");
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -70,10 +73,6 @@ export default function SettingsPage() {
   const [mobileOtp, setMobileOtp] = useState("");
   const [mobileOtpSent, setMobileOtpSent] = useState(false);
   const [showMobileOtpBanner, setShowMobileOtpBanner] = useState(false);
-
-  // Profile Completion States
-  const [completionPercent, setCompletionPercent] = useState(0);
-  const [missingSections, setMissingSections] = useState<{name: string, suggestion: string, step: number}[]>([]);
 
   const loadProfileData = async () => {
     try {
@@ -235,50 +234,8 @@ export default function SettingsPage() {
     }
   };
 
-  const calculateCompletion = () => {
-    const sections = [
-      { key: "mn_basic_details_draft", name: "Basic Details", step: 1, suggestion: "Add your basic details to start matching." },
-      { key: "mn_religious_info_draft", name: "Religious Info", step: 2, suggestion: "Add your religious background." },
-      { key: "mn_professional_info_draft", name: "Professional Info", step: 3, suggestion: "Add your education and career details." },
-      { key: "mn_family_details_draft", name: "Family Details", step: 4, suggestion: "Tell us about your family background." },
-      { key: "mn_interests_draft", name: "Interests & Hobbies", step: 5, suggestion: "Complete Interests & Hobbies to find like-minded people." },
-      { key: "mn_habits_draft", name: "Personal Habits", step: 6, suggestion: "Add your lifestyle habits." },
-      { key: "mn_partner_preferences_draft", name: "Partner Preferences", step: 7, suggestion: "Complete Partner Preferences to improve matches." },
-      { key: "mn_profile_photos_draft", name: "Profile Photos", step: 8, suggestion: "Upload more photos to improve visibility." },
-      { key: "mn_voice_intro_draft", name: "Voice Introduction", step: 9, suggestion: "Record a voice intro to boost responses." },
-    ];
-
-    let completedCount = 0;
-    const missing: typeof sections = [];
-
-    sections.forEach(section => {
-      try {
-        const item = localStorage.getItem(section.key);
-        if (item) {
-          const parsed = JSON.parse(item);
-          if (section.key === "mn_profile_photos_draft" && (!parsed.photos || parsed.photos.length === 0)) {
-            missing.push(section);
-          } else if (section.key === "mn_voice_intro_draft" && !parsed.voice) {
-            missing.push(section);
-          } else {
-            completedCount++;
-          }
-        } else {
-          missing.push(section);
-        }
-      } catch (e) {
-        missing.push(section);
-      }
-    });
-
-    const percent = Math.round((completedCount / sections.length) * 100);
-    setCompletionPercent(percent);
-    setMissingSections(missing);
-  };
-
   useEffect(() => {
     loadProfileData();
-    calculateCompletion();
 
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -340,65 +297,28 @@ export default function SettingsPage() {
   const handleSave = async () => {
     setSaved(false);
     setSaveError(null);
-    
-    // Read current drafts from localStorage
-    const profileDetails: Record<string, any> = {};
-    const draftKeys = [
-      "mn_basic_details_draft",
-      "mn_religious_info_draft",
-      "mn_professional_info_draft",
-      "mn_family_details_draft",
-      "mn_interests_draft",
-      "mn_habits_draft",
-      "mn_partner_preferences_draft",
-      "mn_profile_photos_draft",
-      "mn_voice_intro_draft"
-    ];
 
-    draftKeys.forEach(key => {
-      try {
-        const stored = localStorage.getItem(key);
-        if (stored) {
-          profileDetails[key] = JSON.parse(stored);
-        }
-      } catch (e) {
-        console.error(`Error reading draft for ${key}:`, e);
-      }
-    });
+    const basicData = {
+      ...(JSON.parse(localStorage.getItem("mn_basic_details_draft") || "{}")),
+      aboutMe,
+      age,
+      name: `${firstName} ${lastName}`.trim(),
+      presentLocation: location,
+      gender,
+      profileFor,
+    };
+    localStorage.setItem("mn_basic_details_draft", JSON.stringify(basicData));
 
-    // Make sure aboutMe is synced inside basic details draft
-    if (!profileDetails["mn_basic_details_draft"]) {
-      profileDetails["mn_basic_details_draft"] = {};
-    }
-    profileDetails["mn_basic_details_draft"].aboutMe = aboutMe;
-    profileDetails["mn_basic_details_draft"].age = age;
-    profileDetails["mn_basic_details_draft"].name = `${firstName} ${lastName}`.trim();
-    profileDetails["mn_basic_details_draft"].presentLocation = location;
-    localStorage.setItem("mn_basic_details_draft", JSON.stringify(profileDetails["mn_basic_details_draft"]));
+    const religiousData = {
+      ...(JSON.parse(localStorage.getItem("mn_religious_info_draft") || "{}")),
+      namaz,
+      quranReading,
+      community,
+    };
+    localStorage.setItem("mn_religious_info_draft", JSON.stringify(religiousData));
 
-    // Make sure namaz and quranReading are synced inside religious info draft
-    if (!profileDetails["mn_religious_info_draft"]) {
-      profileDetails["mn_religious_info_draft"] = {};
-    }
-    profileDetails["mn_religious_info_draft"].namaz = namaz;
-    profileDetails["mn_religious_info_draft"].quranReading = quranReading;
-    profileDetails["mn_religious_info_draft"].community = community;
-    localStorage.setItem("mn_religious_info_draft", JSON.stringify(profileDetails["mn_religious_info_draft"]));
-
-    // Save approximate DOB derived from Age
     const birthYear = new Date().getFullYear() - parseInt(age || "24", 10);
     const dobValue = `${birthYear}-01-01`;
-
-    const coreFields = {
-      first_name: firstName,
-      last_name: lastName,
-      mobile_number: mobile,
-      location: location,
-      dob: dobValue,
-      cast: community,
-      gender: gender,
-      profile_for: profileFor
-    };
 
     try {
       const token = localStorage.getItem("mn_token");
@@ -407,27 +327,27 @@ export default function SettingsPage() {
         return;
       }
 
-      const res = await fetch(`${API_URL}/user/${userId}/profile`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+      await updateProfileSection("basic", basicData, userId);
+      await updateProfileSection("religious", religiousData, userId);
+      await updateUserCoreFields(
+        {
+          first_name: firstName,
+          last_name: lastName,
+          mobile_number: mobile,
+          location,
+          dob: dobValue,
+          cast: community,
+          gender,
+          profile_for: profileFor,
         },
-        body: JSON.stringify({
-          profile_details: profileDetails,
-          core_fields: coreFields
-        })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setSaved(true);
-        setSaveError(null);
-        setTimeout(() => setSaved(false), 2500);
-        await refreshUser();
-        calculateCompletion();
-      } else {
-        setSaveError(data.message || "Failed to save profile changes.");
-      }
+        userId
+      );
+
+      setSaved(true);
+      setSaveError(null);
+      setTimeout(() => setSaved(false), 2500);
+      await refreshUser();
+      await refreshCompletion();
     } catch (err) {
       console.error("Failed to save profile changes:", err);
       setSaveError("Failed to save profile changes. Please try again.");
@@ -584,24 +504,14 @@ export default function SettingsPage() {
     }
   };
 
-  // Determine profile strength
-  let strength = "Weak";
-  let strengthColor = "text-red-600 bg-red-50 border-red-200/50";
-  let barColor = "bg-red-500";
-  
-  if (completionPercent >= 80) {
-    strength = "Excellent";
-    strengthColor = "text-green-600 bg-green-50 border-green-200/50";
-    barColor = "bg-green-500";
-  } else if (completionPercent >= 60) {
-    strength = "Strong";
-    strengthColor = "text-brand-700 bg-brand-50 border-brand-200/50";
-    barColor = "bg-brand-500";
-  } else if (completionPercent >= 40) {
-    strength = "Average";
-    strengthColor = "text-yellow-700 bg-yellow-50 border-yellow-200/50";
-    barColor = "bg-yellow-500";
-  }
+  // Determine profile strength badge (light theme for settings)
+  const strengthColorMap = {
+    Excellent: "text-green-600 bg-green-50 border-green-200/50",
+    Strong: "text-brand-700 bg-brand-50 border-brand-200/50",
+    Average: "text-yellow-700 bg-yellow-50 border-yellow-200/50",
+    Weak: "text-red-600 bg-red-50 border-red-200/50",
+  } as const;
+  const strengthColor = strengthColorMap[strength] || strengthColorMap.Weak;
 
   if (isLoading) {
     return (
@@ -872,7 +782,7 @@ export default function SettingsPage() {
                     { label: "Hide my profile from search", desc: "Your profile won't appear in search results" },
                     { label: "Show profile to premium only", desc: "Only premium members can view your profile"  },
                     { label: "Hide last seen",               desc: "Others can't see when you were last active"  },
-                    { label: "Blur my photo",                desc: "Photos are blurred until interest is accepted"},
+                    { label: "Blur my photo",                desc: "Photos stay blurred until you both accept interest (mutual match)"},
                   ].map((item, i) => (
                     <div key={i} className="flex items-center justify-between py-3 border-b border-gray-50">
                       <div>

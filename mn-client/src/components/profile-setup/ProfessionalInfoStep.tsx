@@ -181,6 +181,7 @@ export default function ProfessionalInfoStep({ initialData, onComplete, onBack }
                 <option value="Ph.D">Ph.D</option>
                 <option value="Diploma">Diploma</option>
                 <option value="High School">High School</option>
+                <option value="Higher Secondary">Higher Secondary</option>
                 <option value="Others">Others</option>
               </select>
               {errors.education && <p className="text-red-500 text-xs mt-1">{errors.education}</p>}

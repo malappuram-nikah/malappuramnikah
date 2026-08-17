@@ -6,14 +6,17 @@ import { clearSession, getToken, isAdminSession } from "@/lib/auth-session";
 
 interface UserContextType {
   currentUser: any;
+  profileCompletion: any;
   loadingUser: boolean;
   refreshUser: () => Promise<any>;
+  setProfileCompletion: (completion: any) => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [profileCompletion, setProfileCompletion] = useState<any>(null);
   const [loadingUser, setLoadingUser] = useState(true);
 
   const fetchUser = useCallback(async () => {
@@ -48,12 +51,24 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         setLoadingUser(false);
         return null;
       }
+
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        console.error("User API returned non-JSON response. Check NEXT_PUBLIC_API_URL.");
+        setLoadingUser(false);
+        return null;
+      }
+
       const data = await res.json();
       if (data.success && data.user) {
-        const user = data.user;
+        const pc = data.profileCompletion ?? null;
+        const user = pc ? { ...data.user, profileCompletion: pc } : data.user;
         setCurrentUser(user);
+        if (pc) {
+          setProfileCompletion(pc);
+        }
 
-        // Sync backend profile details to localStorage (as needed by tracker/other steps)
+        // Sync backend profile details to localStorage (as needed by profile-builder wizard)
         const cachedUserId = localStorage.getItem("mn_logged_in_user_id");
         if (cachedUserId !== String(userId)) {
           // Clear old draft keys first to prevent stale cache when user changes
@@ -82,10 +97,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         // Sync KYC status to localStorage
         localStorage.setItem("mn_kyc_status", user.kyc_status || "NOT_SUBMITTED");
 
-        // Pre-populate step 1 draft from core signup details if not already saved
+        // Pre-populate step 1 draft from core signup details only when empty (no placeholder fluff)
         const basicKey = "mn_basic_details_draft";
         if (!localStorage.getItem(basicKey)) {
-          let calculatedAge = "24";
+          let calculatedAge = "";
           if (user.dob) {
             const birthYear = parseInt(user.dob.split("-")[0], 10);
             if (!isNaN(birthYear)) {
@@ -94,30 +109,32 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           }
           const defaultBasic = {
             name: `${user.first_name || ""} ${user.last_name || ""}`.trim(),
-            profileFor: user.profile_for || "Myself",
-            gender: user.gender || "Male",
-            location: user.location || "Malappuram, Kerala",
-            presentLocation: user.location || "Malappuram",
+            profileFor: user.profile_for || "",
+            gender: user.gender || "",
+            location: user.location || "",
+            presentLocation: user.location || "",
             age: calculatedAge,
-            aboutMe: "Looking for a pious, family-oriented partner with shared values.",
+            aboutMe: "",
             height: "",
-            maritalStatus: "Single",
-            motherTongue: "Malayalam",
-            physicalStatus: "Normal",
+            maritalStatus: "",
+            motherTongue: "",
+            physicalStatus: "",
             appearance: "",
             weight: "",
-            languagesSpoken: "Malayalam, English"
+            languagesSpoken: "",
           };
           localStorage.setItem(basicKey, JSON.stringify(defaultBasic));
         }
 
-        // Pre-populate step 2 draft (Religious) from community column if not already saved
+        // Pre-populate step 2 draft from community column if not already saved
         const religiousKey = "mn_religious_info_draft";
         if (!localStorage.getItem(religiousKey)) {
           const defaultReligious = {
             religion: "Islam",
-            community: user.cast || "Sunni",
-            religiousness: "Pious"
+            community: user.cast || "",
+            religiousness: "",
+            namaz: "",
+            quranReading: "",
           };
           localStorage.setItem(religiousKey, JSON.stringify(defaultReligious));
         }
@@ -137,8 +154,19 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     fetchUser();
   }, [fetchUser]);
 
+  const applyProfileCompletion = useCallback((completion: any) => {
+    setProfileCompletion(completion);
+    setCurrentUser((prev: any) => (prev ? { ...prev, profileCompletion: completion } : prev));
+  }, []);
+
   return (
-    <UserContext.Provider value={{ currentUser, loadingUser, refreshUser: fetchUser }}>
+    <UserContext.Provider value={{
+      currentUser,
+      profileCompletion,
+      loadingUser,
+      refreshUser: fetchUser,
+      setProfileCompletion: applyProfileCompletion,
+    }}>
       {children}
     </UserContext.Provider>
   );

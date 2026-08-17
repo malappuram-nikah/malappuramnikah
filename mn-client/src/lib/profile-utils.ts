@@ -195,109 +195,22 @@ export function analyzeMatch(profile: EnrichedProfile, myPref: ProfileDetails["m
 
 export function getProfileCompletionStatus(u: any) {
   if (!u) {
-    return { percentage: 0, completedSteps: [], totalSteps: 12, isComplete: false };
-  }
-  const details = u.profile_details || {};
-  const completedSteps: number[] = [];
-
-  const getDraft = (key: string) => {
-    if (details[key]) return details[key];
-    if (typeof window !== "undefined") {
-      try {
-        const item = localStorage.getItem(key);
-        if (item) return JSON.parse(item);
-      } catch {
-        return {};
-      }
-    }
-    return {};
-  };
-
-  // Step 1: Basic Details
-  const basic = getDraft("mn_basic_details_draft");
-  if (basic.name || basic.aboutMe || u.first_name || basic.maritalStatus || basic.presentLocation || basic.gender) {
-    completedSteps.push(1);
+    return { percentage: 0, completedSteps: [] as number[], totalSteps: 0, isComplete: false };
   }
 
-  // Step 2: Religious Info
-  const religious = getDraft("mn_religious_info_draft");
-  if (religious.religion || religious.community || u.cast || religious.namaz || religious.religiousness) {
-    completedSteps.push(2);
+  if (u.profileCompletion) {
+    const pc = u.profileCompletion;
+    const completedSteps = (pc.sections || [])
+      .filter((s: { status: string }) => s.status === "complete")
+      .map((s: { step: number }) => s.step);
+    return {
+      percentage: pc.percentage ?? 0,
+      completedSteps,
+      totalSteps: pc.totalSections ?? completedSteps.length,
+      isComplete: (pc.percentage ?? 0) >= 80,
+    };
   }
 
-  // Step 3: Professional Info
-  const prof = getDraft("mn_professional_info_draft");
-  if (prof.education || prof.profession || prof.customEducation || prof.professionType || prof.companyName) {
-    completedSteps.push(3);
-  }
-
-  // Step 4: Family Details
-  const family = getDraft("mn_family_details_draft");
-  if (family.familyType || family.financialStatus || family.fatherOccupation || family.fatherName || family.motherName) {
-    completedSteps.push(4);
-  }
-
-  // Step 5: Interests & Hobbies
-  const interests = getDraft("mn_interests_draft");
-  if ((interests.interests && interests.interests.length > 0) || interests.personalityDescription || interests.aboutMe) {
-    completedSteps.push(5);
-  }
-
-  // Step 6: Personal Habits
-  const habits = getDraft("mn_habits_draft");
-  if (habits.eatingHabits || habits.smokingHabits || habits.drinkingHabits) {
-    completedSteps.push(6);
-  }
-
-  // Step 7: Partner Preferences
-  const partner = getDraft("mn_partner_preferences_draft");
-  if (partner.aboutPartner || partner.religion || partner.minAge || partner.prefAgeMin || partner.maritalStatus) {
-    completedSteps.push(7);
-  }
-
-  // Step 8: Profile Photos
-  const photosDraft = getDraft("mn_profile_photos_draft");
-  const photos = photosDraft?.photos || details.mn_profile_photos_draft?.photos;
-  if (photos && photos.length > 0) {
-    completedSteps.push(8);
-  }
-
-  // Step 9: Voice Intro
-  const voiceDraft = getDraft("mn_voice_intro_draft");
-  const voice = voiceDraft?.voice || voiceDraft?.dataUrl || details.mn_voice_intro_draft?.voice;
-  if (voice || (typeof voiceDraft === "object" && Object.keys(voiceDraft).length > 0)) {
-    completedSteps.push(9);
-  }
-
-  // Step 10: Identity Verification
-  const localKyc = typeof window !== "undefined" ? localStorage.getItem("mn_kyc_status") : null;
-  const isKycDone =
-    u.is_verified ||
-    u.kyc_status === "VERIFIED" ||
-    u.kyc_status === "PENDING" ||
-    u.kyc_status === "UNDER_REVIEW" ||
-    localKyc === "VERIFIED" ||
-    localKyc === "PENDING" ||
-    localKyc === "UNDER_REVIEW" ||
-    details.mn_identity_draft;
-  if (isKycDone) {
-    completedSteps.push(10);
-  }
-
-  // Step 11: Final Review (Completed if core details are in place or review step reached)
-  if (completedSteps.length >= 8) {
-    completedSteps.push(11);
-  }
-
-  // Step 12: Completion (Completed if all required steps 1-11 are done)
-  if (completedSteps.length >= 11) {
-    completedSteps.push(12);
-  }
-
-  const totalSteps = 12;
-  const percentage = Math.round((completedSteps.length / totalSteps) * 100);
-  const isComplete = completedSteps.length >= 10;
-
-  return { percentage, completedSteps, totalSteps, isComplete };
+  return { percentage: 0, completedSteps: [] as number[], totalSteps: 0, isComplete: false };
 }
 

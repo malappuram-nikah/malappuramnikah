@@ -507,25 +507,25 @@ export default function AIMatchesLegacy() {
               <div className="flex flex-col md:flex-row relative z-10">
                 <div className="md:w-2/5 h-64 md:h-auto relative bg-gray-900/10 overflow-hidden">
                   {(() => {
-                    const isBestInterested = isBestMutual || isBestSent || isBestReceived;
+                    const canViewBestProfile = isBestMutual;
                     return (
                       <>
                         {bestMatch.img ? (
                           <img 
                             src={bestMatch.img} 
                             alt={bestMatch.name} 
-                            className={`w-full h-full object-cover ${!isBestInterested ? "filter blur-[16px] select-none" : ""}`} 
+                            className={`w-full h-full object-cover ${!canViewBestProfile ? "filter blur-[16px] select-none" : ""}`} 
                           />
                         ) : (
                           <div className="w-full h-full bg-brand-800 flex items-center justify-center text-white font-extrabold text-6xl uppercase">
                             {bestMatch.name.charAt(0)}
                           </div>
                         )}
-                        {!isBestInterested && (
+                        {!canViewBestProfile && (
                           <div className="absolute inset-0 bg-black/20 flex items-center justify-center transition-all z-10">
                             <div className="bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-md border border-white/20 flex items-center gap-1.5">
                               <Lock className="w-3.5 h-3.5 text-brand-600" />
-                              <span className="text-[10px] font-bold text-gray-700">Connect to view photo</span>
+                              <span className="text-[10px] font-bold text-gray-700">Connect mutually to view photo</span>
                             </div>
                           </div>
                         )}
@@ -649,7 +649,7 @@ export default function AIMatchesLegacy() {
                 const isMutual = interests.mutual.includes(profile.id);
                 const isSent = interests.sent.includes(profile.id);
                 const isReceived = interests.received.includes(profile.id);
-                const isInterested = isMutual || isSent || isReceived;
+                const canViewProfile = isMutual;
 
                 return (
                   <motion.div
@@ -664,7 +664,7 @@ export default function AIMatchesLegacy() {
                       <img 
                         src={profile.img} 
                         alt={profile.name} 
-                        className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 z-0 ${!isInterested ? "filter blur-[12px] select-none" : ""}`} 
+                        className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 z-0 ${!canViewProfile ? "filter blur-[12px] select-none" : ""}`} 
                       />
                     ) : (
                       <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-brand-50 to-brand-100 flex items-center justify-center text-brand-700 font-extrabold text-7xl uppercase z-0">
@@ -672,11 +672,11 @@ export default function AIMatchesLegacy() {
                       </div>
                     )}
 
-                    {!isInterested && (
+                    {!canViewProfile && (
                       <div className="absolute inset-0 bg-black/40 backdrop-blur-[6px] flex items-center justify-center transition-all z-10">
                         <div className="bg-white/95 backdrop-blur-sm px-2.5 py-1.5 rounded-full shadow-sm border border-white/20 flex items-center gap-1.5">
                           <Lock className="w-3.5 h-3.5 text-brand-600" />
-                          <span className="text-[10px] font-bold text-gray-700">Connect to view photo</span>
+                          <span className="text-[10px] font-bold text-gray-700">Connect mutually to view photo</span>
                         </div>
                       </div>
                     )}
@@ -771,7 +771,7 @@ export default function AIMatchesLegacy() {
                   const isMutual = interests.mutual.includes(profile.id);
                   const isSent = interests.sent.includes(profile.id);
                   const isReceived = interests.received.includes(profile.id);
-                  const isInterested = isMutual || isSent || isReceived;
+                  const canViewProfile = isMutual;
 
                   return (
                     <div 
@@ -783,14 +783,14 @@ export default function AIMatchesLegacy() {
                         {profile.img ? (
                           <img 
                             src={profile.img} 
-                            className={`w-full h-full object-cover ${!isInterested ? "filter blur-[8px] select-none" : ""}`} 
+                            className={`w-full h-full object-cover ${!canViewProfile ? "filter blur-[8px] select-none" : ""}`} 
                           />
                         ) : (
                           <div className="w-full h-full bg-brand-50 flex items-center justify-center text-brand-700 font-extrabold text-sm uppercase">
                             {profile.name.charAt(0)}
                           </div>
                         )}
-                        {!isInterested && (
+                        {!canViewProfile && (
                           <div className="absolute inset-0 bg-black/5 flex items-center justify-center">
                             <Lock className="w-3.5 h-3.5 text-white drop-shadow-sm" />
                           </div>
@@ -843,7 +843,7 @@ export default function AIMatchesLegacy() {
                   const isMutual = interests.mutual.includes(profile.id);
                   const isSent = interests.sent.includes(profile.id);
                   const isReceived = interests.received.includes(profile.id);
-                  const isInterested = isMutual || isSent || isReceived;
+                  const canViewProfile = isMutual;
 
                   return (
                     <div 
@@ -855,14 +855,14 @@ export default function AIMatchesLegacy() {
                         {profile.img ? (
                           <img 
                             src={profile.img} 
-                            className={`w-full h-full object-cover ${!isInterested ? "filter blur-[8px] select-none" : ""}`} 
+                            className={`w-full h-full object-cover ${!canViewProfile ? "filter blur-[8px] select-none" : ""}`} 
                           />
                         ) : (
                           <div className="w-full h-full bg-brand-50 flex items-center justify-center text-brand-700 font-extrabold text-lg uppercase">
                             {profile.name.charAt(0)}
                           </div>
                         )}
-                        {!isInterested && (
+                        {!canViewProfile && (
                           <div className="absolute inset-0 bg-black/5 flex items-center justify-center">
                             <Lock className="w-3.5 h-3.5 text-white drop-shadow-sm" />
                           </div>
