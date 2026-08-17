@@ -272,12 +272,14 @@ export default function AdminUsersPage() {
                 <thead>
                   <tr className="bg-gray-50 text-gray-400 font-bold uppercase border-b border-gray-100">
                     <th className="p-3.5 w-10">#</th>
-                    <th className="p-3.5">Member</th>
+                    <th className="p-3.5">Member Name</th>
+                    <th className="p-3.5">Mobile Number</th>
+                    <th className="p-3.5">Email</th>
                     <th className="p-3.5">Gender</th>
                     <th className="p-3.5">Profile ID</th>
                     <th className="p-3.5">Location</th>
                     <th className="p-3.5">Account</th>
-                    <th className="p-3.5">KYC</th>
+                    <th className="p-3.5">KYC Proof</th>
                     <th className="p-3.5">Completion</th>
                     <th className="p-3.5">Registered</th>
                     <th className="p-3.5 text-right">Actions</th>
@@ -289,9 +291,14 @@ export default function AdminUsersPage() {
                       <td className="p-3.5 font-bold text-gray-400">
                         {(page - 1) * 10 + index + 1}
                       </td>
-                      <td className="p-3.5">
-                        <p className="font-bold text-gray-900">{user.first_name} {user.last_name}</p>
-                        <p className="text-[10px] text-gray-400">{user.mobile_number}</p>
+                      <td className="p-3.5 font-bold text-gray-900">
+                        {user.first_name} {user.last_name}
+                      </td>
+                      <td className="p-3.5 font-mono font-bold text-emerald-800 text-xs whitespace-nowrap">
+                        📞 {user.mobile_number || "—"}
+                      </td>
+                      <td className="p-3.5 text-gray-600 text-xs">
+                        {user.email || "—"}
                       </td>
                       <td className="p-3.5">
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${user.gender?.toLowerCase() === 'female' ? 'bg-pink-50 text-pink-700 border-pink-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
