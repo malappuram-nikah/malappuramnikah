@@ -74,7 +74,9 @@ export class OtpController {
         console.log(`[USER EMAIL BOUND] Saved missing email ${providedEmail} to user account #${user.id}`);
       }
 
-      const targetEmail = user.email || (providedEmail ? providedEmail : undefined);
+      const targetEmail = isEmailInput && providedEmail
+        ? providedEmail
+        : (user.email && user.email.includes("@") ? user.email : (providedEmail ? providedEmail : undefined));
       if (!targetEmail) {
         return res.status(400).json({
           success: false,
