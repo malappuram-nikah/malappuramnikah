@@ -471,24 +471,14 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-gray-700">Preferred Locations (Kerala Districts & Towns)</label>
+                <label className="block text-sm font-medium text-gray-700">Preferred Locations (Malappuram Towns & Areas)</label>
                 <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={() => {
-                      const currentList = formData.preferredLocations
-                        ? formData.preferredLocations.split(",").map((s: string) => s.trim()).filter(Boolean)
-                        : [];
-                      const selectedTowns = currentList.filter((item: string) => LOCATIONS.includes(item));
-                      if (selectedTowns.length > 0) {
-                        updateForm("preferredLocations", ["All Kerala", ...selectedTowns].join(", "));
-                      } else {
-                        updateForm("preferredLocations", "All Kerala");
-                      }
-                    }}
+                    onClick={() => updateForm("preferredLocations", LOCATIONS.join(", "))}
                     className="text-xs text-brand-600 hover:text-brand-700 font-bold"
                   >
-                    Select All Districts
+                    Select All Towns
                   </button>
                   <span className="text-gray-300 text-xs">|</span>
                   <button
@@ -502,61 +492,6 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
               </div>
               
               <div className="space-y-4">
-                <div>
-                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Districts</h4>
-                  <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-2xl border border-gray-100">
-                    {(() => {
-                      const currentList = formData.preferredLocations
-                        ? formData.preferredLocations.split(",").map((s: string) => s.trim()).filter(Boolean)
-                        : [];
-                      const isAllDistricts = currentList.includes("All Kerala");
-                      const selectedTowns = currentList.filter((item: string) => LOCATIONS.includes(item));
-
-                      return KERALA_DISTRICTS.map((district) => {
-                        const isSelected = isAllDistricts || currentList.includes(district);
-
-                        return (
-                          <button
-                            key={district}
-                            type="button"
-                            onClick={() => {
-                              if (isSelected) {
-                                if (isAllDistricts) {
-                                  const remainingDistricts = KERALA_DISTRICTS.filter(d => d !== district);
-                                  const nextList = [...remainingDistricts, ...selectedTowns];
-                                  updateForm("preferredLocations", nextList.join(", "));
-                                } else {
-                                  const nextList = currentList.filter((d: string) => d !== district);
-                                  updateForm("preferredLocations", nextList.join(", "));
-                                }
-                              } else {
-                                const activeDistricts = isAllDistricts
-                                  ? KERALA_DISTRICTS
-                                  : currentList.filter((d: string) => KERALA_DISTRICTS.includes(d));
-                                const nextDistricts = [...activeDistricts, district];
-                                if (nextDistricts.length === KERALA_DISTRICTS.length) {
-                                  const nextList = ["All Kerala", ...selectedTowns];
-                                  updateForm("preferredLocations", nextList.join(", "));
-                                } else {
-                                  const nextList = [...nextDistricts, ...selectedTowns];
-                                  updateForm("preferredLocations", nextList.join(", "));
-                                }
-                              }
-                            }}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
-                              isSelected
-                                ? "bg-brand-600 text-white border-brand-600 shadow-sm"
-                                : "bg-white text-gray-700 border-gray-200 hover:bg-brand-50 hover:border-brand-200"
-                            }`}
-                          >
-                            {district}
-                          </button>
-                        );
-                      });
-                    })()}
-                  </div>
-                </div>
-
                 <div>
                   <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Malappuram Towns / Areas</h4>
                   <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-2xl border border-gray-100">
