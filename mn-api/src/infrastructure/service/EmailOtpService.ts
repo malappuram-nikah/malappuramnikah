@@ -23,16 +23,22 @@ export class EmailOtpService {
     }
 
     try {
-      // Create Nodemailer Transporter using Gmail SMTP (port 587 STARTTLS for cloud compatibility)
+      const port = parseInt(process.env.SMTP_PORT || "465", 10);
+      const isSecure = process.env.SMTP_SECURE !== "false" && port === 465;
+      const host = process.env.SMTP_HOST || "smtp.gmail.com";
+
+      // Create Nodemailer Transporter using Port 465 SSL (compatible with Render cloud firewall)
       const transporter = nodemailer.createTransport({
-        service: "gmail",
-        host: "smtp.gmail.com",
-        port: 587,
-        secure: false, // false for 587, true for 465
+        host,
+        port,
+        secure: isSecure, // true for 465, false for 587
         auth: {
           user: this.emailUser,
           pass: this.emailPass,
         },
+        connectionTimeout: 8000, // 8 second timeout to prevent hanging connections
+        greetingTimeout: 8000,
+        socketTimeout: 10000,
         tls: {
           rejectUnauthorized: false,
         },
@@ -90,6 +96,9 @@ export class EmailOtpService {
       return { success: true, message: `OTP sent successfully to ${toEmail}` };
     } catch (err: any) {
       console.error("[NODEMAILER ERROR] Failed to send email:", err);
+      console.log(`\n==================================================`);
+      console.log(`[NODEMAILER FALLBACK LOG] Target: ${toEmail} | OTP Code: ${otpCode}`);
+      console.log(`==================================================\n`);
       return { success: false, message: err?.message || "Email service error" };
     }
   }
