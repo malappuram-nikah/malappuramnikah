@@ -31,9 +31,29 @@ export class UserRepository implements IUserRepository {
         }
     }
 
-    async findByMobile(mobileNumber: string): Promise<User | null> {
+    async findByMobile(identifier: string): Promise<User | null> {
+        if (!identifier) return null;
+        const clean = identifier.trim();
+        const digits = clean.replace(/\D/g, "");
+        const rawDigits10 = digits.length >= 10 ? digits.slice(-10) : digits;
+
+        const profileIdMatch = clean.match(/^MN-?(\d+)$/i);
+        const resolvedId = profileIdMatch ? parseInt(profileIdMatch[1], 10) - 100000 : null;
+
+        const OR: any[] = [
+            { mobile_number: clean },
+            { mobile_number: `+91${rawDigits10}` },
+            { mobile_number: rawDigits10 },
+            { mobile_number: `0${rawDigits10}` },
+            { email: { equals: clean, mode: "insensitive" } },
+        ];
+
+        if (resolvedId && !isNaN(resolvedId)) {
+            OR.push({ id: resolvedId });
+        }
+
         return prisma.user.findFirst({
-            where: { mobile_number: mobileNumber },
+            where: { OR },
         });
     }
 

@@ -39,12 +39,20 @@ export default function LoginPage() {
     setError(null);
 
     try {
+      const trimmed = mobile.trim();
+      const isEmail = trimmed.includes("@");
+      const formattedIdentifier = isEmail
+        ? trimmed
+        : trimmed.startsWith("+")
+        ? trimmed
+        : `${countryCode}${trimmed.replace(/^0+/, "")}`;
+
       const response = await fetch(`${API_URL}/user/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          mobile_number: countryCode + mobile.trim(),
+          mobile_number: formattedIdentifier,
           password,
         }),
       });
