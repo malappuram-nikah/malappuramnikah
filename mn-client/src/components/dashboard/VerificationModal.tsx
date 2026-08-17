@@ -70,28 +70,45 @@ export default function VerificationModal({
           </div>
 
           {/* Action buttons */}
-          <div className="pt-2 space-y-2">
+          <div className="pt-2 space-y-2.5">
             {isUnderReview ? (
-              <div className="p-3 bg-amber-50 text-amber-800 text-xs font-bold rounded-xl border border-amber-200">
-                ⏳ Your ID document is under review by Admin. You will be verified shortly!
+              <div className="p-3.5 bg-amber-50 text-amber-900 text-xs font-bold rounded-xl border border-amber-200 shadow-xs">
+                ⏳ Your ID document is under review by Admin. You will be verified shortly! Need urgent help? Call Support: <a href="tel:+919447868443" className="underline font-extrabold text-amber-950">+91 9447868443</a>
               </div>
             ) : (
-              <button
-                onClick={() => {
-                  onClose();
-                  router.push("/dashboard/settings");
-                }}
-                className="w-full py-3 bg-brand-600 hover:bg-brand-700 active:scale-[0.99] text-white font-bold text-xs rounded-xl transition-all shadow-sm hover:shadow flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <UploadCloud className="w-4 h-4" />
-                Upload Government ID (Aadhaar / Passport)
-                <ArrowRight className="w-4 h-4" />
-              </button>
+              <>
+                <button
+                  onClick={() => {
+                    onClose();
+                    router.push("/dashboard/settings");
+                  }}
+                  className="w-full py-3 bg-brand-600 hover:bg-brand-700 active:scale-[0.99] text-white font-bold text-xs rounded-xl transition-all shadow-sm hover:shadow flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <UploadCloud className="w-4 h-4" />
+                  1. Upload Government ID (Aadhaar / Passport)
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+
+                <div className="relative flex py-1 items-center">
+                  <div className="flex-grow border-t border-gray-200"></div>
+                  <span className="flex-shrink mx-2 text-[10px] uppercase font-bold tracking-wider text-gray-400">OR</span>
+                  <div className="flex-grow border-t border-gray-200"></div>
+                </div>
+
+                <a
+                  href="https://wa.me/919447868443?text=Hello%20MalappuramNikah%20Support%2C%20I%20need%20help%20verifying%20my%20profile."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span>💬 Contact Support Team (+91 9447868443)</span>
+                </a>
+              </>
             )}
 
             <button
               onClick={onClose}
-              className="w-full py-2.5 text-xs text-gray-500 hover:text-gray-800 font-semibold transition-colors"
+              className="w-full py-2 text-xs text-gray-400 hover:text-gray-700 font-semibold transition-colors"
             >
               Maybe Later
             </button>
