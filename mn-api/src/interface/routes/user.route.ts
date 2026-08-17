@@ -765,10 +765,27 @@ user_route.post("/forgot-password", async (req: Request, res: Response) => {
       }
     });
 
-    console.log(`[PASSWORD RESET OTP] Sent to ${user.mobile_number || cleanInput} (User #${user.id}): ${otpCode}`);
+    const providedEmail = cleanInput.includes("@") ? cleanInput : (email || "").toString().trim().toLowerCase();
+    const targetEmail = user.email || (providedEmail.includes("@") ? providedEmail : undefined);
 
-    const targetEmail = user.email || (cleanInput.includes("@") ? cleanInput : undefined);
     if (targetEmail) {
+      // Auto-save missing email to user profile if user currently has no email in DB
+      if (targetEmail.includes("@") && (!user.email || user.email.trim() === "")) {
+        const existingAccountWithEmail = await prisma.user.findFirst({
+          where: {
+            email: { equals: targetEmail, mode: "insensitive" },
+            id: { not: user.id }
+          }
+        });
+        if (!existingAccountWithEmail) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { email: targetEmail }
+          });
+          console.log(`[FORGOT PASSWORD] Saved missing email ${targetEmail} for user #${user.id}`);
+        }
+      }
+
       const { EmailOtpService } = require("../../infrastructure/service/EmailOtpService");
       EmailOtpService.sendOtp(targetEmail, otpCode, `${user.first_name || ""} ${user.last_name || ""}`).catch((e: any) =>
         console.error("Failed to send Email OTP for forgot password:", e)
@@ -776,7 +793,7 @@ user_route.post("/forgot-password", async (req: Request, res: Response) => {
     } else {
       res.status(400).json({
         success: false,
-        message: "No registered email address found for this account to receive the reset OTP code."
+        message: "No email address found for this account. Please enter your email address to receive your password reset code."
       });
       return;
     }
