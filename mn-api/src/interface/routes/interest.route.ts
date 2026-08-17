@@ -23,8 +23,10 @@ export function getUserIdFromRequest(req: Request): number | null {
 
     const payload: any = jwt.verify(token, accessTokenConfig.secret);
     return payload.userId || null;
-  } catch (err) {
-    console.error("JWT extraction failed:", err);
+  } catch (err: any) {
+    if (err?.name !== "TokenExpiredError") {
+      console.warn("Invalid JWT token provided:", err?.message || err);
+    }
     return null;
   }
 }
