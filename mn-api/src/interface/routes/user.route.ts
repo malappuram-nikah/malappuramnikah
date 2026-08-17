@@ -767,18 +767,24 @@ user_route.post("/forgot-password", async (req: Request, res: Response) => {
 
     console.log(`[PASSWORD RESET OTP] Sent to ${user.mobile_number || cleanInput} (User #${user.id}): ${otpCode}`);
 
-    const targetPhone = user.mobile_number || (digitsOnly ? `+91${digitsOnly.slice(-10)}` : "");
-    if (targetPhone) {
-      const { WhatsappOtpService } = require("../../infrastructure/service/WhatsappOtpService");
-      WhatsappOtpService.sendOtp(targetPhone, otpCode).catch((e: any) =>
-        console.error("Failed to send WhatsApp OTP for forgot password:", e)
+    const targetEmail = user.email || (cleanInput.includes("@") ? cleanInput : undefined);
+    if (targetEmail) {
+      const { EmailOtpService } = require("../../infrastructure/service/EmailOtpService");
+      EmailOtpService.sendOtp(targetEmail, otpCode, `${user.first_name || ""} ${user.last_name || ""}`).catch((e: any) =>
+        console.error("Failed to send Email OTP for forgot password:", e)
       );
+    } else {
+      res.status(400).json({
+        success: false,
+        message: "No registered email address found for this account to receive the reset OTP code."
+      });
+      return;
     }
 
     res.status(200).json({
       success: true,
-      message: `Password reset code sent to your WhatsApp (${targetPhone || cleanInput}).`,
-      email: cleanInput,
+      message: `Password reset verification code sent to your email address (${targetEmail}).`,
+      email: targetEmail,
       identifier: input,
       devOtp: process.env.NODE_ENV !== "production" ? otpCode : undefined
     });

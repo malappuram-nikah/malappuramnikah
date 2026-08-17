@@ -41,7 +41,7 @@ export class OtpController {
       );
       const responseBody: Record<string, unknown> = {
         success: true,
-        message: "OTP sent successfully",
+        message: user.email ? `Verification code sent to your email (${user.email})` : "Verification code sent to your email address",
       };
       if (process.env.NODE_ENV !== "production") {
         responseBody.otp = generatedOtp;

@@ -22,16 +22,18 @@ export class SendOtpUseCase {
       otp.expiresIn
     );
 
-    // 1. Dispatch OTP via Nodemailer Email if email is available or if target is email
+    // 1. Dispatch OTP via Nodemailer Email (Primary OTP Channel)
     const emailToUse = targetIdentifier.includes("@") ? targetIdentifier : recipientEmail;
     if (emailToUse) {
       await EmailOtpService.sendOtp(emailToUse, otpCode, recipientName);
+    } else {
+      console.warn(`[OTP WARNING] Email address missing for target ${targetIdentifier}. Unable to deliver Email OTP.`);
     }
 
-    // 2. Dispatch OTP via WhatsApp
-    if (!targetIdentifier.includes("@")) {
-      await WhatsappOtpService.sendOtp(targetIdentifier, otpCode);
-    }
+    // 2. WhatsApp / SMS OTP is currently disabled per configuration. Email OTP is primary.
+    // if (!targetIdentifier.includes("@")) {
+    //   await WhatsappOtpService.sendOtp(targetIdentifier, otpCode);
+    // }
 
     return otpCode;
   }
