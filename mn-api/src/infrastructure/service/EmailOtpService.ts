@@ -90,7 +90,7 @@ export class EmailOtpService {
     // 2. Resend HTTP API Option (Port 443 HTTPS)
     if (this.resendApiKey) {
       try {
-        const fromEmail = process.env.RESEND_FROM_EMAIL || "Malappuram Nikah <onboarding@resend.dev>";
+        const fromEmail = process.env.RESEND_FROM_EMAIL || "Malappuram Nikah <malappuramnikah@malappuramnikah.com>";
         const resendRes = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: {
