@@ -766,7 +766,9 @@ user_route.post("/forgot-password", async (req: Request, res: Response) => {
     });
 
     const providedEmail = cleanInput.includes("@") ? cleanInput : (email || "").toString().trim().toLowerCase();
-    const targetEmail = user.email || (providedEmail.includes("@") ? providedEmail : undefined);
+    const targetEmail = cleanInput.includes("@")
+      ? cleanInput
+      : (user.email && user.email.includes("@") ? user.email : (providedEmail.includes("@") ? providedEmail : undefined));
 
     if (targetEmail) {
       // Auto-save missing email to user profile if user currently has no email in DB
@@ -787,9 +789,10 @@ user_route.post("/forgot-password", async (req: Request, res: Response) => {
       }
 
       const { EmailOtpService } = require("../../infrastructure/service/EmailOtpService");
-      EmailOtpService.sendOtp(targetEmail, otpCode, `${user.first_name || ""} ${user.last_name || ""}`).catch((e: any) =>
-        console.error("Failed to send Email OTP for forgot password:", e)
-      );
+      const emailResult = await EmailOtpService.sendOtp(targetEmail, otpCode, `${user.first_name || ""} ${user.last_name || ""}`);
+      if (!emailResult.success) {
+        console.warn(`[FORGOT PASSWORD WARN] Email delivery failed: ${emailResult.message}`);
+      }
     } else {
       res.status(400).json({
         success: false,
