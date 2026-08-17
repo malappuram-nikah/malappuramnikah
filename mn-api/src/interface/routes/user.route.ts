@@ -601,7 +601,9 @@ user_route.post('/favourite', async (req: Request, res: Response) => {
       await prisma.favourite.delete({ where: { id: existing.id } });
       res.status(200).json({ success: true, status: "UNFAVOURITED" });
     } else {
-      await prisma.favourite.create({ data: { favouriter_id: requesterId, favourited_id: target_id } });
+      await prisma.favourite.create({
+        data: { favouriter_id: requesterId, favourited_id: target_id }
+      });
       res.status(200).json({ success: true, status: "FAVOURITED" });
     }
   } catch (error: any) {
@@ -609,7 +611,7 @@ user_route.post('/favourite', async (req: Request, res: Response) => {
   }
 });
 
-// Get my favourites + blocks: GET /user/favourite
+// Get my favourite and blocked list: GET /user/favourite
 user_route.get('/favourite', async (req: Request, res: Response) => {
   try {
     const requesterId = getUserIdFromRequest(req);

@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable react-hooks/set-state-in-effect */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, SlidersHorizontal, Loader2, X, Check, Lock, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -85,7 +85,14 @@ export default function SearchPage() {
     }
   };
 
-  const fetchProfiles = useCallback(async (isLoadMore = false) => {
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const pageRef = useRef(1);
+  const isFetchingRef = useRef(false);
+
+  const loadProfilesPage = useCallback(async (pageToFetch: number, isLoadMore = false) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
     try {
       const storedToken = localStorage.getItem("mn_token");
       if (!storedToken) return;
@@ -99,7 +106,7 @@ export default function SearchPage() {
 
       // Build Query String
       const params = new URLSearchParams();
-      params.append("page", String(isLoadMore ? page + 1 : 1));
+      params.append("page", String(pageToFetch));
       params.append("limit", "12");
       if (appliedKeyword) params.append("keyword", appliedKeyword);
 
@@ -142,22 +149,28 @@ export default function SearchPage() {
 
         if (isLoadMore) {
           setProfiles(prev => [...prev, ...mapped]);
-          setPage(prev => prev + 1);
         } else {
           setProfiles(mapped);
-          setPage(1);
         }
-        
+
+        pageRef.current = pageToFetch;
         setTotalProfiles(data.pagination.total);
         setHasNext(data.pagination.hasNext);
       }
     } catch (e) {
-      console.error(e);
+      console.error("Profiles fetch error:", e);
     } finally {
       setLoading(false);
       setLoadingMore(false);
+      isFetchingRef.current = false;
     }
-  }, [appliedFilters, appliedKeyword, page, interests.sent.length]);
+  }, [appliedFilters, appliedKeyword, interests.sent.length]);
+
+  const loadNextPage = useCallback(() => {
+    if (hasNext && !isFetchingRef.current && !loadingMore && !loading) {
+      loadProfilesPage(pageRef.current + 1, true);
+    }
+  }, [hasNext, loadingMore, loading, loadProfilesPage]);
 
   // Save Preferences to API
   const savePreferences = async (newFilters: any) => {
@@ -175,12 +188,24 @@ export default function SearchPage() {
   };
 
   useEffect(() => {
-    // Debounce load slightly
-    const t = setTimeout(() => {
-      fetchProfiles();
-    }, 100);
-    return () => clearTimeout(t);
-  }, [fetchProfiles]); // Fetch automatically runs only when appliedFilters or appliedKeyword changes
+    pageRef.current = 1;
+    loadProfilesPage(1, false);
+  }, [appliedFilters, appliedKeyword, loadProfilesPage]);
+
+  // Intersection Observer for Infinite Scroll
+  useEffect(() => {
+    if (!sentinelRef.current) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNext && !isFetchingRef.current) {
+          loadNextPage();
+        }
+      },
+      { threshold: 0.1, rootMargin: "300px" }
+    );
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasNext, loadNextPage]); // Fetch automatically runs only when appliedFilters or appliedKeyword changes
 
   const handleApplyFilters = () => {
     savePreferences(filters);
@@ -463,15 +488,25 @@ export default function SearchPage() {
             </div>
           )}
 
-          {/* Load More */}
-          {hasNext && (
-            <div className="flex justify-center mt-8 mb-4">
+          {/* Skeleton Loaders while loading next page */}
+          {loadingMore && (
+            <div className="mt-6">
+              <CardGridSkeleton count={4} className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5" />
+            </div>
+          )}
+
+          {/* Infinite Scroll Intersection Observer Sentinel */}
+          <div ref={sentinelRef} className="h-6 w-full my-2 flex items-center justify-center pointer-events-none" />
+
+          {/* Manual Load More Button Fallback */}
+          {hasNext && !loadingMore && (
+            <div className="flex justify-center mt-4 mb-4">
               <button 
-                onClick={() => fetchProfiles(true)}
+                onClick={loadNextPage}
                 disabled={loadingMore}
-                className="px-8 py-3 bg-white border border-gray-200 text-gray-700 font-bold text-sm rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all flex items-center gap-2 shadow-sm"
+                className="px-8 py-3 bg-white border border-gray-200 text-gray-700 font-bold text-sm rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all flex items-center gap-2 shadow-sm active:scale-95 cursor-pointer"
               >
-                {loadingMore ? <><Loader2 className="w-4 h-4 animate-spin" /> Loading...</> : 'Load More Profiles'}
+                Load More Profiles
               </button>
             </div>
           )}
