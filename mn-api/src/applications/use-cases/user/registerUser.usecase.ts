@@ -10,8 +10,22 @@ export class RegisterUser {
         this.validateInput(data);
         console.log('Validated data:', data);
 
+        const existingUser = data.mobile_number ? await this.userRepository.findByMobile(data.mobile_number) : null;
+
+        if (data.email && data.email.trim() !== "") {
+            const cleanEmail = data.email.trim();
+            const existingEmailUser = await prisma.user.findFirst({
+                where: { email: { equals: cleanEmail, mode: "insensitive" } }
+            });
+
+            if (existingEmailUser) {
+                if (!existingUser || existingEmailUser.id !== existingUser.id) {
+                    throw new Error("Email address is already registered. Please log in or use a different email.");
+                }
+            }
+        }
+
         if (data.mobile_number) {
-            const existingUser = await this.userRepository.findByMobile(data.mobile_number);
             if (existingUser) {
                 if (existingUser.status === "active") {
                     throw new Error("Mobile number already registered. Please log in instead.");

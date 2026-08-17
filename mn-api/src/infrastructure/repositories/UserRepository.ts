@@ -12,21 +12,22 @@ export class UserRepository implements IUserRepository {
             console.log('User successfully stored:', newUser);
             return newUser;
         } catch (error: any) {
-            console.error('Error storing user:', error);
             if (error.code === 'P2002' || (error.message && error.message.includes('Unique constraint failed'))) {
+                console.warn('User creation failed due to unique constraint:', error.meta);
                 const target = error.meta?.target;
                 const targetStr = Array.isArray(target) ? target.join(',') : String(target || '');
                 if (targetStr.includes('email') || (error.message && error.message.includes('email'))) {
-                    throw new Error('Email address already registered');
+                    throw new Error('Email address is already registered. Please log in or use a different email.');
                 }
                 if (targetStr.includes('mobile_number') || (error.message && error.message.includes('mobile_number'))) {
-                    throw new Error('Mobile number already registered');
+                    throw new Error('Mobile number is already registered. Please log in instead.');
                 }
                 if (targetStr.includes('referral_code') || (error.message && error.message.includes('referral_code'))) {
                     throw new Error('Referral code already exists');
                 }
-                throw new Error('User with these details already registered');
+                throw new Error('User with these details is already registered. Please log in instead.');
             }
+            console.error('Error storing user:', error);
             throw error;
         }
     }

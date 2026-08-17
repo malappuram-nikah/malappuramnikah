@@ -73,7 +73,7 @@ export class UserController {
           user: safeUser
         });
     } catch (error: any) {
-      console.error("Error during registration:", error);
+      console.warn("Registration validation/conflict:", error.message || error);
       
       let message = "Registration failed";
       if (error.code === 'P2002' || (error.message && error.message.includes('Unique constraint failed'))) {
