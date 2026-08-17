@@ -110,10 +110,11 @@ export class UserController {
         return res.status(status).json({ success: false, message, code });
       }
 
+      const isProd = process.env.NODE_ENV === "production";
       res.cookie("refresh_token", refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        secure: isProd,
+        sameSite: isProd ? "none" : "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 
