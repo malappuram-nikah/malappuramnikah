@@ -14,15 +14,32 @@ export class OtpController {
 
   async resendOtp(req: Request, res: Response) {
     try {
-      const { phoneNumber } = req.body;
+      const { phoneNumber, email } = req.body;
+      const targetInput = (phoneNumber || email || "").toString().trim();
 
-      if (!phoneNumber) {
-        return res.status(400).json({ success: false, message: "Phone number is required" });
+      if (!targetInput) {
+        return res.status(400).json({ success: false, message: "Mobile number or email address is required" });
       }
 
-      const user = await prisma.user.findUnique({ where: { mobile_number: phoneNumber } });
+      const isEmailInput = targetInput.includes("@");
+      const providedEmail = isEmailInput ? targetInput.toLowerCase() : (email || "").toString().trim().toLowerCase();
+
+      const orConditions: any[] = [
+        { mobile_number: targetInput },
+        { mobile_number: `+91${targetInput.replace(/\D/g, "").slice(-10)}` },
+        { email: { equals: targetInput.toLowerCase(), mode: "insensitive" } }
+      ];
+      if (providedEmail) {
+        orConditions.push({ email: { equals: providedEmail, mode: "insensitive" } });
+      }
+
+      // Find user by mobile_number OR email address
+      let user = await prisma.user.findFirst({
+        where: { OR: orConditions }
+      });
+
       if (!user) {
-        return res.status(404).json({ success: false, message: "No account found for this mobile number" });
+        return res.status(404).json({ success: false, message: "No account found matching this mobile number or email address." });
       }
 
       const accountBlock = getAccountBlockForUser(user);
@@ -34,14 +51,46 @@ export class OtpController {
         });
       }
 
+      // If user account is missing an email address, save the provided email to their profile
+      if (providedEmail && (!user.email || user.email.trim() === "")) {
+        const existingEmailAccount = await prisma.user.findFirst({
+          where: {
+            email: { equals: providedEmail, mode: "insensitive" },
+            id: { not: user.id }
+          }
+        });
+
+        if (existingEmailAccount) {
+          return res.status(400).json({
+            success: false,
+            message: "This email address is already registered to another account. Please use a different email."
+          });
+        }
+
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { email: providedEmail }
+        });
+        console.log(`[USER EMAIL BOUND] Saved missing email ${providedEmail} to user account #${user.id}`);
+      }
+
+      const targetEmail = user.email || (providedEmail ? providedEmail : undefined);
+      if (!targetEmail) {
+        return res.status(400).json({
+          success: false,
+          message: "Please enter your email address to receive your verification code."
+        });
+      }
+
       const generatedOtp = await this.sendOtpUseCase.execute(
-        phoneNumber,
-        user.email || undefined,
+        user.mobile_number,
+        targetEmail,
         `${user.first_name || ""} ${user.last_name || ""}`
       );
+
       const responseBody: Record<string, unknown> = {
         success: true,
-        message: user.email ? `Verification code sent to your email (${user.email})` : "Verification code sent to your email address",
+        message: `Verification code sent successfully to your email (${targetEmail}).`,
       };
       if (process.env.NODE_ENV !== "production") {
         responseBody.otp = generatedOtp;
@@ -57,22 +106,35 @@ export class OtpController {
 
   async verifyOtp(req: Request, res: Response) {
     try {
-      const { phoneNumber, otpCode, userId } = req.body;
+      const { phoneNumber, email, otpCode, userId } = req.body;
+      const targetInput = (phoneNumber || email || "").toString().trim();
 
-      if (!phoneNumber || !otpCode) {
-        return res.status(400).json({ success: false, message: "Phone number and OTP are required" });
+      if (!targetInput || !otpCode) {
+        return res.status(400).json({ success: false, message: "Phone number or email and OTP are required" });
       }
 
       const codeString = Array.isArray(otpCode) ? otpCode.join("") : String(otpCode);
-      const isValid = await this.verifyOtpUseCase.execute(phoneNumber, codeString);
 
-      if (!isValid) {
-        return res.status(400).json({ success: false, message: "Invalid OTP" });
+      let user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { mobile_number: targetInput },
+            { mobile_number: `+91${targetInput.replace(/\D/g, "").slice(-10)}` },
+            { email: { equals: targetInput.toLowerCase(), mode: "insensitive" } }
+          ]
+        }
+      });
+
+      if (!user) {
+        return res.status(404).json({ success: false, message: "User account not found" });
       }
 
-      const user = await prisma.user.findUnique({ where: { mobile_number: phoneNumber } });
-      if (!user) {
-        return res.status(404).json({ success: false, message: "User not found" });
+      const lookupKey = user.mobile_number || targetInput;
+      const isValid = await this.verifyOtpUseCase.execute(lookupKey, codeString)
+        || await this.verifyOtpUseCase.execute(targetInput, codeString);
+
+      if (!isValid) {
+        return res.status(400).json({ success: false, message: "Invalid verification code. Please check and try again." });
       }
 
       const accountBlock = getAccountBlockForUser(user);
@@ -85,7 +147,22 @@ export class OtpController {
       }
 
       if (userId && Number(userId) !== user.id) {
-        return res.status(400).json({ success: false, message: "User does not match the provided phone number" });
+        return res.status(400).json({ success: false, message: "User does not match the provided details" });
+      }
+
+      // If email was verified and user had no email in DB, bind it now
+      const isEmail = targetInput.includes("@");
+      if (isEmail && (!user.email || user.email.trim() === "")) {
+        const cleanEmail = targetInput.toLowerCase();
+        const existingEmailAccount = await prisma.user.findFirst({
+          where: { email: { equals: cleanEmail, mode: "insensitive" }, id: { not: user.id } }
+        });
+        if (!existingEmailAccount) {
+          user = await prisma.user.update({
+            where: { id: user.id },
+            data: { email: cleanEmail }
+          });
+        }
       }
 
       if (user.status === "in_active") {
