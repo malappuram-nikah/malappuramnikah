@@ -448,8 +448,16 @@ admin_route.get("/users", adminGuard, async (req: Request, res: Response) => {
     const dateTo = (req.query.date_to as string || "").trim();
     const skip = (page - 1) * limit;
 
+    const isPremium = req.query.is_premium === "true";
     const where: any = {};
-    if (status) where.status = status;
+    if (status) {
+      if (status === "new") {
+        where.created_at = { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) };
+      } else {
+        where.status = status;
+      }
+    }
+    if (isPremium) where.is_premium = true;
     if (kycStatus) where.kyc_status = kycStatus;
     if (gender) where.gender = { equals: gender, mode: "insensitive" };
     if (dateFrom || dateTo) {

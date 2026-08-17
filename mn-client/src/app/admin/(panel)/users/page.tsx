@@ -9,9 +9,13 @@ import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { adminApi, AdminUser } from "@/lib/admin-api";
 import { cn } from "@/lib/utils";
 
+import { API_URL } from "@/lib/config";
+import { ShieldCheck, FileText, ExternalLink } from "lucide-react";
+
 const ACCOUNT_STATUS_OPTIONS = [
   { id: "", label: "All Accounts" },
   { id: "active", label: "Active" },
+  { id: "new", label: "New (30D)" },
   { id: "in_active", label: "Inactive" },
   { id: "suspended", label: "Suspended" },
 ];
@@ -30,6 +34,27 @@ const KYC_STATUS_OPTIONS = [
   { id: "VERIFIED", label: "Verified" },
   { id: "REJECTED", label: "Rejected" },
 ];
+
+function resolveDocUrl(url: string | null): string {
+  if (!url) return "";
+  if (url.includes("localhost:")) {
+    const relativePath = url.substring(url.indexOf("/user/kyc/document"));
+    return `${API_URL}${relativePath}`;
+  }
+  return url;
+}
+
+function getInactiveReason(user: AdminUser): string {
+  if (user.status === "active") return "Active Member";
+  if (user.status === "suspended") return "Suspended by Admin";
+  if (user.last_login) {
+    const days = Math.floor((Date.now() - new Date(user.last_login).getTime()) / (1000 * 60 * 60 * 24));
+    if (days >= 30) return `Inactive (${days} days offline)`;
+  }
+  const completion = user.profileCompletion?.percentage ?? 0;
+  if (completion < 50) return `Inactive (Incomplete: ${completion}%)`;
+  return "Deactivated / Inactive";
+}
 
 function FilterBoxes({
   options,
@@ -96,6 +121,7 @@ export default function AdminUsersPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [docModalUser, setDocModalUser] = useState<AdminUser | null>(null);
 
   useEffect(() => {
     setStatusFilter(searchParams.get("status") || "");
@@ -280,11 +306,23 @@ export default function AdminUsersPage() {
                         <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${statusBadge(user.status)}`}>
                           {user.status.replace("_", " ")}
                         </span>
+                        <p className="text-[9px] text-gray-400 font-medium mt-1">
+                          {getInactiveReason(user)}
+                        </p>
                       </td>
                       <td className="p-3.5">
                         <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${kycBadge(user.kyc_status)}`}>
                           {user.kyc_status.replace("_", " ")}
                         </span>
+                        {user.kyc_front_url && (
+                          <button
+                            type="button"
+                            onClick={() => setDocModalUser(user)}
+                            className="mt-1 flex items-center gap-1 text-[9px] font-bold text-brand-600 hover:text-brand-800 hover:underline"
+                          >
+                            <FileText className="w-3 h-3 text-brand-500" /> View ID Proof
+                          </button>
+                        )}
                       </td>
                       <td className="p-3.5 font-semibold text-gray-700">
                         {user.profileCompletion?.percentage ?? 0}%
@@ -305,15 +343,15 @@ export default function AdminUsersPage() {
                             <button
                               onClick={() => handleStatusAction(user.id, "activate")}
                               className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg"
-                              title="Activate"
+                              title="Activate User"
                             >
                               <Check className="w-3.5 h-3.5" />
                             </button>
                           ) : (
                             <button
-                              onClick={() => handleStatusAction(user.id, "suspend")}
+                              onClick={() => handleStatusAction(user.id, "deactivate")}
                               className="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg"
-                              title="Suspend"
+                              title="Deactivate (Set Inactive)"
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>
@@ -356,6 +394,92 @@ export default function AdminUsersPage() {
           </>
         )}
       </div>
+
+      {/* ID Document Preview Modal */}
+      {docModalUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="relative w-full max-w-lg bg-white rounded-2xl p-6 shadow-2xl space-y-4 border border-gray-100">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div>
+                <h3 className="font-bold text-gray-900 text-sm">
+                  ID Proof: {docModalUser.first_name} {docModalUser.last_name}
+                </h3>
+                <span className="text-[10px] text-gray-400 font-mono">
+                  {docModalUser.profileId || `MN-${100000 + docModalUser.id}`} · Status: {docModalUser.kyc_status}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDocModalUser(null)}
+                className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 max-h-[65vh] overflow-y-auto pr-1">
+              {docModalUser.kyc_front_url && (
+                <div className="border border-gray-200 rounded-xl overflow-hidden bg-gray-50 p-2">
+                  <div className="flex justify-between items-center text-[10px] font-bold text-gray-500 mb-1.5 px-1">
+                    <span>Front Document</span>
+                    <a
+                      href={resolveDocUrl(docModalUser.kyc_front_url)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-brand-600 hover:underline flex items-center gap-0.5"
+                    >
+                      Open Full <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                  <img
+                    src={resolveDocUrl(docModalUser.kyc_front_url)}
+                    alt="Front ID"
+                    className="w-full max-h-56 object-contain rounded-lg bg-white p-1"
+                  />
+                </div>
+              )}
+
+              {docModalUser.kyc_back_url && (
+                <div className="border border-gray-200 rounded-xl overflow-hidden bg-gray-50 p-2">
+                  <div className="flex justify-between items-center text-[10px] font-bold text-gray-500 mb-1.5 px-1">
+                    <span>Back Document</span>
+                    <a
+                      href={resolveDocUrl(docModalUser.kyc_back_url)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-brand-600 hover:underline flex items-center gap-0.5"
+                    >
+                      Open Full <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                  <img
+                    src={resolveDocUrl(docModalUser.kyc_back_url)}
+                    alt="Back ID"
+                    className="w-full max-h-56 object-contain rounded-lg bg-white p-1"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2 flex gap-2">
+              <Link
+                href="/admin/id-verification"
+                onClick={() => setDocModalUser(null)}
+                className="flex-1 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl text-center transition-colors"
+              >
+                Manage Verification in KYC Hub →
+              </Link>
+              <button
+                type="button"
+                onClick={() => setDocModalUser(null)}
+                className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

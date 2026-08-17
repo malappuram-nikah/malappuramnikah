@@ -70,26 +70,27 @@ export default function AdminDashboardPage() {
         </h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
           {[
-            { label: "Total Users", value: stats.totalUsers, icon: Users, color: "bg-teal-50 text-teal-600" },
-            { label: "Active Users", value: stats.activeUsers, icon: UserCheck, color: "bg-emerald-50 text-emerald-600" },
-            { label: "New (30d)", value: stats.newUsers, icon: TrendingUp, color: "bg-brand-50 text-brand-600" },
-            { label: "Inactive", value: stats.inactiveUsers, icon: UserMinus, color: "bg-gray-100 text-gray-600" },
-            { label: "Suspended", value: stats.suspendedUsers, icon: Users, color: "bg-red-50 text-red-600" },
-            { label: "Premium", value: stats.premiumUsers, icon: Crown, color: "bg-amber-50 text-amber-600" },
-            { label: "Avg Completion", value: `${stats.averageCompletion}%`, icon: BarChart3, color: "bg-purple-50 text-purple-600" },
+            { label: "Total Users", value: stats.totalUsers, icon: Users, color: "bg-teal-50 text-teal-600", href: "/admin/users" },
+            { label: "Active Users", value: stats.activeUsers, icon: UserCheck, color: "bg-emerald-50 text-emerald-600", href: "/admin/users?status=active" },
+            { label: "New (30d)", value: stats.newUsers, icon: TrendingUp, color: "bg-brand-50 text-brand-600", href: "/admin/users?status=new" },
+            { label: "Inactive", value: stats.inactiveUsers, icon: UserMinus, color: "bg-amber-50 text-amber-600", href: "/admin/users?status=in_active" },
+            { label: "Suspended", value: stats.suspendedUsers, icon: Users, color: "bg-red-50 text-red-600", href: "/admin/users?status=suspended" },
+            { label: "Premium", value: stats.premiumUsers, icon: Crown, color: "bg-amber-50 text-amber-600", href: "/admin/users?is_premium=true" },
+            { label: "Avg Completion", value: `${stats.averageCompletion}%`, icon: BarChart3, color: "bg-purple-50 text-purple-600", href: "/admin/users" },
           ].map((item) => (
-            <div
+            <Link
               key={item.label}
-              className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-start justify-between hover:shadow-md transition-shadow"
+              href={item.href}
+              className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-start justify-between hover:shadow-md hover:border-brand-200 transition-all cursor-pointer group"
             >
               <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{item.label}</p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider group-hover:text-brand-600 transition-colors">{item.label}</p>
                 <h3 className="text-xl font-bold text-gray-900 mt-1">{item.value}</h3>
               </div>
               <div className={`p-2 rounded-xl shrink-0 ${item.color}`}>
                 <item.icon className="w-4 h-4" />
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </section>
