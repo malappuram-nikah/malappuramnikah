@@ -57,9 +57,40 @@ export class EmailOtpService {
         </div>
       `;
 
-    // 1. Resend HTTP API Option (Port 443 HTTPS - Bypasses Render Outbound SMTP Firewall Blocks 100%)
+    // 1. Brevo HTTP API Option (300 Free Emails/Day to ANY recipient - Port 443 HTTPS, No domain verification required!)
+    const brevoApiKey = process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY;
+    if (brevoApiKey) {
+      try {
+        const brevoRes = await fetch("https://api.brevo.com/v3/smtp/email", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "api-key": brevoApiKey
+          },
+          body: JSON.stringify({
+            sender: { name: "Malappuram Nikah", email: this.emailUser },
+            to: [{ email: toEmail, name: recipientName }],
+            subject,
+            htmlContent
+          })
+        });
+
+        const brevoData: any = await brevoRes.json();
+        if (brevoRes.ok && (brevoData.messageId || brevoData.id)) {
+          console.log(`[BREVO HTTP SUCCESS] OTP Email sent to ${toEmail} (MessageID: ${brevoData.messageId || brevoData.id})`);
+          return { success: true, message: `OTP sent successfully to ${toEmail}` };
+        } else {
+          console.warn(`[BREVO HTTP WARN] Brevo API response:`, brevoData);
+        }
+      } catch (brevoErr) {
+        console.error("[BREVO HTTP ERROR] Failed to send via Brevo API:", brevoErr);
+      }
+    }
+
+    // 2. Resend HTTP API Option (Port 443 HTTPS)
     if (this.resendApiKey) {
       try {
+        const fromEmail = process.env.RESEND_FROM_EMAIL || "Malappuram Nikah <onboarding@resend.dev>";
         const resendRes = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: {
@@ -67,7 +98,7 @@ export class EmailOtpService {
             "Authorization": `Bearer ${this.resendApiKey}`
           },
           body: JSON.stringify({
-            from: "Malappuram Nikah <onboarding@resend.dev>",
+            from: fromEmail,
             to: [toEmail],
             subject,
             html: htmlContent
