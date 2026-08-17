@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Users, Search, Check, X, ChevronLeft, ChevronRight, Eye, Sparkles } from "lucide-react";
+import { Users, Search, Check, X, ChevronLeft, ChevronRight, Eye, Sparkles, Download, Loader2 } from "lucide-react";
 import AdminAlert from "@/components/admin/AdminAlert";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { adminApi, AdminUser } from "@/lib/admin-api";
+import { exportUsersToPdf } from "@/lib/pdf-export";
 import { cn } from "@/lib/utils";
 
 import { API_URL } from "@/lib/config";
@@ -122,6 +123,32 @@ export default function AdminUsersPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [docModalUser, setDocModalUser] = useState<AdminUser | null>(null);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  const handleDownloadPdf = async () => {
+    setDownloadingPdf(true);
+    try {
+      const params: Record<string, string | number> = { page: 1, limit: 1000 };
+      if (search.trim()) params.search = search.trim();
+      if (statusFilter) params.status = statusFilter;
+      if (genderFilter) params.gender = genderFilter;
+      if (kycFilter) params.kyc_status = kycFilter;
+      if (dateFrom) params.date_from = dateFrom;
+      if (dateTo) params.date_to = dateTo;
+
+      const res = await adminApi.getUsers(params);
+      const filterObj = ACCOUNT_STATUS_OPTIONS.find((o) => o.id === statusFilter);
+      const filterTitle = filterObj?.label || (statusFilter ? statusFilter : "All Accounts");
+
+      exportUsersToPdf(res.users, `${filterTitle} (${res.users.length})`);
+      triggerAlert(`PDF Export complete for ${res.users.length} members! 📄`);
+    } catch (err) {
+      console.error("PDF export error:", err);
+      triggerAlert("Failed to generate PDF report.", "error");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   useEffect(() => {
     setStatusFilter(searchParams.get("status") || "");
@@ -255,6 +282,18 @@ export default function AdminUsersPage() {
             >
               Search
             </button>
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={downloadingPdf}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
+            >
+              {downloadingPdf ? (
+                <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating PDF...</>
+              ) : (
+                <><Download className="w-3.5 h-3.5" /> Download PDF Report</>
+              )}
+            </button>
           </div>
         </div>
 
@@ -264,9 +303,20 @@ export default function AdminUsersPage() {
           </div>
         ) : (
           <>
-            <p className="text-[10px] text-gray-400 font-semibold">
-              {total} users found · showing {users.length} per page
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] text-gray-400 font-semibold">
+                {total} users found · showing {users.length} per page
+              </p>
+              <button
+                type="button"
+                onClick={handleDownloadPdf}
+                disabled={downloadingPdf}
+                className="text-[11px] font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 px-3 py-1 rounded-lg transition-colors border border-emerald-200"
+              >
+                {downloadingPdf ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+                Export {statusFilter ? ACCOUNT_STATUS_OPTIONS.find(o => o.id === statusFilter)?.label : "All"} PDF
+              </button>
+            </div>
             <div className="overflow-x-auto border border-gray-100 rounded-xl">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
