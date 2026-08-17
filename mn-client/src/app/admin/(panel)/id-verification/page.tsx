@@ -7,6 +7,16 @@ import AdminAlert from "@/components/admin/AdminAlert";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { adminApi, AdminUser } from "@/lib/admin-api";
 import { cn } from "@/lib/utils";
+import { API_URL } from "@/lib/config";
+
+function resolveDocUrl(url: string | null): string {
+  if (!url) return "";
+  if (url.includes("localhost:")) {
+    const relativePath = url.substring(url.indexOf("/user/kyc/document"));
+    return `${API_URL}${relativePath}`;
+  }
+  return url;
+}
 
 const STATUS_OPTIONS = [
   { id: "ALL", label: "All Status" },
@@ -338,7 +348,7 @@ export default function AdminIdVerificationPage() {
                       <div className="bg-gray-100 px-3 py-1.5 text-[9px] font-bold text-gray-600 flex justify-between items-center">
                         <span>Front Side</span>
                         <a
-                          href={selected.kyc_front_url}
+                          href={resolveDocUrl(selected.kyc_front_url)}
                           target="_blank"
                           rel="noreferrer"
                           className="text-brand-600 hover:underline text-[9px] font-bold"
@@ -348,7 +358,7 @@ export default function AdminIdVerificationPage() {
                       </div>
                       <div className="p-2 flex items-center justify-center bg-white min-h-[160px]">
                         <img
-                          src={selected.kyc_front_url}
+                          src={resolveDocUrl(selected.kyc_front_url)}
                           alt="Front ID Document"
                           className="w-full max-h-52 object-contain rounded"
                         />
@@ -360,7 +370,7 @@ export default function AdminIdVerificationPage() {
                       <div className="bg-gray-100 px-3 py-1.5 text-[9px] font-bold text-gray-600 flex justify-between items-center">
                         <span>Back Side</span>
                         <a
-                          href={selected.kyc_back_url}
+                          href={resolveDocUrl(selected.kyc_back_url)}
                           target="_blank"
                           rel="noreferrer"
                           className="text-brand-600 hover:underline text-[9px] font-bold"
@@ -370,7 +380,7 @@ export default function AdminIdVerificationPage() {
                       </div>
                       <div className="p-2 flex items-center justify-center bg-white min-h-[160px]">
                         <img
-                          src={selected.kyc_back_url}
+                          src={resolveDocUrl(selected.kyc_back_url)}
                           alt="Back ID Document"
                           className="w-full max-h-52 object-contain rounded"
                         />

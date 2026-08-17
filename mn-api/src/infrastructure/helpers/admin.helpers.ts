@@ -103,7 +103,7 @@ export const ADMIN_USER_SELECT = {
 export function buildKycDocumentUrl(fileName: string | null, token?: string): string | null {
   if (!fileName) return null;
   if (fileName.startsWith("http://") || fileName.startsWith("https://")) return fileName;
-  const base = process.env.APP_URL || `http://localhost:${process.env.PORT || 3333}`;
+  const base = process.env.APP_URL || process.env.BACKEND_URL || "https://malappuramnikah.onrender.com";
   const qs = token ? `?token=${token}` : "";
   return `${base}/user/kyc/document/${fileName}${qs}`;
 }
