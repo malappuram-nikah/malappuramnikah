@@ -12,6 +12,9 @@ import {
   CheckCircle2, User, Smile
 } from "lucide-react";
 import { getEnrichedProfile } from "@/lib/profile-utils";
+import { updateProfileSection, updateProfileSectionByDraftKey, fetchProfileSection, DRAFT_KEY_TO_SECTION } from "@/lib/profile-api";
+import { useProfileCompletion } from "@/hooks/useProfileCompletion";
+import { useUser } from "@/context/UserContext";
 import { API_URL } from "@/lib/config";
 
 /* ──────────────────────────────────────────────────
@@ -103,24 +106,54 @@ interface EditField {
 }
 
 function EditModal({
-  title, fields, draftKey, onClose, onOptimisticSave,
+  title, fields, draftKey, onClose, onOptimisticSave, onAfterSave,
 }: {
   title: string;
   fields: EditField[];
   draftKey: string;
   onClose: () => void;
   onOptimisticSave: (draftKey: string, data: Record<string, string>) => void;
+  onAfterSave?: (profileCompletion: import("@/lib/profile-api").ProfileCompletionResult) => void;
 }) {
   const [form, setForm] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const abortRef = useRef<AbortController | null>(null);
 
-  // Pre-fill from localStorage instantly (no async needed)
+  // Pre-fill from backend section API (fallback: localStorage)
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(draftKey);
-      if (raw) setForm(JSON.parse(raw));
-    } catch {}
+    let cancelled = false;
+    const section = DRAFT_KEY_TO_SECTION[draftKey];
+
+    const loadFromStorage = () => {
+      try {
+        const raw = localStorage.getItem(draftKey);
+        if (raw) setForm(JSON.parse(raw));
+      } catch {}
+    };
+
+    if (!section) {
+      loadFromStorage();
+      return;
+    }
+
+    (async () => {
+      try {
+        const auth = getAuth();
+        if (!auth) {
+          loadFromStorage();
+          return;
+        }
+        const result = await fetchProfileSection(section, auth.userId);
+        if (cancelled) return;
+        const data = (result.data || {}) as Record<string, string>;
+        setForm(data);
+        localStorage.setItem(draftKey, JSON.stringify(data));
+      } catch {
+        if (!cancelled) loadFromStorage();
+      }
+    })();
+
+    return () => { cancelled = true; };
   }, [draftKey]);
 
   // Cleanup abort on unmount
@@ -142,18 +175,13 @@ function EditModal({
       // 2. Optimistic UI update — parent sees changes without waiting for network
       onOptimisticSave(draftKey, merged);
 
-      // 3. Background API sync
+      // 3. Section API sync (partial update — preserves other sections)
       const auth = getAuth();
       if (auth) {
-        await fetch(`${API_URL}/user/${auth.userId}/profile`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${auth.token}`,
-          },
-          body: JSON.stringify({ profile_details: { [draftKey]: merged } }),
-          signal: ctrl.signal,
-        });
+        const result = await updateProfileSectionByDraftKey(draftKey, merged);
+        if (result.profileCompletion && onAfterSave) {
+          onAfterSave(result.profileCompletion);
+        }
       }
 
       setStatus("saved");
@@ -161,7 +189,7 @@ function EditModal({
     } catch (e: any) {
       if (e?.name !== "AbortError") setStatus("error");
     }
-  }, [draftKey, form, onClose, onOptimisticSave]);
+  }, [draftKey, form, onClose, onOptimisticSave, onAfterSave]);
 
   const btnLabel = {
     idle: <><Check className="w-3.5 h-3.5" /> Save Changes</>,
@@ -282,11 +310,12 @@ interface PhotoData {
 }
 
 function PhotoManagerModal({
-  initialPhotos, onClose, onSaved,
+  initialPhotos, onClose, onSaved, onAfterSave,
 }: {
   initialPhotos: PhotoData[];
   onClose: () => void;
   onSaved: (photos: PhotoData[]) => void;
+  onAfterSave?: (profileCompletion: import("@/lib/profile-api").ProfileCompletionResult) => void;
 }) {
   const [photos, setPhotos] = useState<PhotoData[]>(initialPhotos);
   const [uploading, setUploading] = useState(false);
@@ -353,17 +382,10 @@ function PhotoManagerModal({
 
       const auth = getAuth();
       if (auth) {
-        await fetch(`${API_URL}/user/${auth.userId}/profile`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${auth.token}`,
-          },
-          body: JSON.stringify({
-            profile_details: { [DRAFT_KEY]: { photos } },
-          }),
-          signal: ctrl.signal,
-        });
+        const result = await updateProfileSection("photos", { photos }, auth.userId);
+        if (result.profileCompletion && onAfterSave) {
+          onAfterSave(result.profileCompletion);
+        }
       }
       onClose();
     } catch (e: any) {
@@ -371,7 +393,7 @@ function PhotoManagerModal({
     } finally {
       setSaving(false);
     }
-  }, [photos, onClose, onSaved]);
+  }, [photos, onClose, onSaved, onAfterSave]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
@@ -562,7 +584,7 @@ const SECTION_CONFIGS: {
     title: "Professional Details",
     draftKey: "mn_professional_info_draft",
     fields: [
-      { key: "education", label: "Education", options: ["High School", "Diploma", "Bachelors", "Masters", "PhD", "Others"] },
+      { key: "education", label: "Education", options: ["High School", "Higher Secondary", "Diploma", "Bachelors", "Masters", "PhD", "Others"] },
       { key: "customEducation", label: "Education (if Others)" },
       { key: "educationalInstitution", label: "Educational Institution", span: true },
       { key: "professionType", label: "Profession Type", options: ["Private", "Government", "Business", "Self-Employed", "Student", "Homemaker", "Not Working"] },
@@ -613,6 +635,8 @@ const SECTION_ICONS: React.ReactNode[] = [
 ────────────────────────────────────────────────── */
 export default function MyProfilePage() {
   const router = useRouter();
+  const { percentage, strength, styles, incompleteSections, applyCompletion } = useProfileCompletion();
+  const { refreshUser } = useUser();
 
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -751,6 +775,14 @@ export default function MyProfilePage() {
     showToast("Photos saved!");
   }, [showToast]);
 
+  const handleCompletionUpdate = useCallback(
+    async (profileCompletion: import("@/lib/profile-api").ProfileCompletionResult) => {
+      applyCompletion(profileCompletion);
+      await refreshUser();
+    },
+    [applyCompletion, refreshUser]
+  );
+
   /* ── Render ──────────────────────────────────── */
   if (loading) return <Skeleton />;
 
@@ -802,6 +834,7 @@ export default function MyProfilePage() {
             draftKey={editSection.draftKey}
             onClose={() => setEditSectionIdx(null)}
             onOptimisticSave={handleOptimisticSave}
+            onAfterSave={handleCompletionUpdate}
           />
         )}
         {photoModal && (
@@ -810,6 +843,7 @@ export default function MyProfilePage() {
             initialPhotos={photos}
             onClose={() => setPhotoModal(false)}
             onSaved={handlePhotosSaved}
+            onAfterSave={handleCompletionUpdate}
           />
         )}
       </AnimatePresence>
@@ -828,9 +862,9 @@ export default function MyProfilePage() {
             </button>
             <span className="text-gray-200">/</span>
             <span className="font-bold text-gray-800">My Profile</span>
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-green-50 text-green-700 border border-green-200 rounded-full text-[11px] font-bold shadow-xs ml-2">
-              <CheckCircle2 className="w-3 h-3 text-green-600" />
-              Profile Completed
+            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 border rounded-full text-[11px] font-bold shadow-xs ml-2 ${styles.text}`}>
+              <Star className="w-3 h-3" />
+              {percentage}% · {strength}
             </span>
           </div>
 
@@ -957,6 +991,24 @@ export default function MyProfilePage() {
                     {isVerified ? "✓ Verified" : "Pending"}
                   </span>
                 </div>
+              </div>
+
+              {/* Profile strength */}
+              <div className="mx-4 mb-4 p-3 rounded-xl border border-gray-100 bg-gray-50/80">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold text-gray-700 uppercase tracking-wide">Profile Strength</span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${styles.text}`}>
+                    {percentage}% · {strength}
+                  </span>
+                </div>
+                <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full transition-all duration-500 ${styles.bar}`} style={{ width: `${percentage}%` }} />
+                </div>
+                {incompleteSections[0] && (
+                  <p className="text-[10px] text-gray-500 mt-2 leading-relaxed">
+                    Next: {incompleteSections[0].name} — {incompleteSections[0].suggestion}
+                  </p>
+                )}
               </div>
 
               {/* No photo nudge */}

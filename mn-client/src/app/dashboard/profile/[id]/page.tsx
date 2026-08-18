@@ -196,7 +196,7 @@ export default function ProfileDetailPage({ params }: PageProps) {
   const isMutual = interests.mutual.includes(profile.id);
   const isSent = interests.sent.includes(profile.id);
   const isReceived = interests.received.includes(profile.id);
-  const isInterested = isMutual || isSent || isReceived || isSelf;
+  const canViewProfile = isMutual || isSelf;
 
   let interestBtnText = "Express Interest";
   let interestBtnStyle = "bg-brand-600 hover:bg-brand-700 text-white shadow-brand-600/10";
@@ -250,7 +250,7 @@ export default function ProfileDetailPage({ params }: PageProps) {
                 <img 
                   src={activePhoto || profile.img} 
                   alt={profile.name} 
-                  className={`w-full h-full object-cover transition-transform duration-700 ${!isInterested ? "filter blur-[18px] select-none" : ""}`} 
+                  className={`w-full h-full object-cover transition-transform duration-700 ${!canViewProfile ? "filter blur-[18px] select-none" : ""}`} 
                 />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-[#026d77]/10 via-[#026d77]/20 to-[#026d77]/35 flex flex-col items-center justify-center p-6 text-center">
@@ -259,11 +259,11 @@ export default function ProfileDetailPage({ params }: PageProps) {
                 </div>
               )}
 
-              {!isInterested && (
+              {!canViewProfile && (
                 <div className="absolute inset-0 bg-black/15 flex items-center justify-center z-10">
                   <div className="bg-white/95 backdrop-blur-xs px-3.5 py-2 rounded-full shadow-md border border-white/20 flex items-center gap-1.5">
                     <Lock className="w-4 h-4 text-brand-600" />
-                    <span className="text-[10px] font-bold text-gray-700">Connect to view photo</span>
+                    <span className="text-[10px] font-bold text-gray-700">Connect mutually to view photo</span>
                   </div>
                 </div>
               )}
@@ -302,7 +302,7 @@ export default function ProfileDetailPage({ params }: PageProps) {
                     >
                       <img 
                         src={p.dataUrl} 
-                        className={`w-full h-full object-cover ${!isInterested ? "filter blur-[8px] select-none" : ""}`} 
+                        className={`w-full h-full object-cover ${!canViewProfile ? "filter blur-[8px] select-none" : ""}`} 
                         alt="" 
                       />
                     </button>
@@ -475,6 +475,8 @@ export default function ProfileDetailPage({ params }: PageProps) {
 
         {/* Right Side: Detailed Profile Information */}
         <div className="md:col-span-2 space-y-6">
+          {canViewProfile ? (
+          <>
           {/* About section */}
           {profile.aboutMe && (
             <div className="bg-white p-6 rounded-xl border border-gray-150/80 shadow-xs">
@@ -708,6 +710,27 @@ export default function ProfileDetailPage({ params }: PageProps) {
               </div>
             )}
           </div>
+          </>
+          ) : (
+            <div className="bg-white p-10 rounded-xl border border-gray-150/80 shadow-xs text-center space-y-4">
+              <div className="w-14 h-14 bg-brand-50 rounded-full flex items-center justify-center mx-auto">
+                <Lock className="w-6 h-6 text-brand-600" />
+              </div>
+              <h2 className="text-lg font-bold text-gray-900 font-playfair">Full profile is private</h2>
+              <p className="text-sm text-gray-500 max-w-md mx-auto leading-relaxed">
+                Photos and detailed information are only visible after you both accept interest and become a mutual match.
+              </p>
+              {!isSelf && (
+                <button
+                  onClick={handleToggleInterest}
+                  className={`mt-2 px-6 py-3 text-xs font-bold rounded-xl transition-all shadow-sm inline-flex items-center gap-2 ${interestBtnStyle}`}
+                >
+                  <Heart className="w-4 h-4" />
+                  {interestBtnText}
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
