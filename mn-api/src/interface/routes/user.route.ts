@@ -1,6 +1,7 @@
 import express, { Request, Response } from "express";
 import path from "path";
 import fs from "fs";
+import bcrypt from "bcryptjs";
 import { UserController } from "../controllers/user.controller";
 import { UserRepository } from "../../infrastructure/repositories/UserRepository";
 import { LoginUser, RegisterUser } from "../../applications/use-cases";

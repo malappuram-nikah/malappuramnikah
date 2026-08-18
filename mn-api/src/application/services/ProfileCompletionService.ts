@@ -32,7 +32,7 @@ export type ProfileUser = {
   location?: string;
   gender?: string;
   kyc_status?: string;
-  profile_details?: Record<string, unknown> | null;
+  profile_details?: any;
 };
 
 function isFilled(value: unknown): boolean {
@@ -328,7 +328,18 @@ export const SECTION_SLUG_TO_DRAFT: Record<string, string> = {
 };
 
 export function calculateProfileCompletion(user: ProfileUser): ProfileCompletionResult {
-  const details = (user.profile_details || {}) as Record<string, Record<string, unknown>>;
+  let details: Record<string, Record<string, unknown>> = {};
+  if (user.profile_details) {
+    if (typeof user.profile_details === "string") {
+      try {
+        details = JSON.parse(user.profile_details);
+      } catch {
+        details = {};
+      }
+    } else if (typeof user.profile_details === "object") {
+      details = user.profile_details as Record<string, Record<string, unknown>>;
+    }
+  }
   const isFemale = (user.gender || "").toLowerCase() === "female";
 
   const sections: ProfileSectionCompletion[] = [];

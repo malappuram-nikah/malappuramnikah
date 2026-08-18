@@ -2,7 +2,6 @@ import { User } from "../../domain/entities/user.interface";
 import { IUserRepository } from "../../domain/interfaces/IUserRepository";
 import prisma from "../prisma/prisamClient";
 import bcrypt from 'bcryptjs'
-import { findUserByIdentifier } from "../helpers/userLookup.helpers";
 import { mergeProfileDetails } from "../../application/services/ProfileSectionService";
 
 
