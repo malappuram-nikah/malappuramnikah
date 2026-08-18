@@ -20,7 +20,7 @@ const tabs = [
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { currentUser, refreshUser } = useUser();
+  const { currentUser, refreshUser, completionPercent, strength, strengthColor, missingSections } = useUser();
   const [activeTab, setActiveTab] = useState("profile");
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -71,9 +71,7 @@ export default function SettingsPage() {
   const [mobileOtpSent, setMobileOtpSent] = useState(false);
   const [showMobileOtpBanner, setShowMobileOtpBanner] = useState(false);
 
-  // Profile Completion States
-  const [completionPercent, setCompletionPercent] = useState(0);
-  const [missingSections, setMissingSections] = useState<{name: string, suggestion: string, step: number}[]>([]);
+
 
   const loadProfileData = async () => {
     try {
@@ -235,50 +233,8 @@ export default function SettingsPage() {
     }
   };
 
-  const calculateCompletion = () => {
-    const sections = [
-      { key: "mn_basic_details_draft", name: "Basic Details", step: 1, suggestion: "Add your basic details to start matching." },
-      { key: "mn_religious_info_draft", name: "Religious Info", step: 2, suggestion: "Add your religious background." },
-      { key: "mn_professional_info_draft", name: "Professional Info", step: 3, suggestion: "Add your education and career details." },
-      { key: "mn_family_details_draft", name: "Family Details", step: 4, suggestion: "Tell us about your family background." },
-      { key: "mn_interests_draft", name: "Interests & Hobbies", step: 5, suggestion: "Complete Interests & Hobbies to find like-minded people." },
-      { key: "mn_habits_draft", name: "Personal Habits", step: 6, suggestion: "Add your lifestyle habits." },
-      { key: "mn_partner_preferences_draft", name: "Partner Preferences", step: 7, suggestion: "Complete Partner Preferences to improve matches." },
-      { key: "mn_profile_photos_draft", name: "Profile Photos", step: 8, suggestion: "Upload more photos to improve visibility." },
-      { key: "mn_voice_intro_draft", name: "Voice Introduction", step: 9, suggestion: "Record a voice intro to boost responses." },
-    ];
-
-    let completedCount = 0;
-    const missing: typeof sections = [];
-
-    sections.forEach(section => {
-      try {
-        const item = localStorage.getItem(section.key);
-        if (item) {
-          const parsed = JSON.parse(item);
-          if (section.key === "mn_profile_photos_draft" && (!parsed.photos || parsed.photos.length === 0)) {
-            missing.push(section);
-          } else if (section.key === "mn_voice_intro_draft" && !parsed.voice) {
-            missing.push(section);
-          } else {
-            completedCount++;
-          }
-        } else {
-          missing.push(section);
-        }
-      } catch (e) {
-        missing.push(section);
-      }
-    });
-
-    const percent = Math.round((completedCount / sections.length) * 100);
-    setCompletionPercent(percent);
-    setMissingSections(missing);
-  };
-
   useEffect(() => {
     loadProfileData();
-    calculateCompletion();
 
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -424,7 +380,6 @@ export default function SettingsPage() {
         setSaveError(null);
         setTimeout(() => setSaved(false), 2500);
         await refreshUser();
-        calculateCompletion();
       } else {
         setSaveError(data.message || "Failed to save profile changes.");
       }
@@ -584,24 +539,7 @@ export default function SettingsPage() {
     }
   };
 
-  // Determine profile strength
-  let strength = "Weak";
-  let strengthColor = "text-red-600 bg-red-50 border-red-200/50";
-  let barColor = "bg-red-500";
-  
-  if (completionPercent >= 80) {
-    strength = "Excellent";
-    strengthColor = "text-green-600 bg-green-50 border-green-200/50";
-    barColor = "bg-green-500";
-  } else if (completionPercent >= 60) {
-    strength = "Strong";
-    strengthColor = "text-brand-700 bg-brand-50 border-brand-200/50";
-    barColor = "bg-brand-500";
-  } else if (completionPercent >= 40) {
-    strength = "Average";
-    strengthColor = "text-yellow-700 bg-yellow-50 border-yellow-200/50";
-    barColor = "bg-yellow-500";
-  }
+
 
   if (isLoading) {
     return (

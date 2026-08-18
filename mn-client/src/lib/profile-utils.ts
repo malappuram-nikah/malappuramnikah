@@ -193,111 +193,312 @@ export function analyzeMatch(profile: EnrichedProfile, myPref: ProfileDetails["m
   };
 }
 
-export function getProfileCompletionStatus(u: any) {
+export interface SectionInfo {
+  key: string;
+  name: string;
+  suggestion: string;
+  step: number;
+  weight: number;
+}
+
+export interface ProfileCompletionResult {
+  percentage: number;
+  strength: "Weak" | "Average" | "Strong" | "Excellent";
+  strengthColor: string;
+  completedSteps: number[];
+  totalSteps: number;
+  isComplete: boolean;
+  missingSections: SectionInfo[];
+  earnedWeight: number;
+  totalWeight: number;
+}
+
+export function getProfileCompletionStatus(u: any): ProfileCompletionResult {
   if (!u) {
-    return { percentage: 0, completedSteps: [], totalSteps: 12, isComplete: false };
+    return {
+      percentage: 0,
+      strength: "Weak",
+      strengthColor: "text-rose-200 bg-rose-950/40 border-rose-800/30",
+      completedSteps: [],
+      totalSteps: 12,
+      isComplete: false,
+      missingSections: [],
+      earnedWeight: 0,
+      totalWeight: 100,
+    };
   }
+
   const details = u.profile_details || {};
-  const completedSteps: number[] = [];
 
   const getDraft = (key: string) => {
-    if (details[key]) return details[key];
-    if (typeof window !== "undefined") {
+    let data = details[key];
+    if ((!data || Object.keys(data).length === 0) && typeof window !== "undefined") {
       try {
         const item = localStorage.getItem(key);
-        if (item) return JSON.parse(item);
+        if (item) data = JSON.parse(item);
       } catch {
-        return {};
+        data = null;
       }
     }
-    return {};
+    return data || {};
   };
 
-  // Step 1: Basic Details
-  const basic = getDraft("mn_basic_details_draft");
-  if (basic.name || basic.aboutMe || u.first_name || basic.maritalStatus || basic.presentLocation || basic.gender) {
-    completedSteps.push(1);
+  const isFemale = (u.gender || getDraft("mn_basic_details_draft").gender || "").toLowerCase() === "female";
+
+  const sectionDefinitions = [
+    {
+      key: "mn_basic_details_draft",
+      name: "Basic Details",
+      suggestion: "Add your height, marital status, and location.",
+      step: 1,
+      weight: 20,
+      check: () => {
+        const b = getDraft("mn_basic_details_draft");
+        return Boolean(
+          (b.height || b.maritalStatus || b.presentLocation) &&
+          (u.first_name || b.aboutMe || b.name || u.dob || b.dob)
+        );
+      },
+    },
+    {
+      key: "mn_religious_info_draft",
+      name: "Religious Info",
+      suggestion: "Add your prayer habits and religiousness.",
+      step: 2,
+      weight: 15,
+      check: () => {
+        const r = getDraft("mn_religious_info_draft");
+        return Boolean(r.religion || r.community || u.cast || r.namaz || r.religiousness);
+      },
+    },
+    {
+      key: "mn_professional_info_draft",
+      name: "Professional Info",
+      suggestion: "Add your education and profession.",
+      step: 3,
+      weight: 15,
+      check: () => {
+        const p = getDraft("mn_professional_info_draft");
+        return Boolean(p.education || p.highestEducation || p.profession || p.professionType || p.companyName || p.educationalInstitution);
+      },
+    },
+    {
+      key: "mn_family_details_draft",
+      name: "Family Details",
+      suggestion: "Tell us about your family background.",
+      step: 4,
+      weight: 10,
+      check: () => {
+        const f = getDraft("mn_family_details_draft");
+        return Boolean(f.familyType || f.familyStatus || f.financialStatus || f.fatherOccupation || f.motherOccupation || f.fatherName || f.motherName);
+      },
+    },
+    {
+      key: "mn_interests_draft",
+      name: "Interests & Personality",
+      suggestion: "Complete Interests & Personality to find like-minded matches.",
+      step: 5,
+      weight: 5,
+      check: () => {
+        const i = getDraft("mn_interests_draft");
+        return Boolean((i.interests && i.interests.length > 0) || i.personalityDescription || i.aboutMe);
+      },
+    },
+    {
+      key: "mn_habits_draft",
+      name: "Hobbies & Habits",
+      suggestion: "Add your lifestyle habits and hobbies.",
+      step: 6,
+      weight: 5,
+      check: () => {
+        const h = getDraft("mn_habits_draft");
+        return Boolean((h.favouriteSports && h.favouriteSports.length > 0) || (h.favouritePlaces && h.favouritePlaces.length > 0) || h.eatingHabits || h.smokingHabits || h.drinkingHabits);
+      },
+    },
+    {
+      key: "mn_partner_preferences_draft",
+      name: "Partner Preferences",
+      suggestion: "Complete Partner Preferences to improve match suggestions.",
+      step: 7,
+      weight: 15,
+      check: () => {
+        const p = getDraft("mn_partner_preferences_draft");
+        return Boolean(p.aboutPartner || p.religion || p.preferredReligion || p.minAge || p.prefAgeMin || p.maritalStatus || p.preferredMaritalStatus || p.education || p.preferredEducation);
+      },
+    },
+    {
+      key: "mn_profile_photos_draft",
+      name: "Profile Photos",
+      suggestion: "Upload profile photos to improve visibility.",
+      step: 8,
+      weight: 10,
+      check: () => {
+        const photosDraft = getDraft("mn_profile_photos_draft");
+        const photos = photosDraft?.photos || details.mn_profile_photos_draft?.photos;
+        return Boolean(photos && photos.length > 0);
+      },
+    },
+    {
+      key: "mn_voice_intro_draft",
+      name: "Voice Introduction",
+      suggestion: "Record a voice intro to boost responses.",
+      step: 9,
+      weight: 5,
+      check: () => {
+        const voiceDraft = getDraft("mn_voice_intro_draft");
+        const voice = voiceDraft?.voice || voiceDraft?.dataUrl || details.mn_voice_intro_draft?.voice;
+        return Boolean(voice || (typeof voiceDraft === "object" && Object.keys(voiceDraft).length > 0 && (voiceDraft.audioUrl || voiceDraft.url)));
+      },
+    },
+    ...(isFemale ? [] : [
+      {
+        key: "mn_kyc_status",
+        name: "Identity Verification",
+        suggestion: "Verify your identity to get the 'ID Verified' badge.",
+        step: 10,
+        weight: 10,
+        check: () => {
+          const localKyc = typeof window !== "undefined" ? localStorage.getItem("mn_kyc_status") : null;
+          return Boolean(
+            u.is_verified ||
+            u.kyc_status === "VERIFIED" ||
+            u.kyc_status === "PENDING" ||
+            u.kyc_status === "UNDER_REVIEW" ||
+            localKyc === "VERIFIED" ||
+            localKyc === "PENDING" ||
+            localKyc === "UNDER_REVIEW" ||
+            details.mn_identity_draft
+          );
+        },
+      },
+    ]),
+  ];
+
+  let earnedWeight = 0;
+  let totalWeight = 0;
+  const completedSteps: number[] = [];
+  const missingSections: SectionInfo[] = [];
+
+  sectionDefinitions.forEach((sec) => {
+    totalWeight += sec.weight;
+    if (sec.check()) {
+      earnedWeight += sec.weight;
+      completedSteps.push(sec.step);
+    } else {
+      missingSections.push({
+        key: sec.key,
+        name: sec.name,
+        suggestion: sec.suggestion,
+        step: sec.step,
+        weight: sec.weight,
+      });
+    }
+  });
+
+  // Step 11 (Final Review) & Step 12 (Completion)
+  if (completedSteps.length >= 8) completedSteps.push(11);
+  if (completedSteps.length >= sectionDefinitions.length) completedSteps.push(12);
+
+  // Sort missing sections by weight descending (highest priority missing first)
+  missingSections.sort((a, b) => b.weight - a.weight);
+
+  const percentage = Math.min(100, Math.max(0, Math.round((earnedWeight / totalWeight) * 100)));
+  const isComplete = percentage >= 85 || completedSteps.length >= sectionDefinitions.length;
+
+  let strength: "Weak" | "Average" | "Strong" | "Excellent" = "Weak";
+  let strengthColor = "text-rose-200 bg-rose-950/40 border-rose-800/30";
+
+  if (percentage >= 80) {
+    strength = "Excellent";
+    strengthColor = "text-emerald-200 bg-emerald-950/40 border-emerald-800/30";
+  } else if (percentage >= 60) {
+    strength = "Strong";
+    strengthColor = "text-teal-200 bg-teal-950/40 border-teal-800/30";
+  } else if (percentage >= 40) {
+    strength = "Average";
+    strengthColor = "text-amber-200 bg-amber-950/40 border-amber-800/30";
   }
 
-  // Step 2: Religious Info
-  const religious = getDraft("mn_religious_info_draft");
-  if (religious.religion || religious.community || u.cast || religious.namaz || religious.religiousness) {
-    completedSteps.push(2);
+  return {
+    percentage,
+    strength,
+    strengthColor,
+    completedSteps,
+    totalSteps: 12,
+    isComplete,
+    missingSections,
+    earnedWeight,
+    totalWeight,
+  };
+}
+
+export async function saveProfileSection(sectionKey: string, sectionData: any): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+  
+  try {
+    // 1. Instantly update localStorage draft
+    localStorage.setItem(sectionKey, typeof sectionData === "string" ? sectionData : JSON.stringify(sectionData));
+
+    // 2. Sync to Backend Database via PUT /user/:id/profile
+    const token = localStorage.getItem("mn_token");
+    if (!token) return true;
+
+    let userId: number | null = null;
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      if (payload.userId) userId = Number(payload.userId);
+    } catch (e) {
+      console.error("Token decoding error in saveProfileSection:", e);
+    }
+
+    if (!userId) return true;
+
+    const { API_URL } = await import("@/lib/config");
+
+    const draftKeys = [
+      "mn_basic_details_draft",
+      "mn_religious_info_draft",
+      "mn_professional_info_draft",
+      "mn_family_details_draft",
+      "mn_interests_draft",
+      "mn_habits_draft",
+      "mn_partner_preferences_draft",
+      "mn_profile_photos_draft",
+      "mn_voice_intro_draft",
+    ];
+
+    const allDrafts: Record<string, any> = {};
+    draftKeys.forEach((key) => {
+      const item = localStorage.getItem(key);
+      if (item) {
+        try {
+          allDrafts[key] = JSON.parse(item);
+        } catch {
+          allDrafts[key] = item;
+        }
+      }
+    });
+    allDrafts[sectionKey] = sectionData;
+
+    const res = await fetch(`${API_URL}/user/${userId}/profile`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ profile_details: allDrafts }),
+    });
+
+    if (res.ok) {
+      console.log(`[PROFILE SYNC SUCCESS] Section ${sectionKey} synced to DB for user #${userId}`);
+      return true;
+    } else {
+      console.warn(`[PROFILE SYNC WARN] Server returned ${res.status} when syncing ${sectionKey}`);
+      return false;
+    }
+  } catch (err) {
+    console.error(`[PROFILE SYNC ERROR] Failed to sync ${sectionKey}:`, err);
+    return false;
   }
-
-  // Step 3: Professional Info
-  const prof = getDraft("mn_professional_info_draft");
-  if (prof.education || prof.profession || prof.customEducation || prof.professionType || prof.companyName) {
-    completedSteps.push(3);
-  }
-
-  // Step 4: Family Details
-  const family = getDraft("mn_family_details_draft");
-  if (family.familyType || family.financialStatus || family.fatherOccupation || family.fatherName || family.motherName) {
-    completedSteps.push(4);
-  }
-
-  // Step 5: Interests & Hobbies
-  const interests = getDraft("mn_interests_draft");
-  if ((interests.interests && interests.interests.length > 0) || interests.personalityDescription || interests.aboutMe) {
-    completedSteps.push(5);
-  }
-
-  // Step 6: Personal Habits
-  const habits = getDraft("mn_habits_draft");
-  if (habits.eatingHabits || habits.smokingHabits || habits.drinkingHabits) {
-    completedSteps.push(6);
-  }
-
-  // Step 7: Partner Preferences
-  const partner = getDraft("mn_partner_preferences_draft");
-  if (partner.aboutPartner || partner.religion || partner.minAge || partner.prefAgeMin || partner.maritalStatus) {
-    completedSteps.push(7);
-  }
-
-  // Step 8: Profile Photos
-  const photosDraft = getDraft("mn_profile_photos_draft");
-  const photos = photosDraft?.photos || details.mn_profile_photos_draft?.photos;
-  if (photos && photos.length > 0) {
-    completedSteps.push(8);
-  }
-
-  // Step 9: Voice Intro
-  const voiceDraft = getDraft("mn_voice_intro_draft");
-  const voice = voiceDraft?.voice || voiceDraft?.dataUrl || details.mn_voice_intro_draft?.voice;
-  if (voice || (typeof voiceDraft === "object" && Object.keys(voiceDraft).length > 0)) {
-    completedSteps.push(9);
-  }
-
-  // Step 10: Identity Verification
-  const localKyc = typeof window !== "undefined" ? localStorage.getItem("mn_kyc_status") : null;
-  const isKycDone =
-    u.is_verified ||
-    u.kyc_status === "VERIFIED" ||
-    u.kyc_status === "PENDING" ||
-    u.kyc_status === "UNDER_REVIEW" ||
-    localKyc === "VERIFIED" ||
-    localKyc === "PENDING" ||
-    localKyc === "UNDER_REVIEW" ||
-    details.mn_identity_draft;
-  if (isKycDone) {
-    completedSteps.push(10);
-  }
-
-  // Step 11: Final Review (Completed if core details are in place or review step reached)
-  if (completedSteps.length >= 8) {
-    completedSteps.push(11);
-  }
-
-  // Step 12: Completion (Completed if all required steps 1-11 are done)
-  if (completedSteps.length >= 11) {
-    completedSteps.push(12);
-  }
-
-  const totalSteps = 12;
-  const percentage = Math.round((completedSteps.length / totalSteps) * 100);
-  const isComplete = completedSteps.length >= 10;
-
-  return { percentage, completedSteps, totalSteps, isComplete };
 }
 

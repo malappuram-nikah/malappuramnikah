@@ -5,6 +5,9 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Save, Plus, X } from "lucide-react";
 
+import { saveProfileSection } from "@/lib/profile-utils";
+import { useUser } from "@/context/UserContext";
+
 export interface InterestsData {
   interests: string[];
   personalityDescription: string;
@@ -25,6 +28,7 @@ const PREDEFINED_INTERESTS = [
 ];
 
 export default function InterestsStep({ initialData, onComplete, onBack }: InterestsStepProps) {
+  const { refreshUser } = useUser();
   const [formData, setFormData] = useState<InterestsData>({
     interests: [],
     personalityDescription: "",
@@ -113,12 +117,12 @@ export default function InterestsStep({ initialData, onComplete, onBack }: Inter
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (validate()) {
+      await saveProfileSection(DRAFT_KEY, formData);
+      try { await refreshUser(); } catch {}
       if (onComplete) onComplete(formData);
-      // Optional: Clear draft after successful completion
-      // localStorage.removeItem(DRAFT_KEY);
     }
   };
 

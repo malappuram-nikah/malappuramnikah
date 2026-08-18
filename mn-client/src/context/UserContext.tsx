@@ -4,10 +4,17 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { API_URL } from "@/lib/config";
 import { clearSession, getToken, isAdminSession } from "@/lib/auth-session";
 
+import { getProfileCompletionStatus, ProfileCompletionResult } from "@/lib/profile-utils";
+
 interface UserContextType {
   currentUser: any;
   loadingUser: boolean;
   refreshUser: () => Promise<any>;
+  completion: ProfileCompletionResult;
+  completionPercent: number;
+  strength: string;
+  strengthColor: string;
+  missingSections: any[];
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -15,6 +22,10 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loadingUser, setLoadingUser] = useState(true);
+
+  const completion: ProfileCompletionResult = React.useMemo(() => {
+    return getProfileCompletionStatus(currentUser);
+  }, [currentUser]);
 
   const fetchUser = useCallback(async () => {
     const token = getToken();
@@ -138,7 +149,18 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }, [fetchUser]);
 
   return (
-    <UserContext.Provider value={{ currentUser, loadingUser, refreshUser: fetchUser }}>
+    <UserContext.Provider
+      value={{
+        currentUser,
+        loadingUser,
+        refreshUser: fetchUser,
+        completion,
+        completionPercent: completion.percentage,
+        strength: completion.strength,
+        strengthColor: completion.strengthColor,
+        missingSections: completion.missingSections,
+      }}
+    >
       {children}
     </UserContext.Provider>
   );

@@ -276,8 +276,8 @@ export default function ProfileBuilderPage() {
     );
   }
 
-  // 1. If profile is completed and user has NOT clicked "Edit Profile", show ONLY the centered success message!
-  if (isProfileCompleted && !isEditing) {
+  // 1. If user is on Step 12 (Completion step) and not explicitly editing a step, show success screen
+  if (currentStep === 12 && !isEditing) {
     return (
       <div className="min-h-[75vh] flex flex-col items-center justify-center px-4 py-12">
         <motion.div

@@ -5,6 +5,9 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Save } from "lucide-react";
 
+import { saveProfileSection } from "@/lib/profile-utils";
+import { useUser } from "@/context/UserContext";
+
 export interface ProfessionalInfoData {
   education: string;
   customEducation?: string;
@@ -25,6 +28,7 @@ interface ProfessionalInfoStepProps {
 const DRAFT_KEY = "mn_professional_info_draft";
 
 export default function ProfessionalInfoStep({ initialData, onComplete, onBack }: ProfessionalInfoStepProps) {
+  const { refreshUser } = useUser();
   const [formData, setFormData] = useState<ProfessionalInfoData>({
     education: "",
     customEducation: "",
@@ -105,12 +109,12 @@ export default function ProfessionalInfoStep({ initialData, onComplete, onBack }
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (validate()) {
+      await saveProfileSection(DRAFT_KEY, formData);
+      try { await refreshUser(); } catch {}
       if (onComplete) onComplete(formData);
-      // Optional: Clear draft after successful completion
-      // localStorage.removeItem(DRAFT_KEY);
     }
   };
 

@@ -5,6 +5,9 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Save, UploadCloud, Trash2, Mic, Square, Play, Pause, RefreshCw } from "lucide-react";
 
+import { saveProfileSection } from "@/lib/profile-utils";
+import { useUser } from "@/context/UserContext";
+
 export interface VoiceData {
   id: string;
   dataUrl: string; // Base64 or Blob URL
@@ -24,6 +27,7 @@ interface VoiceIntroStepProps {
 const DRAFT_KEY = "mn_voice_intro_draft";
 
 export default function VoiceIntroStep({ initialData, onComplete, onBack }: VoiceIntroStepProps) {
+  const { refreshUser } = useUser();
   const [formData, setFormData] = useState<VoiceIntroData>({
     voice: null,
     ...initialData,
@@ -196,9 +200,11 @@ export default function VoiceIntroStep({ initialData, onComplete, onBack }: Voic
     return true;
   };
 
-  const handleSubmit = (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (validate()) {
+      await saveProfileSection(DRAFT_KEY, formData);
+      try { await refreshUser(); } catch {}
       if (onComplete) onComplete(formData);
     }
   };
