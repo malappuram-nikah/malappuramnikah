@@ -342,8 +342,8 @@ export default function ProfileBuilderPage() {
       <div className="max-w-6xl mx-auto mb-8 px-2 sm:px-4">
 
         {/* Header row with back link + title */}
-        <div className="flex items-center justify-between gap-3 mb-6">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             <button
               onClick={() => {
                 if (isProfileCompleted) {
@@ -383,8 +383,8 @@ export default function ProfileBuilderPage() {
         </div>
 
         {/* Need Help Block */}
-        <div className="mt-6 mb-2 mx-auto max-w-lg bg-brand-50 border border-brand-100 rounded-xl p-4 flex items-center justify-between shadow-sm">
-          <div className="flex items-center gap-3">
+        <div className="mt-6 mb-2 mx-auto max-w-lg bg-brand-50 border border-brand-100 rounded-xl p-4 flex flex-col sm:flex-row items-center sm:justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-3 w-full sm:w-auto text-left">
             <div className="w-10 h-10 bg-brand-100 rounded-full flex items-center justify-center text-brand-600 shrink-0">
               <PhoneCall className="w-5 h-5" />
             </div>
@@ -393,7 +393,7 @@ export default function ProfileBuilderPage() {
               <p className="text-xs text-gray-600">Our executives are here to guide you.</p>
             </div>
           </div>
-          <a href="tel:+919876543210" className="shrink-0 bg-white border border-gray-200 text-brand-600 font-semibold px-4 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors shadow-sm">
+          <a href="tel:+919876543210" className="w-full sm:w-auto text-center shrink-0 bg-white border border-gray-200 text-brand-600 font-semibold px-4 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors shadow-sm">
             Call Executive
           </a>
         </div>

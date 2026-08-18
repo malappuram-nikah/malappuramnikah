@@ -535,12 +535,12 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
             </div>
 
             <div>
-              <div className="flex justify-between items-center mb-1.5">
+              <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center mb-1.5 gap-2">
                 <label className="block text-sm font-medium text-gray-700">Profile Description / About Me <span className="text-red-500">*</span></label>
                 <button
                   type="button"
                   onClick={generateDescription}
-                  className="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1 transition-colors bg-brand-50 px-2.5 py-1 rounded-lg"
+                  className="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1 transition-colors bg-brand-50 px-2.5 py-1.5 rounded-lg w-full sm:w-auto justify-center sm:justify-start"
                 >
                   <FileText className="w-3.5 h-3.5" /> Auto-generate description
                 </button>

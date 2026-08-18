@@ -470,9 +470,9 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 gap-2">
                 <label className="block text-sm font-medium text-gray-700">Preferred Locations (Kerala Districts & Towns)</label>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-between sm:justify-end">
                   <button
                     type="button"
                     onClick={() => {
@@ -490,7 +490,7 @@ export default function PartnerPreferencesStep({ initialData, onComplete, onBack
                   >
                     Select All Districts
                   </button>
-                  <span className="text-gray-300 text-xs">|</span>
+                  <span className="text-gray-300 text-xs hidden sm:inline">|</span>
                   <button
                     type="button"
                     onClick={() => updateForm("preferredLocations", "")}

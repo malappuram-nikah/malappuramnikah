@@ -457,16 +457,16 @@ export default function IdentityVerificationForm({ isWizard = false, onBack, onN
         )}
 
         {isWizard && (
-          <div className="flex items-center justify-between pt-6 mt-6 border-t border-gray-100">
+          <div className="flex flex-col-reverse sm:flex-row items-center justify-between pt-6 mt-6 border-t border-gray-100 gap-4">
             <button
               onClick={onBack}
-              className="px-6 py-2.5 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 active:scale-[0.98] transition-all"
+              className="w-full sm:w-auto px-6 py-2.5 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 active:scale-[0.98] transition-all"
             >
               Back
             </button>
             <button
               onClick={onNext}
-              className="px-6 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 active:scale-[0.98] transition-all shadow-sm"
+              className="w-full sm:w-auto px-6 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 active:scale-[0.98] transition-all shadow-sm"
             >
               Next Step
             </button>
@@ -662,23 +662,23 @@ export default function IdentityVerificationForm({ isWizard = false, onBack, onN
       )}
 
       {/* Submission Button */}
-      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+      <div className="flex flex-col-reverse sm:flex-row items-center justify-between pt-4 border-t border-gray-100 gap-4">
         {isWizard ? (
           <button
             onClick={onBack}
-            className="px-6 py-2.5 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 active:scale-[0.98] transition-all"
+            className="w-full sm:w-auto px-6 py-2.5 border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-50 active:scale-[0.98] transition-all"
           >
             Back
           </button>
         ) : (
-          <div /> // spacer
+          <div className="hidden sm:block" /> // spacer
         )}
         
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
           {currentStatus === "REJECTED" && !isWizard && (
             <button
               onClick={() => setForceShowForm(false)}
-              className="px-4 py-2 border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-semibold rounded-xl transition-all shrink-0"
+              className="w-full sm:w-auto px-4 py-2 border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-semibold rounded-xl transition-all shrink-0"
             >
               Cancel
             </button>
