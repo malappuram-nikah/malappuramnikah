@@ -437,8 +437,9 @@ export default function ProfileBuilderPage() {
               <p className="text-xs text-gray-600">Our executives are here to guide you.</p>
             </div>
           </div>
-          <a href="tel:+919447868443" className="shrink-0 bg-white border border-gray-200 text-brand-600 font-semibold px-4 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors shadow-sm">
-            Call Executive
+          <a href="tel:+919447868443" className="shrink-0 bg-white border border-brand-200 text-brand-700 font-bold px-4 py-2 rounded-xl text-sm hover:bg-brand-50 transition-colors shadow-xs flex items-center gap-1.5">
+            <PhoneCall className="w-4 h-4 text-brand-600" />
+            <span>Call +91 9447868443</span>
           </a>
         </div>
 
