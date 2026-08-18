@@ -9,19 +9,18 @@ import {
 } from "@/lib/profile-api";
 
 export function useProfileCompletion() {
-  const { currentUser, loadingUser, refreshUser, setProfileCompletion } = useUser();
-  const [completion, setCompletion] = useState<ProfileCompletionResult | null>(
-    currentUser?.profileCompletion ?? null
+  const { currentUser, loadingUser, refreshUser, completion: userCompletion } = useUser();
+  const [completion, setCompletion] = useState<any>(
+    userCompletion || currentUser?.profileCompletion || null
   );
   const [loading, setLoading] = useState(loadingUser);
   const completionApiUnavailable = useRef(false);
 
   const applyCompletion = useCallback(
-    (result: ProfileCompletionResult) => {
+    (result: any) => {
       setCompletion(result);
-      setProfileCompletion(result);
     },
-    [setProfileCompletion]
+    []
   );
 
   const refreshCompletion = useCallback(async () => {
