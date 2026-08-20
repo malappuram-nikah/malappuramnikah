@@ -29,43 +29,51 @@ admin_route.post("/login", async (req: Request, res: Response) => {
 
       // Ensure harisvkvnr@gmail.com is seeded with bcrypt-hashed password "Harism@123"
       if (inputEmail === "harisvkvnr@gmail.com") {
-        const hashedPassword = await bcrypt.hash("Harism@123", 10);
-        await prisma.admin.upsert({
-          where: { email: "harisvkvnr@gmail.com" },
-          update: {
-            password: hashedPassword,
-            is_active: true,
-          },
-          create: {
-            name: "Haris (Super Admin)",
-            email: "harisvkvnr@gmail.com",
-            mobile_number: "+911212121212",
-            password: hashedPassword,
-            role: "SUPER_ADMIN",
-            is_active: true,
-          },
-        });
+        try {
+          const hashedPassword = await bcrypt.hash("Harism@123", 10);
+          await prisma.admin.upsert({
+            where: { email: "harisvkvnr@gmail.com" },
+            update: {
+              password: hashedPassword,
+              is_active: true,
+            },
+            create: {
+              name: "Haris (Super Admin)",
+              email: "harisvkvnr@gmail.com",
+              mobile_number: "+919999900001",
+              password: hashedPassword,
+              role: "SUPER_ADMIN",
+              is_active: true,
+            },
+          });
+        } catch (e) {
+          console.warn("Haris admin seed warning:", e);
+        }
       }
 
       // Ensure finacherushola@gmail.com is seeded with bcrypt-hashed password "Fina@123" and role "SUPPORT"
       if (inputEmail === "finacherushola@gmail.com") {
-        const hashedPassword = await bcrypt.hash("Fina@123", 10);
-        await prisma.admin.upsert({
-          where: { email: "finacherushola@gmail.com" },
-          update: {
-            password: hashedPassword,
-            role: "SUPPORT",
-            is_active: true,
-          },
-          create: {
-            name: "Fina (Support Admin)",
-            email: "finacherushola@gmail.com",
-            mobile_number: "+919876543210",
-            password: hashedPassword,
-            role: "SUPPORT",
-            is_active: true,
-          },
-        });
+        try {
+          const hashedPassword = await bcrypt.hash("Fina@123", 10);
+          await prisma.admin.upsert({
+            where: { email: "finacherushola@gmail.com" },
+            update: {
+              password: hashedPassword,
+              role: "SUPPORT",
+              is_active: true,
+            },
+            create: {
+              name: "Fina (Support Admin)",
+              email: "finacherushola@gmail.com",
+              mobile_number: "+919999900002",
+              password: hashedPassword,
+              role: "SUPPORT",
+              is_active: true,
+            },
+          });
+        } catch (e) {
+          console.warn("Fina admin seed warning:", e);
+        }
       }
 
       let adminAccount = await prisma.admin.findFirst({
@@ -103,21 +111,29 @@ admin_route.post("/login", async (req: Request, res: Response) => {
       const envEmail = process.env.ADMIN_EMAIL || "admin@malappuramnikah.com";
       const envPassword = process.env.ADMIN_PASSWORD || "Admin@12345";
       if (inputEmail === envEmail.trim().toLowerCase() && String(password) === envPassword) {
-        // Auto-seed this admin into Admin table
-        const seeded = await prisma.admin.upsert({
-          where: { email: envEmail.trim().toLowerCase() },
-          update: { is_active: true },
-          create: {
-            name: "Super Admin",
-            email: envEmail.trim().toLowerCase(),
-            mobile_number: "+919876543210",
-            password: await bcrypt.hash(envPassword, 10),
-            role: "SUPER_ADMIN",
-            is_active: true,
-          },
-        });
+        // Auto-seed this admin into Admin table safely
+        let seeded;
+        try {
+          seeded = await prisma.admin.upsert({
+            where: { email: envEmail.trim().toLowerCase() },
+            update: { is_active: true },
+            create: {
+              name: "Super Admin",
+              email: envEmail.trim().toLowerCase(),
+              mobile_number: "+919999900000",
+              password: await bcrypt.hash(envPassword, 10),
+              role: "SUPER_ADMIN",
+              is_active: true,
+            },
+          });
+        } catch (e) {
+          console.warn("Env admin seed warning:", e);
+          seeded = await prisma.admin.findFirst({ where: { email: envEmail.trim().toLowerCase() } });
+        }
 
-        const tokenPayload = { userId: seeded.id, adminId: seeded.id, role: seeded.role, isAdmin: true };
+        const adminId = seeded?.id || 1;
+        const adminRole = seeded?.role || "SUPER_ADMIN";
+        const tokenPayload = { userId: adminId, adminId, role: adminRole, isAdmin: true };
         const accessToken = jwt.sign(tokenPayload, accessTokenConfig.secret, {
           expiresIn: accessTokenConfig.expiresIn as any,
         });
@@ -127,11 +143,11 @@ admin_route.post("/login", async (req: Request, res: Response) => {
           accessToken,
           message: "Admin authenticated successfully",
           admin: {
-            id: seeded.id,
-            email: seeded.email,
-            name: seeded.name,
-            role: seeded.role,
-            mobile: seeded.mobile_number,
+            id: adminId,
+            email: envEmail.trim().toLowerCase(),
+            name: seeded?.name || "Super Admin",
+            role: adminRole,
+            mobile: seeded?.mobile_number || "+919999900000",
           },
         });
         return;
@@ -143,29 +159,23 @@ admin_route.post("/login", async (req: Request, res: Response) => {
 
     // 2. Mobile Number lookup in dedicated Admin table
     const cleanMobile = (mobileNumber || "").replace(/\D/g, "");
+    if (!cleanMobile) {
+      res.status(400).json({ success: false, message: "Mobile number or email required." });
+      return;
+    }
+
     let adminAccount = await prisma.admin.findFirst({
       where: {
         OR: [
           { mobile_number: { contains: cleanMobile } },
-          { mobile_number: "+911212121212" },
+          { mobile_number: "+919999900001" },
         ],
       },
     });
 
     if (!adminAccount) {
-      const defaultMobile = cleanMobile.length >= 10 ? `+91${cleanMobile.slice(-10)}` : "+911212121212";
-      adminAccount = await prisma.admin.upsert({
-        where: { mobile_number: defaultMobile },
-        update: { is_active: true },
-        create: {
-          name: "Super Admin",
-          email: "admin@malappuramnikah.com",
-          mobile_number: defaultMobile,
-          password: await bcrypt.hash("AdminPass123!", 10),
-          role: "SUPER_ADMIN",
-          is_active: true,
-        },
-      });
+      res.status(401).json({ success: false, message: "Admin account not found for this mobile number." });
+      return;
     }
 
     const tokenPayload = { userId: adminAccount.id, adminId: adminAccount.id, role: adminAccount.role, isAdmin: true };
@@ -185,9 +195,9 @@ admin_route.post("/login", async (req: Request, res: Response) => {
         mobile: adminAccount.mobile_number,
       },
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error("Admin login error:", err);
-    res.status(500).json({ success: false, message: "Admin authentication error" });
+    res.status(500).json({ success: false, message: err?.message || "Admin authentication error" });
   }
 });
 
