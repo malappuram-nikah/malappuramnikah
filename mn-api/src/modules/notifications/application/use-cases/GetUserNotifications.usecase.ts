@@ -5,6 +5,7 @@ export class GetUserNotificationsUseCase {
   constructor(private notificationRepository: INotificationRepository) {}
 
   async execute(userId: number): Promise<NotificationEntity[]> {
-    return await this.notificationRepository.getNotifications(userId);
+    const result = await this.notificationRepository.getNotifications(userId);
+    return result.data;
   }
 }

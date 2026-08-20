@@ -115,6 +115,7 @@ model User {
   member_privacy         MemberPrivacy?
   member_media           MemberMedia[]
   kyc_application        KycApplication?
+  notification_preference NotificationPreference?
   business_owners        BusinessOwner[]
   business_bookings      BusinessBooking[] @relation("CustomerBookings")
   business_reviews       BusinessReview[]
@@ -563,6 +564,9 @@ model Message {
   sender      User     @relation("SentMessages", fields: [sender_id], references: [id], onDelete: Cascade)
   receiver    User     @relation("ReceivedMessages", fields: [receiver_id], references: [id], onDelete: Cascade)
 
+  @@index([sender_id])
+  @@index([receiver_id])
+  @@index([created_at])
   @@map("message")
 }
 
@@ -576,7 +580,25 @@ model Notification {
   is_read     Boolean  @default(false)
   created_at  DateTime @default(now())
 
+  @@index([user_id])
+  @@index([is_read])
+  @@index([created_at])
   @@map("notification")
+}
+
+model NotificationPreference {
+  id                    Int      @id @default(autoincrement())
+  user_id               Int      @unique
+  email_notifications   Boolean  @default(true)
+  sms_notifications     Boolean  @default(true)
+  push_notifications    Boolean  @default(true)
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  user                  User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("notification_preference")
 }
 
 model Referral {

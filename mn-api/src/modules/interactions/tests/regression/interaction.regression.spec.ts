@@ -1,4 +1,4 @@
-import prisma from "src/infrastructure/database/prisma.service";
+import prisma from "../../../../shared/database/prisma";
 import { BlockUserUseCase } from "../../application/use-cases/BlockUser.usecase";
 import { IBlockRepository } from "../../domain/repositories/IBlockRepository";
 

@@ -1,5 +1,9 @@
-import chatRouter from "./routes/chat.route";
+import chatRoutes from "./presentation/routes/chat.route";
 
-export { chatRouter };
-export * from "./domain/entities/message.entity";
-export * from "./domain/repositories/IChatRepository";
+export { chatRoutes, chatRoutes as chatRouter };
+export * from "./presentation/controllers/chat.controller";
+export * from "./application/use-cases/SendMessage.usecase";
+export * from "./application/use-cases/GetConversations.usecase";
+export * from "./application/use-cases/GetMessages.usecase";
+export * from "./application/use-cases/MarkMessagesAsRead.usecase";
+export * from "./application/use-cases/GetUnreadMessageCount.usecase";

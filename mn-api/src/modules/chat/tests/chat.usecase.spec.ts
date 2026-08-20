@@ -1,74 +1,44 @@
-import { GetChatHistoryUseCase } from "../application/use-cases/GetChatHistory.usecase";
 import { SendMessageUseCase } from "../application/use-cases/SendMessage.usecase";
-import { IChatRepository } from "../domain/repositories/IChatRepository";
-import { MessageEntity } from "../domain/entities/message.entity";
+import { GetMessagesUseCase } from "../application/use-cases/GetMessages.usecase";
+import { IMessageRepository } from "../domain/repositories/IMessageRepository";
+import { IBlockRepository } from "../../interactions/domain/repositories/IBlockRepository";
+import prisma from "../../../shared/database/prisma";
 
-describe("Chat Module - Use Cases", () => {
-  let mockChatRepo: jest.Mocked<IChatRepository>;
+describe("Chat Module - Use Cases Suite", () => {
+  let mockMessageRepo: jest.Mocked<IMessageRepository>;
+  let mockBlockRepo: jest.Mocked<IBlockRepository>;
 
   beforeEach(() => {
-    mockChatRepo = {
-      verifyMutualMatch: jest.fn(),
-      getChatHistory: jest.fn(),
-      markMessagesAsRead: jest.fn(),
+    mockMessageRepo = {
       createMessage: jest.fn(),
-      getUserForChatCheck: jest.fn(),
-      createMessageNotification: jest.fn(),
+      findMessageById: jest.fn(),
+      getMessagesBetweenUsers: jest.fn(),
+      getConversationsForUser: jest.fn(),
+      markMessagesAsRead: jest.fn(),
+      getUnreadCount: jest.fn(),
+    };
+
+    mockBlockRepo = {
+      findBlock: jest.fn(),
+      isBlockedEither: jest.fn(),
+      blockUser: jest.fn(),
+      unblockUser: jest.fn(),
+      getBlockedUsers: jest.fn(),
     };
   });
 
-  describe("GetChatHistoryUseCase", () => {
-    it("should throw ForbiddenError if users do not have a mutual match", async () => {
-      const useCase = new GetChatHistoryUseCase(mockChatRepo);
-      mockChatRepo.verifyMutualMatch.mockResolvedValue(false);
-
-      await expect(useCase.execute(1, 2)).rejects.toThrow(
-        "Chat locked. You must establish a mutual match to chat."
-      );
-    });
-
-    it("should return chat history for mutually matched users", async () => {
-      const useCase = new GetChatHistoryUseCase(mockChatRepo);
-      mockChatRepo.verifyMutualMatch.mockResolvedValue(true);
-      mockChatRepo.getChatHistory.mockResolvedValue([
-        { id: 1, sender_id: 1, receiver_id: 2, content: "Hello", is_read: false, created_at: new Date() },
-      ]);
-      mockChatRepo.markMessagesAsRead.mockResolvedValue();
-
-      const messages = await useCase.execute(1, 2);
-      expect(messages.length).toBe(1);
-      expect(messages[0].content).toBe("Hello");
-    });
-  });
-
   describe("SendMessageUseCase", () => {
-    it("should throw ForbiddenError with requireKyc flag if sender is not KYC verified", async () => {
-      const useCase = new SendMessageUseCase(mockChatRepo);
-      mockChatRepo.getUserForChatCheck.mockResolvedValue({
-        id: 1,
-        kyc_status: "NOT_SUBMITTED",
-        first_name: "Ali",
-        last_name: "K",
-      });
-
-      try {
-        await useCase.execute(1, 2, "Hello");
-        fail("Should have thrown error");
-      } catch (err: any) {
-        expect(err.requireKyc).toBe(true);
-      }
+    it("should throw error if content is empty", async () => {
+      const useCase = new SendMessageUseCase(mockMessageRepo, mockBlockRepo);
+      await expect(
+        useCase.execute({ senderId: 1, receiverId: 2, content: "  " })
+      ).rejects.toThrow("Message content cannot be empty.");
     });
 
-    it("should send message and create notification when verified and matched", async () => {
-      const useCase = new SendMessageUseCase(mockChatRepo);
-      mockChatRepo.getUserForChatCheck.mockResolvedValue({
-        id: 1,
-        kyc_status: "VERIFIED",
-        first_name: "Ali",
-        last_name: "K",
-      });
-      mockChatRepo.verifyMutualMatch.mockResolvedValue(true);
-      mockChatRepo.createMessage.mockResolvedValue({
+    it("should send message when users are active and not blocked", async () => {
+      jest.spyOn(prisma.user, "findUnique").mockResolvedValue({ id: 2, status: "ACTIVE" } as any);
+      mockBlockRepo.isBlockedEither.mockResolvedValue(false);
+      mockMessageRepo.createMessage.mockResolvedValue({
         id: 10,
         sender_id: 1,
         receiver_id: 2,
@@ -76,11 +46,11 @@ describe("Chat Module - Use Cases", () => {
         is_read: false,
         created_at: new Date(),
       });
-      mockChatRepo.createMessageNotification.mockResolvedValue();
 
-      const res = await useCase.execute(1, 2, "Salam");
-      expect(res.message.content).toBe("Salam");
-      expect(mockChatRepo.createMessageNotification).toHaveBeenCalledWith(2, 1, "Ali K", "Salam");
+      const useCase = new SendMessageUseCase(mockMessageRepo, mockBlockRepo);
+      const res = await useCase.execute({ senderId: 1, receiverId: 2, content: "Salam" });
+
+      expect(res.content).toBe("Salam");
     });
   });
 });

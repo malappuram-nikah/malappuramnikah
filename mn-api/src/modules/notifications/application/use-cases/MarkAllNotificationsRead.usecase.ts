@@ -3,7 +3,8 @@ import { INotificationRepository } from "../../domain/repositories/INotification
 export class MarkAllNotificationsReadUseCase {
   constructor(private notificationRepository: INotificationRepository) {}
 
-  async execute(userId: number): Promise<void> {
-    await this.notificationRepository.markAllAsRead(userId);
+  async execute(userId: number): Promise<{ count: number }> {
+    const count = await this.notificationRepository.markAllAsRead(userId);
+    return { count };
   }
 }

@@ -1,7 +1,7 @@
 import request from "supertest";
 import app from "../../../../app";
 import { generateToken } from "../../../../shared/auth/jwt.util";
-import prisma from "src/infrastructure/database/prisma.service";
+import prisma from "../../../../shared/database/prisma";
 
 describe("Interactions Module - Integration Tests", () => {
   let user1Id: number;

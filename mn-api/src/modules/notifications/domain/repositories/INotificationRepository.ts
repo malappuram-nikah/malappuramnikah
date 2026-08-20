@@ -1,7 +1,11 @@
-import { NotificationEntity } from "../entities/notification.entity";
+import { NotificationEntity, NotificationPreferenceEntity } from "../entities/notification.entity";
+import { PaginatedResult } from "../../../../shared/types/pagination.type";
 
 export interface INotificationRepository {
-  getNotifications(userId: number, limit?: number): Promise<NotificationEntity[]>;
-  markAllAsRead(userId: number): Promise<void>;
-  markAsRead(id: number, userId: number): Promise<NotificationEntity | null>;
+  createNotification(userId: number, senderId: number, type: string, title: string, message: string): Promise<NotificationEntity>;
+  getNotifications(userId: number, page?: number, limit?: number): Promise<PaginatedResult<NotificationEntity>>;
+  markAsRead(notificationId: number, userId: number): Promise<boolean>;
+  markAllAsRead(userId: number): Promise<number>;
+  getPreferences(userId: number): Promise<NotificationPreferenceEntity | null>;
+  upsertPreferences(userId: number, email: boolean, sms: boolean, push: boolean): Promise<NotificationPreferenceEntity>;
 }

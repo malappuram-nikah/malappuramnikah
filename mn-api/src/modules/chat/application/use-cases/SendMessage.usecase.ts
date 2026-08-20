@@ -1,51 +1,45 @@
-import { IChatRepository } from "../../domain/repositories/IChatRepository";
+import { IMessageRepository } from "../../domain/repositories/IMessageRepository";
+import { IBlockRepository } from "../../../interactions/domain/repositories/IBlockRepository";
+import { ChatValidator } from "../../domain/services/ChatValidator";
 import { MessageEntity } from "../../domain/entities/message.entity";
-import { socketService } from "../../../../infrastructure/websocket/socket.service";
-import { BadRequestError, ForbiddenError } from "../../../../shared/errors/AppError";
+import { eventBus } from "../../../../shared/events/EventBus";
+import prisma from "../../../../shared/database/prisma";
 
-export class SendMessageUseCase {
-  constructor(private chatRepository: IChatRepository) {}
-
-  async execute(senderId: number, receiverId: number, content: string): Promise<{ message: MessageEntity; requireKyc?: boolean }> {
-    if (isNaN(receiverId) || !content || !content.trim()) {
-      throw new BadRequestError("Invalid payload parameters");
-    }
-
-    const senderUserRecord = await this.chatRepository.getUserForChatCheck(senderId);
-    if (!senderUserRecord || senderUserRecord.kyc_status !== "VERIFIED") {
-      resCustomKycError();
-    }
-
-    const isMatched = await this.chatRepository.verifyMutualMatch(senderId, receiverId);
-    if (!isMatched) {
-      throw new ForbiddenError("Chat locked. You must establish a mutual match to send messages.");
-    }
-
-    const message = await this.chatRepository.createMessage(senderId, receiverId, content.trim());
-
-    const senderName = senderUserRecord
-      ? `${senderUserRecord.first_name} ${senderUserRecord.last_name}`
-      : "Someone";
-
-    socketService.emitToUser(receiverId, "private_message", message);
-    socketService.emitToUser(senderId, "private_message", message);
-
-    socketService.emitToUser(receiverId, "notification", {
-      type: "NEW_MESSAGE",
-      title: `New Message from ${senderName}`,
-      message: content.length > 40 ? `${content.substring(0, 37)}...` : content,
-    });
-
-    await this.chatRepository.createMessageNotification(receiverId, senderId, senderName, content.trim());
-
-    return { message };
-  }
+export interface SendMessageDto {
+  senderId: number;
+  receiverId: number;
+  content: string;
 }
 
-function resCustomKycError(): never {
-  const err = new ForbiddenError(
-    "Identity verification required to send chat messages. Please complete your ID verification in settings."
-  );
-  (err as any).requireKyc = true;
-  throw err;
+export class SendMessageUseCase {
+  constructor(
+    private messageRepository: IMessageRepository,
+    private blockRepository: IBlockRepository
+  ) {}
+
+  async execute(dto: SendMessageDto): Promise<MessageEntity> {
+    ChatValidator.validateSelfMessaging(dto.senderId, dto.receiverId);
+    ChatValidator.validateMessageContent(dto.content);
+
+    const receiver = await prisma.user.findUnique({
+      where: { id: dto.receiverId },
+      select: { id: true, status: true },
+    });
+    ChatValidator.validateUserStatus(receiver);
+
+    const isBlocked = await this.blockRepository.isBlockedEither(dto.senderId, dto.receiverId);
+    ChatValidator.validateNotBlocked(isBlocked);
+
+    const message = await this.messageRepository.createMessage(dto.senderId, dto.receiverId, dto.content.trim());
+
+    // Publish application event for decoupled notification dispatching
+    await eventBus.publish("MESSAGE_SENT", {
+      messageId: message.id,
+      senderId: dto.senderId,
+      receiverId: dto.receiverId,
+      content: message.content,
+    });
+
+    return message;
+  }
 }

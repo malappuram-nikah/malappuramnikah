@@ -7,5 +7,14 @@ export interface NotificationEntity {
   message: string;
   is_read: boolean;
   created_at: Date;
-  sender?: any;
+}
+
+export interface NotificationPreferenceEntity {
+  id: number;
+  user_id: number;
+  email_notifications: boolean;
+  sms_notifications: boolean;
+  push_notifications: boolean;
+  created_at: Date;
+  updated_at: Date;
 }
