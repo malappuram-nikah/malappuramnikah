@@ -77,7 +77,12 @@ admin_route.post("/login", async (req: Request, res: Response) => {
       }
 
       let adminAccount = await prisma.admin.findFirst({
-        where: { email: { equals: inputEmail, mode: "insensitive" } },
+        where: {
+          OR: [
+            { email: inputEmail },
+            { email: { equals: inputEmail, mode: "insensitive" } },
+          ],
+        },
       });
 
       if (adminAccount) {
@@ -197,7 +202,7 @@ admin_route.post("/login", async (req: Request, res: Response) => {
     });
   } catch (err: any) {
     console.error("Admin login error:", err);
-    res.status(500).json({ success: false, message: err?.message || "Admin authentication error" });
+    res.status(500).json({ success: false, message: err?.message || String(err) || "Admin authentication error" });
   }
 });
 
