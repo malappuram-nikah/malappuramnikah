@@ -45,6 +45,20 @@ export class RegisterUser {
                         }
                     }
 
+                    const initialMaritalStatus = (data as any).marital_status || (data as any).maritalStatus || "Never Married";
+                    const existingDetails = (existingUser.profile_details as Record<string, any>) || {};
+                    const mergedDetails = {
+                        ...existingDetails,
+                        basicDetails: {
+                            ...(existingDetails.basicDetails || {}),
+                            maritalStatus: initialMaritalStatus,
+                        },
+                        mn_basic_details_draft: {
+                            ...(existingDetails.mn_basic_details_draft || {}),
+                            maritalStatus: initialMaritalStatus,
+                        },
+                    };
+
                     const updatedUser = await prisma.user.update({
                         where: { id: existingUser.id },
                         data: {
@@ -57,6 +71,7 @@ export class RegisterUser {
                             cast: data.cast || existingUser.cast,
                             profile_for: data.profile_for || existingUser.profile_for,
                             gender: data.gender || existingUser.gender,
+                            profile_details: mergedDetails,
                             referral_code: referralCode
                         }
                     });
@@ -177,12 +192,19 @@ export class RegisterUser {
                 }
             }
 
-            const { referred_by_code, ...restData } = data as any;
+            const { referred_by_code, marital_status, maritalStatus, ...restData } = data as any;
+            const initialMaritalStatus = marital_status || maritalStatus || "Never Married";
+            const initialDetails = restData.profile_details || {
+                basicDetails: { maritalStatus: initialMaritalStatus },
+                mn_basic_details_draft: { maritalStatus: initialMaritalStatus },
+            };
+
             const userData = {
                 ...restData,
                 password: hashedPassword,
                 referral_code: referralCode,
-                referral_points: 0
+                referral_points: 0,
+                profile_details: initialDetails,
             } as User;
 
             const newUser = await this.userRepository.createUser(userData);
