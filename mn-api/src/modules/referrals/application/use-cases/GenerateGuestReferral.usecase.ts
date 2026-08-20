@@ -1,13 +1,10 @@
 import { IReferralRepository } from "../../domain/repositories/IReferralRepository";
-import { BadRequestError } from "../../../../shared/errors/AppError";
 
 export class GenerateGuestReferralUseCase {
   constructor(private referralRepository: IReferralRepository) {}
 
-  async execute(name: string, mobileNumber: string): Promise<string> {
-    if (!name || !mobileNumber) {
-      throw new BadRequestError("Name and Mobile Number are required");
-    }
-    return await this.referralRepository.generateUniqueCode(name);
+  async execute(name: string): Promise<string> {
+    const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return `GUEST-${name.toUpperCase().substring(0, 3)}-${randomSuffix}`;
   }
 }

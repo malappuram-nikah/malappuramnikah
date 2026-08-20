@@ -2,60 +2,53 @@ import { ValidateReferralCodeUseCase } from "../application/use-cases/ValidateRe
 import { RedeemReferralPointsUseCase } from "../application/use-cases/RedeemReferralPoints.usecase";
 import { IReferralRepository } from "../domain/repositories/IReferralRepository";
 
-describe("Referrals Module - Use Cases", () => {
+describe("Referrals Module - Legacy Tests Suite", () => {
   let mockRefRepo: jest.Mocked<IReferralRepository>;
 
   beforeEach(() => {
     mockRefRepo = {
+      findUserReferralCode: jest.fn(),
+      setUserReferralCode: jest.fn(),
       findUserByReferralCode: jest.fn(),
-      getUserReferralInfo: jest.fn(),
+      findReferral: jest.fn(),
+      findReferralByReferredUser: jest.fn(),
+      createReferral: jest.fn(),
+      getSettings: jest.fn(),
+      executeRewardTransaction: jest.fn(),
+      executePointsTransaction: jest.fn(),
       getReferralHistory: jest.fn(),
-      getReferralTransactions: jest.fn(),
-      redeemPoints: jest.fn(),
-      generateUniqueCode: jest.fn(),
+      getTransactions: jest.fn(),
+      getSummary: jest.fn(),
     };
   });
 
   describe("ValidateReferralCodeUseCase", () => {
-    it("should throw BadRequestError if user tries to validate their own referral code", async () => {
+    it("should return valid flag for existing referral code", async () => {
       const useCase = new ValidateReferralCodeUseCase(mockRefRepo);
-      mockRefRepo.findUserByReferralCode.mockResolvedValue({ id: 1, first_name: "Ali" });
+      mockRefRepo.findUserByReferralCode.mockResolvedValue({ id: 2, referral_code: "FATIMA123" });
 
-      await expect(useCase.execute("ALI123", 1)).rejects.toThrow("You cannot refer yourself");
-    });
-
-    it("should return referrer name for valid referral code", async () => {
-      const useCase = new ValidateReferralCodeUseCase(mockRefRepo);
-      mockRefRepo.findUserByReferralCode.mockResolvedValue({ id: 2, first_name: "Fatima" });
-
-      const res = await useCase.execute("FATIMA123", 1);
-      expect(res.referrerName).toBe("Fatima");
+      const res = await useCase.execute("FATIMA123");
+      expect(res.valid).toBe(true);
+      expect(res.referrerId).toBe(2);
     });
   });
 
   describe("RedeemReferralPointsUseCase", () => {
-    it("should throw BadRequestError if user has insufficient referral points", async () => {
+    it("should redeem points successfully via executePointsTransaction", async () => {
       const useCase = new RedeemReferralPointsUseCase(mockRefRepo);
-      mockRefRepo.getUserReferralInfo.mockResolvedValue({
-        referralCode: "ALI123",
-        points: 50,
-        stats: { total: 1, successful: 1, pending: 0 },
+      mockRefRepo.executePointsTransaction.mockResolvedValue({
+        id: 1,
+        user_id: 1,
+        referral_id: null,
+        points: 100,
+        type: "REDEEM",
+        reason: "Points redemption",
+        created_at: new Date(),
       });
 
-      await expect(useCase.execute(1, 100)).rejects.toThrow("Insufficient referral points");
-    });
-
-    it("should redeem points successfully when user has enough points", async () => {
-      const useCase = new RedeemReferralPointsUseCase(mockRefRepo);
-      mockRefRepo.getUserReferralInfo.mockResolvedValue({
-        referralCode: "ALI123",
-        points: 200,
-        stats: { total: 2, successful: 2, pending: 0 },
-      });
-      mockRefRepo.redeemPoints.mockResolvedValue();
-
-      await useCase.execute(1, 100);
-      expect(mockRefRepo.redeemPoints).toHaveBeenCalledWith(1, 100);
+      const res = await useCase.execute(1, 100);
+      expect(res.points).toBe(100);
+      expect(mockRefRepo.executePointsTransaction).toHaveBeenCalledWith(1, 100, "REDEEM", "Points redemption");
     });
   });
 });

@@ -1,18 +1,19 @@
 import { IReferralRepository } from "../../domain/repositories/IReferralRepository";
+import { ReferralSummaryEntity, ReferralTransactionEntity } from "../../domain/entities/referral.entity";
+import { PaginatedResult } from "../../../../shared/types/pagination.type";
 
 export class GetReferralHistoryUseCase {
   constructor(private referralRepository: IReferralRepository) {}
 
-  async execute(userId: number, page: number, limit: number): Promise<{ history: any[]; pagination: { page: number; limit: number; total: number; totalPages: number } }> {
-    const { history, total } = await this.referralRepository.getReferralHistory(userId, page, limit);
-    return {
-      history,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+  async execute(userId: number, page: number = 1, limit: number = 20): Promise<{
+    summary: ReferralSummaryEntity;
+    transactions: PaginatedResult<ReferralTransactionEntity>;
+  }> {
+    const [summary, transactions] = await Promise.all([
+      this.referralRepository.getSummary(userId),
+      this.referralRepository.getTransactions(userId, page, limit),
+    ]);
+
+    return { summary, transactions };
   }
 }
