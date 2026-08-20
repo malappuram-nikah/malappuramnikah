@@ -7,6 +7,7 @@ export interface IUserRepository {
   createUser(userData: Partial<UserEntity>, referralCodeInput?: string): Promise<UserEntity>;
   updateUser(id: number, data: Partial<UserEntity>): Promise<UserEntity>;
   updatePassword(id: number, passwordHash: string): Promise<void>;
+  updateEmail(id: number, email: string): Promise<void>;
   updateStatus(id: number, status: string): Promise<void>;
   updateLastLogin(id: number): Promise<void>;
 }

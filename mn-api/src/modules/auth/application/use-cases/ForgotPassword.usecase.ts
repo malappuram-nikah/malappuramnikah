@@ -10,7 +10,7 @@ export class ForgotPasswordUseCase {
     private otpRepository: IOtpRepository
   ) {}
 
-  async execute(dto: ForgotPasswordDto): Promise<{ message: string }> {
+  async execute(dto: ForgotPasswordDto): Promise<{ message: string; otp_code?: string }> {
     const validMobile = validateMobileNumber(dto.mobile_number);
 
     const user = await this.userRepository.findByMobileNumber(validMobile);
@@ -31,6 +31,9 @@ export class ForgotPasswordUseCase {
     await this.otpRepository.createOtp(user.id, otpCode, expiresAt);
     rateLimiterService.recordOtpDispatch(cooldownKey);
 
-    return { message: "If an account with this number exists, an OTP has been sent." };
+    return {
+      message: "If an account with this number exists, an OTP has been sent.",
+      otp_code: process.env.NODE_ENV !== "production" ? otpCode : undefined,
+    };
   }
 }

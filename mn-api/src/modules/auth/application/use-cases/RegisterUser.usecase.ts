@@ -15,7 +15,7 @@ export class RegisterUserUseCase {
     private otpRepository: IOtpRepository
   ) {}
 
-  async execute(dto: RegisterUserDto): Promise<{ user: any; message: string }> {
+  async execute(dto: RegisterUserDto): Promise<{ user: any; message: string; otp_code?: string }> {
     const validMobile = validateMobileNumber(dto.mobile_number);
     const validPassword = validatePassword(dto.password);
 

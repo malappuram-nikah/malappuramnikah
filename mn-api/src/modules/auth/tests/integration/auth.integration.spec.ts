@@ -73,6 +73,11 @@ class InMemoryUserRepository implements IUserRepository {
     if (u) u.password = passwordHash;
   }
 
+  async updateEmail(id: number, email: string): Promise<void> {
+    const u = this.users.get(id);
+    if (u) u.email = email;
+  }
+
   async updateStatus(id: number, status: string): Promise<void> {
     const u = this.users.get(id);
     if (u) u.status = status;

@@ -11,7 +11,7 @@ export class SendOtpUseCase {
     private otpRepository: IOtpRepository
   ) {}
 
-  async execute(dto: SendOtpDto): Promise<{ message: string }> {
+  async execute(dto: SendOtpDto): Promise<{ message: string; otp_code?: string }> {
     let targetUser: any = null;
 
     if (dto.mobile_number) {
@@ -36,6 +36,9 @@ export class SendOtpUseCase {
     const cooldownKey = dto.mobile_number ? `otp_cooldown:${dto.mobile_number}` : `otp_cooldown:${dto.email}`;
     rateLimiterService.recordOtpDispatch(cooldownKey);
 
-    return { message: "OTP sent successfully." };
+    return {
+      message: "OTP sent successfully.",
+      otp_code: process.env.NODE_ENV !== "production" ? otpCode : undefined,
+    };
   }
 }

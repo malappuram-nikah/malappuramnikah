@@ -23,6 +23,7 @@ describe("Auth Module - Unit Tests", () => {
       findById: jest.fn(),
       updateUser: jest.fn(),
       updatePassword: jest.fn(),
+      updateEmail: jest.fn(),
       updateStatus: jest.fn(),
       updateLastLogin: jest.fn(),
     };
