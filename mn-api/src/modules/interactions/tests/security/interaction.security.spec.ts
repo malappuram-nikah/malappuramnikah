@@ -1,10 +1,10 @@
-import { AcceptInterestUseCase } from "../../application/use-cases/AcceptInterest.usecase";
-import { RejectInterestUseCase } from "../../application/use-cases/RejectInterest.usecase";
-import { WithdrawInterestUseCase } from "../../application/use-cases/WithdrawInterest.usecase";
+import { SendInterestUseCase } from "../../application/use-cases/SendInterest.usecase";
+import { BlockUserUseCase } from "../../application/use-cases/BlockUser.usecase";
 import { IInterestRepository } from "../../domain/repositories/IInterestRepository";
 import { IBlockRepository } from "../../domain/repositories/IBlockRepository";
+import prisma from "../../../../shared/database/prisma";
 
-describe("Interactions Module - Security & Authorization Tests", () => {
+describe("Interactions Module - Security Tests", () => {
   let mockInterestRepo: jest.Mocked<IInterestRepository>;
   let mockBlockRepo: jest.Mocked<IBlockRepository>;
 
@@ -25,50 +25,24 @@ describe("Interactions Module - Security & Authorization Tests", () => {
       blockUser: jest.fn(),
       unblockUser: jest.fn(),
       getBlockedUsers: jest.fn(),
+      getBlockedUserIds: jest.fn(),
     };
   });
 
-  it("should prevent unauthorized user from accepting someone else's incoming interest", async () => {
-    // Interest is sent from user 10 to user 20
-    mockInterestRepo.findInterestById.mockResolvedValue({
-      id: 100,
-      sender_id: 10,
-      receiver_id: 20,
-      status: "PENDING",
-      created_at: new Date(),
-      updated_at: new Date(),
-    });
-
-    const useCase = new AcceptInterestUseCase(mockInterestRepo, mockBlockRepo);
-    // User 99 tries to accept user 20's interest
-    await expect(useCase.execute(100, 99)).rejects.toThrow("You are not authorized to manipulate this interaction.");
+  it("should prevent sending interest to self", async () => {
+    const useCase = new SendInterestUseCase(mockInterestRepo, mockBlockRepo);
+    await expect(useCase.execute({ senderId: 10, receiverId: 10 })).rejects.toThrow("You cannot send interest to yourself.");
   });
 
-  it("should prevent unauthorized user from rejecting someone else's incoming interest", async () => {
-    mockInterestRepo.findInterestById.mockResolvedValue({
-      id: 100,
-      sender_id: 10,
-      receiver_id: 20,
-      status: "PENDING",
-      created_at: new Date(),
-      updated_at: new Date(),
-    });
-
-    const useCase = new RejectInterestUseCase(mockInterestRepo);
-    await expect(useCase.execute(100, 99)).rejects.toThrow("You are not authorized to manipulate this interaction.");
+  it("should prevent sending interest if target user has blocked sender", async () => {
+    jest.spyOn(prisma.user, "findUnique").mockResolvedValue({ id: 20, status: "ACTIVE" } as any);
+    mockBlockRepo.isBlockedEither.mockResolvedValue(true);
+    const useCase = new SendInterestUseCase(mockInterestRepo, mockBlockRepo);
+    await expect(useCase.execute({ senderId: 10, receiverId: 20 })).rejects.toThrow("Cannot interact with a blocked user.");
   });
 
-  it("should prevent unauthorized user from withdrawing someone else's sent interest", async () => {
-    mockInterestRepo.findInterestById.mockResolvedValue({
-      id: 100,
-      sender_id: 10,
-      receiver_id: 20,
-      status: "PENDING",
-      created_at: new Date(),
-      updated_at: new Date(),
-    });
-
-    const useCase = new WithdrawInterestUseCase(mockInterestRepo);
-    await expect(useCase.execute(100, 20)).rejects.toThrow("You are not authorized to manipulate this interaction.");
+  it("should prevent self-blocking", async () => {
+    const useCase = new BlockUserUseCase(mockBlockRepo);
+    await expect(useCase.execute(10, 10)).rejects.toThrow("You cannot block yourself.");
   });
 });

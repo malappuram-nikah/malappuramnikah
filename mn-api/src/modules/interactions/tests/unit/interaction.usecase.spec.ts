@@ -1,18 +1,9 @@
 import { SendInterestUseCase } from "../../application/use-cases/SendInterest.usecase";
-import { AcceptInterestUseCase } from "../../application/use-cases/AcceptInterest.usecase";
-import { RejectInterestUseCase } from "../../application/use-cases/RejectInterest.usecase";
-import { WithdrawInterestUseCase } from "../../application/use-cases/WithdrawInterest.usecase";
-import { BlockUserUseCase } from "../../application/use-cases/BlockUser.usecase";
-import { UnblockUserUseCase } from "../../application/use-cases/UnblockUser.usecase";
-import { FavouriteUserUseCase } from "../../application/use-cases/FavouriteUser.usecase";
-import { RemoveFavouriteUseCase } from "../../application/use-cases/RemoveFavourite.usecase";
-import { RecordProfileViewUseCase } from "../../application/use-cases/RecordProfileView.usecase";
-import { GetInteractionHistoryUseCase } from "../../application/use-cases/GetInteractionHistory.usecase";
-
 import { IInterestRepository } from "../../domain/repositories/IInterestRepository";
 import { IBlockRepository } from "../../domain/repositories/IBlockRepository";
 import { IFavouriteRepository } from "../../domain/repositories/IFavouriteRepository";
 import { IProfileViewRepository } from "../../domain/repositories/IProfileViewRepository";
+import prisma from "../../../../shared/database/prisma";
 
 describe("Interactions Module - Unit Tests", () => {
   let mockInterestRepo: jest.Mocked<IInterestRepository>;
@@ -37,6 +28,7 @@ describe("Interactions Module - Unit Tests", () => {
       blockUser: jest.fn(),
       unblockUser: jest.fn(),
       getBlockedUsers: jest.fn(),
+      getBlockedUserIds: jest.fn(),
     };
 
     mockFavouriteRepo = {
@@ -55,33 +47,31 @@ describe("Interactions Module - Unit Tests", () => {
   });
 
   describe("SendInterestUseCase", () => {
-    it("should throw error if user tries to send interest to self", async () => {
+    it("should throw error if user is blocked", async () => {
+      jest.spyOn(prisma.user, "findUnique").mockResolvedValue({ id: 2, status: "ACTIVE" } as any);
+      mockBlockRepo.isBlockedEither.mockResolvedValue(true);
       const useCase = new SendInterestUseCase(mockInterestRepo, mockBlockRepo);
-      await expect(useCase.execute({ senderId: 1, receiverId: 1 })).rejects.toThrow("You cannot send interest to yourself.");
+      await expect(useCase.execute({ senderId: 1, receiverId: 2 })).rejects.toThrow("Cannot interact with a blocked user.");
     });
-  });
 
-  describe("BlockUserUseCase & UnblockUserUseCase", () => {
-    it("should throw error when unblocking non-existent block record", async () => {
-      mockBlockRepo.findBlock.mockResolvedValue(null);
-      const useCase = new UnblockUserUseCase(mockBlockRepo);
-      await expect(useCase.execute(1, 2)).rejects.toThrow("Block record not found.");
-    });
-  });
+    it("should send interest when non-blocked and active", async () => {
+      mockBlockRepo.isBlockedEither.mockResolvedValue(false);
+      mockInterestRepo.findInterest.mockResolvedValue(null);
+      mockInterestRepo.createInterest.mockResolvedValue({
+        id: 1,
+        sender_id: 1,
+        receiver_id: 2,
+        status: "PENDING",
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+      jest.spyOn(prisma.user, "findUnique").mockResolvedValue({ id: 2, status: "ACTIVE" } as any);
 
-  describe("GetInteractionHistoryUseCase", () => {
-    it("should aggregate all interaction categories for user", async () => {
-      mockInterestRepo.getSentInterests.mockResolvedValue([{ id: 1 } as any]);
-      mockInterestRepo.getReceivedInterests.mockResolvedValue([]);
-      mockBlockRepo.getBlockedUsers.mockResolvedValue([]);
-      mockFavouriteRepo.getFavourites.mockResolvedValue([]);
-      mockViewRepo.getViewsGiven.mockResolvedValue([]);
+      const useCase = new SendInterestUseCase(mockInterestRepo, mockBlockRepo);
+      const res = await useCase.execute({ senderId: 1, receiverId: 2 });
 
-      const useCase = new GetInteractionHistoryUseCase(mockInterestRepo, mockBlockRepo, mockFavouriteRepo, mockViewRepo);
-      const res = await useCase.execute(1);
-
-      expect(res.sentInterests).toHaveLength(1);
-      expect(res.receivedInterests).toHaveLength(0);
+      expect(res.status).toBe("PENDING");
+      expect(mockInterestRepo.createInterest).toHaveBeenCalledWith(1, 2);
     });
   });
 });

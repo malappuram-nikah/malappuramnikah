@@ -1,27 +1,23 @@
 import { ISearchRepository } from "../../domain/repositories/ISearchRepository";
-import { SearchFilters } from "../../domain/entities/search.entity";
+import { IBlockRepository } from "../../../interactions/domain/repositories/IBlockRepository";
+import { SearchCriteria, SearchResultItem } from "../../domain/entities/search-criteria.entity";
+import { PaginatedResult } from "../../../../shared/types/pagination.type";
 
 export class SearchProfilesUseCase {
-  constructor(private searchRepository: ISearchRepository) {}
+  constructor(
+    private searchRepository: ISearchRepository,
+    private blockRepository: IBlockRepository
+  ) {}
 
-  async execute(filters: SearchFilters, currentUserId: number): Promise<{ data: any[]; pagination: { page: number; limit: number; total: number; hasNext: boolean } }> {
-    const isPremiumUser = await this.searchRepository.getUserPremiumStatus(currentUserId);
-    const safeFilters = { ...filters, isPremiumUser };
+  async execute(criteria: SearchCriteria, requestingUserId?: number): Promise<PaginatedResult<SearchResultItem>> {
+    let excludedUserIds: number[] = [];
 
-    if (!isPremiumUser) {
-      delete safeFilters.familyStatus;
-      delete safeFilters.financialStatus;
-      delete safeFilters.professionType;
-      delete safeFilters.bodyType;
-      delete safeFilters.ethnicity;
-      delete safeFilters.eatingHabits;
-      delete safeFilters.drinkingHabits;
-      delete safeFilters.religiousness;
-      delete safeFilters.prayer;
-      delete safeFilters.hijab;
-      delete safeFilters.beard;
+    if (requestingUserId) {
+      excludedUserIds.push(requestingUserId);
+      const blockedIds = await this.blockRepository.getBlockedUserIds(requestingUserId);
+      excludedUserIds.push(...blockedIds);
     }
 
-    return await this.searchRepository.searchProfiles(safeFilters, currentUserId);
+    return await this.searchRepository.searchProfiles(criteria, requestingUserId, Array.from(new Set(excludedUserIds)));
   }
 }

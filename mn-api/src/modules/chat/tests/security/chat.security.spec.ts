@@ -24,6 +24,7 @@ describe("Chat Module - Security & Authorization Tests", () => {
       blockUser: jest.fn(),
       unblockUser: jest.fn(),
       getBlockedUsers: jest.fn(),
+      getBlockedUserIds: jest.fn(),
     };
   });
 

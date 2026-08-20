@@ -22,6 +22,7 @@ describe("Chat Module - Regression Tests", () => {
       blockUser: jest.fn(),
       unblockUser: jest.fn(),
       getBlockedUsers: jest.fn(),
+      getBlockedUserIds: jest.fn(),
     };
   });
 

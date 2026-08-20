@@ -6,4 +6,5 @@ export interface IBlockRepository {
   blockUser(blockerId: number, blockedId: number): Promise<BlockEntity>;
   unblockUser(blockerId: number, blockedId: number): Promise<void>;
   getBlockedUsers(blockerId: number): Promise<BlockEntity[]>;
+  getBlockedUserIds(blockerId: number): Promise<number[]>;
 }

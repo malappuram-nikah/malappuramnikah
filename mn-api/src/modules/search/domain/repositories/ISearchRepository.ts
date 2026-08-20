@@ -1,7 +1,6 @@
-import { SearchFilters } from "../entities/search.entity";
+import { SearchCriteria, SearchResultItem } from "../entities/search-criteria.entity";
+import { PaginatedResult } from "../../../../shared/types/pagination.type";
 
 export interface ISearchRepository {
-  searchProfiles(filters: SearchFilters, currentUserId: number): Promise<{ data: any[]; pagination: { page: number; limit: number; total: number; hasNext: boolean } }>;
-  updateSearchPreferences(userId: number, preferences: any): Promise<any>;
-  getUserPremiumStatus(userId: number): Promise<boolean>;
+  searchProfiles(criteria: SearchCriteria, requestingUserId?: number, excludedUserIds?: number[]): Promise<PaginatedResult<SearchResultItem>>;
 }

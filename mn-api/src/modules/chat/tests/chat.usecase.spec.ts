@@ -1,5 +1,4 @@
 import { SendMessageUseCase } from "../application/use-cases/SendMessage.usecase";
-import { GetMessagesUseCase } from "../application/use-cases/GetMessages.usecase";
 import { IMessageRepository } from "../domain/repositories/IMessageRepository";
 import { IBlockRepository } from "../../interactions/domain/repositories/IBlockRepository";
 import prisma from "../../../shared/database/prisma";
@@ -24,6 +23,7 @@ describe("Chat Module - Use Cases Suite", () => {
       blockUser: jest.fn(),
       unblockUser: jest.fn(),
       getBlockedUsers: jest.fn(),
+      getBlockedUserIds: jest.fn(),
     };
   });
 

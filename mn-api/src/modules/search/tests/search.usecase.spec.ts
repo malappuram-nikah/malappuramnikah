@@ -1,70 +1,44 @@
 import { SearchProfilesUseCase } from "../application/use-cases/SearchProfiles.usecase";
 import { ISearchRepository } from "../domain/repositories/ISearchRepository";
+import { IBlockRepository } from "../../interactions/domain/repositories/IBlockRepository";
 
-describe("Search Module - Use Cases", () => {
+describe("Search Module - Legacy Test Suite", () => {
   let mockSearchRepo: jest.Mocked<ISearchRepository>;
+  let mockBlockRepo: jest.Mocked<IBlockRepository>;
 
   beforeEach(() => {
     mockSearchRepo = {
       searchProfiles: jest.fn(),
-      updateSearchPreferences: jest.fn(),
-      getUserPremiumStatus: jest.fn(),
+    };
+
+    mockBlockRepo = {
+      findBlock: jest.fn(),
+      isBlockedEither: jest.fn(),
+      blockUser: jest.fn(),
+      unblockUser: jest.fn(),
+      getBlockedUsers: jest.fn(),
+      getBlockedUserIds: jest.fn(),
     };
   });
 
   describe("SearchProfilesUseCase", () => {
-    it("should strip premium filters if user is not a premium member", async () => {
-      const useCase = new SearchProfilesUseCase(mockSearchRepo);
-      mockSearchRepo.getUserPremiumStatus.mockResolvedValue(false);
+    it("should execute search and exclude blocked users", async () => {
+      const useCase = new SearchProfilesUseCase(mockSearchRepo, mockBlockRepo);
+      mockBlockRepo.getBlockedUserIds.mockResolvedValue([99]);
       mockSearchRepo.searchProfiles.mockResolvedValue({
         data: [],
-        pagination: { page: 1, limit: 20, total: 0, hasNext: false },
+        total: 0,
+        page: 1,
+        limit: 20,
+        totalPages: 1,
       });
 
-      await useCase.execute(
-        {
-          gender: "female",
-          familyStatus: ["Upper Middle Class"],
-          financialStatus: ["Wealthy"],
-        },
-        1
-      );
+      await useCase.execute({ gender: "Female" }, 1);
 
       expect(mockSearchRepo.searchProfiles).toHaveBeenCalledWith(
-        expect.objectContaining({
-          isPremiumUser: false,
-          gender: "female",
-        }),
-        1
-      );
-
-      const passedFilters = mockSearchRepo.searchProfiles.mock.calls[0][0];
-      expect(passedFilters.familyStatus).toBeUndefined();
-      expect(passedFilters.financialStatus).toBeUndefined();
-    });
-
-    it("should preserve premium filters if user is a premium member", async () => {
-      const useCase = new SearchProfilesUseCase(mockSearchRepo);
-      mockSearchRepo.getUserPremiumStatus.mockResolvedValue(true);
-      mockSearchRepo.searchProfiles.mockResolvedValue({
-        data: [],
-        pagination: { page: 1, limit: 20, total: 0, hasNext: false },
-      });
-
-      await useCase.execute(
-        {
-          gender: "female",
-          familyStatus: ["Upper Middle Class"],
-        },
-        1
-      );
-
-      expect(mockSearchRepo.searchProfiles).toHaveBeenCalledWith(
-        expect.objectContaining({
-          isPremiumUser: true,
-          familyStatus: ["Upper Middle Class"],
-        }),
-        1
+        { gender: "Female" },
+        1,
+        [1, 99]
       );
     });
   });

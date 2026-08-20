@@ -1,5 +1,6 @@
-import searchRouter from "./routes/search.route";
+import searchRoutes from "./presentation/routes/search.route";
 
-export { searchRouter };
-export * from "./domain/entities/search.entity";
-export * from "./domain/repositories/ISearchRepository";
+export { searchRoutes, searchRoutes as searchRouter };
+export * from "./presentation/controllers/search.controller";
+export * from "./application/use-cases/SearchProfiles.usecase";
+export * from "./domain/entities/search-criteria.entity";

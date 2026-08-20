@@ -59,4 +59,19 @@ export class PrismaBlockRepository implements IBlockRepository {
     });
     return records as unknown as BlockEntity[];
   }
+
+  async getBlockedUserIds(blockerId: number): Promise<number[]> {
+    const blocks = await prisma.block.findMany({
+      where: {
+        OR: [{ blocker_id: blockerId }, { blocked_id: blockerId }],
+      },
+      select: { blocker_id: true, blocked_id: true },
+    });
+    const ids = new Set<number>();
+    for (const b of blocks) {
+      if (b.blocker_id !== blockerId) ids.add(b.blocker_id);
+      if (b.blocked_id !== blockerId) ids.add(b.blocked_id);
+    }
+    return Array.from(ids);
+  }
 }

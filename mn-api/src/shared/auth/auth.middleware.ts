@@ -32,3 +32,20 @@ export function authenticateUser(req: Request, res: Response, next: NextFunction
 
   next();
 }
+
+export function authenticateUserOptional(req: Request, res: Response, next: NextFunction): void {
+  const token = extractTokenFromRequest(req);
+  if (token) {
+    const payload = verifyToken(token);
+    if (payload && payload.userId) {
+      (req as any).user = {
+        userId: payload.userId,
+        mobile_number: payload.mobile_number,
+        email: payload.email,
+        role: payload.role,
+        isAdmin: payload.isAdmin || false,
+      };
+    }
+  }
+  next();
+}
