@@ -3,6 +3,7 @@ import { RegisterUser } from "../../applications/use-cases/user/registerUser.use
 import { LoginUser } from "../../applications/use-cases/user/LoginUser.usecase";
 import { SendOtpUseCase } from "../../applications/use-cases/user/SentOtp.usecase";
 import { UpdateProfileDetailsUseCase } from "../../applications/use-cases/user/UpdateProfileDetails.usecase";
+import { calculateProfileCompletion } from "../../application/services/ProfileCompletionService";
 import { GenerateGuestReferralUseCase } from "../../applications/use-cases/user/GenerateGuestReferral.usecase";
 import { MediaStorageService } from "../../infrastructure/service/MediaStorageService";
 import { getUserIdFromRequest } from "../routes/interest.route";
@@ -73,7 +74,7 @@ export class UserController {
           user: safeUser
         });
     } catch (error: any) {
-      console.error("Error during registration:", error);
+      console.warn("Registration validation/conflict:", error.message || error);
       
       let message = "Registration failed";
       if (error.code === 'P2002' || (error.message && error.message.includes('Unique constraint failed'))) {
@@ -110,10 +111,11 @@ export class UserController {
         return res.status(status).json({ success: false, message, code });
       }
 
+      const isProd = process.env.NODE_ENV === "production";
       res.cookie("refresh_token", refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        secure: isProd,
+        sameSite: isProd ? "none" : "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 
@@ -302,11 +304,13 @@ export class UserController {
 
       const updatedUser = await this.updateProfileDetails.execute(userId, profileDetails, coreFields);
       const { password: _password, ...safeUser } = updatedUser as any;
+      const profileCompletion = calculateProfileCompletion(updatedUser as any);
       
       return res.status(200).json({
         success: true,
         message: "Profile updated successfully",
-        user: safeUser
+        user: safeUser,
+        profileCompletion,
       });
     } catch (error: any) {
       console.error("Error updating profile:", error);

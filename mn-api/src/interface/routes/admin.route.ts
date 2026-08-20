@@ -287,7 +287,10 @@ async function adminGuard(req: Request, res: Response, next: Function) {
       return;
     }
 
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, mobile_number: true, profile_details: true },
+    });
     const profileDetails = user?.profile_details as any;
     if (user && (profileDetails?.isAdmin === true || user.mobile_number === "+911212121212" || user.mobile_number === "+919876543210")) {
       next();
@@ -586,6 +589,52 @@ admin_route.post("/users/:id/status", adminGuard, async (req: Request, res: Resp
     });
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message || "Failed to update user status." });
+  }
+});
+
+// 2d. POST Update User Call Log (POST /user/admin/users/:id/call-log)
+admin_route.post("/users/:id/call-log", adminGuard, async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+    const { call_status, called_date, call_response } = req.body as {
+      call_status?: string;
+      called_date?: string | null;
+      call_response?: string | null;
+    };
+
+    if (isNaN(id)) {
+      res.status(400).json({ success: false, message: "Invalid user ID" });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
+    }
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data: {
+        ...(call_status !== undefined ? { call_status } : {}),
+        ...(called_date !== undefined ? { called_date: called_date ? new Date(called_date) : null } : {}),
+        ...(call_response !== undefined ? { call_response } : {}),
+      },
+      select: ADMIN_USER_SELECT,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "User call log updated successfully.",
+      user: {
+        ...updated,
+        profileId: `MN-${100000 + updated.id}`,
+        profileCompletion: calculateProfileCompletion(updated),
+      },
+    });
+  } catch (err: any) {
+    console.error("Call log update error:", err);
+    res.status(500).json({ success: false, message: err.message || "Failed to update user call log." });
   }
 });
 

@@ -58,7 +58,7 @@ import { API_URL } from "@/lib/config";
 
 export default function DashboardHeader() {
   const router = useRouter();
-  const { currentUser: user, refreshUser } = useUser();
+  const { currentUser: user, refreshUser, completionPercent } = useUser();
   const userName = user?.first_name || "User";
   const [token, setToken] = useState<string | null>(null);
   const [userId, setUserId] = useState<number | null>(null);
@@ -68,7 +68,6 @@ export default function DashboardHeader() {
   const [showPhotosModal, setShowPhotosModal] = useState(false);
   const [localPhotos, setLocalPhotos] = useState<Photo[]>([]);
   const [isSavingPhotos, setIsSavingPhotos] = useState(false);
-  const [completionPercent, setCompletionPercent] = useState(0);
   const [mounted, setMounted] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -78,56 +77,6 @@ export default function DashboardHeader() {
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  useEffect(() => {
-    if (showPhotosModal && user) {
-      const existing =
-        user.profile_details?.mn_profile_photos_draft?.photos || [];
-      setLocalPhotos(existing);
-    }
-  }, [showPhotosModal, user]);
-
-  const calculateCompletionPercent = () => {
-    const sections = [
-      "mn_basic_details_draft",
-      "mn_religious_info_draft",
-      "mn_professional_info_draft",
-      "mn_family_details_draft",
-      "mn_interests_draft",
-      "mn_habits_draft",
-      "mn_partner_preferences_draft",
-      "mn_profile_photos_draft",
-      "mn_voice_intro_draft",
-      ...(user?.gender?.toLowerCase() === "female" ? [] : ["mn_kyc_status"]),
-    ];
-    let completedCount = 0;
-    sections.forEach((key) => {
-      try {
-        if (key === "mn_kyc_status") {
-          const status = localStorage.getItem("mn_kyc_status");
-          if (status === "VERIFIED") {
-            completedCount++;
-          }
-        } else {
-          const item = localStorage.getItem(key);
-          if (item) {
-            const parsed = JSON.parse(item);
-            if (
-              key === "mn_profile_photos_draft" &&
-              (!parsed.photos || parsed.photos.length === 0)
-            ) {
-              // not complete
-            } else if (key === "mn_voice_intro_draft" && !parsed.voice) {
-              // not complete
-            } else {
-              completedCount++;
-            }
-          }
-        }
-      } catch (e) {}
-    });
-    setCompletionPercent(Math.round((completedCount / sections.length) * 100));
-  };
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -148,13 +97,6 @@ export default function DashboardHeader() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  // Update completion percent when profile dropdown is opened
-  useEffect(() => {
-    if (showProfileDropdown) {
-      calculateCompletionPercent();
-    }
-  }, [showProfileDropdown]);
 
   // Initialize Auth & Real-Time Socket
   useEffect(() => {
@@ -177,8 +119,7 @@ export default function DashboardHeader() {
           socket.emit("join", payload.userId);
 
           // Realtime incoming notifications alert handler
-          socket.on("notification", (newNotif: any) => {
-            // Re-fetch notifications to load rich DB details
+          socket.on("notification", () => {
             fetchNotificationsList(storedToken);
           });
 
@@ -195,12 +136,6 @@ export default function DashboardHeader() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (user) {
-      calculateCompletionPercent();
-    }
-  }, [user]);
 
   async function fetchNotificationsList(jwtToken: string) {
     try {

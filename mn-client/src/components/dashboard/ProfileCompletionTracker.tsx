@@ -11,85 +11,9 @@ import Link from "next/link";
 import { useUser } from "@/context/UserContext";
 
 export default function ProfileCompletionTracker() {
-  const [completionPercent, setCompletionPercent] = useState(0);
-  const [missingSections, setMissingSections] = useState<{key: string, name: string, suggestion: string, step: number, weight: number}[]>([]);
-  const { currentUser: user, loadingUser } = useUser();
+  const { completionPercent, strength, strengthColor, loadingUser } = useUser();
 
-  useEffect(() => {
-    if (loadingUser) return;
-
-    const sections = [
-      { key: "mn_basic_details_draft", name: "Basic Details", suggestion: "Add your height and marital status.", step: 1, weight: 20, check: (p: any) => p && p.height && p.maritalStatus },
-      { key: "mn_religious_info_draft", name: "Religious Info", suggestion: "Add your prayer habits and religiousness.", step: 2, weight: 15, check: (p: any) => p && p.namaz && p.religiousness },
-      { key: "mn_professional_info_draft", name: "Professional Info", suggestion: "Add your education and profession.", step: 3, weight: 15, check: (p: any) => p && p.highestEducation && p.profession },
-      { key: "mn_family_details_draft", name: "Family Details", suggestion: "Tell us about your family background.", step: 4, weight: 10, check: (p: any) => p && p.familyStatus },
-      { key: "mn_interests_draft", name: "Interests & Personality", suggestion: "Complete Interests & Personality to find like-minded people.", step: 5, weight: 5, check: (p: any) => p && Object.keys(p).length > 0 },
-      { key: "mn_habits_draft", name: "Hobbies & Habits", suggestion: "Add your lifestyle habits.", step: 6, weight: 5, check: (p: any) => p && Object.keys(p).length > 0 },
-      { key: "mn_partner_preferences_draft", name: "Partner Preferences", suggestion: "Complete Partner Preferences to improve match suggestions.", step: 7, weight: 15, check: (p: any) => p && Object.keys(p).length > 0 },
-      { key: "mn_profile_photos_draft", name: "Profile Photos", suggestion: "Upload more photos to improve profile visibility.", step: 8, weight: 10, check: (p: any) => p && p.photos && p.photos.length > 0 },
-      { key: "mn_voice_intro_draft", name: "Voice Introduction", suggestion: "Record a voice intro to boost responses.", step: 10, weight: 5, check: (p: any) => p && p.voice },
-      ...(user?.gender?.toLowerCase() === "female" ? [] : [
-        { key: "mn_kyc_status", name: "Identity Verification", suggestion: "Verify your identity to get the 'ID Verified' badge.", step: 11, weight: 10, check: () => localStorage.getItem("mn_kyc_status") === "VERIFIED" }
-      ])
-    ];
-
-    let earnedWeight = 0;
-    let totalWeight = 0;
-    const missing: {key: string, name: string, suggestion: string, step: number, weight: number}[] = [];
-
-    sections.forEach(section => {
-      totalWeight += section.weight;
-      try {
-        if (section.key === "mn_kyc_status") {
-          if (section.check(null)) {
-            earnedWeight += section.weight;
-          } else {
-            missing.push(section);
-          }
-        } else {
-          const item = localStorage.getItem(section.key);
-          if (item) {
-            const parsed = JSON.parse(item);
-            if (section.check(parsed)) {
-              earnedWeight += section.weight;
-            } else {
-              missing.push(section);
-            }
-          } else {
-            missing.push(section);
-          }
-        }
-      } catch (e) {
-        missing.push(section);
-      }
-    });
-
-    // Sort missing sections by weight (descending) so highest priority is shown first
-    missing.sort((a, b) => b.weight - a.weight);
-
-    const percent = Math.round((earnedWeight / totalWeight) * 100);
-    setCompletionPercent(percent);
-    setMissingSections(missing);
-  }, [user, loadingUser]);
-
-  if (loadingUser) return null;  // Determine profile strength
-  let strength = "Weak";
-  let strengthColor = "text-rose-200 bg-rose-950/40 border-rose-800/30";
-  let barColor = "bg-gradient-to-r from-rose-400 to-rose-500";
-  
-  if (completionPercent >= 80) {
-    strength = "Excellent";
-    strengthColor = "text-emerald-200 bg-emerald-950/40 border-emerald-800/30";
-    barColor = "bg-gradient-to-r from-emerald-400 to-teal-400";
-  } else if (completionPercent >= 60) {
-    strength = "Strong";
-    strengthColor = "text-teal-200 bg-teal-950/40 border-teal-800/30";
-    barColor = "bg-gradient-to-r from-[#81c4bd] to-[#026d77]";
-  } else if (completionPercent >= 40) {
-    strength = "Average";
-    strengthColor = "text-amber-200 bg-amber-950/40 border-amber-800/30";
-    barColor = "bg-gradient-to-r from-amber-400 to-amber-300";
-  }
+  if (loadingUser) return null;
 
   return (
     <div className="relative overflow-hidden bg-[#026d77] rounded-xl p-4 border border-[#026d77] shadow-[0_4px_25px_-5px_rgba(2,109,119,0.15)] transition-all duration-300">

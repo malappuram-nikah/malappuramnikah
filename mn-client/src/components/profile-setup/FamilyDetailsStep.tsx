@@ -5,6 +5,9 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Save } from "lucide-react";
 
+import { saveProfileSection } from "@/lib/profile-utils";
+import { useUser } from "@/context/UserContext";
+
 export interface FamilyDetailsData {
   familyType: string;
   financialStatus: string;
@@ -32,6 +35,7 @@ interface FamilyDetailsStepProps {
 const DRAFT_KEY = "mn_family_details_draft";
 
 export default function FamilyDetailsStep({ initialData, onComplete, onBack }: FamilyDetailsStepProps) {
+  const { refreshUser } = useUser();
   const [formData, setFormData] = useState<FamilyDetailsData>({
     familyType: "",
     financialStatus: "",
@@ -117,12 +121,12 @@ export default function FamilyDetailsStep({ initialData, onComplete, onBack }: F
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (validate()) {
+      await saveProfileSection(DRAFT_KEY, formData);
+      try { await refreshUser(); } catch {}
       if (onComplete) onComplete(formData);
-      // Optional: Clear draft after successful completion
-      // localStorage.removeItem(DRAFT_KEY);
     }
   };
 

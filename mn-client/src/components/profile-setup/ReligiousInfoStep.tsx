@@ -6,6 +6,9 @@ import { motion } from "framer-motion";
 import { CheckCircle2, Save } from "lucide-react";
 import { toast } from "sonner";
 
+import { saveProfileSection } from "@/lib/profile-utils";
+import { useUser } from "@/context/UserContext";
+
 export interface ReligiousInfoData {
   religion: string;
   community: string;
@@ -23,6 +26,7 @@ interface ReligiousInfoStepProps {
 const DRAFT_KEY = "mn_religious_info_draft";
 
 export default function ReligiousInfoStep({ initialData, onComplete, onBack }: ReligiousInfoStepProps) {
+  const { refreshUser } = useUser();
   const [formData, setFormData] = useState<ReligiousInfoData>({
     religion: "Islam", // Default for this platform
     community: "",
@@ -115,13 +119,13 @@ export default function ReligiousInfoStep({ initialData, onComplete, onBack }: R
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const finalData = { ...formData, religion: formData.religion || "Islam" };
     if (validate()) {
+      await saveProfileSection(DRAFT_KEY, finalData);
+      try { await refreshUser(); } catch {}
       if (onComplete) onComplete(finalData);
-      // Optional: Clear draft after successful completion
-      // localStorage.removeItem(DRAFT_KEY);
     } else {
       // Show toast and scroll to first error field
       toast.error("Please fill in all required fields before continuing.");

@@ -56,15 +56,36 @@ io.on("connection", (socket: any) => {
 export { io };
 
 const corsOptions = {
-  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
-    callback(null, true);
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: any) => void) {
+    if (!origin) {
+      return callback(null, true);
+    }
+    return callback(null, origin);
   },
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: "Content-Type, Authorization",
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization", "Accept", "X-Requested-With", "Origin", "Access-Control-Request-Headers", "Access-Control-Allow-Origin"],
   credentials: true,
+  optionsSuccessStatus: 200,
 };
 
 app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
+
+// Explicit Header Fallback Middleware for Bulletproof CORS across Mobile & Web Browsers
+app.use((req, res, next) => {
+  const reqOrigin = req.headers.origin;
+  if (reqOrigin) {
+    res.setHeader("Access-Control-Allow-Origin", reqOrigin);
+  }
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, Accept, X-Requested-With, Origin, Access-Control-Request-Headers");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+  next();
+});
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));

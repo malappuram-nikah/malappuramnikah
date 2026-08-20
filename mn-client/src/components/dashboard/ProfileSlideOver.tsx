@@ -25,6 +25,7 @@ interface ProfileSlideOverProps {
     matchScore?: number;
     match?: number;
     img?: string;
+    gender?: string;
     kyc_status?: string;
   } | null;
   onClose: () => void;
@@ -141,7 +142,9 @@ export default function ProfileSlideOver({
   const isMutual = interests.mutual.includes(profile.id);
   const isSent = interests.sent.includes(profile.id);
   const isReceived = interests.received.includes(profile.id);
-  const isInterested = isMutual || isSent || isReceived;
+  const genderVal = profile.gender || fullUser?.gender || "";
+  const isMaleProfile = genderVal.toLowerCase() === "male";
+  const canViewProfile = isMutual || isMaleProfile;
 
   let modalBtnText = "Send Interest";
   let modalBtnStyle = "bg-brand-600 text-white hover:bg-brand-700 shadow-sm";
@@ -159,8 +162,9 @@ export default function ProfileSlideOver({
   const currentPhoto = photos[photoIndex] || profile.img || null;
 
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+    <>
+      <AnimatePresence>
+        <div key="profile-slide-over" className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -194,7 +198,7 @@ export default function ProfileSlideOver({
                   <img
                     src={currentPhoto}
                     alt=""
-                    className={`w-full h-full object-cover ${!isInterested ? "filter blur-[16px] scale-110 select-none" : ""}`}
+                    className={`w-full h-full object-cover ${!canViewProfile ? "filter blur-[16px] scale-110 select-none" : ""}`}
                   />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-[#026d77]/10 via-[#026d77]/20 to-[#026d77]/35 flex flex-col items-center justify-center p-6 text-center">
@@ -206,17 +210,17 @@ export default function ProfileSlideOver({
             </AnimatePresence>
 
             {/* Blurred lock overlay */}
-            {!isInterested && (
+            {!canViewProfile && (
               <div className="absolute inset-0 bg-black/10 flex items-center justify-center z-10">
                 <div className="bg-white/95 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm border border-white/30 flex items-center gap-2">
                   <Lock className="w-3.5 h-3.5 text-brand-600" />
-                  <span className="text-[11px] font-bold text-gray-700">Connect to view photos</span>
+                  <span className="text-[11px] font-bold text-gray-700">Connect mutually to view photos</span>
                 </div>
               </div>
             )}
 
             {/* Prev / Next arrows – only if multiple photos and connected */}
-            {photos.length > 1 && isInterested && (
+            {photos.length > 1 && canViewProfile && (
               <>
                 <button
                   onClick={prevPhoto}
@@ -278,6 +282,7 @@ export default function ProfileSlideOver({
                 <AnimatePresence>
                   {menuOpen && (
                     <motion.div
+                      key="slide-over-menu"
                       initial={{ opacity: 0, scale: 0.85, y: -4 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.85, y: -4 }}
@@ -325,6 +330,7 @@ export default function ProfileSlideOver({
             <AnimatePresence>
               {toast && (
                 <motion.div
+                  key="slide-over-toast"
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
@@ -363,6 +369,7 @@ export default function ProfileSlideOver({
                 <SlideOverSkeleton />
               </div>
             ) : fullUser ? (
+              canViewProfile ? (
               <div className="p-4 sm:p-5 space-y-4">
 
                 {/* About */}
@@ -479,6 +486,17 @@ export default function ProfileSlideOver({
                   </div>
                 )}
               </div>
+              ) : (
+                <div className="p-8 text-center space-y-3">
+                  <div className="w-12 h-12 bg-brand-50 rounded-full flex items-center justify-center mx-auto">
+                    <Lock className="w-5 h-5 text-brand-600" />
+                  </div>
+                  <p className="text-sm font-bold text-gray-800">Profile details are private</p>
+                  <p className="text-xs text-gray-500 leading-relaxed max-w-xs mx-auto">
+                    Send interest and wait for them to accept — once you both connect, the full profile will be visible.
+                  </p>
+                </div>
+              )
             ) : (
               <div className="py-20 text-center text-xs text-gray-400">
                 Failed to load profile details.
@@ -553,13 +571,14 @@ export default function ProfileSlideOver({
             )}
           </div>
         </motion.div>
-      </div>
+        </div>
+      </AnimatePresence>
 
       <VerificationModal
         isOpen={showKycModal}
         onClose={() => setShowKycModal(false)}
         kycStatus={currentUser?.kyc_status}
       />
-    </AnimatePresence>
+    </>
   );
 }

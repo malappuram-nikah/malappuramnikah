@@ -3,14 +3,30 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Users, Search, Check, X, ChevronLeft, ChevronRight, Eye, Sparkles } from "lucide-react";
+import {
+  Users,
+  Search,
+  Check,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  Sparkles,
+  Download,
+  Loader2,
+  PhoneCall,
+  FileSpreadsheet,
+  FileText,
+  ExternalLink,
+  Calendar,
+  MessageSquare,
+} from "lucide-react";
 import AdminAlert from "@/components/admin/AdminAlert";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { adminApi, AdminUser } from "@/lib/admin-api";
+import { exportUsersToPdf, exportUsersToCsv, getUserPlace, getMaritalStatus } from "@/lib/pdf-export";
 import { cn } from "@/lib/utils";
-
 import { API_URL } from "@/lib/config";
-import { ShieldCheck, FileText, ExternalLink } from "lucide-react";
 
 const ACCOUNT_STATUS_OPTIONS = [
   { id: "", label: "All Accounts" },
@@ -33,6 +49,15 @@ const KYC_STATUS_OPTIONS = [
   { id: "UNDER_REVIEW", label: "Under Review" },
   { id: "VERIFIED", label: "Verified" },
   { id: "REJECTED", label: "Rejected" },
+];
+
+const CALL_STATUS_OPTIONS = [
+  { id: "NOT_CALLED", label: "Not Called" },
+  { id: "CALLED", label: "Called (General)" },
+  { id: "INTERESTED", label: "Interested" },
+  { id: "NOT_INTERESTED", label: "Not Interested" },
+  { id: "FOLLOW_UP", label: "Follow-Up Required" },
+  { id: "NO_ANSWER", label: "No Answer / Busy" },
 ];
 
 function resolveDocUrl(url: string | null): string {
@@ -106,6 +131,19 @@ function kycBadge(status: string) {
   return map[status] || "bg-gray-100 text-gray-600";
 }
 
+function callStatusBadgeClass(status?: string | null) {
+  const s = status || "NOT_CALLED";
+  const map: Record<string, string> = {
+    NOT_CALLED: "bg-gray-100 text-gray-600 border-gray-200",
+    CALLED: "bg-blue-50 text-blue-700 border-blue-200",
+    INTERESTED: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    NOT_INTERESTED: "bg-rose-50 text-rose-700 border-rose-200",
+    FOLLOW_UP: "bg-purple-50 text-purple-700 border-purple-200",
+    NO_ANSWER: "bg-amber-50 text-amber-700 border-amber-200",
+  };
+  return map[s] || "bg-gray-100 text-gray-600 border-gray-200";
+}
+
 export default function AdminUsersPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -121,7 +159,98 @@ export default function AdminUsersPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+
+  // Modals & Export state
   const [docModalUser, setDocModalUser] = useState<AdminUser | null>(null);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [downloadingCsv, setDownloadingCsv] = useState(false);
+
+  // Call Log Modal state
+  const [callModalUser, setCallModalUser] = useState<AdminUser | null>(null);
+  const [callStatusInput, setCallStatusInput] = useState<string>("NOT_CALLED");
+  const [calledDateInput, setCalledDateInput] = useState<string>("");
+  const [callResponseInput, setCallResponseInput] = useState<string>("");
+  const [savingCallLog, setSavingCallLog] = useState(false);
+
+  const openCallModal = (user: AdminUser) => {
+    setCallModalUser(user);
+    setCallStatusInput(user.call_status || "NOT_CALLED");
+    setCalledDateInput(
+      user.called_date
+        ? new Date(user.called_date).toISOString().split("T")[0]
+        : new Date().toISOString().split("T")[0]
+    );
+    setCallResponseInput(user.call_response || "");
+  };
+
+  const handleSaveCallLog = async () => {
+    if (!callModalUser) return;
+    setSavingCallLog(true);
+    try {
+      const res = await adminApi.updateCallLog(callModalUser.id, {
+        call_status: callStatusInput,
+        called_date: calledDateInput,
+        call_response: callResponseInput,
+      });
+      triggerAlert("Call log recorded successfully! 📞");
+      setCallModalUser(null);
+      await loadUsers();
+    } catch (err: any) {
+      triggerAlert(err?.message || "Failed to update call log.", "error");
+    } finally {
+      setSavingCallLog(false);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    setDownloadingPdf(true);
+    try {
+      const params: Record<string, string | number> = { page: 1, limit: 1000 };
+      if (search.trim()) params.search = search.trim();
+      if (statusFilter) params.status = statusFilter;
+      if (genderFilter) params.gender = genderFilter;
+      if (kycFilter) params.kyc_status = kycFilter;
+      if (dateFrom) params.date_from = dateFrom;
+      if (dateTo) params.date_to = dateTo;
+
+      const res = await adminApi.getUsers(params);
+      const filterObj = ACCOUNT_STATUS_OPTIONS.find((o) => o.id === statusFilter);
+      const filterTitle = filterObj?.label || (statusFilter ? statusFilter : "All Accounts");
+
+      exportUsersToPdf(res.users, `${filterTitle} (${res.users.length})`);
+      triggerAlert(`PDF Export complete for ${res.users.length} members! 📄`);
+    } catch (err) {
+      console.error("PDF export error:", err);
+      triggerAlert("Failed to generate PDF report.", "error");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
+  const handleDownloadCsv = async () => {
+    setDownloadingCsv(true);
+    try {
+      const params: Record<string, string | number> = { page: 1, limit: 1000 };
+      if (search.trim()) params.search = search.trim();
+      if (statusFilter) params.status = statusFilter;
+      if (genderFilter) params.gender = genderFilter;
+      if (kycFilter) params.kyc_status = kycFilter;
+      if (dateFrom) params.date_from = dateFrom;
+      if (dateTo) params.date_to = dateTo;
+
+      const res = await adminApi.getUsers(params);
+      const filterObj = ACCOUNT_STATUS_OPTIONS.find((o) => o.id === statusFilter);
+      const filterTitle = filterObj?.label || (statusFilter ? statusFilter : "All Members");
+
+      exportUsersToCsv(res.users, `${filterTitle} (${res.users.length})`);
+      triggerAlert(`CSV Sheet Export complete for ${res.users.length} members! 📊`);
+    } catch (err) {
+      console.error("CSV export error:", err);
+      triggerAlert("Failed to generate CSV sheet report.", "error");
+    } finally {
+      setDownloadingCsv(false);
+    }
+  };
 
   useEffect(() => {
     setStatusFilter(searchParams.get("status") || "");
@@ -190,7 +319,7 @@ export default function AdminUsersPage() {
       <AdminAlert alert={alert} />
       <AdminPageHeader
         title="User Management"
-        description="Search, filter, and manage member accounts from the database."
+        description="Search, filter, and manage member accounts and call records."
         icon={Users}
       />
 
@@ -251,10 +380,36 @@ export default function AdminUsersPage() {
             />
             <button
               onClick={applySearch}
-              className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl sm:ml-auto"
+              className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl"
             >
               Search
             </button>
+            <div className="flex items-center gap-2 sm:ml-auto">
+              <button
+                type="button"
+                onClick={handleDownloadCsv}
+                disabled={downloadingCsv}
+                className="px-3.5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
+              >
+                {downloadingCsv ? (
+                  <><Loader2 className="w-3.5 h-3.5 animate-spin" /> CSV...</>
+                ) : (
+                  <><FileSpreadsheet className="w-3.5 h-3.5" /> Export CSV Sheet</>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={handleDownloadPdf}
+                disabled={downloadingPdf}
+                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
+              >
+                {downloadingPdf ? (
+                  <><Loader2 className="w-3.5 h-3.5 animate-spin" /> PDF...</>
+                ) : (
+                  <><Download className="w-3.5 h-3.5" /> Download PDF Report</>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -264,24 +419,45 @@ export default function AdminUsersPage() {
           </div>
         ) : (
           <>
-            <p className="text-[10px] text-gray-400 font-semibold">
-              {total} users found · showing {users.length} per page
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] text-gray-400 font-semibold">
+                {total} users found · showing {users.length} per page
+              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleDownloadCsv}
+                  disabled={downloadingCsv}
+                  className="text-[11px] font-bold text-teal-700 hover:text-teal-900 flex items-center gap-1 bg-teal-50 hover:bg-teal-100 px-3 py-1 rounded-lg transition-colors border border-teal-200"
+                >
+                  {downloadingCsv ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileSpreadsheet className="w-3 h-3" />}
+                  Export CSV Sheet
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDownloadPdf}
+                  disabled={downloadingPdf}
+                  className="text-[11px] font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 px-3 py-1 rounded-lg transition-colors border border-emerald-200"
+                >
+                  {downloadingPdf ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+                  Export PDF Report
+                </button>
+              </div>
+            </div>
             <div className="overflow-x-auto border border-gray-100 rounded-xl">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-gray-50 text-gray-400 font-bold uppercase border-b border-gray-100">
                     <th className="p-3.5 w-10">#</th>
                     <th className="p-3.5">Member Name</th>
-                    <th className="p-3.5">Mobile Number</th>
-                    <th className="p-3.5">Email</th>
+                    <th className="p-3.5">Mobile</th>
+                    <th className="p-3.5">Place</th>
+                    <th className="p-3.5">Marriage Status</th>
                     <th className="p-3.5">Gender</th>
                     <th className="p-3.5">Profile ID</th>
-                    <th className="p-3.5">Location</th>
-                    <th className="p-3.5">Account</th>
-                    <th className="p-3.5">KYC Proof</th>
-                    <th className="p-3.5">Completion</th>
+                    <th className="p-3.5">Account / KYC</th>
                     <th className="p-3.5">Registered</th>
+                    <th className="p-3.5">Call Status & Notes</th>
                     <th className="p-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -292,13 +468,17 @@ export default function AdminUsersPage() {
                         {(page - 1) * 10 + index + 1}
                       </td>
                       <td className="p-3.5 font-bold text-gray-900">
-                        {user.first_name} {user.last_name}
+                        <div>{user.first_name} {user.last_name}</div>
+                        {user.email && <div className="text-[10px] text-gray-400 font-normal">{user.email}</div>}
                       </td>
                       <td className="p-3.5 font-mono font-bold text-emerald-800 text-xs whitespace-nowrap">
                         📞 {user.mobile_number || "—"}
                       </td>
-                      <td className="p-3.5 text-gray-600 text-xs">
-                        {user.email || "—"}
+                      <td className="p-3.5 text-gray-700 font-medium">{getUserPlace(user)}</td>
+                      <td className="p-3.5 text-gray-700 font-medium">
+                        <span className="px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 text-[10px] font-bold">
+                          {getMaritalStatus(user)}
+                        </span>
                       </td>
                       <td className="p-3.5">
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${user.gender?.toLowerCase() === 'female' ? 'bg-pink-50 text-pink-700 border-pink-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
@@ -308,37 +488,61 @@ export default function AdminUsersPage() {
                       <td className="p-3.5 font-mono text-[10px] text-gray-600 font-medium">
                         {user.profileId || (user.id ? `MN-${100000 + user.id}` : "—")}
                       </td>
-                      <td className="p-3.5 text-gray-600">{user.location}</td>
                       <td className="p-3.5">
-                        <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${statusBadge(user.status)}`}>
-                          {user.status.replace("_", " ")}
-                        </span>
-                        <p className="text-[9px] text-gray-400 font-medium mt-1">
-                          {getInactiveReason(user)}
-                        </p>
-                      </td>
-                      <td className="p-3.5">
-                        <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${kycBadge(user.kyc_status)}`}>
-                          {user.kyc_status.replace("_", " ")}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${statusBadge(user.status)}`}>
+                            {user.status.replace("_", " ")}
+                          </span>
+                          <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${kycBadge(user.kyc_status)}`}>
+                            {user.kyc_status.replace("_", " ")}
+                          </span>
+                        </div>
                         {user.kyc_front_url && (
                           <button
                             type="button"
                             onClick={() => setDocModalUser(user)}
                             className="mt-1 flex items-center gap-1 text-[9px] font-bold text-brand-600 hover:text-brand-800 hover:underline"
                           >
-                            <FileText className="w-3 h-3 text-brand-500" /> View ID Proof
+                            <FileText className="w-3 h-3 text-brand-500" /> View ID
                           </button>
                         )}
                       </td>
-                      <td className="p-3.5 font-semibold text-gray-700">
-                        {user.profileCompletion?.percentage ?? 0}%
-                      </td>
-                      <td className="p-3.5 text-[10px] text-gray-500">
+                      <td className="p-3.5 text-[10px] text-gray-500 font-medium whitespace-nowrap">
                         {new Date(user.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="p-3.5 max-w-[200px]">
+                        <div className="space-y-1">
+                          <span
+                            className={cn(
+                              "inline-block text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border",
+                              callStatusBadgeClass(user.call_status)
+                            )}
+                          >
+                            {(user.call_status || "NOT_CALLED").replace("_", " ")}
+                          </span>
+                          {user.called_date && (
+                            <div className="text-[10px] text-gray-500 font-medium flex items-center gap-1">
+                              <Calendar className="w-3 h-3 text-gray-400 shrink-0" />
+                              {new Date(user.called_date).toLocaleDateString()}
+                            </div>
+                          )}
+                          {user.call_response && (
+                            <div className="text-[10px] text-gray-600 italic bg-gray-50 p-1.5 rounded-lg border border-gray-100 line-clamp-2">
+                              "{user.call_response}"
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td className="p-3.5">
                         <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => openCallModal(user)}
+                            className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg flex items-center gap-1 text-[10px] font-bold"
+                            title="Record Call Log"
+                          >
+                            <PhoneCall className="w-3.5 h-3.5 text-blue-600" /> Call Log
+                          </button>
                           <Link
                             href={`/admin/users/${user.id}`}
                             className="p-1.5 bg-brand-50 hover:bg-brand-100 text-brand-700 rounded-lg"
@@ -401,6 +605,96 @@ export default function AdminUsersPage() {
           </>
         )}
       </div>
+
+      {/* Admin Call Log Modal */}
+      {callModalUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="relative w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl space-y-4 border border-gray-100">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div>
+                <h3 className="font-bold text-gray-900 text-sm flex items-center gap-1.5">
+                  <PhoneCall className="w-4 h-4 text-brand-600" />
+                  Record Call Log: {callModalUser.first_name} {callModalUser.last_name}
+                </h3>
+                <span className="text-[10px] text-gray-400 font-mono">
+                  {callModalUser.profileId || `MN-${100000 + callModalUser.id}`} · Mobile: {callModalUser.mobile_number}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCallModalUser(null)}
+                className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div>
+                <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                  Call Status Option
+                </label>
+                <select
+                  value={callStatusInput}
+                  onChange={(e) => setCallStatusInput(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                >
+                  {CALL_STATUS_OPTIONS.map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                  Called Date
+                </label>
+                <input
+                  type="date"
+                  value={calledDateInput}
+                  onChange={(e) => setCalledDateInput(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1 flex items-center justify-between">
+                  <span>Customer Response / Call Notes</span>
+                  <MessageSquare className="w-3 h-3 text-gray-400" />
+                </label>
+                <textarea
+                  rows={4}
+                  value={callResponseInput}
+                  onChange={(e) => setCallResponseInput(e.target.value)}
+                  placeholder="Type what customer said last during the call..."
+                  className="w-full p-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20 text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="pt-2 flex gap-2">
+              <button
+                type="button"
+                onClick={handleSaveCallLog}
+                disabled={savingCallLog}
+                className="flex-1 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl text-center transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+              >
+                {savingCallLog ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                Save Call Log
+              </button>
+              <button
+                type="button"
+                onClick={() => setCallModalUser(null)}
+                className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ID Document Preview Modal */}
       {docModalUser && (

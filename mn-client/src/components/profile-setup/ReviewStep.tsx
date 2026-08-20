@@ -55,9 +55,10 @@ interface ReviewStepProps {
   onComplete?: () => void;
   onBack?: () => void;
   onEditSection?: (stepNumber: number) => void;
+  onCompletionUpdate?: (profileCompletion: import("@/lib/profile-api").ProfileCompletionResult) => void;
 }
 
-export default function ReviewStep({ onComplete, onBack, onEditSection }: ReviewStepProps) {
+export default function ReviewStep({ onComplete, onBack, onEditSection, onCompletionUpdate }: ReviewStepProps) {
   const [drafts, setDrafts] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -134,8 +135,10 @@ export default function ReviewStep({ onComplete, onBack, onEditSection }: Review
         throw new Error("Failed to submit profile details");
       }
 
-      // Optional: clear all drafts from localStorage after successful submission
-      // Object.keys(drafts).forEach(key => localStorage.removeItem(key));
+      const data = await response.json();
+      if (data.profileCompletion && onCompletionUpdate) {
+        onCompletionUpdate(data.profileCompletion);
+      }
       
       if (onComplete) onComplete();
     } catch (error) {

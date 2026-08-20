@@ -19,9 +19,14 @@ import { CheckCircle2, PhoneCall } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { API_URL } from "@/lib/config";
 import { getProfileCompletionStatus } from "@/lib/profile-utils";
+import { updateProfileSection } from "@/lib/profile-api";
+import { useUser } from "@/context/UserContext";
+import { useProfileCompletion } from "@/hooks/useProfileCompletion";
 
 export default function ProfileBuilderPage() {
   const router = useRouter();
+  const { refreshUser } = useUser();
+  const { applyCompletion } = useProfileCompletion();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [user, setUser] = useState<any>(null);
@@ -129,7 +134,9 @@ export default function ProfileBuilderPage() {
           const data = await res.json();
           
           if (data.success && data.user) {
-            const user = data.user;
+            const user = data.profileCompletion
+              ? { ...data.user, profileCompletion: data.profileCompletion }
+              : data.user;
             setUser(user);
 
             // Only clear all profile builder draft keys if the logged in user changed
@@ -176,7 +183,7 @@ export default function ProfileBuilderPage() {
                 location: user.location || "Malappuram, Kerala",
                 presentLocation: user.location || "Malappuram",
                 age: calculatedAge,
-                aboutMe: "Looking for a pious, family-oriented partner with shared values.",
+                aboutMe: "",
                 height: "",
                 maritalStatus: "Single",
                 motherTongue: "Malayalam",
@@ -210,39 +217,74 @@ export default function ProfileBuilderPage() {
     fetchAndSyncData();
   }, []);
 
-  const handleBasicDetailsComplete = (data: any) => {
+  const persistSection = async (
+    section: import("@/lib/profile-api").ProfileSectionSlug,
+    data: Record<string, unknown>
+  ) => {
+    try {
+      const result = await updateProfileSection(section, data);
+      if (result.profileCompletion) {
+        applyCompletion(result.profileCompletion);
+        setUser((prev: any) =>
+          prev
+            ? {
+                ...prev,
+                profileCompletion: result.profileCompletion,
+                profile_details: {
+                  ...(prev.profile_details || {}),
+                  [result.draftKey]: result.data,
+                },
+              }
+            : prev
+        );
+      }
+    } catch (err) {
+      console.error(`Failed to save ${section} section:`, err);
+    }
+  };
+
+  const handleBasicDetailsComplete = async (data: any) => {
+    await persistSection("basic", data);
     setCurrentStep(2);
   };
 
-  const handleReligiousInfoComplete = (data: any) => {
+  const handleReligiousInfoComplete = async (data: any) => {
+    await persistSection("religious", data);
     setCurrentStep(3);
   };
 
-  const handleProfessionalInfoComplete = (data: any) => {
+  const handleProfessionalInfoComplete = async (data: any) => {
+    await persistSection("professional", data);
     setCurrentStep(4);
   };
 
-  const handleFamilyDetailsComplete = (data: any) => {
+  const handleFamilyDetailsComplete = async (data: any) => {
+    await persistSection("family", data);
     setCurrentStep(5);
   };
 
-  const handleInterestsComplete = (data: any) => {
+  const handleInterestsComplete = async (data: any) => {
+    await persistSection("interests", data);
     setCurrentStep(6);
   };
 
-  const handleHabitsComplete = (data: any) => {
+  const handleHabitsComplete = async (data: any) => {
+    await persistSection("habits", data);
     setCurrentStep(7);
   };
 
-  const handlePartnerPreferencesComplete = (data: any) => {
+  const handlePartnerPreferencesComplete = async (data: any) => {
+    await persistSection("partner-preferences", data);
     setCurrentStep(8);
   };
 
-  const handleProfilePhotosComplete = (data: any) => {
+  const handleProfilePhotosComplete = async (data: any) => {
+    await persistSection("photos", data);
     setCurrentStep(9);
   };
 
-  const handleVoiceIntroComplete = (data: any) => {
+  const handleVoiceIntroComplete = async (data: any) => {
+    await persistSection("voice", data);
     setCurrentStep(10);
   };
 
@@ -250,15 +292,17 @@ export default function ProfileBuilderPage() {
     setCurrentStep(11);
   };
 
-  const handleReviewComplete = () => {
-    setCurrentStep(12); // Go to success screen
+  const handleReviewComplete = async () => {
+    await refreshUser();
+    setCurrentStep(12);
   };
 
   const handleFinish = () => {
     router.push("/dashboard");
   };
 
-  const isProfileCompleted = completedSteps.length >= 10;
+  const completionPercentage = user?.profileCompletion?.percentage ?? 0;
+  const isProfileCompleted = completionPercentage >= 80;
 
   if (isLoadingData) {
     return (
@@ -276,8 +320,8 @@ export default function ProfileBuilderPage() {
     );
   }
 
-  // 1. If profile is completed and user has NOT clicked "Edit Profile", show ONLY the centered success message!
-  if (isProfileCompleted && !isEditing) {
+  // 1. If user is on Step 12 (Completion step) and not explicitly editing a step, show success screen
+  if (currentStep === 12 && !isEditing) {
     return (
       <div className="min-h-[75vh] flex flex-col items-center justify-center px-4 py-12">
         <motion.div
@@ -297,7 +341,7 @@ export default function ProfileBuilderPage() {
 
           <div className="inline-flex items-center gap-1.5 px-3.5 py-1 bg-green-50 text-green-700 border border-green-200/80 rounded-full text-xs font-bold shadow-2xs mb-4">
             <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
-            Profile 100% Completed
+            Profile {completionPercentage}% Complete
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 font-playfair mb-3">
@@ -393,8 +437,9 @@ export default function ProfileBuilderPage() {
               <p className="text-xs text-gray-600">Our executives are here to guide you.</p>
             </div>
           </div>
-          <a href="tel:+919876543210" className="w-full sm:w-auto text-center shrink-0 bg-white border border-gray-200 text-brand-600 font-semibold px-4 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors shadow-sm">
-            Call Executive
+          <a href="tel:+919447868443" className="w-full sm:w-auto justify-center shrink-0 bg-white border border-brand-200 text-brand-700 font-bold px-4 py-2 rounded-xl text-sm hover:bg-brand-50 transition-colors shadow-xs flex items-center gap-1.5">
+            <PhoneCall className="w-4 h-4 text-brand-600" />
+            <span>Call +91 9447868443</span>
           </a>
         </div>
 
@@ -558,7 +603,8 @@ export default function ProfileBuilderPage() {
             <ReviewStep 
               onComplete={handleReviewComplete} 
               onBack={() => setCurrentStep(10)} 
-              onEditSection={(step) => setCurrentStep(step)} 
+              onEditSection={(step) => setCurrentStep(step)}
+              onCompletionUpdate={applyCompletion}
             />
           </motion.div>
         )}

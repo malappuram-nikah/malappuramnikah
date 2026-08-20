@@ -33,6 +33,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
     dateOfBirth: "",
     location: "",
     caste: "",
+    maritalStatus: "Never Married",
     countryCode: "+91",
     mobile: "",
     email: "",
@@ -179,6 +180,25 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
                       }`}
                   >
                     {g}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">Marital Status</label>
+              <div className="grid grid-cols-2 gap-3">
+                {["Never Married", "Divorced", "Widowed", "Awaiting Divorce"].map((status) => (
+                  <button
+                    key={status}
+                    type="button"
+                    onClick={() => updateForm("maritalStatus", status)}
+                    className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all ${formData.maritalStatus === status
+                        ? "border-brand-600 bg-brand-50 text-brand-700 ring-1 ring-brand-600"
+                        : "border-gray-200 hover:border-gray-300 text-gray-600"
+                      }`}
+                  >
+                    {status}
                   </button>
                 ))}
               </div>
@@ -370,7 +390,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
 
   const isStepValid = () => {
     switch (step) {
-      case 1: return formData.profileFor && formData.gender;
+      case 1: return Boolean(formData.profileFor && formData.gender && formData.maritalStatus);
       case 2: return formData.first_name.trim().length >= 2 && formData.last_name.trim().length >= 1 && formData.dateOfBirth;
       case 3: return formData.location && formData.caste;
       case 4:
@@ -402,6 +422,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
         location: formData.location,
         dob: formData.dateOfBirth,
         cast: formData.caste,
+        marital_status: formData.maritalStatus,
         email: formData.email || undefined,
         referred_by_code: formData.referralCode || undefined
       };

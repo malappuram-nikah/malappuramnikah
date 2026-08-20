@@ -6,6 +6,8 @@ import { motion } from "framer-motion";
 import { CheckCircle2, Save, Sparkles, Wand2, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { LOCATIONS } from "@/lib/constants";
+import { saveProfileSection } from "@/lib/profile-utils";
+import { useUser } from "@/context/UserContext";
 
 export interface BasicDetailsData {
   aboutMe: string;
@@ -43,6 +45,7 @@ export const showChildrenField = (status: string) => {
 };
 
 export default function BasicDetailsStep({ initialData, onComplete }: BasicDetailsStepProps) {
+  const { refreshUser } = useUser();
   const [formData, setFormData] = useState<BasicDetailsData>({
     aboutMe: "",
     name: "",
@@ -195,12 +198,12 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (validate()) {
+      await saveProfileSection(DRAFT_KEY, formData);
+      try { await refreshUser(); } catch {}
       if (onComplete) onComplete(formData);
-      // Optional: Clear draft after successful completion
-      // localStorage.removeItem(DRAFT_KEY);
     }
   };
 

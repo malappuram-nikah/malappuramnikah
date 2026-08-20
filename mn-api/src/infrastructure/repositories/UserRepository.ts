@@ -2,6 +2,7 @@ import { User } from "../../domain/entities/user.interface";
 import { IUserRepository } from "../../domain/interfaces/IUserRepository";
 import prisma from "../prisma/prisamClient";
 import bcrypt from 'bcryptjs'
+import { mergeProfileDetails } from "../../application/services/ProfileSectionService";
 
 
 export class UserRepository implements IUserRepository {
@@ -12,21 +13,22 @@ export class UserRepository implements IUserRepository {
             console.log('User successfully stored:', newUser);
             return newUser;
         } catch (error: any) {
-            console.error('Error storing user:', error);
             if (error.code === 'P2002' || (error.message && error.message.includes('Unique constraint failed'))) {
+                console.warn('User creation failed due to unique constraint:', error.meta);
                 const target = error.meta?.target;
                 const targetStr = Array.isArray(target) ? target.join(',') : String(target || '');
                 if (targetStr.includes('email') || (error.message && error.message.includes('email'))) {
-                    throw new Error('Email address already registered');
+                    throw new Error('Email address is already registered. Please log in or use a different email.');
                 }
                 if (targetStr.includes('mobile_number') || (error.message && error.message.includes('mobile_number'))) {
-                    throw new Error('Mobile number already registered');
+                    throw new Error('Mobile number is already registered. Please log in instead.');
                 }
                 if (targetStr.includes('referral_code') || (error.message && error.message.includes('referral_code'))) {
                     throw new Error('Referral code already exists');
                 }
-                throw new Error('User with these details already registered');
+                throw new Error('User with these details is already registered. Please log in instead.');
             }
+            console.error('Error storing user:', error);
             throw error;
         }
     }
@@ -134,38 +136,44 @@ export class UserRepository implements IUserRepository {
 
     async updateProfileDetails(id: number, profileDetails: any, coreFields?: any): Promise<User> {
         try {
+            const existing = await prisma.user.findUnique({
+                where: { id },
+                select: { profile_details: true },
+            });
+
             const dataToUpdate: any = {};
             if (profileDetails !== undefined) {
-                dataToUpdate.profile_details = profileDetails;
+                dataToUpdate.profile_details = mergeProfileDetails(
+                    (existing?.profile_details || {}) as Record<string, unknown>,
+                    profileDetails as Record<string, unknown>
+                );
 
-                // Sync core fields from profile details drafts if not explicitly overridden by coreFields
-                if (profileDetails) {
-                    const basic = profileDetails.mn_basic_details_draft || {};
-                    const religious = profileDetails.mn_religious_info_draft || {};
+                const merged = dataToUpdate.profile_details as Record<string, unknown>;
+                const basic = (merged.mn_basic_details_draft || {}) as Record<string, unknown>;
+                const religious = (merged.mn_religious_info_draft || {}) as Record<string, unknown>;
 
-                    if (basic.name) {
-                        const parts = basic.name.trim().split(/\s+/);
-                        dataToUpdate.first_name = parts[0] || "";
-                        dataToUpdate.last_name = parts.slice(1).join(" ") || "";
+                if (basic.name) {
+                    const parts = String(basic.name).trim().split(/\s+/);
+                    dataToUpdate.first_name = parts[0] || "";
+                    dataToUpdate.last_name = parts.slice(1).join(" ") || "";
+                }
+                if (basic.gender) {
+                    dataToUpdate.gender = basic.gender;
+                }
+                if (basic.presentLocation || basic.location) {
+                    dataToUpdate.location = basic.presentLocation || basic.location;
+                }
+                if (basic.age) {
+                    const birthYear = new Date().getFullYear() - parseInt(String(basic.age), 10);
+                    if (!isNaN(birthYear)) {
+                        dataToUpdate.dob = `${birthYear}-01-01`;
                     }
-                    if (basic.gender) {
-                        dataToUpdate.gender = basic.gender;
-                    }
-                    if (basic.presentLocation || basic.location) {
-                        dataToUpdate.location = basic.presentLocation || basic.location;
-                    }
-                    if (basic.age) {
-                        const birthYear = new Date().getFullYear() - parseInt(basic.age, 10);
-                        if (!isNaN(birthYear)) {
-                            dataToUpdate.dob = `${birthYear}-01-01`;
-                        }
-                    }
-                    if (religious.community) {
-                        dataToUpdate.cast = religious.community;
-                    }
-                    if (basic.profileFor) {
-                        dataToUpdate.profile_for = basic.profileFor;
-                    }
+                }
+                if (religious.community) {
+                    dataToUpdate.cast = religious.community;
+                }
+                if (basic.profileFor) {
+                    dataToUpdate.profile_for = basic.profileFor;
                 }
             }
             if (coreFields) {

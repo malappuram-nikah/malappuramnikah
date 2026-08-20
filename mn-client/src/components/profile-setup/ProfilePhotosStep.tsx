@@ -5,6 +5,9 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Save, Trash2, Plus } from "lucide-react";
 
+import { saveProfileSection } from "@/lib/profile-utils";
+import { useUser } from "@/context/UserContext";
+
 export interface PhotoData {
   id: string;
   dataUrl: string; // Base64 or URL
@@ -24,6 +27,7 @@ interface ProfilePhotosStepProps {
 const DRAFT_KEY = "mn_profile_photos_draft";
 
 export default function ProfilePhotosStep({ initialData, onComplete, onBack }: ProfilePhotosStepProps) {
+  const { refreshUser } = useUser();
   const [formData, setFormData] = useState<ProfilePhotosData>({
     photos: [],
     ...initialData,
@@ -153,9 +157,11 @@ export default function ProfilePhotosStep({ initialData, onComplete, onBack }: P
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (validate()) {
+      await saveProfileSection(DRAFT_KEY, formData);
+      try { await refreshUser(); } catch {}
       if (onComplete) onComplete(formData);
     }
   };

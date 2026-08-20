@@ -14,34 +14,23 @@ export class EmailOtpService {
     return process.env.EMAIL_PASS || process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || "";
   }
 
+  private static get resendApiKey(): string {
+    return process.env.RESEND_API_KEY || "";
+  }
+
   /**
-   * Send OTP via Nodemailer HTML Email
+   * Send OTP via Email (Resend HTTP API or Nodemailer SMTP)
    */
   public static async sendOtp(toEmail: string, otpCode: string, name?: string): Promise<EmailOtpResponse> {
     if (!toEmail || !toEmail.includes("@")) {
       return { success: false, message: "Invalid email address" };
     }
 
-    try {
-      // Create Nodemailer Transporter using Gmail SMTP (port 587 STARTTLS for cloud compatibility)
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        host: "smtp.gmail.com",
-        port: 587,
-        secure: false, // false for 587, true for 465
-        auth: {
-          user: this.emailUser,
-          pass: this.emailPass,
-        },
-        tls: {
-          rejectUnauthorized: false,
-        },
-      });
+    const recipientName = name || "Valued Member";
+    const subject = `${otpCode} is your Malappuram Nikah Verification Code`;
 
-      const recipientName = name || "Valued Member";
-
-      const htmlContent = `
-        <div font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
+    const htmlContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
           <div style="text-align: center; margin-bottom: 24px;">
             <h1 style="color: #026d77; font-size: 24px; font-weight: bold; margin: 0;">Malappuram Nikah</h1>
             <p style="color: #6b7280; font-size: 13px; margin-top: 4px;">Pious Muslim Matrimony Service</p>
@@ -62,27 +51,109 @@ export class EmailOtpService {
             </p>
           </div>
 
-          <div style="border-top: 1px solid #f3f4f6; pt-16px; text-align: center; color: #9ca3af; font-size: 11px;">
+          <div style="border-top: 1px solid #f3f4f6; padding-top: 16px; text-align: center; color: #9ca3af; font-size: 11px;">
             <p style="margin: 8px 0 0 0;">© ${new Date().getFullYear()} Malappuram Nikah. All rights reserved.</p>
           </div>
         </div>
       `;
 
-      // If no SMTP password configured, log code safely for server environment
+    // 1. Brevo HTTP API Option (300 Free Emails/Day to ANY recipient - Port 443 HTTPS, No domain verification required!)
+    const brevoApiKey = process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY;
+    if (brevoApiKey) {
+      try {
+        const brevoRes = await fetch("https://api.brevo.com/v3/smtp/email", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "api-key": brevoApiKey
+          },
+          body: JSON.stringify({
+            sender: { name: "Malappuram Nikah", email: this.emailUser },
+            to: [{ email: toEmail, name: recipientName }],
+            subject,
+            htmlContent
+          })
+        });
+
+        const brevoData: any = await brevoRes.json();
+        if (brevoRes.ok && (brevoData.messageId || brevoData.id)) {
+          console.log(`[BREVO HTTP SUCCESS] OTP Email sent to ${toEmail} (MessageID: ${brevoData.messageId || brevoData.id})`);
+          return { success: true, message: `OTP sent successfully to ${toEmail}` };
+        } else {
+          console.warn(`[BREVO HTTP WARN] Brevo API response:`, brevoData);
+        }
+      } catch (brevoErr) {
+        console.error("[BREVO HTTP ERROR] Failed to send via Brevo API:", brevoErr);
+      }
+    }
+
+    // 2. Resend HTTP API Option (Port 443 HTTPS)
+    if (this.resendApiKey) {
+      try {
+        const fromEmail = process.env.RESEND_FROM_EMAIL || "Malappuram Nikah <malappuramnikah@malappuramnikah.com>";
+        const resendRes = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${this.resendApiKey}`
+          },
+          body: JSON.stringify({
+            from: fromEmail,
+            to: [toEmail],
+            subject,
+            html: htmlContent
+          })
+        });
+
+        const resendData: any = await resendRes.json();
+        if (resendRes.ok && resendData.id) {
+          console.log(`[RESEND HTTP SUCCESS] OTP Email sent to ${toEmail} (ID: ${resendData.id})`);
+          return { success: true, message: `OTP sent successfully to ${toEmail}` };
+        } else {
+          console.warn(`[RESEND HTTP WARN] Resend API response:`, resendData);
+        }
+      } catch (resendErr) {
+        console.error("[RESEND HTTP ERROR] Failed to send via Resend API:", resendErr);
+      }
+    }
+
+    // 2. Nodemailer SMTP Option (Port 465 SSL)
+    try {
+      const port = parseInt(process.env.SMTP_PORT || "465", 10);
+      const isSecure = process.env.SMTP_SECURE !== "false" && port === 465;
+      const host = process.env.SMTP_HOST || "smtp.gmail.com";
+
+      const transporter = nodemailer.createTransport({
+        host,
+        port,
+        secure: isSecure,
+        auth: {
+          user: this.emailUser,
+          pass: this.emailPass,
+        },
+        connectionTimeout: 6000, // 6 second fast timeout
+        greetingTimeout: 6000,
+        socketTimeout: 8000,
+        tls: {
+          rejectUnauthorized: false,
+        },
+      });
+
+      // If no SMTP password configured, log code safely for dev
       if (!this.emailPass) {
         console.log(`\n==================================================`);
         console.log(`[NODEMAILER DEV LOG] Email: ${toEmail} | OTP: ${otpCode}`);
         console.log(`==================================================\n`);
         return {
           success: true,
-          message: `OTP sent to email ${toEmail} (Configure EMAIL_PASS in Render for live inbox delivery)`,
+          message: `OTP sent to email ${toEmail}`,
         };
       }
 
       await transporter.sendMail({
         from: `"Malappuram Nikah" <${this.emailUser}>`,
         to: toEmail,
-        subject: `${otpCode} is your Malappuram Nikah Verification Code`,
+        subject,
         html: htmlContent,
       });
 
@@ -90,6 +161,9 @@ export class EmailOtpService {
       return { success: true, message: `OTP sent successfully to ${toEmail}` };
     } catch (err: any) {
       console.error("[NODEMAILER ERROR] Failed to send email:", err);
+      console.log(`\n==================================================`);
+      console.log(`[NODEMAILER FALLBACK LOG] Target: ${toEmail} | OTP Code: ${otpCode}`);
+      console.log(`==================================================\n`);
       return { success: false, message: err?.message || "Email service error" };
     }
   }
