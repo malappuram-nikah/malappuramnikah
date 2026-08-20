@@ -35,14 +35,33 @@ admin_route.post("/login", async (req: Request, res: Response) => {
     if (email !== undefined && password !== undefined) {
       const inputEmail = String(email).trim().toLowerCase();
 
-      let adminAccount = await prisma.admin.findFirst({
-        where: {
-          OR: [
-            { email: inputEmail },
-            { email: { equals: inputEmail, mode: "insensitive" } },
-          ],
-        },
-      });
+      let adminAccount: any = null;
+      try {
+        adminAccount = await prisma.admin.findFirst({
+          where: {
+            OR: [
+              { email: inputEmail },
+              { email: { equals: inputEmail, mode: "insensitive" } },
+            ],
+          },
+        });
+      } catch (prismaErr: any) {
+        console.warn("Prisma findFirst warning, attempting raw fallback:", prismaErr?.message || prismaErr);
+      }
+
+      if (!adminAccount) {
+        try {
+          const rawAdmins: any[] = await prisma.$queryRawUnsafe(
+            `SELECT id, email, name, password, mobile_number, is_active, role::text FROM admin WHERE LOWER(email) = $1 LIMIT 1`,
+            inputEmail
+          );
+          if (rawAdmins && rawAdmins.length > 0) {
+            adminAccount = rawAdmins[0];
+          }
+        } catch (rawErr) {
+          console.warn("Raw admin lookup error:", rawErr);
+        }
+      }
 
       if (adminAccount) {
         const isMatch = await bcrypt.compare(String(password), adminAccount.password);
