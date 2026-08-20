@@ -287,7 +287,10 @@ async function adminGuard(req: Request, res: Response, next: Function) {
       return;
     }
 
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, mobile_number: true, profile_details: true },
+    });
     const profileDetails = user?.profile_details as any;
     if (user && (profileDetails?.isAdmin === true || user.mobile_number === "+911212121212" || user.mobile_number === "+919876543210")) {
       next();
