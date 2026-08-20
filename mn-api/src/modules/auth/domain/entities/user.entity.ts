@@ -1,0 +1,34 @@
+export interface UserEntity {
+  id?: number;
+  uuid?: string | null;
+  profile_for: string;
+  gender: string;
+  first_name: string;
+  last_name: string;
+  cast: string;
+  location: string;
+  email?: string | null;
+  mobile_number: string;
+  password: string;
+  dob: string;
+  status: string;
+  is_premium: boolean;
+  is_new_user: boolean;
+  last_login?: Date | null;
+  profile_details?: Record<string, any> | null;
+  search_preferences?: Record<string, any> | null;
+  kyc_status: string;
+  kyc_document_type?: string | null;
+  kyc_front_url?: string | null;
+  kyc_back_url?: string | null;
+  kyc_rejected_reason?: string | null;
+  kyc_submitted_at?: Date | null;
+  kyc_verified_at?: Date | null;
+  call_status?: string | null;
+  called_date?: Date | null;
+  call_response?: string | null;
+  referral_code?: string | null;
+  referral_points: number;
+  created_at?: Date;
+  updated_at?: Date;
+}
