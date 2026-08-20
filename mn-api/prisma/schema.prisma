@@ -16,9 +16,11 @@ enum AccountStatus {
 enum KycStatus {
   NOT_SUBMITTED
   PENDING
+  SUBMITTED
   UNDER_REVIEW
   VERIFIED
   REJECTED
+  RESUBMITTED
 }
 
 enum InterestStatus {

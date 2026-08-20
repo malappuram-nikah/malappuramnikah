@@ -2,19 +2,15 @@ import { IKycRepository } from "../../domain/repositories/IKycRepository";
 import { IStorageRepository } from "../../../../shared/storage/IStorageRepository";
 import { KycSubmissionDto } from "../../domain/entities/kyc.entity";
 import { KycValidator } from "../../domain/services/KycValidator";
-import { BadRequestError } from "../../../../shared/errors/AppError";
+import { NotFoundError } from "../../../../shared/errors/AppError";
 
-export class SubmitKycUseCase {
+export class ResubmitKycUseCase {
   constructor(
     private kycRepository: IKycRepository,
     private storageRepository: IStorageRepository
   ) {}
 
   async execute(dto: KycSubmissionDto): Promise<{ message: string; applicationId: number }> {
-    if (!dto.userId) {
-      throw new BadRequestError("User ID is required.");
-    }
-
     const docTypeUpper = KycValidator.validateDocType(dto.documentType);
     KycValidator.validateBase64File(dto.frontBase64, "Front document");
 
@@ -22,12 +18,15 @@ export class SubmitKycUseCase {
       KycValidator.validateBase64File(dto.backBase64, "Back document");
     }
 
-    const existingApp = await this.kycRepository.getApplicationByUserId(dto.userId);
-    if (existingApp) {
-      KycValidator.validateStateTransition(existingApp.status, "SUBMIT");
+    const application = await this.kycRepository.getApplicationByUserId(dto.userId);
+    if (!application) {
+      throw new NotFoundError("No existing KYC application found to resubmit.");
     }
 
-    // Upload document images securely via storage repository
+    KycValidator.validateOwnership(application.user_id, dto.userId);
+    KycValidator.validateStateTransition(application.status, "RESUBMIT");
+
+    // Upload new documents securely
     const frontUpload = await this.storageRepository.uploadFile(dto.frontBase64, "kyc");
     let backUrl: string | undefined = undefined;
 
@@ -36,15 +35,14 @@ export class SubmitKycUseCase {
       backUrl = backUpload.url;
     }
 
-    // Update legacy User fields for backwards-compatibility
+    await this.kycRepository.addOrReplaceDocument(application.id, docTypeUpper, frontUpload.url, backUrl || null);
     await this.kycRepository.updateUserKyc(dto.userId, docTypeUpper, frontUpload.fileName || frontUpload.url, backUrl || null);
 
-    const application = await this.kycRepository.createOrUpdateApplication(dto.userId, "SUBMITTED");
-    await this.kycRepository.addOrReplaceDocument(application.id, docTypeUpper, frontUpload.url, backUrl || null);
+    const updatedApp = await this.kycRepository.updateApplicationStatus(application.id, "RESUBMITTED");
 
     return {
-      message: "KYC documents submitted successfully. Verification is pending admin review.",
-      applicationId: application.id,
+      message: "KYC documents resubmitted successfully.",
+      applicationId: updatedApp.id,
     };
   }
 }
