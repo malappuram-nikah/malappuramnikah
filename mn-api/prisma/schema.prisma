@@ -546,6 +546,9 @@ model Interest {
   receiver    User     @relation("ReceivedInterests", fields: [receiver_id], references: [id], onDelete: Cascade)
 
   @@unique([sender_id, receiver_id])
+  @@index([sender_id])
+  @@index([receiver_id])
+  @@index([status])
   @@map("interest")
 }
 
@@ -630,6 +633,8 @@ model Block {
   blocked    User     @relation("Blocked", fields: [blocked_id], references: [id], onDelete: Cascade)
 
   @@unique([blocker_id, blocked_id])
+  @@index([blocker_id])
+  @@index([blocked_id])
   @@map("block")
 }
 
@@ -643,6 +648,8 @@ model Favourite {
   favourited    User     @relation("Favourited", fields: [favourited_id], references: [id], onDelete: Cascade)
 
   @@unique([favouriter_id, favourited_id])
+  @@index([favouriter_id])
+  @@index([favourited_id])
   @@map("favourite")
 }
 
@@ -670,6 +677,9 @@ model ProfileView {
   viewed     User     @relation("Viewed", fields: [viewed_id], references: [id], onDelete: Cascade)
 
   @@unique([viewer_id, viewed_id])
+  @@index([viewer_id])
+  @@index([viewed_id])
+  @@index([created_at])
   @@map("profile_view")
 }
 

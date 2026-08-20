@@ -14,6 +14,7 @@ import { referralRouter } from "./modules/referrals";
 import { searchRouter } from "./modules/search";
 import { businessRouter } from "./modules/business";
 import { adminRouter } from "./modules/admin";
+import { interactionRouter } from "./modules/interactions";
 
 const app = express();
 
@@ -87,6 +88,7 @@ app.use("/user", authRouter);
 app.use("/user", kycRouter);
 app.use("/user", businessRouter);
 app.use("/user", profileRouter);
+app.use("/user", interactionRouter);
 
 // Centralized Error Handling Middleware
 app.use(errorHandler as any);
