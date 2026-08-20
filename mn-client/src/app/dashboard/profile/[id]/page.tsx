@@ -196,7 +196,8 @@ export default function ProfileDetailPage({ params }: PageProps) {
   const isMutual = interests.mutual.includes(profile.id);
   const isSent = interests.sent.includes(profile.id);
   const isReceived = interests.received.includes(profile.id);
-  const canViewProfile = isMutual || isSelf;
+  const isMaleProfile = profile.gender?.toLowerCase() === "male";
+  const canViewProfile = isMutual || isSelf || isMaleProfile;
 
   let interestBtnText = "Express Interest";
   let interestBtnStyle = "bg-brand-600 hover:bg-brand-700 text-white shadow-brand-600/10";

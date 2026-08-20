@@ -648,8 +648,8 @@ export default function AIMatchesLegacy() {
               {aiData.dailyPicks.map((profile, i) => {
                 const isMutual = interests.mutual.includes(profile.id);
                 const isSent = interests.sent.includes(profile.id);
-                const isReceived = interests.received.includes(profile.id);
-                const canViewProfile = isMutual;
+                const isMale = (profile.gender || "").toLowerCase() === "male";
+                const canViewProfile = isMutual || isMale;
 
                 return (
                   <motion.div
@@ -770,8 +770,8 @@ export default function AIMatchesLegacy() {
                 {aiData.similarPersonality.map(profile => {
                   const isMutual = interests.mutual.includes(profile.id);
                   const isSent = interests.sent.includes(profile.id);
-                  const isReceived = interests.received.includes(profile.id);
-                  const canViewProfile = isMutual;
+                  const isMale = (profile.gender || "").toLowerCase() === "male";
+                  const canViewProfile = isMutual || isMale;
 
                   return (
                     <div 
@@ -842,8 +842,8 @@ export default function AIMatchesLegacy() {
                 {aiData.nearby.map(profile => {
                   const isMutual = interests.mutual.includes(profile.id);
                   const isSent = interests.sent.includes(profile.id);
-                  const isReceived = interests.received.includes(profile.id);
-                  const canViewProfile = isMutual;
+                  const isMale = (profile.gender || "").toLowerCase() === "male";
+                  const canViewProfile = isMutual || isMale;
 
                   return (
                     <div 

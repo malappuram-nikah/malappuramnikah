@@ -270,7 +270,8 @@ export default function DashboardPage() {
               const isMutual = interests.mutual.includes(match.id);
               const isSent = interests.sent.includes(match.id);
               const isReceived = interests.received.includes(match.id);
-              const canViewProfile = isMutual;
+              const isMale = (match.gender || "").toLowerCase() === "male";
+              const canViewProfile = isMutual || isMale;
 
               let interestText = "Connect";
               let interestStyle = "bg-[#026d77]/10 text-[#026d77] hover:bg-[#026d77] hover:text-white hover:shadow-xs";

@@ -25,6 +25,7 @@ interface ProfileSlideOverProps {
     matchScore?: number;
     match?: number;
     img?: string;
+    gender?: string;
     kyc_status?: string;
   } | null;
   onClose: () => void;
@@ -141,7 +142,9 @@ export default function ProfileSlideOver({
   const isMutual = interests.mutual.includes(profile.id);
   const isSent = interests.sent.includes(profile.id);
   const isReceived = interests.received.includes(profile.id);
-  const canViewProfile = isMutual;
+  const genderVal = profile.gender || fullUser?.gender || "";
+  const isMaleProfile = genderVal.toLowerCase() === "male";
+  const canViewProfile = isMutual || isMaleProfile;
 
   let modalBtnText = "Send Interest";
   let modalBtnStyle = "bg-brand-600 text-white hover:bg-brand-700 shadow-sm";

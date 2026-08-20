@@ -360,7 +360,9 @@ export default function SearchPage() {
               {profiles.map((p) => {
                 const isSent = interests.sent.includes(p.id);
                 const isMutual = interests.mutual.includes(p.id);
-                const canViewPhoto = isMutual;
+                const isMale = (p.gender || "").toLowerCase() === "male";
+                const canViewPhoto = isMutual || isMale;
+                const shouldBlurPhoto = !canViewPhoto || (p.isBlurred && !isMale);
                 
                 // Format full name without asterisks
                 const displayName = `${p.first_name || ""} ${p.last_name || ""}`.trim() || p.name || "Member";
@@ -381,7 +383,7 @@ export default function SearchPage() {
                       <img 
                         src={p.img} 
                         alt={displayName} 
-                        className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 z-0 ${!canViewPhoto ? "blur-md scale-110 opacity-80 select-none" : p.isBlurred ? "blur-md scale-110 opacity-80 select-none" : ""}`} 
+                        className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 z-0 ${shouldBlurPhoto ? "blur-md scale-110 opacity-80 select-none" : ""}`} 
                       />
                     ) : (
                       <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#026d77]/10 via-[#026d77]/20 to-[#026d77]/35 flex flex-col items-center justify-center p-6 text-center z-0">
@@ -398,11 +400,11 @@ export default function SearchPage() {
                     )}
 
                     {/* Lock Blur Overlay */}
-                    {(!canViewPhoto || p.isBlurred) && (
+                    {shouldBlurPhoto && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/10 backdrop-blur-[2px] z-10">
                         <div className="bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full text-[10px] font-bold text-gray-800 shadow-lg flex items-center gap-1">
                           <Lock className="w-3.5 h-3.5 text-amber-500" />
-                          <span>{canViewPhoto ? "Premium to View Photo" : "Connect mutually to view photo"}</span>
+                          <span>Connect mutually to view photo</span>
                         </div>
                       </div>
                     )}
