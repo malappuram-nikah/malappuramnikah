@@ -5,13 +5,13 @@ import { AdminUser } from "./admin-api";
 export function getUserPlace(user: AdminUser): string {
   if (user.location && user.location.trim()) return user.location;
   const details = (user.profile_details || {}) as Record<string, any>;
-  const basic = (details.basicDetails || details) as Record<string, any>;
+  const basic = (details.basicDetails || details.mn_basic_details_draft || details) as Record<string, any>;
   return basic.presentLocation || basic.location || "—";
 }
 
 export function getMaritalStatus(user: AdminUser): string {
   const details = (user.profile_details || {}) as Record<string, any>;
-  const basic = (details.basicDetails || details) as Record<string, any>;
+  const basic = (details.basicDetails || details.mn_basic_details_draft || details) as Record<string, any>;
   return basic.maritalStatus || basic.marital_status || "—";
 }
 
