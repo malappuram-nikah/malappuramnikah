@@ -116,7 +116,7 @@ model User {
   member_media           MemberMedia[]
   kyc_application        KycApplication?
   notification_preference NotificationPreference?
-  business_owners        BusinessOwner[]
+  business_profile       BusinessProfile?
   business_bookings      BusinessBooking[] @relation("CustomerBookings")
   business_reviews       BusinessReview[]
 
@@ -297,178 +297,167 @@ model KycDocument {
   @@map("kyc_document")
 }
 
-model Business {
-  id              Int            @id @default(autoincrement())
-  name            String
-  category        String
-  description     String?
-  location        String
-  contact_phone   String
-  contact_email   String?
-  status          BusinessStatus @default(PENDING)
-  commission_rate Float          @default(10.0)
-  rating          Float          @default(5.0)
-  revenue         Float          @default(0.0)
-  created_at      DateTime       @default(now())
-  updated_at      DateTime       @updatedAt
+model BusinessCategory {
+  id          Int               @id @default(autoincrement())
+  name        String            @unique
+  description String?
+  is_active   Boolean           @default(true)
+  created_at  DateTime          @default(now())
 
-  owners          BusinessOwner[]
-  team_members    BusinessTeamMember[]
-  services        BusinessService[]
-  media           BusinessMedia[]
-  availabilities  BusinessAvailability[]
-  blocked_dates   BusinessBlockedDate[]
-  subscriptions   BusinessSubscription[]
-  bookings        BusinessBooking[]
-  commissions     BusinessCommission[]
-  reviews         BusinessReview[]
-  rankings        BusinessRanking[]
+  profiles    BusinessProfile[]
+  rankings    BusinessRanking[]
 
-  @@map("business")
+  @@map("business_category")
 }
 
-model BusinessOwner {
-  id          Int      @id @default(autoincrement())
-  user_id     Int
-  business_id Int
-  role        String   @default("OWNER")
-  created_at  DateTime @default(now())
+model BusinessProfile {
+  id                        Int             @id @default(autoincrement())
+  user_id                   Int             @unique
+  category_id               Int
+  business_name             String
+  description               String?
+  experience_years          Int?            @default(0)
+  location                  String
+  phone                     String?
+  email                     String?
+  website                   String?
+  monetization_model        String          @default("ONE_TIME") // ONE_TIME, COMMISSION
+  status                    String          @default("ACTIVE")   // ACTIVE, SUSPENDED, PENDING
+  verification_status       String          @default("UNVERIFIED") // UNVERIFIED, VERIFIED, REJECTED
+  average_rating            Float           @default(0.0)
+  total_reviews             Int             @default(0)
+  total_completed_bookings  Int             @default(0)
+  created_at                DateTime        @default(now())
+  updated_at                DateTime        @updatedAt
 
-  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  business    Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
+  user                      User            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  category                  BusinessCategory @relation(fields: [category_id], references: [id])
+  media                     BusinessMedia[]
+  social_links              BusinessSocialLink[]
+  works                     BusinessWork[]
+  offers                    BusinessOffer[]
+  bookings                  BusinessBooking[]
+  reviews                   BusinessReview[]
+  rankings                  BusinessRanking[]
 
-  @@unique([user_id, business_id])
-  @@map("business_owner")
-}
-
-model BusinessTeamMember {
-  id            Int      @id @default(autoincrement())
-  business_id   Int
-  name          String
-  role          String
-  mobile_number String
-  email         String?
-  created_at    DateTime @default(now())
-
-  business      Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
-
-  @@index([business_id])
-  @@map("business_team_member")
-}
-
-model BusinessService {
-  id               Int      @id @default(autoincrement())
-  business_id      Int
-  title            String
-  description      String?
-  price            Float
-  currency         String   @default("INR")
-  duration_minutes Int?
-  is_active        Boolean  @default(true)
-  created_at       DateTime @default(now())
-
-  business         Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
-  booking_items    BusinessBookingItem[]
-
-  @@index([business_id])
-  @@map("business_service")
+  @@index([user_id])
+  @@index([category_id])
+  @@index([status])
+  @@map("business_profile")
 }
 
 model BusinessMedia {
-  id          Int      @id @default(autoincrement())
+  id          Int             @id @default(autoincrement())
   business_id Int
+  media_type  String          @default("PHOTO")
+  storage_key String?
   url         String
-  media_type  String   @default("PHOTO")
-  is_primary  Boolean  @default(false)
-  created_at  DateTime @default(now())
+  sort_order  Int             @default(0)
+  is_primary  Boolean         @default(false)
+  metadata    Json?
+  created_at  DateTime        @default(now())
 
-  business    Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
+  business    BusinessProfile @relation(fields: [business_id], references: [id], onDelete: Cascade)
 
   @@index([business_id])
   @@map("business_media")
 }
 
-model BusinessAvailability {
-  id           Int      @id @default(autoincrement())
-  business_id  Int
-  day_of_week  Int      // 0=Sun, 1=Mon, ..., 6=Sat
-  start_time   String
-  end_time     String
-  is_available Boolean  @default(true)
-
-  business     Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
-
-  @@index([business_id])
-  @@map("business_availability")
-}
-
-model BusinessBlockedDate {
-  id           Int      @id @default(autoincrement())
-  business_id  Int
-  blocked_date DateTime
-  reason       String?
-
-  business     Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
-
-  @@index([business_id])
-  @@map("business_blocked_date")
-}
-
-model BusinessSubscription {
-  id          Int      @id @default(autoincrement())
+model BusinessSocialLink {
+  id          Int             @id @default(autoincrement())
   business_id Int
-  plan_name   String
-  status      String   @default("ACTIVE")
-  starts_at   DateTime @default(now())
-  expires_at  DateTime
+  platform    String          // Instagram, Facebook, YouTube, Website, Other
+  url         String
+  created_at  DateTime        @default(now())
 
-  business    Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
+  business    BusinessProfile @relation(fields: [business_id], references: [id], onDelete: Cascade)
 
   @@index([business_id])
-  @@map("business_subscription")
+  @@map("business_social_link")
+}
+
+model BusinessWork {
+  id            Int                 @id @default(autoincrement())
+  business_id   Int
+  title         String
+  description   String?
+  category_type String?
+  work_date     String?
+  is_published  Boolean             @default(true)
+  created_at    DateTime            @default(now())
+  updated_at    DateTime            @updatedAt
+
+  business      BusinessProfile     @relation(fields: [business_id], references: [id], onDelete: Cascade)
+  media         BusinessWorkMedia[]
+
+  @@index([business_id])
+  @@map("business_work")
+}
+
+model BusinessWorkMedia {
+  id         Int          @id @default(autoincrement())
+  work_id    Int
+  media_type String       @default("PHOTO")
+  url        String
+  created_at DateTime     @default(now())
+
+  work       BusinessWork @relation(fields: [work_id], references: [id], onDelete: Cascade)
+
+  @@index([work_id])
+  @@map("business_work_media")
+}
+
+model BusinessOffer {
+  id               Int             @id @default(autoincrement())
+  business_id      Int
+  title            String
+  description      String?
+  price            Float
+  discounted_price Float?
+  validity_from    DateTime
+  validity_to      DateTime
+  is_active        Boolean         @default(true)
+  created_at       DateTime        @default(now())
+  updated_at       DateTime        @updatedAt
+
+  business         BusinessProfile @relation(fields: [business_id], references: [id], onDelete: Cascade)
+
+  @@index([business_id])
+  @@index([is_active])
+  @@map("business_offer")
 }
 
 model BusinessBooking {
-  id           Int           @id @default(autoincrement())
-  business_id  Int
-  customer_id  Int
-  booking_date DateTime
-  status       BookingStatus @default(PENDING)
-  total_amount Float
-  created_at   DateTime      @default(now())
-  updated_at   DateTime      @updatedAt
+  id                 Int             @id @default(autoincrement())
+  business_id        Int
+  customer_id        Int
+  booking_date       DateTime
+  status             String          @default("PENDING") // PENDING, CONFIRMED, REJECTED, CANCELLED, COMPLETED
+  gross_amount       Float
+  monetization_model String          @default("ONE_TIME")
+  commission_rate    Float           @default(0.0)
+  commission_amount  Float           @default(0.0)
+  business_amount    Float           @default(0.0)
+  created_at         DateTime        @default(now())
+  updated_at         DateTime        @updatedAt
 
-  business     Business      @relation(fields: [business_id], references: [id], onDelete: Cascade)
-  customer     User          @relation("CustomerBookings", fields: [customer_id], references: [id], onDelete: Cascade)
+  business           BusinessProfile @relation(fields: [business_id], references: [id], onDelete: Cascade)
+  customer           User            @relation("CustomerBookings", fields: [customer_id], references: [id], onDelete: Cascade)
 
-  items        BusinessBookingItem[]
-  payments     BusinessPayment[]
-  commissions  BusinessCommission[]
+  payments           BusinessPayment[]
+  review             BusinessReview?
 
   @@index([business_id])
   @@index([customer_id])
+  @@index([status])
   @@map("business_booking")
-}
-
-model BusinessBookingItem {
-  id          Int             @id @default(autoincrement())
-  booking_id  Int
-  service_id  Int
-  quantity    Int             @default(1)
-  price       Float
-
-  booking     BusinessBooking @relation(fields: [booking_id], references: [id], onDelete: Cascade)
-  service     BusinessService @relation(fields: [service_id], references: [id], onDelete: Cascade)
-
-  @@index([booking_id])
-  @@map("business_booking_item")
 }
 
 model BusinessPayment {
   id                    Int             @id @default(autoincrement())
   booking_id            Int
   amount                Float
-  payment_status        String          @default("COMPLETED")
+  status                String          @default("COMPLETED")
   payment_method        String?
   transaction_reference String?
   created_at            DateTime        @default(now())
@@ -479,32 +468,21 @@ model BusinessPayment {
   @@map("business_payment")
 }
 
-model BusinessCommission {
-  id                Int             @id @default(autoincrement())
-  business_id       Int
-  booking_id        Int
-  commission_amount Float
-  payout_status     String          @default("PENDING")
-  created_at        DateTime        @default(now())
-
-  business          Business        @relation(fields: [business_id], references: [id], onDelete: Cascade)
-  booking           BusinessBooking @relation(fields: [booking_id], references: [id], onDelete: Cascade)
-
-  @@index([business_id])
-  @@index([booking_id])
-  @@map("business_commission")
-}
-
 model BusinessReview {
-  id          Int      @id @default(autoincrement())
+  id          Int             @id @default(autoincrement())
   business_id Int
   user_id     Int
-  rating      Int      // 1-5
+  booking_id  Int             @unique
+  rating      Int             // 1 to 5
+  subject     String?
   comment     String?
-  created_at  DateTime @default(now())
+  status      String          @default("APPROVED")
+  created_at  DateTime        @default(now())
+  updated_at  DateTime        @updatedAt
 
-  business    Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
-  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  business    BusinessProfile @relation(fields: [business_id], references: [id], onDelete: Cascade)
+  user        User            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  booking     BusinessBooking @relation(fields: [booking_id], references: [id], onDelete: Cascade)
 
   @@index([business_id])
   @@index([user_id])
@@ -512,15 +490,17 @@ model BusinessReview {
 }
 
 model BusinessRanking {
-  id            Int      @id @default(autoincrement())
-  business_id   Int
-  score         Float    @default(0.0)
-  rank_category String?
-  updated_at    DateTime @updatedAt
+  id          Int             @id @default(autoincrement())
+  business_id Int
+  category_id Int
+  score       Float           @default(0.0)
+  updated_at  DateTime        @updatedAt
 
-  business      Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
+  business    BusinessProfile @relation(fields: [business_id], references: [id], onDelete: Cascade)
+  category    BusinessCategory @relation(fields: [category_id], references: [id], onDelete: Cascade)
 
   @@index([business_id])
+  @@index([category_id])
   @@map("business_ranking")
 }
 
