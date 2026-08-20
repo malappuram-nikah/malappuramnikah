@@ -45,7 +45,7 @@ export class PrismaAdminRepository implements IAdminRepository {
       where: { email: data.email },
       update: {
         password: data.passwordHash,
-        role: data.role,
+        role: data.role as any,
         is_active: true,
       },
       create: {
@@ -53,7 +53,7 @@ export class PrismaAdminRepository implements IAdminRepository {
         email: data.email,
         mobile_number: data.mobile_number,
         password: data.passwordHash,
-        role: data.role,
+        role: data.role as any,
         is_active: true,
       },
     });

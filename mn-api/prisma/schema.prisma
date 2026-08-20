@@ -7,6 +7,52 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum AccountStatus {
+  IN_ACTIVE
+  ACTIVE
+  SUSPENDED
+}
+
+enum KycStatus {
+  NOT_SUBMITTED
+  PENDING
+  UNDER_REVIEW
+  VERIFIED
+  REJECTED
+}
+
+enum InterestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum ReferralStatus {
+  PENDING
+  SUCCESS
+  REJECTED
+}
+
+enum BusinessStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  MODERATOR
+  SUPPORT
+}
+
 model User {
   id             Int       @id @default(autoincrement())
   uuid           String?   @default(uuid()) @unique
@@ -38,27 +84,441 @@ model User {
   call_response      String?
   created_at     DateTime  @default(now())
   updated_at     DateTime  @updatedAt
-  verify         Verify[]
-  sent_interests     Interest[] @relation("SentInterests")
-  received_interests Interest[] @relation("ReceivedInterests")
-  referral_code      String?    @unique
-  referral_points    Int        @default(0)
-  referrals_sent     Referral[] @relation("Referrer")
-  referrals_received Referral[] @relation("ReferredUser")
-  referral_transactions ReferralTransaction[]
-  blocking           Block[]    @relation("Blocker")
-  blocked_by         Block[]    @relation("Blocked")
-  favouriting        Favourite[] @relation("Favouriter")
-  favourited_by      Favourite[] @relation("Favourited")
-  sent_messages      Message[]  @relation("SentMessages")
-  received_messages  Message[]  @relation("ReceivedMessages")
-  feedbacks          Feedback[]
-  views_sent         ProfileView[] @relation("Viewer")
-  views_received     ProfileView[] @relation("Viewed")
+
+  verify                 Verify[]
+  sent_interests         Interest[] @relation("SentInterests")
+  received_interests     Interest[] @relation("ReceivedInterests")
+  referral_code          String?    @unique
+  referral_points        Int        @default(0)
+  referrals_sent         Referral[] @relation("Referrer")
+  referrals_received     Referral[] @relation("ReferredUser")
+  referral_transactions  ReferralTransaction[]
+  blocking               Block[]    @relation("Blocker")
+  blocked_by             Block[]    @relation("Blocked")
+  favouriting            Favourite[] @relation("Favouriter")
+  favourited_by          Favourite[] @relation("Favourited")
+  sent_messages          Message[]  @relation("SentMessages")
+  received_messages      Message[]  @relation("ReceivedMessages")
+  feedbacks              Feedback[]
+  views_sent             ProfileView[] @relation("Viewer")
+  views_received         ProfileView[] @relation("Viewed")
+
+  // Normalized Domain Relations
+  member_profile         MemberProfile?
+  member_preference      MemberPreference?
+  member_education       MemberEducation[]
+  member_occupation      MemberOccupation[]
+  member_family          MemberFamily?
+  member_location        MemberLocation?
+  member_privacy         MemberPrivacy?
+  member_media           MemberMedia[]
+  kyc_application        KycApplication?
+  business_owners        BusinessOwner[]
+  business_bookings      BusinessBooking[] @relation("CustomerBookings")
+  business_reviews       BusinessReview[]
 
   @@map("user")
 }
 
+model MemberProfile {
+  id             Int      @id @default(autoincrement())
+  user_id        Int      @unique
+  profile_for    String
+  gender         String
+  first_name     String
+  last_name      String
+  dob            String
+  marital_status String?
+  height_cm      Int?
+  weight_kg      Int?
+  mother_tongue  String?  @default("Malayalam")
+  about_me       String?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  user           User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("member_profile")
+}
+
+model MemberPreference {
+  id                    Int      @id @default(autoincrement())
+  user_id               Int      @unique
+  age_min               Int?     @default(18)
+  age_max               Int?     @default(60)
+  height_min            Int?
+  height_max            Int?
+  marital_status_list   Json?
+  district_list         Json?
+  education_list        Json?
+  profession_list       Json?
+  community_list        Json?
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  user                  User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("member_preference")
+}
+
+model MemberEducation {
+  id                Int      @id @default(autoincrement())
+  user_id           Int
+  highest_education String
+  degree            String?
+  institution       String?
+  education_field   String?
+  created_at        DateTime @default(now())
+
+  user              User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("member_education")
+}
+
+model MemberOccupation {
+  id              Int      @id @default(autoincrement())
+  user_id         Int
+  occupation_type String?
+  profession      String?
+  company_name    String?
+  annual_income   String?
+  currency        String?  @default("INR")
+  created_at      DateTime @default(now())
+
+  user            User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("member_occupation")
+}
+
+model MemberFamily {
+  id                Int      @id @default(autoincrement())
+  user_id           Int      @unique
+  family_status     String?
+  financial_status  String?
+  family_type       String?
+  father_name       String?
+  father_occupation String?
+  mother_name       String?
+  mother_occupation String?
+  siblings_count    Int?     @default(0)
+  created_at        DateTime @default(now())
+
+  user              User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("member_family")
+}
+
+model MemberLocation {
+  id           Int      @id @default(autoincrement())
+  user_id      Int      @unique
+  country      String   @default("India")
+  state        String   @default("Kerala")
+  district     String?
+  city         String?
+  pincode      String?
+  native_place String?
+  created_at   DateTime @default(now())
+
+  user         User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("member_location")
+}
+
+model MemberPrivacy {
+  id                       Int      @id @default(autoincrement())
+  user_id                  Int      @unique
+  phone_privacy            String   @default("MATCHES_ONLY")
+  photo_privacy            String   @default("PUBLIC")
+  biodata_download_allowed Boolean  @default(true)
+  created_at               DateTime @default(now())
+
+  user                     User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("member_privacy")
+}
+
+model MemberMedia {
+  id          Int      @id @default(autoincrement())
+  user_id     Int
+  media_type  String   @default("PHOTO") // PHOTO, VOICE, VIDEO
+  url         String
+  is_primary  Boolean  @default(false)
+  is_approved Boolean  @default(true)
+  created_at  DateTime @default(now())
+
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("member_media")
+}
+
+model KycApplication {
+  id              Int        @id @default(autoincrement())
+  user_id         Int        @unique
+  status          KycStatus  @default(NOT_SUBMITTED)
+  submitted_at    DateTime?
+  verified_at     DateTime?
+  rejected_reason String?
+  created_at      DateTime   @default(now())
+  updated_at      DateTime   @updatedAt
+
+  user            User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  documents       KycDocument[]
+
+  @@map("kyc_application")
+}
+
+model KycDocument {
+  id                 Int            @id @default(autoincrement())
+  kyc_application_id Int
+  document_type      String
+  front_url          String?
+  back_url           String?
+  is_verified        Boolean        @default(false)
+  created_at         DateTime       @default(now())
+
+  kyc_application    KycApplication @relation(fields: [kyc_application_id], references: [id], onDelete: Cascade)
+
+  @@index([kyc_application_id])
+  @@map("kyc_document")
+}
+
+model Business {
+  id              Int            @id @default(autoincrement())
+  name            String
+  category        String
+  description     String?
+  location        String
+  contact_phone   String
+  contact_email   String?
+  status          BusinessStatus @default(PENDING)
+  commission_rate Float          @default(10.0)
+  rating          Float          @default(5.0)
+  revenue         Float          @default(0.0)
+  created_at      DateTime       @default(now())
+  updated_at      DateTime       @updatedAt
+
+  owners          BusinessOwner[]
+  team_members    BusinessTeamMember[]
+  services        BusinessService[]
+  media           BusinessMedia[]
+  availabilities  BusinessAvailability[]
+  blocked_dates   BusinessBlockedDate[]
+  subscriptions   BusinessSubscription[]
+  bookings        BusinessBooking[]
+  commissions     BusinessCommission[]
+  reviews         BusinessReview[]
+  rankings        BusinessRanking[]
+
+  @@map("business")
+}
+
+model BusinessOwner {
+  id          Int      @id @default(autoincrement())
+  user_id     Int
+  business_id Int
+  role        String   @default("OWNER")
+  created_at  DateTime @default(now())
+
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  business    Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, business_id])
+  @@map("business_owner")
+}
+
+model BusinessTeamMember {
+  id            Int      @id @default(autoincrement())
+  business_id   Int
+  name          String
+  role          String
+  mobile_number String
+  email         String?
+  created_at    DateTime @default(now())
+
+  business      Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
+
+  @@index([business_id])
+  @@map("business_team_member")
+}
+
+model BusinessService {
+  id               Int      @id @default(autoincrement())
+  business_id      Int
+  title            String
+  description      String?
+  price            Float
+  currency         String   @default("INR")
+  duration_minutes Int?
+  is_active        Boolean  @default(true)
+  created_at       DateTime @default(now())
+
+  business         Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
+  booking_items    BusinessBookingItem[]
+
+  @@index([business_id])
+  @@map("business_service")
+}
+
+model BusinessMedia {
+  id          Int      @id @default(autoincrement())
+  business_id Int
+  url         String
+  media_type  String   @default("PHOTO")
+  is_primary  Boolean  @default(false)
+  created_at  DateTime @default(now())
+
+  business    Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
+
+  @@index([business_id])
+  @@map("business_media")
+}
+
+model BusinessAvailability {
+  id           Int      @id @default(autoincrement())
+  business_id  Int
+  day_of_week  Int      // 0=Sun, 1=Mon, ..., 6=Sat
+  start_time   String
+  end_time     String
+  is_available Boolean  @default(true)
+
+  business     Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
+
+  @@index([business_id])
+  @@map("business_availability")
+}
+
+model BusinessBlockedDate {
+  id           Int      @id @default(autoincrement())
+  business_id  Int
+  blocked_date DateTime
+  reason       String?
+
+  business     Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
+
+  @@index([business_id])
+  @@map("business_blocked_date")
+}
+
+model BusinessSubscription {
+  id          Int      @id @default(autoincrement())
+  business_id Int
+  plan_name   String
+  status      String   @default("ACTIVE")
+  starts_at   DateTime @default(now())
+  expires_at  DateTime
+
+  business    Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
+
+  @@index([business_id])
+  @@map("business_subscription")
+}
+
+model BusinessBooking {
+  id           Int           @id @default(autoincrement())
+  business_id  Int
+  customer_id  Int
+  booking_date DateTime
+  status       BookingStatus @default(PENDING)
+  total_amount Float
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @updatedAt
+
+  business     Business      @relation(fields: [business_id], references: [id], onDelete: Cascade)
+  customer     User          @relation("CustomerBookings", fields: [customer_id], references: [id], onDelete: Cascade)
+
+  items        BusinessBookingItem[]
+  payments     BusinessPayment[]
+  commissions  BusinessCommission[]
+
+  @@index([business_id])
+  @@index([customer_id])
+  @@map("business_booking")
+}
+
+model BusinessBookingItem {
+  id          Int             @id @default(autoincrement())
+  booking_id  Int
+  service_id  Int
+  quantity    Int             @default(1)
+  price       Float
+
+  booking     BusinessBooking @relation(fields: [booking_id], references: [id], onDelete: Cascade)
+  service     BusinessService @relation(fields: [service_id], references: [id], onDelete: Cascade)
+
+  @@index([booking_id])
+  @@map("business_booking_item")
+}
+
+model BusinessPayment {
+  id                    Int             @id @default(autoincrement())
+  booking_id            Int
+  amount                Float
+  payment_status        String          @default("COMPLETED")
+  payment_method        String?
+  transaction_reference String?
+  created_at            DateTime        @default(now())
+
+  booking               BusinessBooking @relation(fields: [booking_id], references: [id], onDelete: Cascade)
+
+  @@index([booking_id])
+  @@map("business_payment")
+}
+
+model BusinessCommission {
+  id                Int             @id @default(autoincrement())
+  business_id       Int
+  booking_id        Int
+  commission_amount Float
+  payout_status     String          @default("PENDING")
+  created_at        DateTime        @default(now())
+
+  business          Business        @relation(fields: [business_id], references: [id], onDelete: Cascade)
+  booking           BusinessBooking @relation(fields: [booking_id], references: [id], onDelete: Cascade)
+
+  @@index([business_id])
+  @@index([booking_id])
+  @@map("business_commission")
+}
+
+model BusinessReview {
+  id          Int      @id @default(autoincrement())
+  business_id Int
+  user_id     Int
+  rating      Int      // 1-5
+  comment     String?
+  created_at  DateTime @default(now())
+
+  business    Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([business_id])
+  @@index([user_id])
+  @@map("business_review")
+}
+
+model BusinessRanking {
+  id            Int      @id @default(autoincrement())
+  business_id   Int
+  score         Float    @default(0.0)
+  rank_category String?
+  updated_at    DateTime @updatedAt
+
+  business      Business @relation(fields: [business_id], references: [id], onDelete: Cascade)
+
+  @@index([business_id])
+  @@map("business_ranking")
+}
+
+model BusinessRankingConfig {
+  id         Int      @id @default(1)
+  weights    Json
+  updated_at DateTime @updatedAt
+
+  @@map("business_ranking_config")
+}
 
 model Verify {
   id            Int       @id @default(autoincrement())
@@ -69,14 +529,14 @@ model Verify {
   created_at    DateTime  @default(now()) 
   user          User      @relation(fields: [user_id], references: [id])
 
-  @@map("verify") // Maps the model to the "verify" table
+  @@map("verify")
 }
 
 model Interest {
   id          Int      @id @default(autoincrement())
   sender_id   Int
   receiver_id Int
-  status      String   @default("PENDING") // PENDING, ACCEPTED, REJECTED
+  status      String   @default("PENDING")
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 
@@ -105,7 +565,7 @@ model Notification {
   id          Int      @id @default(autoincrement())
   user_id     Int
   sender_id   Int
-  type        String   // INTEREST_SENT, INTEREST_ACCEPTED, NEW_MESSAGE
+  type        String
   title       String
   message     String
   is_read     Boolean  @default(false)
@@ -119,7 +579,7 @@ model Referral {
   referrer_id      Int
   referred_user_id Int      @unique
   referral_code    String
-  status           String   @default("PENDING") // PENDING, SUCCESS, REJECTED
+  status           String   @default("PENDING")
   rewarded         Boolean  @default(false)
   created_at       DateTime @default(now())
 
@@ -136,7 +596,7 @@ model ReferralTransaction {
   user_id       Int
   referral_id   Int?
   points        Int
-  type          String    // EARN, REDEEM, BONUS, DEDUCT, EXPIRE
+  type          String
   reason        String
   created_at    DateTime  @default(now())
 
@@ -150,7 +610,7 @@ model ReferralTransaction {
 model ReferralSettings {
   id                  Int      @id @default(1)
   points_per_referral Int      @default(100)
-  reward_condition    String   @default("SIGNUP") // SIGNUP, KYC, PAYMENT
+  reward_condition    String   @default("SIGNUP")
   enabled             Boolean  @default(true)
   max_referral        Int      @default(100)
   daily_limit         Int      @default(10)
@@ -187,8 +647,8 @@ model Favourite {
 model Feedback {
   id         Int      @id @default(autoincrement())
   user_id    Int
-  category   String   // SUGGESTION, BUG, APPRECIATION, OTHER
-  rating     Int      // 1-5 stars
+  category   String
+  rating     Int
   subject    String
   message    String
   created_at DateTime @default(now())
@@ -212,15 +672,15 @@ model ProfileView {
 }
 
 model Admin {
-  id            Int      @id @default(autoincrement())
+  id            Int       @id @default(autoincrement())
   name          String
-  email         String   @unique
-  mobile_number String   @unique
+  email         String    @unique
+  mobile_number String    @unique
   password      String
-  role          String   @default("SUPER_ADMIN") // SUPER_ADMIN, MODERATOR, SUPPORT
-  is_active     Boolean  @default(true)
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
+  role          AdminRole @default(SUPER_ADMIN)
+  is_active     Boolean   @default(true)
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
 
   @@map("admin")
 }
