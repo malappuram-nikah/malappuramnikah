@@ -1,95 +1,65 @@
-import { GetProfilesUseCase } from "../application/use-cases/GetProfiles.usecase";
-import { GetUserByIdUseCase } from "../application/use-cases/GetUserById.usecase";
-import { DeleteUserUseCase } from "../application/use-cases/DeleteUser.usecase";
-import { IProfileRepository } from "../domain/repositories/IProfileRepository";
-import { ProfileEntity } from "../domain/entities/profile.entity";
+import { GetProfileUseCase } from "../application/use-cases/GetProfile.usecase";
+import { UpdateBasicDetailsUseCase } from "../application/use-cases/UpdateBasicDetails.usecase";
+import { UpdateEducationUseCase } from "../application/use-cases/UpdateEducation.usecase";
+import { IProfileRepository, FullProfileResult } from "../domain/repositories/IProfileRepository";
 
-describe("Profiles Module - Use Cases", () => {
+describe("Profiles Module Usecases Suite", () => {
   let mockProfileRepo: jest.Mocked<IProfileRepository>;
+  let getProfileUseCase: GetProfileUseCase;
+  let updateBasicUseCase: UpdateBasicDetailsUseCase;
+  let updateEducationUseCase: UpdateEducationUseCase;
 
   beforeEach(() => {
     mockProfileRepo = {
+      getFullProfile: jest.fn(),
       findById: jest.fn(),
       findProfiles: jest.fn(),
       updateProfile: jest.fn(),
       deleteUser: jest.fn(),
       getPublicStats: jest.fn(),
+      updateBasicDetails: jest.fn(),
+      updateLocationDetails: jest.fn(),
+      updateEducationDetails: jest.fn(),
+      updateOccupationDetails: jest.fn(),
+      updateFamilyDetails: jest.fn(),
+      updatePreferences: jest.fn(),
+      updatePrivacySettings: jest.fn(),
+      addProfileMedia: jest.fn(),
+      deleteProfileMedia: jest.fn(),
+      setPrimaryMedia: jest.fn(),
     };
+
+    getProfileUseCase = new GetProfileUseCase(mockProfileRepo);
+    updateBasicUseCase = new UpdateBasicDetailsUseCase(mockProfileRepo);
+    updateEducationUseCase = new UpdateEducationUseCase(mockProfileRepo);
   });
 
-  describe("GetProfilesUseCase", () => {
-    it("should restrict non-admin males to viewing female profiles only", async () => {
-      const useCase = new GetProfilesUseCase(mockProfileRepo);
-      mockProfileRepo.findById.mockResolvedValue({
-        id: 1,
-        gender: "Male",
-      } as ProfileEntity);
-      mockProfileRepo.findProfiles.mockResolvedValue([
-        { id: 2, first_name: "Aysha", gender: "Female" } as ProfileEntity,
-      ]);
+  it("should get full profile correctly", async () => {
+    const mockRes: FullProfileResult = {
+      userId: 1,
+      completionScore: 85,
+      completionBreakdown: {},
+      profile: { first_name: "TestUser" },
+    } as any;
 
-      const result = await useCase.execute({}, 1, false);
+    mockProfileRepo.getFullProfile.mockResolvedValue(mockRes);
 
-      expect(mockProfileRepo.findProfiles).toHaveBeenCalledWith(
-        expect.objectContaining({ gender: "female" })
-      );
-      expect(result.length).toBe(1);
-    });
+    const res = await getProfileUseCase.execute(1);
+    expect(res.userId).toBe(1);
+    expect(res.completionScore).toBe(85);
   });
 
-  describe("GetUserByIdUseCase", () => {
-    it("should throw ForbiddenError if non-admin tries to view same-gender profile", async () => {
-      const useCase = new GetUserByIdUseCase(mockProfileRepo);
-      mockProfileRepo.findById.mockImplementation(async (id) => {
-        if (id === "1" || id === 1) return { id: 1, gender: "Male" } as ProfileEntity;
-        if (id === "2" || id === 2) return { id: 2, gender: "Male" } as ProfileEntity;
-        return null;
-      });
-
-      await expect(useCase.execute("2", 1, false)).rejects.toThrow(
-        "Access forbidden. Same-gender profile visibility is restricted."
-      );
-    });
-
-    it("should allow admin to view any user profile", async () => {
-      const useCase = new GetUserByIdUseCase(mockProfileRepo);
-      mockProfileRepo.findById.mockImplementation(async (id) => {
-        if (id === "1" || id === 1) return { id: 1, gender: "Male" } as ProfileEntity;
-        if (id === "2" || id === 2) return { id: 2, gender: "Male" } as ProfileEntity;
-        return null;
-      });
-
-      const res = await useCase.execute("2", 1, true);
-      expect(res.success).toBe(true);
-      expect(res.user.id).toBe(2);
-    });
+  it("should update basic details", async () => {
+    mockProfileRepo.updateBasicDetails.mockResolvedValue();
+    const res = await updateBasicUseCase.execute({ userId: 1, first_name: "NewName" });
+    expect(res.message).toBe("Basic profile details updated successfully.");
+    expect(mockProfileRepo.updateBasicDetails).toHaveBeenCalledWith(1, { userId: 1, first_name: "NewName" });
   });
 
-  describe("DeleteUserUseCase", () => {
-    it("should prevent non-admin user from deleting another user profile", async () => {
-      const useCase = new DeleteUserUseCase(mockProfileRepo);
-      mockProfileRepo.findById.mockResolvedValue({
-        id: 1,
-        gender: "Male",
-        profile_details: {},
-      } as ProfileEntity);
-
-      await expect(useCase.execute(2, 1, false)).rejects.toThrow(
-        "Access forbidden. You can only delete your own profile."
-      );
-    });
-
-    it("should allow user to delete their own profile", async () => {
-      const useCase = new DeleteUserUseCase(mockProfileRepo);
-      mockProfileRepo.findById.mockResolvedValue({
-        id: 1,
-        gender: "Male",
-      } as ProfileEntity);
-      mockProfileRepo.deleteUser.mockResolvedValue();
-
-      await useCase.execute(1, 1, false);
-
-      expect(mockProfileRepo.deleteUser).toHaveBeenCalledWith(1);
-    });
+  it("should update education details", async () => {
+    mockProfileRepo.updateEducationDetails.mockResolvedValue();
+    const res = await updateEducationUseCase.execute({ userId: 1, highest_education: "Master's" });
+    expect(res.message).toBe("Education details updated successfully.");
+    expect(mockProfileRepo.updateEducationDetails).toHaveBeenCalledWith(1, { userId: 1, highest_education: "Master's" });
   });
 });

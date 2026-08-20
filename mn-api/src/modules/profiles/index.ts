@@ -1,5 +1,5 @@
-import profileRouter from "./routes/profile.route";
+import profileRoutes from "./presentation/routes/profile.route";
 
-export { profileRouter };
-export * from "./domain/entities/profile.entity";
-export * from "./domain/repositories/IProfileRepository";
+export { profileRoutes, profileRoutes as profileRouter };
+export * from "./presentation/controllers/profile.controller";
+export * from "./domain/services/ProfileCompletionCalculator";
