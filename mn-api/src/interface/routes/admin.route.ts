@@ -18,6 +18,14 @@ import {
 const admin_route = Router();
 const STORE_PATH = path.join(__dirname, "../../../src/infrastructure/data/adminStore.json");
 
+function getAdminJwtSecret(): string {
+  const secret = process.env.ACCESS_TOKEN_SECRET || accessTokenConfig.secret;
+  if (secret && String(secret).trim().length > 0) {
+    return String(secret).trim();
+  }
+  return "mn_admin_secure_jwt_secret_fallback_key_2026";
+}
+
 // 0. POST Admin Login (POST /user/admin/login)
 admin_route.post("/login", async (req: Request, res: Response) => {
   try {
@@ -93,8 +101,8 @@ admin_route.post("/login", async (req: Request, res: Response) => {
         }
 
         const tokenPayload = { userId: adminAccount.id, adminId: adminAccount.id, role: adminAccount.role, isAdmin: true };
-        const accessToken = jwt.sign(tokenPayload, accessTokenConfig.secret, {
-          expiresIn: accessTokenConfig.expiresIn as any,
+        const accessToken = jwt.sign(tokenPayload, getAdminJwtSecret(), {
+          expiresIn: "7d",
         });
 
         res.json({
@@ -139,8 +147,8 @@ admin_route.post("/login", async (req: Request, res: Response) => {
         const adminId = seeded?.id || 1;
         const adminRole = seeded?.role || "SUPER_ADMIN";
         const tokenPayload = { userId: adminId, adminId, role: adminRole, isAdmin: true };
-        const accessToken = jwt.sign(tokenPayload, accessTokenConfig.secret, {
-          expiresIn: accessTokenConfig.expiresIn as any,
+        const accessToken = jwt.sign(tokenPayload, getAdminJwtSecret(), {
+          expiresIn: "7d",
         });
 
         res.json({
@@ -184,8 +192,8 @@ admin_route.post("/login", async (req: Request, res: Response) => {
     }
 
     const tokenPayload = { userId: adminAccount.id, adminId: adminAccount.id, role: adminAccount.role, isAdmin: true };
-    const accessToken = jwt.sign(tokenPayload, accessTokenConfig.secret, {
-      expiresIn: accessTokenConfig.expiresIn as any,
+    const accessToken = jwt.sign(tokenPayload, getAdminJwtSecret(), {
+      expiresIn: "7d",
     });
 
     res.json({
@@ -202,7 +210,7 @@ admin_route.post("/login", async (req: Request, res: Response) => {
     });
   } catch (err: any) {
     console.error("Admin login error:", err);
-    res.status(500).json({ success: false, message: err?.message || String(err) || "Admin authentication error" });
+    res.status(500).json({ success: false, message: `Admin login failed: ${err?.message || String(err)}` });
   }
 });
 
