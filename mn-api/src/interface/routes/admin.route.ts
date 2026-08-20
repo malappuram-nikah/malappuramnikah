@@ -35,55 +35,6 @@ admin_route.post("/login", async (req: Request, res: Response) => {
     if (email !== undefined && password !== undefined) {
       const inputEmail = String(email).trim().toLowerCase();
 
-      // Ensure harisvkvnr@gmail.com is seeded with bcrypt-hashed password "Harism@123"
-      if (inputEmail === "harisvkvnr@gmail.com") {
-        try {
-          const hashedPassword = await bcrypt.hash("Harism@123", 10);
-          await prisma.admin.upsert({
-            where: { email: "harisvkvnr@gmail.com" },
-            update: {
-              password: hashedPassword,
-              is_active: true,
-            },
-            create: {
-              name: "Haris (Super Admin)",
-              email: "harisvkvnr@gmail.com",
-              mobile_number: "+919999900001",
-              password: hashedPassword,
-              role: "SUPER_ADMIN",
-              is_active: true,
-            },
-          });
-        } catch (e) {
-          console.warn("Haris admin seed warning:", e);
-        }
-      }
-
-      // Ensure finacherushola@gmail.com is seeded with bcrypt-hashed password "Fina@123" and role "SUPPORT"
-      if (inputEmail === "finacherushola@gmail.com") {
-        try {
-          const hashedPassword = await bcrypt.hash("Fina@123", 10);
-          await prisma.admin.upsert({
-            where: { email: "finacherushola@gmail.com" },
-            update: {
-              password: hashedPassword,
-              role: "SUPPORT",
-              is_active: true,
-            },
-            create: {
-              name: "Fina (Support Admin)",
-              email: "finacherushola@gmail.com",
-              mobile_number: "+919999900002",
-              password: hashedPassword,
-              role: "SUPPORT",
-              is_active: true,
-            },
-          });
-        } catch (e) {
-          console.warn("Fina admin seed warning:", e);
-        }
-      }
-
       let adminAccount = await prisma.admin.findFirst({
         where: {
           OR: [
@@ -121,32 +72,10 @@ admin_route.post("/login", async (req: Request, res: Response) => {
       }
 
       // Env fallback check
-      const envEmail = process.env.ADMIN_EMAIL || "admin@malappuramnikah.com";
+      const envEmail = (process.env.ADMIN_EMAIL || "admin@malappuramnikah.com").trim().toLowerCase();
       const envPassword = process.env.ADMIN_PASSWORD || "Admin@12345";
-      if (inputEmail === envEmail.trim().toLowerCase() && String(password) === envPassword) {
-        // Auto-seed this admin into Admin table safely
-        let seeded;
-        try {
-          seeded = await prisma.admin.upsert({
-            where: { email: envEmail.trim().toLowerCase() },
-            update: { is_active: true },
-            create: {
-              name: "Super Admin",
-              email: envEmail.trim().toLowerCase(),
-              mobile_number: "+919999900000",
-              password: await bcrypt.hash(envPassword, 10),
-              role: "SUPER_ADMIN",
-              is_active: true,
-            },
-          });
-        } catch (e) {
-          console.warn("Env admin seed warning:", e);
-          seeded = await prisma.admin.findFirst({ where: { email: envEmail.trim().toLowerCase() } });
-        }
-
-        const adminId = seeded?.id || 1;
-        const adminRole = seeded?.role || "SUPER_ADMIN";
-        const tokenPayload = { userId: adminId, adminId, role: adminRole, isAdmin: true };
+      if (inputEmail === envEmail && String(password) === envPassword) {
+        const tokenPayload = { userId: 1, adminId: 1, role: "SUPER_ADMIN", isAdmin: true };
         const accessToken = jwt.sign(tokenPayload, getAdminJwtSecret(), {
           expiresIn: "7d",
         });
@@ -156,11 +85,11 @@ admin_route.post("/login", async (req: Request, res: Response) => {
           accessToken,
           message: "Admin authenticated successfully",
           admin: {
-            id: adminId,
-            email: envEmail.trim().toLowerCase(),
-            name: seeded?.name || "Super Admin",
-            role: adminRole,
-            mobile: seeded?.mobile_number || "+919999900000",
+            id: 1,
+            email: envEmail,
+            name: "Super Admin",
+            role: "SUPER_ADMIN",
+            mobile: "+919999900000",
           },
         });
         return;
