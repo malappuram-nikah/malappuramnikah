@@ -33,6 +33,9 @@ model User {
   kyc_rejected_reason String?
   kyc_submitted_at   DateTime?
   kyc_verified_at    DateTime?
+  call_status        String?   @default("NOT_CALLED")
+  called_date        DateTime?
+  call_response      String?
   created_at     DateTime  @default(now())
   updated_at     DateTime  @updatedAt
   verify         Verify[]

@@ -4,13 +4,31 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft, Check, X, Sparkles, RefreshCw, User,
+  ArrowLeft,
+  Check,
+  X,
+  Sparkles,
+  RefreshCw,
+  User,
+  PhoneCall,
+  Calendar,
+  MessageSquare,
+  Loader2,
 } from "lucide-react";
 import AdminAlert from "@/components/admin/AdminAlert";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { adminApi, AdminUser } from "@/lib/admin-api";
 import { getEnrichedProfile } from "@/lib/profile-utils";
 import { User as UserType } from "@/types";
+
+const CALL_STATUS_OPTIONS = [
+  { id: "NOT_CALLED", label: "Not Called" },
+  { id: "CALLED", label: "Called (General)" },
+  { id: "INTERESTED", label: "Interested" },
+  { id: "NOT_INTERESTED", label: "Not Interested" },
+  { id: "FOLLOW_UP", label: "Follow-Up Required" },
+  { id: "NO_ANSWER", label: "No Answer / Busy" },
+];
 
 function normalizeProfileDetails(raw: unknown): Record<string, unknown> {
   if (!raw) return {};
@@ -100,12 +118,32 @@ function kycBadgeClass(status: string) {
   return map[status] || "bg-gray-100 text-gray-600";
 }
 
+function callBadgeClass(status?: string | null) {
+  const s = status || "NOT_CALLED";
+  const map: Record<string, string> = {
+    NOT_CALLED: "bg-gray-100 text-gray-600",
+    CALLED: "bg-blue-100 text-blue-800",
+    INTERESTED: "bg-emerald-100 text-emerald-800",
+    NOT_INTERESTED: "bg-rose-100 text-rose-800",
+    FOLLOW_UP: "bg-purple-100 text-purple-800",
+    NO_ANSWER: "bg-amber-100 text-amber-800",
+  };
+  return map[s] || "bg-gray-100 text-gray-600";
+}
+
 export default function AdminUserDetailPage() {
   const params = useParams();
   const userId = parseInt(params.id as string, 10);
   const [user, setUser] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [alert, setAlert] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Call Modal State
+  const [callModalOpen, setCallModalOpen] = useState(false);
+  const [callStatusInput, setCallStatusInput] = useState("NOT_CALLED");
+  const [calledDateInput, setCalledDateInput] = useState("");
+  const [callResponseInput, setCallResponseInput] = useState("");
+  const [savingCallLog, setSavingCallLog] = useState(false);
 
   const triggerAlert = (text: string, type: "success" | "error" = "success") => {
     setAlert({ text, type });
@@ -127,6 +165,37 @@ export default function AdminUserDetailPage() {
   useEffect(() => {
     if (!isNaN(userId)) loadUser();
   }, [userId]);
+
+  const openCallModal = () => {
+    if (!user) return;
+    setCallStatusInput(user.call_status || "NOT_CALLED");
+    setCalledDateInput(
+      user.called_date
+        ? new Date(user.called_date).toISOString().split("T")[0]
+        : new Date().toISOString().split("T")[0]
+    );
+    setCallResponseInput(user.call_response || "");
+    setCallModalOpen(true);
+  };
+
+  const handleSaveCallLog = async () => {
+    if (!user) return;
+    setSavingCallLog(true);
+    try {
+      await adminApi.updateCallLog(user.id, {
+        call_status: callStatusInput,
+        called_date: calledDateInput,
+        call_response: callResponseInput,
+      });
+      triggerAlert("Call log recorded successfully! 📞");
+      setCallModalOpen(false);
+      await loadUser();
+    } catch (err: any) {
+      triggerAlert(err?.message || "Failed to update call log.", "error");
+    } finally {
+      setSavingCallLog(false);
+    }
+  };
 
   const handleStatus = async (action: "activate" | "deactivate" | "suspend" | "restore") => {
     try {
@@ -218,7 +287,7 @@ export default function AdminUserDetailPage() {
 
       <AdminPageHeader
         title="Member Profile Review"
-        description="Full account and matrimony profile data for admin review."
+        description="Full account details, matrimony data, and call tracking notes."
         icon={User}
       />
 
@@ -241,6 +310,14 @@ export default function AdminUserDetailPage() {
           </p>
         </div>
         <div className="bg-white rounded-xl border p-3 text-xs">
+          <span className="text-gray-400 font-bold uppercase text-[9px]">Call Status</span>
+          <p className="mt-1">
+            <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${callBadgeClass(user.call_status)}`}>
+              {(user.call_status || "NOT_CALLED").replace("_", " ")}
+            </span>
+          </p>
+        </div>
+        <div className="bg-white rounded-xl border p-3 text-xs">
           <span className="text-gray-400 font-bold uppercase text-[9px]">Profile completion</span>
           <p className="font-bold text-brand-600 mt-1">
             {user.profileCompletion?.percentage ?? 0}%
@@ -249,14 +326,18 @@ export default function AdminUserDetailPage() {
             </span>
           </p>
         </div>
-        <div className="bg-white rounded-xl border p-3 text-xs">
-          <span className="text-gray-400 font-bold uppercase text-[9px]">Premium</span>
-          <p className="font-bold text-gray-900 mt-1">{user.is_premium ? "Premium member" : "Free member"}</p>
-        </div>
       </div>
 
       {/* Actions */}
       <div className="flex flex-wrap gap-2 mb-6">
+        <button
+          type="button"
+          onClick={openCallModal}
+          className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-sm"
+        >
+          <PhoneCall className="w-3.5 h-3.5" /> Record / Edit Call Log
+        </button>
+
         {user.status !== "active" && (
           <button
             type="button"
@@ -307,6 +388,17 @@ export default function AdminUserDetailPage() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-4">
+        <Section title="Admin Call Tracking & Feedback">
+          <Field label="Call Status" value={(user.call_status || "NOT_CALLED").replace("_", " ")} />
+          <Field label="Called Date" value={formatDate(user.called_date)} />
+          <div className="pt-2">
+            <span className="text-gray-500 text-xs font-medium">Last Customer Response / Remarks:</span>
+            <div className="mt-1 p-2.5 bg-gray-50 rounded-xl border border-gray-100 text-xs text-gray-800 italic">
+              {user.call_response ? `"${user.call_response}"` : "No response logged yet."}
+            </div>
+          </div>
+        </Section>
+
         <Section title="Account Information">
           <Field label="Profile ID" value={user.profileId || `MN-${100000 + user.id}`} />
           <Field label="Internal ID" value={user.id} />
@@ -317,15 +409,12 @@ export default function AdminUserDetailPage() {
           <Field label="Date of birth" value={formatDate(user.dob)} />
           <Field label="Age" value={ageFromDob ?? profile.age} />
           <Field label="Caste / Community" value={user.cast} />
-          <Field label="Location" value={user.location} />
+          <Field label="Location (Place)" value={user.location} />
           <Field label="Email" value={user.email} />
           <Field label="Mobile" value={user.mobile_number} />
           <Field label="Registered" value={formatDateTime(user.created_at)} />
           <Field label="Last updated" value={formatDateTime(user.updated_at)} />
           <Field label="Last login" value={formatDateTime(user.last_login)} />
-          <Field label="Referral code" value={user.referral_code} />
-          <Field label="Referral points" value={user.referral_points} />
-          <Field label="New user flag" value={user.is_new_user ? "Yes" : "No"} />
         </Section>
 
         <Section title="Basic Details">
@@ -370,42 +459,6 @@ export default function AdminUserDetailPage() {
           <Field label="Siblings" value={profile.siblingsCount} />
         </Section>
 
-        <Section title="Interests & Personality">
-          <Field label="Personality / About" value={profile.personalityDescription} />
-          <Field
-            label="Interests"
-            value={profile.interestsList?.length ? profile.interestsList.join(", ") : null}
-          />
-          <Field
-            label="Favourite sports"
-            value={profile.favouriteSports?.length ? profile.favouriteSports.join(", ") : null}
-          />
-          <Field
-            label="Favourite places"
-            value={profile.favouritePlaces?.length ? profile.favouritePlaces.join(", ") : null}
-          />
-        </Section>
-
-        <Section title="Habits">
-          <Field label="Eating habits" value={profile.eatingHabits} />
-          <Field label="Smoking" value={profile.smokingHabits} />
-          <Field label="Drinking" value={profile.drinkingHabits} />
-        </Section>
-
-        <Section title="Partner Preferences">
-          <Field label="About partner" value={profile.aboutPartner} />
-          <Field label="Preferred age" value={profile.prefAge} />
-          <Field label="Preferred height" value={profile.prefHeight} />
-          <Field label="Marital status" value={profile.prefMaritalStatus} />
-          <Field label="Religion" value={profile.prefReligion} />
-          <Field label="Community" value={profile.prefCommunity} />
-          <Field label="Education" value={profile.prefEducation} />
-          <Field label="Occupation" value={profile.prefOccupation} />
-          <Field label="Locations" value={profile.prefLocations} />
-          <Field label="Namaz preference" value={profile.prefNamaz} />
-          <Field label="Quran preference" value={profile.prefQuranReading} />
-        </Section>
-
         <Section title="ID Verification">
           <Field label="Status" value={user.kyc_status.replace("_", " ")} />
           <Field label="Document type" value={user.kyc_document_type} />
@@ -433,41 +486,99 @@ export default function AdminUserDetailPage() {
                 View back document
               </a>
             )}
-            {!user.kyc_front_url && !user.kyc_back_url && (
-              <span className="text-xs text-gray-300 italic">No documents uploaded</span>
-            )}
           </div>
         </Section>
-
-        <Section title="Profile Photos">
-          {photos.length > 0 ? (
-            <div className="flex flex-wrap gap-2 pt-1">
-              {photos.map((src, i) => (
-                <a key={i} href={src} target="_blank" rel="noreferrer">
-                  <img
-                    src={src}
-                    alt={`Photo ${i + 1}`}
-                    className="w-20 h-20 object-cover rounded-lg border border-gray-100"
-                  />
-                </a>
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs text-gray-300 italic">No photos uploaded</p>
-          )}
-        </Section>
-
-        {(videoUrl || voiceUrl) && (
-          <Section title="Media Introduction">
-            {videoUrl && (
-              <video src={videoUrl} controls className="w-full max-h-48 rounded-lg border border-gray-100" />
-            )}
-            {voiceUrl && (
-              <audio src={voiceUrl} controls className="w-full mt-2" />
-            )}
-          </Section>
-        )}
       </div>
+
+      {/* Admin Call Log Modal */}
+      {callModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="relative w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl space-y-4 border border-gray-100">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div>
+                <h3 className="font-bold text-gray-900 text-sm flex items-center gap-1.5">
+                  <PhoneCall className="w-4 h-4 text-brand-600" />
+                  Record Call Log: {user.first_name} {user.last_name}
+                </h3>
+                <span className="text-[10px] text-gray-400 font-mono">
+                  {user.profileId || `MN-${100000 + user.id}`} · Mobile: {user.mobile_number}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCallModalOpen(false)}
+                className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div>
+                <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                  Call Status Option
+                </label>
+                <select
+                  value={callStatusInput}
+                  onChange={(e) => setCallStatusInput(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                >
+                  {CALL_STATUS_OPTIONS.map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                  Called Date
+                </label>
+                <input
+                  type="date"
+                  value={calledDateInput}
+                  onChange={(e) => setCalledDateInput(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1 flex items-center justify-between">
+                  <span>Customer Response / Call Notes</span>
+                  <MessageSquare className="w-3 h-3 text-gray-400" />
+                </label>
+                <textarea
+                  rows={4}
+                  value={callResponseInput}
+                  onChange={(e) => setCallResponseInput(e.target.value)}
+                  placeholder="Type what customer said last during the call..."
+                  className="w-full p-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20 text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="pt-2 flex gap-2">
+              <button
+                type="button"
+                onClick={handleSaveCallLog}
+                disabled={savingCallLog}
+                className="flex-1 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl text-center transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+              >
+                {savingCallLog ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                Save Call Log
+              </button>
+              <button
+                type="button"
+                onClick={() => setCallModalOpen(false)}
+                className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

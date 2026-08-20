@@ -82,6 +82,9 @@ export interface AdminUser {
   kyc_rejected_reason: string | null;
   kyc_submitted_at: string | null;
   kyc_verified_at: string | null;
+  call_status?: string | null;
+  called_date?: string | null;
+  call_response?: string | null;
   created_at: string;
   updated_at: string;
   referral_code: string | null;
@@ -111,6 +114,15 @@ export const adminApi = {
     adminFetch<{ success: true; message: string; user: AdminUser }>(`/user/admin/users/${id}/status`, {
       method: "POST",
       body: JSON.stringify({ action }),
+    }),
+
+  updateCallLog: (
+    id: number,
+    data: { call_status?: string; called_date?: string | null; call_response?: string | null }
+  ) =>
+    adminFetch<{ success: true; message: string; user: AdminUser }>(`/user/admin/users/${id}/call-log`, {
+      method: "POST",
+      body: JSON.stringify(data),
     }),
 
   togglePremium: (id: number) =>
