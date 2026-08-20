@@ -1,4 +1,8 @@
+import { OtpEntity } from "../entities/otp.entity";
+
 export interface IOtpRepository {
-  createOtp(phoneNumber: string, otpCode: string): Promise<void>;
-  verifyOtp(phoneNumber: string, otpCode: string): Promise<boolean>;
+  createOtp(userId: number, otpCode: string, expiresAt: Date): Promise<OtpEntity>;
+  findLatestOtp(userId: number): Promise<OtpEntity | null>;
+  markOtpAsVerified(id: number): Promise<void>;
+  invalidatePreviousOtps(userId: number): Promise<void>;
 }

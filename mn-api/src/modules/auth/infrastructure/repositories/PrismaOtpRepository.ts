@@ -1,69 +1,42 @@
 import { IOtpRepository } from "../../domain/repositories/IOtpRepository";
+import { OtpEntity } from "../../domain/entities/otp.entity";
 import { prisma } from "../../../../infrastructure/database/prisma.service";
 
 export class PrismaOtpRepository implements IOtpRepository {
-  async createOtp(target: string, otpCode: string): Promise<void> {
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+  async createOtp(userId: number, otpCode: string, expiresAt: Date): Promise<OtpEntity> {
+    await this.invalidatePreviousOtps(userId);
 
-    const isEmail = target.includes("@");
-    const user = await prisma.user.findFirst({
-      where: isEmail
-        ? { email: { equals: target.toLowerCase(), mode: "insensitive" } }
-        : {
-            OR: [
-              { mobile_number: target },
-              { mobile_number: `+91${target.replace(/\D/g, "").slice(-10)}` },
-            ],
-          },
-    });
-
-    if (!user) return;
-
-    await prisma.verify.deleteMany({
-      where: { user_id: user.id },
-    });
-
-    await prisma.verify.create({
+    const created = await prisma.verify.create({
       data: {
-        user_id: user.id,
+        user_id: userId,
         otp_code: otpCode,
         expires_at: expiresAt,
         is_verified: false,
       },
     });
+
+    return created as unknown as OtpEntity;
   }
 
-  async verifyOtp(target: string, otpCode: string): Promise<boolean> {
-    const isEmail = target.includes("@");
-    const user = await prisma.user.findFirst({
-      where: isEmail
-        ? { email: { equals: target.toLowerCase(), mode: "insensitive" } }
-        : {
-            OR: [
-              { mobile_number: target },
-              { mobile_number: `+91${target.replace(/\D/g, "").slice(-10)}` },
-            ],
-          },
-    });
-
-    if (!user) return false;
-
+  async findLatestOtp(userId: number): Promise<OtpEntity | null> {
     const record = await prisma.verify.findFirst({
-      where: {
-        user_id: user.id,
-        otp_code: otpCode.trim(),
-        is_verified: false,
-        expires_at: { gte: new Date() },
-      },
+      where: { user_id: userId },
+      orderBy: { created_at: "desc" },
     });
 
-    if (!record) return false;
+    return record ? (record as unknown as OtpEntity) : null;
+  }
 
+  async markOtpAsVerified(id: number): Promise<void> {
     await prisma.verify.update({
-      where: { id: record.id },
+      where: { id },
       data: { is_verified: true },
     });
+  }
 
-    return true;
+  async invalidatePreviousOtps(userId: number): Promise<void> {
+    await prisma.verify.deleteMany({
+      where: { user_id: userId },
+    });
   }
 }

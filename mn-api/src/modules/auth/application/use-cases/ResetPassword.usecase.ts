@@ -1,44 +1,40 @@
 import bcrypt from "bcryptjs";
 import { IUserRepository } from "../../domain/repositories/IUserRepository";
 import { IOtpRepository } from "../../domain/repositories/IOtpRepository";
+import { ISessionRepository } from "../../domain/repositories/ISessionRepository";
+import { ResetPasswordDto } from "../dto/password.dto";
+import { validateMobileNumber, validateOtpCode, validatePassword } from "../../schemas/auth.schema";
 import { BadRequestError, NotFoundError } from "../../../../shared/errors/AppError";
 
 export class ResetPasswordUseCase {
   constructor(
     private userRepository: IUserRepository,
-    private otpRepository: IOtpRepository
+    private otpRepository: IOtpRepository,
+    private sessionRepository: ISessionRepository
   ) {}
 
-  async execute(input: string, otp: string, newPassword: string): Promise<void> {
-    const cleanInput = (input || "").toString().trim().toLowerCase();
-    if (!cleanInput) {
-      throw new BadRequestError("Mobile number or email address is required.");
-    }
-    if (!otp || typeof otp !== "string" || !otp.trim()) {
-      throw new BadRequestError("Verification code is required.");
-    }
-    if (!newPassword || typeof newPassword !== "string" || newPassword.trim().length < 6) {
-      throw new BadRequestError("New password must be at least 6 characters long.");
-    }
+  async execute(dto: ResetPasswordDto): Promise<{ message: string }> {
+    const validMobile = validateMobileNumber(dto.mobile_number);
+    const validOtp = validateOtpCode(dto.otp_code);
+    const validNewPassword = validatePassword(dto.new_password);
 
-    let user = await this.userRepository.findByEmail(cleanInput);
+    const user = await this.userRepository.findByMobileNumber(validMobile);
     if (!user) {
-      user = await this.userRepository.findByMobile(input);
-    }
-
-    if (!user || !user.id) {
       throw new NotFoundError("User account not found.");
     }
 
-    const targetKey = user.email || user.mobile_number;
-    const isValid = await this.otpRepository.verifyOtp(targetKey, otp)
-      || await this.otpRepository.verifyOtp(cleanInput, otp);
-
-    if (!isValid) {
-      throw new BadRequestError("Invalid or expired verification code.");
+    const latestOtp = await this.otpRepository.findLatestOtp(user.id);
+    if (!latestOtp || latestOtp.is_verified || latestOtp.expires_at < new Date() || latestOtp.otp_code !== validOtp) {
+      throw new BadRequestError("Invalid or expired OTP code.");
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword.trim(), 10);
-    await this.userRepository.updateUser(user.id, { password: hashedPassword });
+    const newPasswordHash = await bcrypt.hash(validNewPassword, 10);
+    await this.userRepository.updatePassword(user.id, newPasswordHash);
+
+    // Invalidate all existing sessions and refresh tokens for this user
+    await this.sessionRepository.revokeAllUserSessions(user.id);
+    await this.otpRepository.markOtpAsVerified(latestOtp.id);
+
+    return { message: "Password reset successful. You can now login with your new password." };
   }
 }

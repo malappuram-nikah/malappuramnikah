@@ -1,53 +1,77 @@
 export class AppError extends Error {
   public readonly statusCode: number;
   public readonly isOperational: boolean;
-  public readonly errorCode?: string;
+  public readonly code: string;
 
-  constructor(message: string, statusCode = 500, isOperational = true, errorCode?: string) {
+  constructor(message: string, statusCode = 500, code = "INTERNAL_SERVER_ERROR", isOperational = true) {
     super(message);
-    this.statusCode = statusCode;
-    this.isOperational = isOperational;
-    this.errorCode = errorCode;
     Object.setPrototypeOf(this, new.target.prototype);
+    this.statusCode = statusCode;
+    this.code = code;
+    this.isOperational = isOperational;
     Error.captureStackTrace(this, this.constructor);
   }
 }
 
-export class BadRequestError extends AppError {
-  constructor(message = "Bad Request", errorCode?: string) {
-    super(message, 400, true, errorCode);
+export class ValidationError extends AppError {
+  public readonly errors?: any[];
+  constructor(message = "Validation Error", errors?: any[]) {
+    super(message, 422, "VALIDATION_ERROR");
+    this.errors = errors;
   }
 }
 
-export class UnauthorizedError extends AppError {
-  constructor(message = "Unauthorized. Missing or invalid token.", errorCode?: string) {
-    super(message, 401, true, errorCode);
+export class AuthenticationError extends AppError {
+  constructor(message = "Authentication Required") {
+    super(message, 401, "UNAUTHENTICATED");
   }
 }
 
-export class ForbiddenError extends AppError {
-  constructor(message = "Forbidden. You do not have permission to perform this action.", errorCode?: string) {
-    super(message, 403, true, errorCode);
+export class AuthorizationError extends AppError {
+  constructor(message = "Forbidden Access") {
+    super(message, 403, "FORBIDDEN");
   }
 }
 
 export class NotFoundError extends AppError {
-  constructor(message = "Resource not found", errorCode?: string) {
-    super(message, 404, true, errorCode);
+  constructor(message = "Resource Not Found") {
+    super(message, 404, "NOT_FOUND");
   }
 }
 
 export class ConflictError extends AppError {
-  constructor(message = "Resource already exists", errorCode?: string) {
-    super(message, 409, true, errorCode);
+  constructor(message = "Resource Conflict") {
+    super(message, 409, "CONFLICT");
   }
 }
 
-export class ValidationError extends AppError {
-  public readonly errors?: any;
+export class DatabaseError extends AppError {
+  constructor(message = "Database Error Occurred", isOperational = true) {
+    super(message, 500, "DATABASE_ERROR", isOperational);
+  }
+}
 
-  constructor(message = "Validation failed", errors?: any) {
-    super(message, 400, true, "VALIDATION_ERROR");
-    this.errors = errors;
+export class ExternalServiceError extends AppError {
+  constructor(message = "External Service Failure") {
+    super(message, 502, "EXTERNAL_SERVICE_ERROR");
+  }
+}
+
+// Backward compatibility alias classes
+export class BadRequestError extends AppError {
+  constructor(message = "Bad Request") {
+    super(message, 400, "BAD_REQUEST");
+  }
+}
+
+export class UnauthorizedError extends AuthenticationError {
+  constructor(message = "Unauthorized") {
+    super(message);
+  }
+}
+
+export class ForbiddenError extends AuthorizationError {
+  constructor(message = "Forbidden") {
+    super(message);
   }
 }

@@ -13,7 +13,7 @@ export function errorHandler(
       res,
       err.message,
       err.statusCode,
-      err.errorCode,
+      err.code,
       (err as any).errors ? { errors: (err as any).errors } : {}
     );
   }

@@ -5,8 +5,11 @@ import { config } from "../../config";
 export interface JwtPayload {
   userId?: number;
   adminId?: number;
+  mobile_number?: string;
+  email?: string | null;
   role?: string;
   isAdmin?: boolean;
+  type?: string;
 }
 
 export function generateToken(payload: object, expiresIn?: string | number): string {
@@ -27,6 +30,9 @@ export function extractTokenFromRequest(req: Request): string | null {
   if (authHeader && !authHeader.includes(" ")) {
     return authHeader;
   }
+  if ((req as any).cookies?.accessToken) {
+    return (req as any).cookies.accessToken;
+  }
   if (req.query && req.query.token) {
     return req.query.token as string;
   }
@@ -40,9 +46,6 @@ export function getUserIdFromRequest(req: Request): number | null {
     const payload = verifyToken(token);
     return payload.userId || null;
   } catch (err: any) {
-    if (err?.name !== "TokenExpiredError") {
-      console.warn("Invalid JWT token provided:", err?.message || err);
-    }
     return null;
   }
 }

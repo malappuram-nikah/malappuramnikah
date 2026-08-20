@@ -1,58 +1,77 @@
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { IUserRepository } from "../../domain/repositories/IUserRepository";
+import { ISessionRepository } from "../../domain/repositories/ISessionRepository";
+import { LoginUserDto } from "../dto/login.dto";
+import { rateLimiterService } from "../../infrastructure/security/rateLimiter.service";
 import { generateToken } from "../../../../shared/auth/jwt.util";
-import { config } from "../../../../config";
-import { getAccountBlockForUser } from "../../../../infrastructure/helpers/accountStatus.helpers";
-import { BadRequestError, NotFoundError, ForbiddenError, UnauthorizedError } from "../../../../shared/errors/AppError";
-
-export interface LoginResult {
-  status: number;
-  message: string;
-  code?: string;
-  token?: string;
-  refreshToken?: string;
-}
+import { UnauthorizedError, ForbiddenError } from "../../../../shared/errors/AppError";
 
 export class LoginUserUseCase {
-  constructor(private userRepository: IUserRepository) {}
+  constructor(
+    private userRepository: IUserRepository,
+    private sessionRepository: ISessionRepository
+  ) {}
 
-  async execute(data: { mobile_number: string; password: string }): Promise<LoginResult> {
-    if (!data.mobile_number || !data.password) {
-      throw new BadRequestError("Mobile number and password are required");
+  async execute(dto: LoginUserDto): Promise<{ user: any; accessToken: string; refreshToken: string }> {
+    const identifier = dto.identifier || dto.mobile_number || dto.email;
+    if (!identifier || !dto.password) {
+      throw new UnauthorizedError("Mobile number/email and password are required.");
     }
 
-    const user = await this.userRepository.findByMobile(data.mobile_number);
-    if (!user) {
-      return { status: 404, message: "User not found" };
+    const rateKey = `login:${identifier}`;
+    rateLimiterService.checkLoginRateLimit(rateKey);
+
+    let user = await this.userRepository.findByMobileNumber(identifier);
+    if (!user && identifier.includes("@")) {
+      user = await this.userRepository.findByEmail(identifier);
     }
 
-    const accountBlock = getAccountBlockForUser(user);
-    if (accountBlock) {
-      return { status: accountBlock.httpStatus, message: accountBlock.message, code: accountBlock.code };
+    if (!user || !user.password) {
+      rateLimiterService.recordFailedLogin(rateKey);
+      throw new UnauthorizedError("Invalid mobile number/email or password.");
     }
 
-    if (user.status === "in_active") {
-      return {
-        status: 403,
-        message: "Your account is not verified. Please complete OTP verification to activate your account.",
-        code: "ACCOUNT_UNVERIFIED",
-      };
+    const isMatch = await bcrypt.compare(dto.password, user.password);
+    if (!isMatch) {
+      rateLimiterService.recordFailedLogin(rateKey);
+      throw new UnauthorizedError("Invalid mobile number/email or password.");
     }
 
-    const isValidPassword = await bcrypt.compare(data.password, user.password);
-    if (!isValidPassword) {
-      return { status: 401, message: "Incorrect password" };
+    if (user.status === "suspended") {
+      throw new ForbiddenError("Your account has been suspended. Please contact support.");
     }
 
-    const accessToken = generateToken({ userId: user.id }, config.jwt.expiresIn);
-    const refreshToken = generateToken({ userId: user.id }, "7d");
+    rateLimiterService.resetLoginRateLimit(rateKey);
+    await this.userRepository.updateLastLogin(user.id);
 
-    if (user.id !== undefined) {
-      this.userRepository.updateUser(user.id, { last_login: new Date() }).catch((err) =>
-        console.error("Last login update failed:", err)
-      );
-    }
+    const accessToken = generateToken({
+      userId: user.id,
+      mobile_number: user.mobile_number,
+      email: user.email,
+      isAdmin: false,
+    });
 
-    return { status: 200, message: "Login successful", token: accessToken, refreshToken };
+    const refreshToken = generateToken(
+      { userId: user.id, type: "refresh", jti: crypto.randomUUID() },
+      "7d"
+    );
+
+    const refreshTokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    await this.sessionRepository.createSession(
+      user.id,
+      refreshToken,
+      refreshTokenExpiresAt,
+      dto.userAgent,
+      dto.ipAddress
+    );
+
+    const { password, ...safeUser } = user as any;
+
+    return {
+      user: safeUser,
+      accessToken,
+      refreshToken,
+    };
   }
 }
