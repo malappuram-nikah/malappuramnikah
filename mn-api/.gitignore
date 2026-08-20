@@ -8,7 +8,6 @@ awscli-bundle.zip
 awscli-bundle/
 .vscode
 yarn.lock
-package-lock.json
 .env
 
 # Agent directories
