@@ -85,7 +85,7 @@ export class OtpController {
       }
 
       const generatedOtp = await this.sendOtpUseCase.execute(
-        user.mobile_number,
+        targetInput,
         targetEmail,
         `${user.first_name || ""} ${user.last_name || ""}`
       );

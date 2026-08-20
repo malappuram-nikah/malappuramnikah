@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -31,6 +31,17 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [devOtpHint, setDevOtpHint] = useState<string | null>(null);
+  const [otpTimer, setOtpTimer] = useState(0);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (otpTimer > 0 && otpSent) {
+      interval = setInterval(() => {
+        setOtpTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [otpTimer, otpSent]);
 
   // Password Login Handler
   const handlePasswordSubmit = async (e: React.FormEvent) => {
@@ -101,6 +112,7 @@ export default function LoginPage() {
       }
 
       setOtpSent(true);
+      setOtpTimer(60);
       setSuccessMsg(data.message || "Verification code sent to your email inbox.");
       if (data.otp) setDevOtpHint(String(data.otp));
     } catch (err: any) {
@@ -172,7 +184,7 @@ export default function LoginPage() {
           <h1 className="text-3xl font-bold font-playfair text-gray-900 mb-1">Sign In</h1>
           <p className="text-gray-500 mb-6 text-sm">
             New here?{" "}
-            <Link href="/" className="text-brand-600 font-medium hover:underline">
+            <Link href="/?register=true" className="text-brand-600 font-medium hover:underline">
               Create a free account
             </Link>
           </p>
@@ -233,16 +245,7 @@ export default function LoginPage() {
               </motion.div>
             )}
 
-            {devOtpHint && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="mb-6 p-3 bg-amber-50 text-amber-900 text-xs rounded-xl border border-amber-200 flex items-center justify-between font-mono"
-              >
-                <span>🔑 OTP Hint:</span>
-                <span className="font-bold tracking-wider text-sm bg-amber-200/80 px-2 py-0.5 rounded">{devOtpHint}</span>
-              </motion.div>
-            )}
+
           </AnimatePresence>
 
           {/* ─── PASSWORD LOGIN FORM ─── */}
@@ -409,25 +412,31 @@ export default function LoginPage() {
                     >
                       Change Number
                     </button>
-                    <button
-                      type="button"
-                      onClick={handleSendOtp}
-                      disabled={isLoading}
-                      className="text-brand-600 font-bold hover:underline flex items-center gap-1"
-                    >
-                      <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin" : ""}`} /> Resend OTP
-                    </button>
+                    {otpTimer > 0 ? (
+                      <span className="text-gray-400 font-medium flex items-center gap-1">
+                        Resend OTP in {otpTimer}s
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleSendOtp}
+                        disabled={isLoading}
+                        className="text-brand-600 font-bold hover:underline flex items-center gap-1"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin" : ""}`} /> Resend OTP
+                      </button>
+                    )}
                   </div>
                 </form>
               )}
             </div>
           )}
 
-          <p className="mt-8 text-center text-xs text-gray-400">
+          <p className="mt-8 text-center text-xs text-gray-500">
             By signing in, you agree to our{" "}
-            <Link href="/terms" className="underline hover:text-brand-600">Terms</Link>
+            <Link href="/terms" className="text-brand-600 font-semibold hover:text-brand-700 hover:underline transition-colors">Terms</Link>
             {" "}and{" "}
-            <Link href="/privacy" className="underline hover:text-brand-600">Privacy Policy</Link>.
+            <Link href="/privacy" className="text-brand-600 font-semibold hover:text-brand-700 hover:underline transition-colors">Privacy Policy</Link>.
           </p>
         </motion.div>
       </div>

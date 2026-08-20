@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Filter, Lock, Unlock, Loader2 } from "lucide-react";
 import { RangeSlider, MultiSelect, FilterToggle } from "./FilterControls";
+import { LOCATIONS } from "../../lib/constants";
 
 interface FilterSidebarProps {
   isOpen: boolean;
@@ -87,14 +88,14 @@ export default function FilterSidebar({
             <RangeSlider 
               title="Age Range" 
               min={18} max={80} 
-              value={[filters.ageMin || 18, filters.ageMax || 40]} 
+              value={[filters.ageMin ?? 18, filters.ageMax ?? 40]} 
               onChange={v => { updateFilter("ageMin", v[0]); updateFilter("ageMax", v[1]); }} 
             />
             
             <RangeSlider 
               title="Height Range (cm)" 
               min={120} max={220} 
-              value={[filters.heightMin || 140, filters.heightMax || 190]} 
+              value={[filters.heightMin ?? 140, filters.heightMax ?? 190]} 
               onChange={v => { updateFilter("heightMin", v[0]); updateFilter("heightMax", v[1]); }} 
             />
 
@@ -113,8 +114,8 @@ export default function FilterSidebar({
 
 
             <MultiSelect 
-              title="District" placeholder="Any District"
-              options={["Malappuram", "Kozhikode", "Kannur", "Wayanad", "Palakkad", "Ernakulam"]}
+              title="Location" placeholder="Any Location"
+              options={LOCATIONS}
               selected={filters.district || []} onChange={v => updateFilter("district", v)}
             />
           </div>

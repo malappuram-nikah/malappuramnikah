@@ -223,18 +223,7 @@ export default function DashboardHeader() {
 
   return (
     <header className="bg-white border-b border-gray-100 px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between shrink-0 relative z-30">
-      {/* Search Bar placeholder */}
-      <div className="relative flex-1 max-w-sm">
-        <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-          <Search className="h-4 w-4 text-gray-400" />
-        </div>
-        <input
-          type="text"
-          placeholder="Search profiles..."
-          onClick={() => router.push("/dashboard/search")}
-          className="w-full bg-gray-50 border border-gray-200 rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all cursor-pointer"
-        />
-      </div>
+      <div className="flex-1"></div>
 
       {/* Action triggers */}
       <div className="flex items-center gap-4 ml-4 relative" ref={dropdownRef}>

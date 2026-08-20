@@ -55,6 +55,7 @@ export default function ProfileSlideOver({
   const { toggleFavourite, toggleBlock, isFavourite, isBlocked } = useProfileActions();
 
   const [showKycModal, setShowKycModal] = useState(false);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -198,7 +199,10 @@ export default function ProfileSlideOver({
                   <img
                     src={currentPhoto}
                     alt=""
-                    className={`w-full h-full object-cover ${!canViewProfile ? "filter blur-[16px] scale-110 select-none" : ""}`}
+                    onClick={() => {
+                      if (canViewProfile) setIsImageModalOpen(true);
+                    }}
+                    className={`w-full h-full object-cover ${!canViewProfile ? "filter blur-[16px] scale-110 select-none" : "cursor-pointer hover:opacity-95 transition-opacity"}`}
                   />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-[#026d77]/10 via-[#026d77]/20 to-[#026d77]/35 flex flex-col items-center justify-center p-6 text-center">
@@ -579,6 +583,35 @@ export default function ProfileSlideOver({
         onClose={() => setShowKycModal(false)}
         kycStatus={currentUser?.kyc_status}
       />
+
+      <AnimatePresence>
+        {isImageModalOpen && currentPhoto && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm"
+            onClick={() => setIsImageModalOpen(false)}
+          >
+            <button
+              onClick={() => setIsImageModalOpen(false)}
+              className="absolute top-4 right-4 sm:top-6 sm:right-6 text-white/70 hover:text-white p-2 transition-colors cursor-pointer bg-black/20 hover:bg-black/40 rounded-full"
+            >
+              <X className="w-8 h-8" />
+            </button>
+            <motion.img
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              src={currentPhoto}
+              alt="Full screen profile"
+              className="max-w-full max-h-full object-contain rounded-md"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

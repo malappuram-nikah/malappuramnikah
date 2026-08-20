@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 export function RangeSlider({
   min, max, value, onChange, title
 }: {
-  min: number; max: number; value: [number, number]; onChange: (v: [number, number]) => void; title: string;
+  min: number; max: number; value: [number | string, number | string]; onChange: (v: [number | string, number | string]) => void; title: string;
 }) {
   return (
     <div className="flex flex-col gap-2 w-full">
@@ -21,8 +21,8 @@ export function RangeSlider({
           <input 
             type="number" 
             value={value[0]} 
-            min={min} max={value[1]} 
-            onChange={e => onChange([Number(e.target.value), value[1]])} 
+            min={min} max={Number(value[1]) || max} 
+            onChange={e => onChange([e.target.value, value[1]])} 
             className="w-full px-2 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-center focus:bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all" 
           />
         </div>
@@ -31,8 +31,8 @@ export function RangeSlider({
           <input 
             type="number" 
             value={value[1]} 
-            min={value[0]} max={max} 
-            onChange={e => onChange([value[0], Number(e.target.value)])} 
+            min={Number(value[0]) || min} max={max} 
+            onChange={e => onChange([value[0], e.target.value])} 
             className="w-full px-2 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-center focus:bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all" 
           />
         </div>

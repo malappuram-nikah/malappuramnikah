@@ -1,0 +1,122 @@
+MALAPPURAM NIKAH
+PRIVACY POLICY
+Effective Date: 19 August 2026
+Website: www.malappuramnikah.com
+
+1. Introduction
+Welcome to Malappuram Nikah ("we", "our", or "us"). We are committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website www.malappuramnikah.com and use our services.
+By accessing or using our website, you agree to the terms of this Privacy Policy. If you do not agree with the terms herein, please discontinue use of our website.
+This policy is governed by the provisions of the Information Technology Act, 2000, the Information Technology (Reasonable Security Practices and Procedures and Sensitive Personal Data or Information) Rules, 2011, and the Digital Personal Data Protection Act, 2023, along with the rules, regulations, and amendments issued thereunder from time to time, as applicable in India.
+2. Information We Collect
+We collect the following categories of personal information from users of our website:
+2.1 Personal Identification Information
+	•	Full Name
+	•	Email Address
+	•	Phone Number
+	•	Mailing Address
+	•	Billing Address
+2.2 Payment Information
+When you make a purchase on our website (one-time or recurring), we collect payment details necessary to process your transaction. Payment information is processed through secure, encrypted payment gateways and is not stored directly on our servers.
+2.3 Device & Usage Information
+We automatically collect certain information when you visit our website, including IP address, browser type, operating system, referring URLs, pages viewed, and time spent on pages. This information is collected through cookies, web beacons, and session technologies.
+2.4 Camera & Photo Gallery Access
+Certain features of our website or application may request access to your device camera and photo gallery. This access is used solely to enable specific features you choose to use (e.g., uploading profile pictures or product-related images). We do not access or store media without your explicit permission.
+2.5 Contact Form Data
+When you reach out to us via contact forms, we collect the information you voluntarily submit, such as your name, email, phone number, and message.
+3. How We Use Your Information
+We use the information we collect for the following purposes:
+	•	To create and manage your account
+	•	To process and fulfil your orders, including one-time and recurring payments
+	•	To send transactional emails, order confirmations, and important service notifications
+	•	To send promotional emails and newsletters (you may opt out at any time)
+	•	To respond to your enquiries and provide customer support
+	•	To personalise your experience on our website
+	•	To improve our website, products, and services
+	•	To analyse website traffic and user behaviour using analytics tools
+	•	To conduct targeted retargeting advertising campaigns
+	•	To comply with legal obligations and enforce our terms
+4. Cookies and Tracking Technologies
+Our website uses the following tracking technologies:
+4.1 Cookies
+Cookies are small text files stored on your device. We use session cookies (which expire when you close your browser) and persistent cookies (which remain until deleted) to enhance your browsing experience, remember your preferences, and analyse site usage.
+4.2 Web Beacons
+We use web beacons (also known as pixel tags or clear GIFs) in our emails and web pages to track whether our emails have been opened and to analyse website interaction.
+4.3 Session Tracking
+We track user sessions to understand how visitors navigate our website and improve functionality and user experience.
+4.4 Facebook Pixel
+We have installed the Facebook Pixel on our website. This tool helps us measure the effectiveness of our advertising by tracking the actions users take on our website, and enables us to run targeted retargeting campaigns on Facebook and Instagram.
+4.5 Managing Cookies
+You may choose to disable cookies through your browser settings. Please note that disabling cookies may affect the functionality of certain parts of our website.
+5. Analytics and Third-Party Tracking
+We use third-party analytics and tracking solutions to monitor website traffic and user behaviour. These may include services provided by:
+	•	Google Analytics — for website traffic analysis and performance monitoring
+	•	Facebook — for pixel-based conversion tracking and ad performance
+	•	Instagram — for social media campaign tracking
+	•	X (formerly Twitter) — for engagement tracking
+These third parties may collect data as described in their own privacy policies. We encourage you to review the privacy policies of these providers.
+6. Retargeting and Advertising
+We use retargeting technologies to advertise our products and services to users who have previously visited our website. This means that after visiting www.malappuramnikah.com, you may see our advertisements on other websites or social media platforms such as Google, Facebook, and Instagram.
+We do not display third-party advertisements on our own website. Our retargeting efforts are solely for promoting Malappuram nikah services and products.
+If you wish to opt out of retargeting ads, you may do so via your social media platform settings or by visiting the Digital Advertising Alliance opt-out page.
+7. Social Media Integrations
+Our website integrates with the following social media platforms: Google, Facebook, Instagram, and X (formerly Twitter). These integrations may allow us to share content, track interactions, and provide a seamless experience across platforms.
+When you interact with social media features on our website, those social media companies may collect information in accordance with their own privacy policies. We recommend reviewing their policies to understand how your data is handled.
+8. Children's Privacy
+Our website and services are accessible to users of all ages. We recognize that special attention is required to protect the privacy of children. In compliance with the Digital Personal Data Protection Act, 2023 (and rules thereunder), where a "Child" is defined as any individual below the age of eighteen (18) years, we adhere to the following principles:
+8.1 Verifiable Parental Consent
+We do not process the personal data of a Child unless we have obtained verifiable consent from the parent or lawful guardian of such Child. To obtain this consent, we have implemented the following verification mechanisms: (Example-Parent Mobile number verification)
+By providing a Child’s information or allowing a Child to use our services, the parent or guardian confirms that they are the lawful guardian and authorize the collection, use, and disclosure of the Child's personal data as described in this Privacy Policy.
+8.2 Restrictions on Processing
+Where we process the personal data of a Child with verifiable parental consent, we strictly adhere to the following limitations:
+	•	No Tracking or Behavioural Monitoring: We do not track the Child’s online activity or monitor their behaviour.
+	•	No Targeted Advertising: We do not use the Child’s personal data to show targeted or retargeted advertisements.
+	•	Purpose Limitation: We only process the data to the extent necessary for the specific service the Child is using (e.g., account creation, order fulfilment) and for no other purpose.
+8.3 Parental Rights and Responsibilities
+Parents or guardians have the right to:
+	•	Review the personal data provided by or about their Child.
+	•	Request correction or deletion of their Child’s personal data.
+	•	Withdraw their consent at any time. Withdrawal of consent may result in the termination of the Child’s account or access to services, as we may not be able to operate the account without using the Child’s data.
+	•	To exercise these rights, parents must contact us at …………………………. with the subject line "Parental Request for Child Data," and provide sufficient proof of their identity and relationship to the Child.
+8.4 Data Deletion
+If we become aware that we have inadvertently collected personal data from a Child without the requisite verifiable parental consent, we will take immediate steps to delete that information from our records. If a parent or guardian believes their Child has provided us with information without their consent, they should contact us immediately at …………………………..
+We encourage parents and guardians to actively supervise their children's online activities.
+9. Email Communications and Newsletters
+With your consent, we may send you marketing emails, newsletters, and promotional materials. Every marketing email we send includes an option to unsubscribe. You may also opt out at any time by:
+	•	Clicking the 'Unsubscribe' link in any of our marketing emails
+	•	Contacting us directly at ………………………….
+Please note that even after opting out of marketing communications, you may still receive transactional and service-related emails necessary to your account or orders.
+10. Online Payments
+We accept both one-time and recurring payments on our website. Payment transactions are processed through secure, third-party payment gateways that comply with PCI-DSS (Payment Card Industry Data Security Standard) requirements.
+We do not store your full payment card details on our servers. Any payment information is handled exclusively by our trusted payment processors. Please refer to the respective payment gateway's privacy policy for more details on how they handle your financial information.
+11. Data Sharing and Disclosure
+We do not sell, rent, or trade your personal information to third parties. We may share your information in the following limited circumstances:
+	•	Service Providers: With trusted third-party vendors who assist in operating our website and services (e.g., payment processors, email service providers, analytics providers), subject to confidentiality obligations.
+	•	Legal Requirements: When required by law, court order, or governmental authority in India or elsewhere.
+	•	Business Transfers: In connection with a merger, acquisition, or sale of assets, your information may be transferred as part of that transaction.
+	•	Protection of Rights: When necessary to protect the rights, safety, and security of Malappura Nikah, our users, or the public.
+12. Data Security
+We implement industry-standard security measures to protect your personal data against unauthorised access, alteration, disclosure, or destruction. These include encrypted connections (SSL/TLS), secure servers, and access controls.
+However, no method of transmission over the internet or electronic storage is 100% secure. While we strive to protect your personal information, we cannot guarantee absolute security. In the event of a data breach that affects your rights and freedoms, we will notify you as required by applicable law.
+13. Data Retention
+We retain your personal information only for as long as necessary to fulfil the purposes outlined in this Privacy Policy, or as required by law. When your data is no longer needed, we will securely delete or anonymise it.
+14. Your Rights
+As a user, you have the following rights regarding your personal information:
+	•	Access: Request a copy of the personal data we hold about you.
+	•	Correction: Request correction of inaccurate or incomplete data.
+	•	Deletion: Request deletion of your personal data, subject to legal obligations.
+	•	Opt-out: opt out of marketing communications at any time.
+	•	Withdraw Consent: Withdraw consent for data processing where consent was the legal basis.
+To exercise any of these rights, please contact us using the details provided in Section 16.
+15. Third-Party Links
+Our website may contain links to third-party websites. We are not responsible for the privacy practices of those websites and encourage you to review their privacy policies before providing any personal information.
+16. Contact Us
+If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us at:
+……………………….
+Email: …………………
+Phone: ……………………
+Website: …………………….
+17. Changes to This Privacy Policy
+We reserve the right to update or modify this Privacy Policy at any time. Any changes will be posted on this page with a revised Effective Date. We encourage you to review this Policy periodically. Continued use of our website after any changes constitutes your acceptance of the updated policy.
+18. Jurisdiction
+Any disputes arising out of or in connection with this Privacy Policy shall be subject to the exclusive jurisdiction of the courts in Malappuram, Keralam, India.
+
