@@ -188,7 +188,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">Marital Status</label>
               <div className="grid grid-cols-2 gap-3">
-                {["Never Married", "Divorced", "Widowed", "Awaiting Divorce"].map((status) => (
+                {["Never Married", "Divorced", "Nikah Divorce", "Widowed", "Awaiting Divorce"].map((status) => (
                   <button
                     key={status}
                     type="button"

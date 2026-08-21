@@ -102,13 +102,13 @@ export default function FilterSidebar({
 
             <MultiSelect 
               title="Marital Status" placeholder="Any Marital Status"
-              options={["Single", "Divorced", "Widowed", "Awaiting Divorce"]}
+              options={["Never Married", "Divorced", "Nikah Divorce", "Widowed", "Awaiting Divorce"]}
               selected={filters.maritalStatus || []} onChange={v => updateFilter("maritalStatus", v)}
             />
 
             <MultiSelect 
               title="Community" placeholder="Any Community"
-              options={["Sunni", "Mujahid", "Jamaat-e-Islami", "Tablighi Jamaat", "Other"]}
+              options={["Sunni", "Mujahid", "Jamaat-e-Islami", "Tablighi Jamaat", "Shia", "Other Muslim"]}
               selected={filters.community || []} onChange={v => updateFilter("community", v)}
             />
 
