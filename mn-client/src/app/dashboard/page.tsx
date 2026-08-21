@@ -219,14 +219,16 @@ export default function DashboardPage() {
         </div>
 
         {/* Support Hotline Widget */}
-        <div className="flex items-center gap-2 bg-[#026d77]/5 border border-[#026d77]/10 rounded-full px-4 py-2 self-start md:self-center">
-          <span className="text-xs">📞</span>
-          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Support:</span>
-          <a href="tel:+919447868443" className="text-xs font-bold text-[#026d77] hover:underline">
-            +91 94478 68443
-          </a>
-          <span className="text-gray-300">|</span>
-          <a href="https://wa.me/919447868443?text=Hello%20Malappuram%20Nikah%2C%20I%20need%20assistance." target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-[#026d77] hover:underline flex items-center gap-1">
+        <div className="flex items-center justify-between md:justify-start gap-2 bg-[#026d77]/5 border border-[#026d77]/10 rounded-full px-4 py-2.5 w-full md:w-auto">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs">📞</span>
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Support:</span>
+            <a href="tel:+919447868443" className="text-xs font-bold text-[#026d77] hover:underline">
+              +91 94478 68443
+            </a>
+          </div>
+          <span className="text-gray-300 hidden md:inline">|</span>
+          <a href="https://wa.me/919447868443?text=Hello%20Malappuram%20Nikah%2C%20I%20need%20assistance." target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-[#026d77] hover:underline flex items-center gap-1 shrink-0">
             💬 WhatsApp
           </a>
         </div>
