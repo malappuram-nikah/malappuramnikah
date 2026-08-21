@@ -200,7 +200,7 @@ export class SearchRepository {
     }
 
     const query = Prisma.sql`
-      SELECT u.id, u.first_name, u.last_name, u.gender, u.cast, u.location, 
+      SELECT u.id, u.uuid, u.dob, u.first_name, u.last_name, u.gender, u.cast, u.location, 
              u.status, u.is_premium, u.kyc_status, u.last_login, ${profileDetailsSelect}, u.created_at
       FROM "user" u
       ${whereClause}
