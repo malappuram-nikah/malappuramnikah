@@ -66,6 +66,14 @@ export class SearchRepository {
       conditions.push(Prisma.sql`u.kyc_status = 'VERIFIED'`);
     }
 
+    if (filters.photo) {
+      conditions.push(Prisma.sql`
+        u.profile_details->'mn_profile_photos_draft'->'photos' IS NOT NULL 
+        AND jsonb_typeof(u.profile_details->'mn_profile_photos_draft'->'photos') = 'array'
+        AND jsonb_array_length(u.profile_details->'mn_profile_photos_draft'->'photos') > 0
+      `);
+    }
+
     if (filters.community && filters.community.length > 0) {
       conditions.push(Prisma.sql`u.cast IN (${Prisma.join(filters.community)})`);
     }
@@ -79,11 +87,17 @@ export class SearchRepository {
     }
 
     if (filters.hideInterested) {
-      conditions.push(Prisma.sql`u.id NOT IN (SELECT receiver_id FROM "interest" WHERE sender_id = ${currentUserId})`);
+      conditions.push(Prisma.sql`NOT EXISTS (
+        SELECT 1 FROM "interest" i 
+        WHERE i.receiver_id = u.id AND i.sender_id = ${currentUserId}
+      )`);
     }
 
     if (filters.hideViewed) {
-      conditions.push(Prisma.sql`u.id NOT IN (SELECT viewed_id FROM "profile_view" WHERE viewer_id = ${currentUserId})`);
+      conditions.push(Prisma.sql`NOT EXISTS (
+        SELECT 1 FROM "profile_view" pv 
+        WHERE pv.viewed_id = u.id AND pv.viewer_id = ${currentUserId}
+      )`);
     }
 
     // JSON Filters (profile_details)

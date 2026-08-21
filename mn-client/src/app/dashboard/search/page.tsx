@@ -112,7 +112,7 @@ export default function SearchPage() {
 
       // Append all filters
       Object.entries(appliedFilters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== "") {
+        if (value !== undefined && value !== null && value !== "" && value !== false) {
           if (Array.isArray(value)) {
             if (value.length > 0) params.append(key, value.join(","));
           } else {
