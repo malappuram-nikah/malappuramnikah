@@ -94,7 +94,9 @@ export default function ProfileDetailPage({ params }: PageProps) {
           aboutMe: enriched.aboutMe || enriched.personalityDescription,
           aiExplanation: data.user.profile_details?.mn_partner_preferences_draft?.explanation || "Highly compatible profile based on your preferences.",
           conversationStarter: "I would love to learn more about your values and partner goals!",
-          kyc_status: data.user.kyc_status
+          kyc_status: data.user.kyc_status,
+          mobile_number: data.user.mobile_number,
+          email: data.user.email
         };
         setProfile(mapped);
         setActivePhoto(mapped.img || null);
@@ -198,7 +200,8 @@ export default function ProfileDetailPage({ params }: PageProps) {
   const isSent = interests.sent.includes(profile.id);
   const isReceived = interests.received.includes(profile.id);
   const isMaleProfile = profile.gender?.toLowerCase() === "male";
-  const canViewProfile = isSelf || (isVerified && (isMutual || isMaleProfile));
+  const isViewerVerified = currentUser?.kyc_status === "VERIFIED";
+  const canViewProfile = isSelf || isMutual || isMaleProfile || isViewerVerified;
 
   let interestBtnText = "Express Interest";
   let interestBtnStyle = "bg-brand-600 hover:bg-brand-700 text-white shadow-brand-600/10";
@@ -551,7 +554,9 @@ export default function ProfileDetailPage({ params }: PageProps) {
                 </div>
                 <div>
                   <span className="text-gray-400 font-medium block">Present Location</span>
-                  <span className="text-gray-800 font-bold">{profile.location || "N/A"}</span>
+                  <span className="text-gray-800 font-bold">
+                    {isMutual || isSelf ? profile.location || "N/A" : `${profile.location?.split(",")[0] || "N/A"} (Full address locked)`}
+                  </span>
                 </div>
                 <div>
                   <span className="text-gray-400 font-medium block">Physical Status</span>
@@ -711,6 +716,48 @@ export default function ProfileDetailPage({ params }: PageProps) {
                 </div>
               </div>
             )}
+
+            {/* Contact Details & Address Section */}
+            <div className="bg-white p-5 rounded-2xl border border-gray-150/80 shadow-xs space-y-4">
+              <h3 className="text-sm font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-brand-600" /> Contact Details & Address
+              </h3>
+              {isMutual || isSelf ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <span className="text-gray-400 font-medium block">Phone Number</span>
+                    <span className="text-gray-800 font-bold text-sm">{profile.mobile_number || "N/A"}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 font-medium block">Email Address</span>
+                    <span className="text-gray-800 font-bold text-sm">{profile.email || "N/A"}</span>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <span className="text-gray-400 font-medium block">Full Address</span>
+                    <span className="text-gray-800 font-bold text-sm">{profile.location || "N/A"}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs opacity-75">
+                    <div>
+                      <span className="text-gray-400 font-medium block">Phone Number</span>
+                      <span className="text-gray-800 font-bold tracking-widest">{profile.mobile_number ? `${profile.mobile_number.slice(0, 6)}XXXXX` : "N/A"}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 font-medium block">Email Address</span>
+                      <span className="text-gray-800 font-bold">{profile.email ? `${profile.email.split("@")[0].slice(0, 3)}***@${profile.email.split("@")[1]}` : "N/A"}</span>
+                    </div>
+                  </div>
+                  <div className="mt-3 p-3 bg-brand-50/50 border border-brand-100/50 rounded-xl flex items-center gap-2">
+                    <Lock className="w-3.5 h-3.5 text-brand-600" />
+                    <span className="text-[11px] text-brand-800 font-semibold">
+                      Send interest and wait for them to accept to unlock full contact details.
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           </>
           ) : (

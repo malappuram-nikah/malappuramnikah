@@ -106,7 +106,9 @@ export default function ProfileSlideOver({
             aboutMe: enriched.aboutMe || enriched.personalityDescription,
             aiExplanation: data.user.profile_details?.mn_partner_preferences_draft?.explanation || "Highly compatible profile based on your preferences.",
             conversationStarter: "I would love to learn more about your values and partner goals!",
-            kyc_status: data.user.kyc_status
+            kyc_status: data.user.kyc_status,
+            mobile_number: data.user.mobile_number,
+            email: data.user.email
           };
           setFullUser(mapped);
           setPhotos(allPhotos.length > 0 ? allPhotos : [enriched.photo].filter(Boolean) as string[]);
@@ -145,7 +147,8 @@ export default function ProfileSlideOver({
   const isReceived = interests.received.includes(profile.id);
   const genderVal = profile.gender || fullUser?.gender || "";
   const isMaleProfile = genderVal.toLowerCase() === "male";
-  const canViewProfile = isVerified && (isMutual || isMaleProfile);
+  const isViewerVerified = currentUser?.kyc_status === "VERIFIED";
+  const canViewProfile = isMutual || isMaleProfile || isViewerVerified;
 
   let modalBtnText = "Send Interest";
   let modalBtnStyle = "bg-brand-600 text-white hover:bg-brand-700 shadow-sm";
@@ -353,7 +356,7 @@ export default function ProfileSlideOver({
                     )}
                   </h2>
                   <p className="text-gray-200 text-xs mt-0.5 font-medium">
-                    {profile.age} yrs • {profile.location} • {profile.caste || profile.community}
+                    {profile.age} yrs • {isMutual || (currentUser && profile ? currentUser.id === profile.id : false) ? profile.location : (profile.location?.split(",")[0] || "N/A")} • {profile.caste || profile.community}
                   </p>
                 </div>
                 <div className="bg-brand-600 text-white px-2.5 py-1 rounded-lg font-bold text-xs shadow-md flex items-center gap-1 shrink-0">
@@ -466,6 +469,48 @@ export default function ProfileSlideOver({
                     <audio src={fullUser.voice} controls className="w-full h-8 mt-0.5 accent-brand-600" />
                   </div>
                 )}
+
+                {/* Contact Details Section */}
+                <div className="bg-white p-3.5 rounded-xl border border-gray-150 shadow-xs space-y-3">
+                  <h3 className="text-[9px] font-bold uppercase tracking-wider text-brand-700 border-b border-brand-100/30 pb-1 mb-0.5 flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-brand-600" /> Contact Details & Address
+                  </h3>
+                  {isMutual || (currentUser && profile ? currentUser.id === profile.id : false) ? (
+                    <div className="grid grid-cols-1 gap-2.5 text-[11px]">
+                      <div>
+                        <span className="text-gray-400 font-medium block">Phone Number</span>
+                        <span className="text-gray-800 font-bold">{fullUser.mobile_number || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 font-medium block">Email Address</span>
+                        <span className="text-gray-800 font-bold">{fullUser.email || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 font-medium block">Full Address</span>
+                        <span className="text-gray-800 font-bold">{fullUser.location || "N/A"}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-1 gap-2 text-[11px] opacity-75">
+                        <div>
+                          <span className="text-gray-400 font-medium block">Phone Number</span>
+                          <span className="text-gray-800 font-bold tracking-widest">{fullUser.mobile_number ? `${fullUser.mobile_number.slice(0, 6)}XXXXX` : "N/A"}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400 font-medium block">Email Address</span>
+                          <span className="text-gray-800 font-bold">{fullUser.email ? `${fullUser.email.split("@")[0].slice(0, 3)}***@${fullUser.email.split("@")[1]}` : "N/A"}</span>
+                        </div>
+                      </div>
+                      <div className="p-2.5 bg-brand-50/50 border border-brand-100/50 rounded-lg flex items-center gap-2">
+                        <Lock className="w-3 h-3 text-brand-600" />
+                        <span className="text-[10px] text-brand-800 font-semibold leading-normal">
+                          Accept invite to unlock full contact details.
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 {/* AI Compatibility */}
                 <div>
