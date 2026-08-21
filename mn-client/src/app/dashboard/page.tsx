@@ -207,7 +207,7 @@ export default function DashboardPage() {
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="py-4 relative border-b border-gray-100/80 pb-6"
+        className="py-4 relative border-b border-gray-100/80 pb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
       >
         <div className="space-y-1">
           <h1 className="text-2xl sm:text-3xl font-bold font-playfair tracking-wide text-gray-900">
@@ -216,6 +216,25 @@ export default function DashboardPage() {
           <p className="text-gray-500 text-xs sm:text-sm max-w-lg leading-relaxed font-medium">
             Review your incoming requests under the <strong className="text-gray-700 font-semibold">Interests</strong> section and discover handpicked compatible matches below.
           </p>
+        </div>
+
+        {/* Support Hotline Widget */}
+        <div className="flex items-center gap-3 bg-[#026d77]/5 border border-[#026d77]/10 rounded-2xl p-4 self-start md:self-center">
+          <div className="w-10 h-10 rounded-xl bg-[#026d77]/10 flex items-center justify-center shrink-0">
+            <span className="text-lg">📞</span>
+          </div>
+          <div className="text-left">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Need Help? Support</p>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 mt-0.5">
+              <a href="tel:+919447868443" className="text-xs font-bold text-[#026d77] hover:underline">
+                +91 94478 68443
+              </a>
+              <span className="hidden sm:inline text-gray-300">|</span>
+              <a href="https://wa.me/919447868443?text=Hello%20Malappuram%20Nikah%2C%20I%20need%20assistance." target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-[#026d77] hover:underline flex items-center gap-1">
+                💬 WhatsApp
+              </a>
+            </div>
+          </div>
         </div>
       </motion.div>
 
