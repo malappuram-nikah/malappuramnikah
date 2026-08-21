@@ -1627,45 +1627,44 @@ admin_route.get("/me", adminGuard, async (req: Request, res: Response) => {
       return;
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: ADMIN_USER_SELECT,
-    });
-
-    if (!user) {
-      let adminObj: any = null;
-      try {
-        const raw = await prisma.$queryRawUnsafe(`SELECT id, email, name, mobile_number, role::text, is_active FROM admin WHERE id = $1 LIMIT 1`, userId);
-        if (raw && (raw as any[]).length > 0) adminObj = (raw as any[])[0];
-      } catch (_) {}
-
-      if (!adminObj) {
-        try {
-          adminObj = await prisma.admin.findUnique({ where: { id: userId } });
-        } catch (_) {}
+    // 1. Look up in Admin table by userId to avoid user table ID collisions
+    let adminRecord: any = null;
+    try {
+      const rawAdmins: any[] = await prisma.$queryRawUnsafe(
+        `SELECT id, email, name, mobile_number, role::text, is_active FROM admin WHERE id = $1 LIMIT 1`,
+        userId
+      );
+      if (rawAdmins && rawAdmins.length > 0) {
+        adminRecord = rawAdmins[0];
       }
+    } catch (_) {}
 
-      const emailVal = adminObj?.email || process.env.ADMIN_EMAIL || "harisvkvnr@gmail.com";
-      const nameVal = adminObj?.name || "Haris (Super Admin)";
-      const nameParts = nameVal.split(" ");
+    if (!adminRecord) {
+      try {
+        adminRecord = await prisma.admin.findUnique({ where: { id: userId } });
+      } catch (_) {}
+    }
+
+    if (adminRecord) {
+      const nameParts = (adminRecord.name || "").split(" ");
       const firstName = nameParts[0] || "Admin";
       const lastName = nameParts.slice(1).join(" ") || "User";
 
       res.status(200).json({
         success: true,
         admin: {
-          id: userId || 1,
-          uuid: "admin-super-uuid",
+          id: adminRecord.id,
+          uuid: `admin-${adminRecord.id}-uuid`,
           profile_for: "Self",
           gender: "Male",
           first_name: firstName,
           last_name: lastName,
           cast: "Muslim",
           location: "Malappuram",
-          email: emailVal,
-          mobile_number: adminObj?.mobile_number || "+919999900001",
+          email: adminRecord.email,
+          mobile_number: adminRecord.mobile_number || "+919999900001",
           dob: "1990-01-01",
-          status: "active",
+          status: adminRecord.is_active ? "active" : "inactive",
           is_premium: true,
           is_new_user: false,
           last_login: new Date().toISOString(),
@@ -1681,11 +1680,22 @@ admin_route.get("/me", adminGuard, async (req: Request, res: Response) => {
           updated_at: new Date().toISOString(),
           referral_code: "ADMIN",
           referral_points: 1000,
-          profileId: `MN-${100000 + (userId || 1)}`,
-          role: adminObj?.role || "SUPER_ADMIN",
+          profileId: `MN-${100000 + adminRecord.id}`,
+          role: String(adminRecord.role).toLowerCase(),
           isAdmin: true,
         },
       });
+      return;
+    }
+
+    // 2. Fallback to User table if not a dedicated admin record
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: ADMIN_USER_SELECT,
+    });
+
+    if (!user) {
+      res.status(404).json({ success: false, message: "Admin profile not found." });
       return;
     }
 
@@ -1704,7 +1714,6 @@ admin_route.get("/me", adminGuard, async (req: Request, res: Response) => {
   }
 });
 
-// Admin profile — PUT update (PUT /user/admin/me)
 admin_route.put("/me", adminGuard, async (req: Request, res: Response) => {
   try {
     const userId = getUserIdFromRequest(req);
@@ -1714,6 +1723,44 @@ admin_route.put("/me", adminGuard, async (req: Request, res: Response) => {
     }
 
     const { first_name, last_name, email } = req.body;
+    const name = `${first_name || ""} ${last_name || ""}`.trim();
+
+    // 1. Check and update dedicated admin table to avoid ID collisions
+    let adminRecord: any = null;
+    try {
+      adminRecord = await prisma.admin.findUnique({ where: { id: userId } });
+    } catch (_) {}
+
+    if (adminRecord) {
+      const updatedAdmin = await prisma.admin.update({
+        where: { id: userId },
+        data: {
+          name: name || adminRecord.name,
+          email: email || adminRecord.email,
+        }
+      });
+
+      const nameParts = (updatedAdmin.name || "").split(" ");
+      const fName = nameParts[0] || "Admin";
+      const lName = nameParts.slice(1).join(" ") || "User";
+
+      res.status(200).json({
+        success: true,
+        message: "Admin profile updated successfully.",
+        admin: {
+          id: updatedAdmin.id,
+          first_name: fName,
+          last_name: lName,
+          email: updatedAdmin.email,
+          mobile_number: updatedAdmin.mobile_number,
+          role: String(updatedAdmin.role).toLowerCase(),
+          isAdmin: true,
+        }
+      });
+      return;
+    }
+
+    // 2. Fallback to user table
     const data: any = {};
     if (first_name) data.first_name = first_name;
     if (last_name) data.last_name = last_name;
@@ -1751,6 +1798,27 @@ admin_route.put("/me/password", adminGuard, async (req: Request, res: Response) 
       return;
     }
 
+    // 1. Check if admin exists in dedicated admin table
+    let adminRecord: any = null;
+    try {
+      adminRecord = await prisma.admin.findUnique({ where: { id: userId } });
+    } catch (_) {}
+
+    if (adminRecord) {
+      const valid = await bcrypt.compare(currentPassword, adminRecord.password);
+      if (!valid) {
+        res.status(400).json({ success: false, message: "Current password is incorrect." });
+        return;
+      }
+
+      const hashed = await bcrypt.hash(newPassword, 10);
+      await prisma.admin.update({ where: { id: userId }, data: { password: hashed } });
+
+      res.status(200).json({ success: true, message: "Password changed successfully." });
+      return;
+    }
+
+    // 2. Fallback to user table
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       res.status(404).json({ success: false, message: "User not found" });
