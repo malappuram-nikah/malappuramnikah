@@ -37,29 +37,29 @@ admin_route.post("/login", async (req: Request, res: Response) => {
 
       let adminAccount: any = null;
       try {
-        adminAccount = await prisma.admin.findFirst({
-          where: {
-            OR: [
-              { email: inputEmail },
-              { email: { equals: inputEmail, mode: "insensitive" } },
-            ],
-          },
-        });
-      } catch (prismaErr: any) {
-        console.warn("Prisma findFirst warning, attempting raw fallback:", prismaErr?.message || prismaErr);
+        const rawAdmins: any[] = await prisma.$queryRawUnsafe(
+          `SELECT id, email, name, password, mobile_number, is_active, role::text FROM admin WHERE LOWER(email) = $1 LIMIT 1`,
+          inputEmail
+        );
+        if (rawAdmins && rawAdmins.length > 0) {
+          adminAccount = rawAdmins[0];
+        }
+      } catch (rawErr) {
+        console.warn("Raw admin login email lookup error:", rawErr);
       }
 
       if (!adminAccount) {
         try {
-          const rawAdmins: any[] = await prisma.$queryRawUnsafe(
-            `SELECT id, email, name, password, mobile_number, is_active, role::text FROM admin WHERE LOWER(email) = $1 LIMIT 1`,
-            inputEmail
-          );
-          if (rawAdmins && rawAdmins.length > 0) {
-            adminAccount = rawAdmins[0];
-          }
-        } catch (rawErr) {
-          console.warn("Raw admin lookup error:", rawErr);
+          adminAccount = await prisma.admin.findFirst({
+            where: {
+              OR: [
+                { email: inputEmail },
+                { email: { equals: inputEmail, mode: "insensitive" } },
+              ],
+            },
+          });
+        } catch (prismaErr: any) {
+          console.warn("Prisma findFirst email fallback warning:", prismaErr?.message || prismaErr);
         }
       }
 
@@ -242,27 +242,27 @@ async function adminGuard(req: Request, res: Response, next: Function) {
     // Check dedicated Admin table first by specific user/admin ID
     let adminRecord: any = null;
     try {
-      adminRecord = await prisma.admin.findFirst({
-        where: {
-          id: userId,
-          is_active: true,
-        },
-      });
-    } catch (e) {
-      console.warn("adminGuard findFirst warning, attempting raw fallback:", e);
+      const rawAdmins: any[] = await prisma.$queryRawUnsafe(
+        `SELECT id, email, name, role::text, is_active FROM admin WHERE id = $1 AND is_active = true LIMIT 1`,
+        userId
+      );
+      if (rawAdmins && rawAdmins.length > 0) {
+        adminRecord = rawAdmins[0];
+      }
+    } catch (rawErr) {
+      console.warn("adminGuard raw lookup error:", rawErr);
     }
 
     if (!adminRecord) {
       try {
-        const rawAdmins: any[] = await prisma.$queryRawUnsafe(
-          `SELECT id, email, name, role::text, is_active FROM admin WHERE id = $1 AND is_active = true LIMIT 1`,
-          userId
-        );
-        if (rawAdmins && rawAdmins.length > 0) {
-          adminRecord = rawAdmins[0];
-        }
-      } catch (rawErr) {
-        console.warn("adminGuard raw lookup error:", rawErr);
+        adminRecord = await prisma.admin.findFirst({
+          where: {
+            id: userId,
+            is_active: true,
+          },
+        });
+      } catch (e) {
+        console.warn("adminGuard findFirst fallback warning:", e);
       }
     }
 
@@ -1635,11 +1635,13 @@ admin_route.get("/me", adminGuard, async (req: Request, res: Response) => {
     if (!user) {
       let adminObj: any = null;
       try {
-        adminObj = await prisma.admin.findUnique({ where: { id: userId } });
-      } catch (e) {
+        const raw = await prisma.$queryRawUnsafe(`SELECT id, email, name, mobile_number, role::text, is_active FROM admin WHERE id = $1 LIMIT 1`, userId);
+        if (raw && (raw as any[]).length > 0) adminObj = (raw as any[])[0];
+      } catch (_) {}
+
+      if (!adminObj) {
         try {
-          const raw = await prisma.$queryRawUnsafe(`SELECT id, email, name, mobile_number, role::text, is_active FROM admin WHERE id = $1 LIMIT 1`, userId);
-          if (raw && (raw as any[]).length > 0) adminObj = (raw as any[])[0];
+          adminObj = await prisma.admin.findUnique({ where: { id: userId } });
         } catch (_) {}
       }
 
