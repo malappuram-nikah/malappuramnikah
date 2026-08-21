@@ -364,12 +364,6 @@ export default function DashboardPage() {
                     </button>
                   </div>
 
-                  {/* Match Score Badge */}
-                  <div className="absolute top-3 right-3 bg-gradient-to-r from-[#d4af37]/90 to-[#b8860b]/90 backdrop-blur-xs text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-md z-20 border border-[#d4af37]/30 pointer-events-none">
-                    <TrendingUp className="w-3.5 h-3.5" />
-                    {match.match}% match
-                  </div>
-
                   {/* Content & Action Buttons Container */}
                   <div className="relative z-20 p-4 w-full flex flex-col gap-2.5">
                     {/* Status Badges Overlay */}

@@ -359,9 +359,6 @@ export default function ProfileSlideOver({
                     {profile.age} yrs • {isMutual || (currentUser && profile ? currentUser.id === profile.id : false) ? profile.location : (profile.location?.split(",")[0] || "N/A")} • {profile.caste || profile.community}
                   </p>
                 </div>
-                <div className="bg-brand-600 text-white px-2.5 py-1 rounded-lg font-bold text-xs shadow-md flex items-center gap-1 shrink-0">
-                  <TrendingUp className="w-3 h-3" /> {profile.matchScore || profile.match}%
-                </div>
               </div>
             </div>
           </div>
@@ -511,26 +508,6 @@ export default function ProfileSlideOver({
                     </div>
                   )}
                 </div>
-
-                {/* AI Compatibility */}
-                <div>
-                  <h3 className="text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">AI Compatibility Analysis</h3>
-                  <p className="text-xs text-gray-700 leading-relaxed bg-brand-50 p-3.5 rounded-xl border border-brand-100/40">
-                    {fullUser.aiExplanation || fullUser.matchReason || "Highly compatible profile based on your preferences."}
-                  </p>
-                </div>
-
-                {/* Smart Icebreaker */}
-                {fullUser.conversationStarter && (
-                  <div>
-                    <h3 className="text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-1.5 flex items-center gap-1.5">
-                      <MessageCircle className="w-3.5 h-3.5 text-brand-500" /> Smart Icebreaker
-                    </h3>
-                    <p className="text-xs text-gray-700 italic bg-gray-50 p-3.5 rounded-xl border border-gray-150">
-                      &ldquo;{fullUser.conversationStarter}&rdquo;
-                    </p>
-                  </div>
-                )}
               </div>
               ) : (
                 <div className="p-8 text-center space-y-3">

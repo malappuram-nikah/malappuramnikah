@@ -275,11 +275,6 @@ export default function ProfileDetailPage({ params }: PageProps) {
 
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
 
-              {/* Match Score Indicator */}
-              <div className="absolute top-4 right-4 bg-brand-600/90 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-lg backdrop-blur-xs flex items-center gap-1">
-                <TrendingUp className="w-3.5 h-3.5" /> {profile.matchScore}% Match
-              </div>
-
               {/* Name Overlay */}
               <div className="absolute bottom-4 left-5 right-5 z-15">
                 <h1 className="text-xl font-bold text-white drop-shadow-sm flex items-center gap-1.5">
@@ -493,28 +488,6 @@ export default function ProfileDetailPage({ params }: PageProps) {
               </p>
             </div>
           )}
-
-          {/* AI compatibility card */}
-          <div className="bg-[#026d77] p-6 rounded-xl text-white shadow-md relative overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] bg-[size:16px_16px] opacity-10 pointer-events-none z-0" />
-            <div className="relative z-10 space-y-4">
-              <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                <h3 className="font-bold font-playfair text-white text-base">
-                  AI Compatibility Report
-                </h3>
-                <span className="bg-white/10 px-3 py-1 rounded-xl text-xs font-bold tracking-wider">{profile.matchScore}% Score</span>
-              </div>
-              <p className="text-sm text-brand-100 leading-relaxed">
-                {profile.aiExplanation}
-              </p>
-              {profile.conversationStarter && (
-                <div className="bg-black/15 p-4 rounded-2xl border border-white/5 space-y-1">
-                  <span className="text-[10px] font-bold text-brand-200 uppercase tracking-wider block">Recommended Icebreaker</span>
-                  <p className="text-xs text-white font-medium italic">"{profile.conversationStarter}"</p>
-                </div>
-              )}
-            </div>
-          </div>
 
           {/* Info Details Section Cards */}
           <div className="space-y-4">
