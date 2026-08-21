@@ -64,6 +64,21 @@ export default function CTASection({ onRegisterOpen }: CTASectionProps) {
                 View Success Stories
               </a>
             </motion.div>
+
+            <motion.p
+              initial={{ opacity: 0, y: 15 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="mt-8 text-xs text-brand-100/90 font-medium flex flex-col sm:flex-row items-center justify-center gap-2"
+            >
+              <span>📞 Need help registering? Call Support:</span>
+              <a href="tel:+919447868443" className="text-white hover:underline font-bold">+91 94478 68443</a>
+              <span className="hidden sm:inline text-brand-300/40">•</span>
+              <a href="https://wa.me/919447868443?text=Hello%20Malappuram%20Nikah%2C%20I%20need%20assistance." target="_blank" rel="noopener noreferrer" className="text-white hover:underline font-bold flex items-center gap-1">
+                💬 WhatsApp Chat Support
+              </a>
+            </motion.p>
           </div>
         </motion.div>
       </div>

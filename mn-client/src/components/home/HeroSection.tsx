@@ -69,6 +69,28 @@ export default function HeroSection({ onJoinNow }: HeroSectionProps) {
               <span className="text-base font-normal">→</span>
             </button>
           </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.7, ease: "easeOut" }}
+            className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs text-gray-500 font-semibold"
+          >
+            <span className="flex items-center gap-1">
+              📞 Call Support:{" "}
+              <a href="tel:+919447868443" className="text-brand-600 hover:text-brand-700 hover:underline">
+                +91 94478 68443
+              </a>
+            </span>
+            <span className="hidden sm:inline text-gray-300">•</span>
+            <span className="flex items-center gap-1">
+              💬 WhatsApp Support:{" "}
+              <a href="https://wa.me/919447868443?text=Hello%20Malappuram%20Nikah%2C%20I%20need%20assistance." target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:text-brand-700 hover:underline">
+                +91 94478 68443
+              </a>
+            </span>
+          </motion.div>
         </div>
       </div>
 
