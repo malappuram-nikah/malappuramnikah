@@ -108,9 +108,10 @@ export class SearchRepository {
       conditions.push(Prisma.sql`u.profile_details->'mn_basic_details_draft'->>'maritalStatus' IN (${Prisma.join(filters.maritalStatus)})`);
     }
 
-    // District
+    // District / Location filter
     if (filters.district && filters.district.length > 0) {
-      conditions.push(Prisma.sql`u.profile_details->'mn_basic_details_draft'->>'location' IN (${Prisma.join(filters.district)})`);
+      const lowerLocations = filters.district.map(loc => loc.toLowerCase());
+      conditions.push(Prisma.sql`(LOWER(u.location) IN (${Prisma.join(lowerLocations)}) OR LOWER(u.profile_details->'mn_basic_details_draft'->>'location') IN (${Prisma.join(lowerLocations)}))`);
     }
 
     // Education

@@ -48,7 +48,9 @@ export class SearchController {
       // Arrays
       if (req.query.country) filters.country = (req.query.country as string).split(",");
       if (req.query.state) filters.state = (req.query.state as string).split(",");
-      if (req.query.district) filters.district = (req.query.district as string).split(",");
+      if (req.query.district || req.query.location) {
+        filters.district = ((req.query.district || req.query.location) as string).split(",");
+      }
       if (req.query.education) filters.education = (req.query.education as string).split(",");
       if (req.query.profession) filters.profession = (req.query.profession as string).split(",");
       if (req.query.maritalStatus) filters.maritalStatus = (req.query.maritalStatus as string).split(",");
