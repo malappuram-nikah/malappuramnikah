@@ -647,9 +647,10 @@ export default function AIMatchesLegacy() {
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {aiData.dailyPicks.map((profile, i) => {
                 const isMutual = interests.mutual.includes(profile.id);
+                const isVerified = profile.kyc_status === "VERIFIED" || (profile as any).is_verified === true;
                 const isSent = interests.sent.includes(profile.id);
                 const isMale = (profile.gender || "").toLowerCase() === "male";
-                const canViewProfile = isMutual || isMale;
+                const canViewProfile = isVerified && (isMutual || isMale);
 
                 return (
                   <motion.div
@@ -664,7 +665,7 @@ export default function AIMatchesLegacy() {
                       <img 
                         src={profile.img} 
                         alt={profile.name} 
-                        className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 z-0 ${!canViewProfile ? "filter blur-[12px] select-none" : ""}`} 
+                        className={`absolute inset-0 w-full h-full object-cover object-[center_20%] group-hover:scale-105 transition-transform duration-500 z-0 ${!canViewProfile ? "filter blur-[12px] select-none" : ""}`} 
                       />
                     ) : (
                       <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-brand-50 to-brand-100 flex items-center justify-center text-brand-700 font-extrabold text-7xl uppercase z-0">

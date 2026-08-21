@@ -360,9 +360,11 @@ export default function SearchPage() {
               {profiles.map((p) => {
                 const isSent = interests.sent.includes(p.id);
                 const isMutual = interests.mutual.includes(p.id);
+                const isReceived = interests.received.includes(p.id);
+                const isVerified = p.kyc_status === "VERIFIED" || (p as any).is_verified === true;
                 const isMale = (p.gender || "").toLowerCase() === "male";
-                const canViewPhoto = isMutual || isMale;
-                const shouldBlurPhoto = !canViewPhoto || (p.isBlurred && !isMale);
+                const canViewPhoto = isVerified && (isMutual || isMale);
+                const shouldBlurPhoto = !isVerified || !canViewPhoto || (p.isBlurred && !isMale);
                 
                 // Format full name without asterisks
                 const displayName = `${p.first_name || ""} ${p.last_name || ""}`.trim() || p.name || "Member";
@@ -383,7 +385,7 @@ export default function SearchPage() {
                       <img 
                         src={p.img} 
                         alt={displayName} 
-                        className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 z-0 ${shouldBlurPhoto ? "blur-md scale-110 opacity-80 select-none" : ""}`} 
+                        className={`absolute inset-0 w-full h-full object-cover object-[center_20%] group-hover:scale-105 transition-transform duration-700 z-0 ${shouldBlurPhoto ? "blur-md scale-110 opacity-80 select-none" : ""}`} 
                       />
                     ) : (
                       <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#026d77]/10 via-[#026d77]/20 to-[#026d77]/35 flex flex-col items-center justify-center p-6 text-center z-0">

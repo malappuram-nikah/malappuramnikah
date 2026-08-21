@@ -139,12 +139,13 @@ export default function ProfileSlideOver({
 
   if (!profile) return null;
 
+  const isVerified = (profile?.kyc_status || fullUser?.kyc_status) === "VERIFIED" || ((profile as any)?.is_verified || (fullUser as any)?.is_verified) === true;
   const isMutual = interests.mutual.includes(profile.id);
   const isSent = interests.sent.includes(profile.id);
   const isReceived = interests.received.includes(profile.id);
   const genderVal = profile.gender || fullUser?.gender || "";
   const isMaleProfile = genderVal.toLowerCase() === "male";
-  const canViewProfile = isMutual || isMaleProfile;
+  const canViewProfile = isVerified && (isMutual || isMaleProfile);
 
   let modalBtnText = "Send Interest";
   let modalBtnStyle = "bg-brand-600 text-white hover:bg-brand-700 shadow-sm";
@@ -198,7 +199,7 @@ export default function ProfileSlideOver({
                   <img
                     src={currentPhoto}
                     alt=""
-                    className={`w-full h-full object-cover ${!canViewProfile ? "filter blur-[16px] scale-110 select-none" : ""}`}
+                    className={`w-full h-full object-cover object-[center_20%] ${!canViewProfile ? "filter blur-[16px] scale-110 select-none" : ""}`}
                   />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-[#026d77]/10 via-[#026d77]/20 to-[#026d77]/35 flex flex-col items-center justify-center p-6 text-center">

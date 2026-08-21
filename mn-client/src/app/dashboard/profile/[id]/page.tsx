@@ -192,12 +192,13 @@ export default function ProfileDetailPage({ params }: PageProps) {
     );
   }
 
+  const isVerified = profile.kyc_status === "VERIFIED" || profile.is_verified === true;
   const isSelf = currentUser && currentUser.id === profile.id;
   const isMutual = interests.mutual.includes(profile.id);
   const isSent = interests.sent.includes(profile.id);
   const isReceived = interests.received.includes(profile.id);
   const isMaleProfile = profile.gender?.toLowerCase() === "male";
-  const canViewProfile = isMutual || isSelf || isMaleProfile;
+  const canViewProfile = isSelf || (isVerified && (isMutual || isMaleProfile));
 
   let interestBtnText = "Express Interest";
   let interestBtnStyle = "bg-brand-600 hover:bg-brand-700 text-white shadow-brand-600/10";
@@ -251,7 +252,7 @@ export default function ProfileDetailPage({ params }: PageProps) {
                 <img 
                   src={activePhoto || profile.img} 
                   alt={profile.name} 
-                  className={`w-full h-full object-cover transition-transform duration-700 ${!canViewProfile ? "filter blur-[18px] select-none" : ""}`} 
+                  className={`w-full h-full object-cover object-[center_20%] transition-transform duration-700 ${!canViewProfile ? "filter blur-[18px] select-none" : ""}`} 
                 />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-[#026d77]/10 via-[#026d77]/20 to-[#026d77]/35 flex flex-col items-center justify-center p-6 text-center">

@@ -270,8 +270,9 @@ export default function DashboardPage() {
               const isMutual = interests.mutual.includes(match.id);
               const isSent = interests.sent.includes(match.id);
               const isReceived = interests.received.includes(match.id);
+              const isVerified = match.kyc_status === "VERIFIED" || (match as any).is_verified === true;
               const isMale = (match.gender || "").toLowerCase() === "male";
-              const canViewProfile = isMutual || isMale;
+              const canViewProfile = isVerified && (isMutual || isMale);
 
               let interestText = "Connect";
               let interestStyle = "bg-[#026d77]/10 text-[#026d77] hover:bg-[#026d77] hover:text-white hover:shadow-xs";
@@ -308,7 +309,7 @@ export default function DashboardPage() {
                     <img 
                       src={match.img} 
                       alt={match.name} 
-                      className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 z-0 ${!canViewProfile ? "filter blur-[16px] select-none" : ""}`} 
+                      className={`absolute inset-0 w-full h-full object-cover object-[center_20%] group-hover:scale-105 transition-transform duration-700 z-0 ${!canViewProfile ? "filter blur-[16px] select-none" : ""}`} 
                     />
                   ) : (
                     <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#026d77]/10 via-[#026d77]/20 to-[#026d77]/35 flex flex-col items-center justify-center p-6 text-center z-0">
