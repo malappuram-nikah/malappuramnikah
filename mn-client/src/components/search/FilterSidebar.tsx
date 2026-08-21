@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Filter, Lock, Unlock, Loader2 } from "lucide-react";
 import { RangeSlider, MultiSelect, FilterToggle } from "./FilterControls";
 
+import { LOCATIONS } from "@/lib/constants";
+
 interface FilterSidebarProps {
   isOpen: boolean;
   onClose: () => void;
@@ -113,36 +115,8 @@ export default function FilterSidebar({
 
 
             <MultiSelect 
-              title="Location" placeholder="Select Location / Place"
-              options={[
-                "Malappuram",
-                "Manjeri",
-                "Perinthalmanna",
-                "Tirur",
-                "Ponnani",
-                "Kottakkal",
-                "Kondotty",
-                "Nilambur",
-                "Valanchery",
-                "Changaramkulam",
-                "Edappal",
-                "Ramanattukara",
-                "Kozhikode",
-                "Kannur",
-                "Wayanad",
-                "Palakkad",
-                "Ernakulam",
-                "Thrissur",
-                "Trivandrum",
-                "Kollam",
-                "Alappuzha",
-                "Kottayam",
-                "Idukki",
-                "Pathanamthitta",
-                "Kasaragod",
-                "GCC / Abroad",
-                "Other"
-              ]}
+              title="Location" placeholder="Select Location"
+              options={LOCATIONS}
               selected={filters.location || filters.district || []} 
               onChange={v => { 
                 updateFilter("location", v); 
