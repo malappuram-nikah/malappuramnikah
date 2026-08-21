@@ -8,7 +8,7 @@ import { AdminTabRedirect } from "@/components/admin/AdminTabRedirect";
 export default function AdminPanelLayout({ children }: { children: React.ReactNode }) {
   return (
     <AdminGuard>
-      <div className="flex h-screen bg-gray-50 overflow-hidden">
+      <div className="flex flex-col lg:flex-row h-screen bg-gray-50 overflow-hidden">
         <AdminSidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <main className="flex-1 overflow-y-auto bg-gray-50">
