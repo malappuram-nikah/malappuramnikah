@@ -10,30 +10,84 @@ export function RangeSlider({
 }: {
   min: number; max: number; value: [number, number]; onChange: (v: [number, number]) => void; title: string;
 }) {
+  const [fromVal, setFromVal] = useState<string>(String(value[0]));
+  const [toVal, setToVal] = useState<string>(String(value[1]));
+
+  React.useEffect(() => {
+    setFromVal(String(value[0]));
+  }, [value[0]]);
+
+  React.useEffect(() => {
+    setToVal(String(value[1]));
+  }, [value[1]]);
+
+  const handleFromChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    setFromVal(raw);
+    if (raw !== "") {
+      const num = parseInt(raw, 10);
+      if (!isNaN(num)) {
+        onChange([num, value[1]]);
+      }
+    }
+  };
+
+  const handleToChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    setToVal(raw);
+    if (raw !== "") {
+      const num = parseInt(raw, 10);
+      if (!isNaN(num)) {
+        onChange([value[0], num]);
+      }
+    }
+  };
+
+  const handleBlur = () => {
+    let parsedFrom = parseInt(fromVal, 10);
+    let parsedTo = parseInt(toVal, 10);
+
+    if (isNaN(parsedFrom)) parsedFrom = min;
+    if (isNaN(parsedTo)) parsedTo = max;
+
+    if (parsedFrom < min) parsedFrom = min;
+    if (parsedTo > max) parsedTo = max;
+
+    setFromVal(String(parsedFrom));
+    setToVal(String(parsedTo));
+    onChange([parsedFrom, parsedTo]);
+  };
+
   return (
     <div className="flex flex-col gap-2 w-full">
-      <div className="flex justify-between text-xs font-semibold text-gray-500">
+      <div className="flex justify-between text-xs font-semibold text-gray-700">
         <span>{title}</span>
-        <span className="text-brand-600">{value[0]} - {value[1]}</span>
+        <span className="text-brand-600 font-bold">{value[0]} - {value[1]}</span>
       </div>
       <div className="flex items-center justify-between gap-3">
         <div className="relative flex-1">
           <input 
-            type="number" 
-            value={value[0]} 
-            min={min} max={value[1]} 
-            onChange={e => onChange([Number(e.target.value), value[1]])} 
-            className="w-full px-2 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-center focus:bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all" 
+            type="text" 
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={fromVal} 
+            onChange={handleFromChange} 
+            onBlur={handleBlur}
+            placeholder={String(min)}
+            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-center font-medium text-gray-900 focus:bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all shadow-xs" 
           />
         </div>
-        <span className="text-gray-400 font-medium text-sm">to</span>
+        <span className="text-gray-400 font-semibold text-xs uppercase tracking-wider">to</span>
         <div className="relative flex-1">
           <input 
-            type="number" 
-            value={value[1]} 
-            min={value[0]} max={max} 
-            onChange={e => onChange([value[0], Number(e.target.value)])} 
-            className="w-full px-2 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-center focus:bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all" 
+            type="text" 
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={toVal} 
+            onChange={handleToChange} 
+            onBlur={handleBlur}
+            placeholder={String(max)}
+            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-center font-medium text-gray-900 focus:bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all shadow-xs" 
           />
         </div>
       </div>

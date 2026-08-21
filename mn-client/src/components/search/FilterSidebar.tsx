@@ -113,9 +113,41 @@ export default function FilterSidebar({
 
 
             <MultiSelect 
-              title="District" placeholder="Any District"
-              options={["Malappuram", "Kozhikode", "Kannur", "Wayanad", "Palakkad", "Ernakulam"]}
-              selected={filters.district || []} onChange={v => updateFilter("district", v)}
+              title="Location" placeholder="Select Location / Place"
+              options={[
+                "Malappuram",
+                "Manjeri",
+                "Perinthalmanna",
+                "Tirur",
+                "Ponnani",
+                "Kottakkal",
+                "Kondotty",
+                "Nilambur",
+                "Valanchery",
+                "Changaramkulam",
+                "Edappal",
+                "Ramanattukara",
+                "Kozhikode",
+                "Kannur",
+                "Wayanad",
+                "Palakkad",
+                "Ernakulam",
+                "Thrissur",
+                "Trivandrum",
+                "Kollam",
+                "Alappuzha",
+                "Kottayam",
+                "Idukki",
+                "Pathanamthitta",
+                "Kasaragod",
+                "GCC / Abroad",
+                "Other"
+              ]}
+              selected={filters.location || filters.district || []} 
+              onChange={v => { 
+                updateFilter("location", v); 
+                updateFilter("district", v); 
+              }}
             />
           </div>
         ) : (
