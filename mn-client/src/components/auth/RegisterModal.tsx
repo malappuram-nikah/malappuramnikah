@@ -58,6 +58,8 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
     }
   }, [isOpen, status, onClose, router]);
 
+  const [stepErrors, setStepErrors] = useState<{ [key: string]: string }>({});
+
   const updateForm = (key: string, value: string) => {
     if (key === "mobile") {
       value = value.replace(/\D/g, "").slice(0, getMobileMaxLength(formData.countryCode));
@@ -67,6 +69,15 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
 
     if (key === "mobile" || key === "password" || key === "email") {
       setFieldErrors((prev) => ({ ...prev, [key]: undefined }));
+    }
+
+    // Clear step specific error when selection/input is updated
+    if (stepErrors[key] || (key === "profileFor" && stepErrors.profileFor) || (key === "maritalStatus" && stepErrors.maritalStatus) || (key === "dateOfBirth" && stepErrors.dateOfBirth)) {
+      setStepErrors((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
     }
   };
 
@@ -100,8 +111,34 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
     }
   };
 
-  const nextStep = () => setStep((p) => Math.min(p + 1, 4));
-  const prevStep = () => setStep((p) => Math.max(p - 1, 1));
+  const nextStep = () => {
+    const errors: { [key: string]: string } = {};
+    if (step === 1) {
+      if (!formData.profileFor) errors.profileFor = "Please select who the profile is for.";
+      if (!formData.gender) errors.gender = "Please select gender.";
+      if (!formData.maritalStatus) errors.maritalStatus = "Please select marital status.";
+    } else if (step === 2) {
+      if (formData.first_name.trim().length < 2) errors.first_name = "First name must be at least 2 characters.";
+      if (formData.last_name.trim().length < 1) errors.last_name = "Last name is required.";
+      if (!formData.dateOfBirth) errors.dateOfBirth = "Please select your date of birth.";
+    } else if (step === 3) {
+      if (!formData.location) errors.location = "Please select location.";
+      if (!formData.caste) errors.caste = "Please select community.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setStepErrors(errors);
+      return;
+    }
+
+    setStepErrors({});
+    setStep((p) => Math.min(p + 1, 4));
+  };
+
+  const prevStep = () => {
+    setStepErrors({});
+    setStep((p) => Math.max(p - 1, 1));
+  };
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -164,6 +201,9 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
                   </button>
                 ))}
               </div>
+              {stepErrors.profileFor && (
+                <p className="text-red-500 text-xs mt-2 font-medium">{stepErrors.profileFor}</p>
+              )}
             </div>
 
             <div>
@@ -183,6 +223,9 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
                   </button>
                 ))}
               </div>
+              {stepErrors.gender && (
+                <p className="text-red-500 text-xs mt-2 font-medium">{stepErrors.gender}</p>
+              )}
             </div>
 
             <div>
@@ -202,6 +245,9 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
                   </button>
                 ))}
               </div>
+              {stepErrors.maritalStatus && (
+                <p className="text-red-500 text-xs mt-2 font-medium">{stepErrors.maritalStatus}</p>
+              )}
             </div>
           </motion.div>
         );
@@ -236,6 +282,10 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
                 />
               </div>
             </div>
+            {(stepErrors.first_name || stepErrors.last_name) && (
+              <p className="text-red-500 text-xs mt-1.5 font-medium">{stepErrors.first_name || stepErrors.last_name}</p>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Date of Birth</label>
               <input
@@ -245,6 +295,9 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
                 max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split("T")[0]}
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
               />
+              {stepErrors.dateOfBirth && (
+                <p className="text-red-500 text-xs mt-1.5 font-medium">{stepErrors.dateOfBirth}</p>
+              )}
             </div>
           </motion.div>
         );
@@ -269,6 +322,9 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
                   <option key={loc} value={loc}>{loc}</option>
                 ))}
               </select>
+              {stepErrors.location && (
+                <p className="text-red-500 text-xs mt-1.5 font-medium">{stepErrors.location}</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Caste / Community</label>
@@ -283,6 +339,9 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
                 <option value="Jamaat-e-Islami">Jamaat-e-Islami</option>
                 <option value="Other">Other</option>
               </select>
+              {stepErrors.caste && (
+                <p className="text-red-500 text-xs mt-1.5 font-medium">{stepErrors.caste}</p>
+              )}
             </div>
           </motion.div>
         );
@@ -794,8 +853,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
                 {step < 4 ? (
                   <button
                     onClick={nextStep}
-                    disabled={!isStepValid()}
-                    className="w-full bg-brand-600 text-white font-medium py-3.5 px-4 rounded-xl hover:bg-brand-700 active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100 shadow-sm"
+                    className="w-full bg-brand-600 text-white font-medium py-3.5 px-4 rounded-xl hover:bg-brand-700 active:scale-[0.98] transition-all shadow-sm"
                   >
                     Continue
                   </button>
