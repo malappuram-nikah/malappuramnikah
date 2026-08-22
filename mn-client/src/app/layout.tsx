@@ -7,8 +7,8 @@ import AppProviders from "@/components/auth/AppProviders";
 const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "Malappuram Nikah | Premium Matrimony",
-  description: "Find your perfect life partner with our premium, secure, and trusted matchmaking service.",
+  title: "Malappuram Nikah | Trusted Malappuram Muslim Matrimony",
+  description: "Welcome to Malappuram Nikah, the leading Kerala Muslim matrimonial service. Experience trusted Muslim matchmaking and secure Muslim matrimony today.",
   icons: {
     icon: [
       { url: "/favicon.png", type: "image/png" },
