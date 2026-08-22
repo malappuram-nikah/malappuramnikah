@@ -5,9 +5,16 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
+import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
-import RegisterModal from "@/components/auth/RegisterModal";
-import ReferralGeneratorModal from "@/components/home/ReferralGeneratorModal";
+
+const RegisterModal = dynamic(() => import("@/components/auth/RegisterModal"), {
+  ssr: false,
+});
+const ReferralGeneratorModal = dynamic(
+  () => import("@/components/home/ReferralGeneratorModal"),
+  { ssr: false }
+);
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);

@@ -1,41 +1,21 @@
-"use client";
+import type { Metadata } from "next";
+import HomePageClient from "./HomePageClient";
+import JsonLd from "@/components/seo/JsonLd";
+import { getHomepageStructuredData } from "@/lib/seo/structured-data";
 
-import { useState, useEffect } from "react";
-import Navbar from "@/components/layout/Navbar";
-import HeroSection from "@/components/home/HeroSection";
-import StatsSection from "@/components/home/StatsSection";
-import FeaturesSection from "@/components/home/FeaturesSection";
-import CTASection from "@/components/home/CTASection";
-import UpcomingBusinessSection from "@/components/home/UpcomingBusinessSection";
-import Footer from "@/components/layout/Footer";
-import RegisterModal from "@/components/auth/RegisterModal";
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "https://www.malappuramnikah.com",
+  },
+};
 
-export default function Home() {
-  const [registerOpen, setRegisterOpen] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("register") === "true" || params.get("ref")) {
-        setRegisterOpen(true);
-      }
-    }
-  }, []);
-
+export default function HomePage() {
+  const jsonLd = getHomepageStructuredData();
   return (
     <>
-      <Navbar />
-      <main className="flex-1 flex flex-col">
-        <HeroSection onJoinNow={() => setRegisterOpen(true)} />
-        <StatsSection />
-        <FeaturesSection />
-        <UpcomingBusinessSection />
-        <CTASection onRegisterOpen={() => setRegisterOpen(true)} />
-      </main>
-      <Footer />
-      {registerOpen && (
-        <RegisterModal isOpen={registerOpen} onClose={() => setRegisterOpen(false)} />
-      )}
+      <JsonLd data={jsonLd} />
+      <HomePageClient />
     </>
   );
 }
+

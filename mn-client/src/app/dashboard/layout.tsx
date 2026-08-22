@@ -11,6 +11,10 @@ import AccountStatusGuard from "@/components/auth/AccountStatusGuard";
 export const metadata: Metadata = {
   title: "Dashboard | Malappuram Nikah",
   description: "Manage your profile and find your perfect match.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { BookOpen } from "lucide-react";
 
@@ -108,10 +109,13 @@ export default function HeroSection({ onJoinNow }: HeroSectionProps) {
             whileHover={{ scale: 1.05, opacity: 0.8, transition: { duration: 0.2 } }}
             className="w-28 h-36 sm:w-36 sm:h-48 md:w-40 md:h-52 rounded-[1.6rem] overflow-hidden bg-white flex-shrink-0 hidden lg:block transform cursor-pointer rotate-[-6deg]"
           >
-            <img
+            <Image
               src="/hero-girl-beach-book.jpg"
               alt="Muslim Bride Beach Book"
+              width={160}
+              height={208}
               className="w-full h-full object-cover"
+              quality={80}
             />
           </motion.div>
 
@@ -124,10 +128,13 @@ export default function HeroSection({ onJoinNow }: HeroSectionProps) {
             whileHover={{ scale: 1.05, opacity: 0.9, transition: { duration: 0.2 } }}
             className="w-32 h-40 sm:w-44 sm:h-56 md:w-48 md:h-60 rounded-[1.8rem] overflow-hidden bg-white flex-shrink-0 hidden sm:block transform cursor-pointer rotate-[-4deg]"
           >
-            <img
+            <Image
               src="/hero-man-jacket.jpg"
               alt="Kerala Muslim Groom"
+              width={192}
+              height={240}
               className="w-full h-full object-cover"
+              quality={80}
             />
           </motion.div>
 
@@ -140,10 +147,13 @@ export default function HeroSection({ onJoinNow }: HeroSectionProps) {
             whileHover={{ scale: 1.05, opacity: 1, transition: { duration: 0.2 } }}
             className="w-36 h-44 sm:w-48 sm:h-60 md:w-52 md:h-64 rounded-[2rem] overflow-hidden bg-white flex-shrink-0 cursor-pointer rotate-[-2deg]"
           >
-            <img
+            <Image
               src="/hero-girl-hijab.jpg"
               alt="Muslim Bride Profile"
+              width={208}
+              height={256}
               className="w-full h-full object-cover"
+              quality={80}
             />
           </motion.div>
 
@@ -177,10 +187,14 @@ export default function HeroSection({ onJoinNow }: HeroSectionProps) {
                 
                 {/* User Profile Avatar */}
                 <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-26 md:h-26 rounded-[2.2rem] overflow-hidden border-2 border-brand-50 shadow-sm">
-                  <img
+                  <Image
                     src="/hero-muhammad.jpg"
                     alt="Muhammad Profile"
+                    width={104}
+                    height={104}
                     className="w-full h-full object-cover"
+                    priority
+                    quality={90}
                   />
                 </div>
 
@@ -223,10 +237,13 @@ export default function HeroSection({ onJoinNow }: HeroSectionProps) {
             whileHover={{ scale: 1.05, opacity: 1, transition: { duration: 0.2 } }}
             className="w-36 h-44 sm:w-48 sm:h-60 md:w-52 md:h-64 rounded-[2rem] overflow-hidden bg-white flex-shrink-0 cursor-pointer rotate-[2deg]"
           >
-            <img
+            <Image
               src="/hero-girl-headphones.jpg"
               alt="Muslim Groom Profile"
+              width={208}
+              height={256}
               className="w-full h-full object-cover"
+              quality={80}
             />
           </motion.div>
 
@@ -239,10 +256,13 @@ export default function HeroSection({ onJoinNow }: HeroSectionProps) {
             whileHover={{ scale: 1.05, opacity: 0.9, transition: { duration: 0.2 } }}
             className="w-32 h-40 sm:w-44 sm:h-56 md:w-48 md:h-60 rounded-[1.8rem] overflow-hidden bg-white flex-shrink-0 hidden sm:block transform cursor-pointer rotate-[4deg]"
           >
-            <img
+            <Image
               src="/hero-man-beach.jpg"
               alt="Muslim Groom Profile Beach"
+              width={192}
+              height={240}
               className="w-full h-full object-cover"
+              quality={80}
             />
           </motion.div>
 
@@ -255,10 +275,13 @@ export default function HeroSection({ onJoinNow }: HeroSectionProps) {
             whileHover={{ scale: 1.05, opacity: 0.8, transition: { duration: 0.2 } }}
             className="w-28 h-36 sm:w-36 sm:h-48 md:w-40 md:h-52 rounded-[1.6rem] overflow-hidden bg-white flex-shrink-0 hidden lg:block transform cursor-pointer rotate-[6deg]"
           >
-            <img
+            <Image
               src="/hero-man-backpack.jpg"
               alt="Muslim Groom Backpack"
+              width={160}
+              height={208}
               className="w-full h-full object-cover"
+              quality={80}
             />
           </motion.div>
 
