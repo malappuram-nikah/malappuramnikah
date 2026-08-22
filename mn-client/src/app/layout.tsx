@@ -40,6 +40,9 @@ export const metadata: Metadata = {
     description: "Welcome to Malappuram Nikah, the leading Kerala Muslim matrimonial service. Experience trusted Muslim matchmaking and secure Muslim matrimony today.",
     images: ["https://malappuramnikah.com/Mlogo-01.png"],
   },
+  other: {
+    "og:updated_time": "2026-08-22T13:16:27+05:30",
+  },
 };
 
 export default function RootLayout({
