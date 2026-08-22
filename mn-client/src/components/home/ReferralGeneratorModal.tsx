@@ -11,6 +11,7 @@ interface ReferralGeneratorModalProps {
 export default function ReferralGeneratorModal({ isOpen, onClose }: ReferralGeneratorModalProps) {
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -18,12 +19,17 @@ export default function ReferralGeneratorModal({ isOpen, onClose }: ReferralGene
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !mobile) {
-      setError("Please enter your name and mobile number.");
+    if (!name || !mobile || !password) {
+      setError("Please enter your name, mobile number, and password.");
       return;
     }
     if (mobile.length < 8) {
       setError("Please enter a valid mobile number.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long.");
       return;
     }
 
@@ -35,7 +41,7 @@ export default function ReferralGeneratorModal({ isOpen, onClose }: ReferralGene
       const response = await fetch(`${API_URL}/user/generate-referral-code`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, mobile_number: `+91${mobile}` }) // default to +91
+        body: JSON.stringify({ name, mobile_number: `+91${mobile}`, password }) // default to +91
       });
 
       const data = await response.json();
@@ -137,6 +143,19 @@ export default function ReferralGeneratorModal({ isOpen, onClose }: ReferralGene
                   </div>
                 </div>
 
+                <div className="text-left">
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Create Password (to login later)</label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Create a secure password"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white"
+                    minLength={6}
+                    required
+                  />
+                </div>
+
                 <button
                   type="submit"
                   disabled={isLoading}
@@ -191,6 +210,7 @@ export default function ReferralGeneratorModal({ isOpen, onClose }: ReferralGene
                     setReferralCode(null);
                     setName("");
                     setMobile("");
+                    setPassword("");
                   }}
                   className="mt-6 text-sm font-medium text-brand-600 hover:text-brand-700 underline underline-offset-4"
                 >

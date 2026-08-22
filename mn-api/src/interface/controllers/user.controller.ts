@@ -21,12 +21,12 @@ export class UserController {
 
   async generateReferral(req: Request, res: Response) {
     try {
-      const { name, mobile_number } = req.body;
+      const { name, mobile_number, password } = req.body;
       if (!name || !mobile_number) {
         return res.status(400).json({ success: false, message: "Name and Mobile Number are required" });
       }
 
-      const referralCode = await this.generateGuestReferral.execute(name, mobile_number);
+      const referralCode = await this.generateGuestReferral.execute(name, mobile_number, password);
       return res.status(200).json({ success: true, referralCode, message: "Referral code generated successfully." });
     } catch (error: any) {
       console.error("Generate referral error:", error);

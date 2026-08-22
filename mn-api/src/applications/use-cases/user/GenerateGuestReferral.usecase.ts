@@ -1,7 +1,8 @@
 import prisma from "../../../infrastructure/prisma/prisamClient";
+import bcrypt from "bcryptjs";
 
 export class GenerateGuestReferralUseCase {
-    async execute(name: string, mobileNumber: string): Promise<string> {
+    async execute(name: string, mobileNumber: string, password?: string): Promise<string> {
         if (!name || !mobileNumber) {
             throw new Error("Name and Mobile Number are required");
         }
@@ -39,12 +40,13 @@ export class GenerateGuestReferralUseCase {
                 data: { referral_code: referralCode }
             });
         } else {
+            const hashedPassword = password ? await bcrypt.hash(password.trim(), 10) : "GUEST_PASSWORD_DO_NOT_USE";
             await prisma.user.create({
                 data: {
                     mobile_number: cleanMobile,
                     first_name: name,
                     last_name: "",
-                    password: "GUEST_PASSWORD_DO_NOT_USE",
+                    password: hashedPassword,
                     profile_for: "Myself",
                     gender: "Unknown",
                     location: "Unknown",
