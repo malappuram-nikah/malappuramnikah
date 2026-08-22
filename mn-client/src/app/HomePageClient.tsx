@@ -1,14 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import Navbar from "@/components/layout/Navbar";
 import HeroSection from "@/components/home/HeroSection";
 import StatsSection from "@/components/home/StatsSection";
 import FeaturesSection from "@/components/home/FeaturesSection";
 import CTASection from "@/components/home/CTASection";
-import UpcomingBusinessSection from "@/components/home/UpcomingBusinessSection";
 import Footer from "@/components/layout/Footer";
-import RegisterModal from "@/components/auth/RegisterModal";
+
+const UpcomingBusinessSection = dynamic(
+  () => import("@/components/home/UpcomingBusinessSection"),
+  { ssr: true }
+);
+const RegisterModal = dynamic(
+  () => import("@/components/auth/RegisterModal"),
+  { ssr: false }
+);
 
 export default function Home() {
   const [registerOpen, setRegisterOpen] = useState(false);

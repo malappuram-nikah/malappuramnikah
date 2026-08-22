@@ -112,6 +112,10 @@ export default function HeroSection({ onJoinNow }: HeroSectionProps) {
               src="/hero-girl-beach-book.jpg"
               alt="Muslim Bride Beach Book"
               className="w-full h-full object-cover"
+              loading="eager"
+              decoding="async"
+              width={160}
+              height={208}
             />
           </motion.div>
 
@@ -128,6 +132,10 @@ export default function HeroSection({ onJoinNow }: HeroSectionProps) {
               src="/hero-man-jacket.jpg"
               alt="Kerala Muslim Groom"
               className="w-full h-full object-cover"
+              loading="eager"
+              decoding="async"
+              width={192}
+              height={240}
             />
           </motion.div>
 
@@ -144,6 +152,10 @@ export default function HeroSection({ onJoinNow }: HeroSectionProps) {
               src="/hero-girl-hijab.jpg"
               alt="Muslim Bride Profile"
               className="w-full h-full object-cover"
+              loading="eager"
+              decoding="async"
+              width={208}
+              height={256}
             />
           </motion.div>
 
@@ -181,6 +193,11 @@ export default function HeroSection({ onJoinNow }: HeroSectionProps) {
                     src="/hero-muhammad.jpg"
                     alt="Muhammad Profile"
                     className="w-full h-full object-cover"
+                    loading="eager"
+                    fetchPriority="high"
+                    decoding="async"
+                    width={104}
+                    height={104}
                   />
                 </div>
 
@@ -227,6 +244,10 @@ export default function HeroSection({ onJoinNow }: HeroSectionProps) {
               src="/hero-girl-headphones.jpg"
               alt="Muslim Groom Profile"
               className="w-full h-full object-cover"
+              loading="eager"
+              decoding="async"
+              width={208}
+              height={256}
             />
           </motion.div>
 
@@ -243,6 +264,10 @@ export default function HeroSection({ onJoinNow }: HeroSectionProps) {
               src="/hero-man-beach.jpg"
               alt="Muslim Groom Profile Beach"
               className="w-full h-full object-cover"
+              loading="eager"
+              decoding="async"
+              width={192}
+              height={240}
             />
           </motion.div>
 
@@ -259,6 +284,10 @@ export default function HeroSection({ onJoinNow }: HeroSectionProps) {
               src="/hero-man-backpack.jpg"
               alt="Muslim Groom Backpack"
               className="w-full h-full object-cover"
+              loading="eager"
+              decoding="async"
+              width={160}
+              height={208}
             />
           </motion.div>
 
