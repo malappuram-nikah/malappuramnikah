@@ -6,6 +6,7 @@ import Navbar from "@/components/layout/Navbar";
 import HeroSection from "@/components/home/HeroSection";
 import StatsSection from "@/components/home/StatsSection";
 import FeaturesSection from "@/components/home/FeaturesSection";
+import FAQSection from "@/components/home/FAQSection";
 import CTASection from "@/components/home/CTASection";
 import Footer from "@/components/layout/Footer";
 
@@ -38,6 +39,7 @@ export default function Home() {
         <StatsSection />
         <FeaturesSection />
         <UpcomingBusinessSection />
+        <FAQSection />
         <CTASection onRegisterOpen={() => setRegisterOpen(true)} />
       </main>
       <Footer />
