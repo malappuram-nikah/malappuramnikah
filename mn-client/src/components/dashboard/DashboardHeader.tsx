@@ -611,8 +611,14 @@ export default function DashboardHeader() {
                         notifications.map((notif) => {
                           const isUnread = !notif.is_read;
                           const isInterest = notif.type.startsWith("INTEREST");
+                          const isSystemNotification =
+                            notif.type.startsWith("KYC_") ||
+                            notif.type.startsWith("SYSTEM") ||
+                            notif.type.startsWith("REFERRAL_");
                           const iconStyle = isInterest
                             ? "bg-pink-50 text-pink-600 border border-pink-100"
+                            : isSystemNotification
+                            ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
                             : "bg-brand-50 text-brand-600 border border-brand-100";
 
                           return (
@@ -624,7 +630,7 @@ export default function DashboardHeader() {
                               }`}
                             >
                               <div className="shrink-0 relative">
-                                {getAvatarUrl(notif.sender) ? (
+                                {!isSystemNotification && getAvatarUrl(notif.sender) ? (
                                   <img
                                     src={getAvatarUrl(notif.sender)}
                                     alt=""
@@ -640,6 +646,8 @@ export default function DashboardHeader() {
                                 >
                                   {isInterest ? (
                                     <Heart className="w-3 h-3 fill-pink-500" />
+                                  ) : isSystemNotification ? (
+                                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 fill-white" />
                                   ) : (
                                     <MessageSquare className="w-3 h-3 fill-brand-500" />
                                   )}
