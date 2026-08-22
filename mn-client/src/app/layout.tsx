@@ -18,6 +18,28 @@ export const metadata: Metadata = {
     shortcut: "/favicon.png",
     apple: "/apple-icon.png",
   },
+  openGraph: {
+    title: "Malappuram Nikah | Trusted Malappuram Muslim Matrimony",
+    description: "Welcome to Malappuram Nikah, the leading Kerala Muslim matrimonial service. Experience trusted Muslim matchmaking and secure Muslim matrimony today.",
+    url: "https://malappuramnikah.com",
+    siteName: "Malappuram Nikah",
+    images: [
+      {
+        url: "https://malappuramnikah.com/Mlogo-01.png",
+        width: 3509,
+        height: 2481,
+        alt: "Malappuram Nikah - Trusted Kerala Muslim Matrimony",
+      },
+    ],
+    locale: "en_IN",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Malappuram Nikah | Trusted Malappuram Muslim Matrimony",
+    description: "Welcome to Malappuram Nikah, the leading Kerala Muslim matrimonial service. Experience trusted Muslim matchmaking and secure Muslim matrimony today.",
+    images: ["https://malappuramnikah.com/Mlogo-01.png"],
+  },
 };
 
 export default function RootLayout({
