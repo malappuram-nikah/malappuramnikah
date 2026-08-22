@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import HomePageClient from "./HomePageClient";
+import JsonLd from "@/components/seo/JsonLd";
+import { getHomepageStructuredData } from "@/lib/seo/structured-data";
 
 export const metadata: Metadata = {
   alternates: {
@@ -8,5 +10,12 @@ export const metadata: Metadata = {
 };
 
 export default function HomePage() {
-  return <HomePageClient />;
+  const jsonLd = getHomepageStructuredData();
+  return (
+    <>
+      <JsonLd data={jsonLd} />
+      <HomePageClient />
+    </>
+  );
 }
+
