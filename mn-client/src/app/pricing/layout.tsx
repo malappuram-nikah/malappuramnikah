@@ -6,6 +6,11 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://malappuramnikah.com/pricing",
   },
+  openGraph: {
+    title: "Premium Membership Plans | Malappuram Nikah",
+    description: "Explore affordable, trusted Muslim matrimonial plans with personalized matchmaking, contact views, and verified profiles.",
+    url: "https://malappuramnikah.com/pricing",
+  },
 };
 
 export default function PricingLayout({ children }: { children: React.ReactNode }) {

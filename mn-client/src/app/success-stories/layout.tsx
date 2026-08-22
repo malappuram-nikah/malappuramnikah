@@ -6,6 +6,11 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://malappuramnikah.com/success-stories",
   },
+  openGraph: {
+    title: "Success Stories | Malappuram Nikah",
+    description: "Read inspiring stories of couples who found their blessed Nikah partner through Malappuram Nikah.",
+    url: "https://malappuramnikah.com/success-stories",
+  },
 };
 
 export default function SuccessStoriesLayout({ children }: { children: React.ReactNode }) {

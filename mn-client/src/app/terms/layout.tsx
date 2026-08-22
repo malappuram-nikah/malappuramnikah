@@ -6,6 +6,11 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://malappuramnikah.com/terms",
   },
+  openGraph: {
+    title: "Terms of Service | Malappuram Nikah",
+    description: "Terms and conditions for using Malappuram Nikah Muslim matrimonial matchmaking services.",
+    url: "https://malappuramnikah.com/terms",
+  },
 };
 
 export default function TermsLayout({ children }: { children: React.ReactNode }) {
