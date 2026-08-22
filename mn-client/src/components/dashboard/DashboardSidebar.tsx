@@ -15,6 +15,7 @@ import {
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { handleSignOut } from "@/lib/auth";
+import { useUser } from "@/context/UserContext";
 
 // 1. Matrimonial Member Navigation Items
 const memberNavItems = [
@@ -31,6 +32,12 @@ const memberNavItems = [
   { href: "/dashboard/settings", icon: Settings,         label: "Settings"  },
 ];
 
+// Referral-only Guest Navigation Items
+const referralNavItems = [
+  { href: "/dashboard/referral", icon: Award,            label: "Referral & Earn" },
+  { href: "/dashboard/settings", icon: Settings,         label: "Settings"  },
+];
+
 // 2. Wedding Business Creator Navigation Items (Only shown in /dashboard/business)
 const businessNavItems = [
   { href: "/dashboard/business?tab=creators",   icon: Briefcase,     label: "Wedding Creators" },
@@ -43,12 +50,16 @@ const businessNavItems = [
 export default function DashboardSidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { currentUser } = useUser();
   const [collapsed, setCollapsed] = useState(false);
 
   let activeNavItems = memberNavItems;
   let titlePrefix = "MATCHMAKER";
 
-  if (pathname?.startsWith("/dashboard/business")) {
+  if (currentUser?.status === "referral_only") {
+    activeNavItems = referralNavItems;
+    titlePrefix = "REFERRAL";
+  } else if (pathname?.startsWith("/dashboard/business")) {
     activeNavItems = businessNavItems;
     titlePrefix = "B2B WEDDING";
   }

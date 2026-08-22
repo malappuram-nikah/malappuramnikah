@@ -23,6 +23,15 @@ export default function VerificationWall({ children }: { children: React.ReactNo
     return null;
   }
 
+  // Handle referral-only guest accounts
+  if (currentUser.status === "referral_only") {
+    if (pathname !== "/dashboard/referral" && pathname !== "/dashboard/settings") {
+      router.replace("/dashboard/referral");
+      return null;
+    }
+    return <>{children}</>;
+  }
+
   // Define verification statuses that bypass the wall
   const hasUploadedId = 
     currentUser.kyc_status === "VERIFIED" || 

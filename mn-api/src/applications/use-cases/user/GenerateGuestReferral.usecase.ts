@@ -50,7 +50,7 @@ export class GenerateGuestReferralUseCase {
                     location: "Unknown",
                     dob: "1990-01-01",
                     cast: "Other",
-                    status: "in_active",
+                    status: "referral_only",
                     referral_code: referralCode,
                 }
             });

@@ -26,6 +26,13 @@ export default function DashboardPage() {
   const { currentUser } = useUser();
   const [mounted, setMounted] = useState(false);
   const { toggleFavourite, isFavourite } = useProfileActions();
+
+  // Redirect referral-only guest accounts to their dedicated referral view
+  useEffect(() => {
+    if (currentUser?.status === "referral_only") {
+      router.replace("/dashboard/referral");
+    }
+  }, [currentUser, router]);
   
   // Real Statistics state — no hardcoded/dummy values
   // Real Statistics state — no hardcoded/dummy values
