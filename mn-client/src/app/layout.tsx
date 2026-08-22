@@ -7,6 +7,7 @@ import AppProviders from "@/components/auth/AppProviders";
 const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://malappuramnikah.com"),
   title: "Malappuram Nikah | Trusted Malappuram Muslim Matrimony",
   description: "Welcome to Malappuram Nikah, the leading Kerala Muslim matrimonial service. Experience trusted Muslim matchmaking and secure Muslim matrimony today.",
   icons: {
