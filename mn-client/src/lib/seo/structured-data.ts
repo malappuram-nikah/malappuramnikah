@@ -1,4 +1,4 @@
-export const SITE_URL = "https://malappuramnikah.com";
+export const SITE_URL = "https://www.malappuramnikah.com";
 export const BRAND_NAME = "Malappuram Nikah";
 export const BRAND_LOGO = `${SITE_URL}/Mlogo-01.png`;
 

@@ -4,12 +4,12 @@ export const metadata: Metadata = {
   title: "Success Stories | Malappuram Nikah",
   description: "Read inspiring stories of couples who found their blessed Nikah partner through Malappuram Nikah.",
   alternates: {
-    canonical: "https://malappuramnikah.com/success-stories",
+    canonical: "https://www.malappuramnikah.com/success-stories",
   },
   openGraph: {
     title: "Success Stories | Malappuram Nikah",
     description: "Read inspiring stories of couples who found their blessed Nikah partner through Malappuram Nikah.",
-    url: "https://malappuramnikah.com/success-stories",
+    url: "https://www.malappuramnikah.com/success-stories",
   },
 };
 

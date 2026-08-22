@@ -4,12 +4,12 @@ export const metadata: Metadata = {
   title: "Premium Membership Plans | Malappuram Nikah",
   description: "Explore affordable, trusted Muslim matrimonial plans with personalized matchmaking, contact views, and verified profiles.",
   alternates: {
-    canonical: "https://malappuramnikah.com/pricing",
+    canonical: "https://www.malappuramnikah.com/pricing",
   },
   openGraph: {
     title: "Premium Membership Plans | Malappuram Nikah",
     description: "Explore affordable, trusted Muslim matrimonial plans with personalized matchmaking, contact views, and verified profiles.",
-    url: "https://malappuramnikah.com/pricing",
+    url: "https://www.malappuramnikah.com/pricing",
   },
 };
 

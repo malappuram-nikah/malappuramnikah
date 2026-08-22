@@ -7,7 +7,7 @@ import AppProviders from "@/components/auth/AppProviders";
 const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://malappuramnikah.com"),
+  metadataBase: new URL("https://www.malappuramnikah.com"),
   title: "Malappuram Nikah | Trusted Malappuram Muslim Matrimony",
   description: "Welcome to Malappuram Nikah, the leading Kerala Muslim matrimonial service. Experience trusted Muslim matchmaking and secure Muslim matrimony today.",
   icons: {
@@ -21,11 +21,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Malappuram Nikah | Trusted Malappuram Muslim Matrimony",
     description: "Welcome to Malappuram Nikah, the leading Kerala Muslim matrimonial service. Experience trusted Muslim matchmaking and secure Muslim matrimony today.",
-    url: "https://malappuramnikah.com",
+    url: "https://www.malappuramnikah.com",
     siteName: "Malappuram Nikah",
     images: [
       {
-        url: "https://malappuramnikah.com/Mlogo-01.png",
+        url: "https://www.malappuramnikah.com/Mlogo-01.png",
         width: 3509,
         height: 2481,
         alt: "Malappuram Nikah - Trusted Kerala Muslim Matrimony",
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Malappuram Nikah | Trusted Malappuram Muslim Matrimony",
     description: "Welcome to Malappuram Nikah, the leading Kerala Muslim matrimonial service. Experience trusted Muslim matchmaking and secure Muslim matrimony today.",
-    images: ["https://malappuramnikah.com/Mlogo-01.png"],
+    images: ["https://www.malappuramnikah.com/Mlogo-01.png"],
   },
   other: {
     "og:updated_time": "2026-08-22T13:16:27+05:30",

@@ -5,7 +5,7 @@ import { getHomepageStructuredData } from "@/lib/seo/structured-data";
 
 export const metadata: Metadata = {
   alternates: {
-    canonical: "https://malappuramnikah.com",
+    canonical: "https://www.malappuramnikah.com",
   },
 };
 
