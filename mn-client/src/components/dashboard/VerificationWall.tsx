@@ -38,8 +38,8 @@ export default function VerificationWall({ children }: { children: React.ReactNo
     currentUser.kyc_status === "PENDING" || 
     currentUser.kyc_status === "UNDER_REVIEW";
 
-  // If user has not uploaded their ID and is not on the settings page, restrict access
-  if (!hasUploadedId && pathname !== "/dashboard/settings") {
+  // If user has not uploaded their ID and is not on settings or profile-builder, restrict access
+  if (!hasUploadedId && pathname !== "/dashboard/settings" && pathname !== "/dashboard/profile-builder") {
     const isRejected = currentUser.kyc_status === "REJECTED";
 
     return (

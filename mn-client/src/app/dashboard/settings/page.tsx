@@ -9,6 +9,7 @@ import { LOCATIONS } from "@/lib/constants";
 import { useUser } from "@/context/UserContext";
 import { API_URL } from "@/lib/config";
 import { setToken } from "@/lib/auth-session";
+import IdentityVerificationForm from "@/components/dashboard/IdentityVerificationForm";
 
 const tabs = [
   { id: "profile", label: "Profile", icon: User },
@@ -29,6 +30,7 @@ export default function SettingsPage() {
   
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showKycUpload, setShowKycUpload] = useState(false);
 
   // Feedback Form State
   const [feedbackCategory, setFeedbackCategory] = useState("SUGGESTION");
@@ -746,10 +748,10 @@ export default function SettingsPage() {
                         </p>
                       )}
                     </div>
-                    {(!currentUser?.kyc_status || currentUser?.kyc_status === "NOT_SUBMITTED" || currentUser?.kyc_status === "REJECTED") && (
+                    {(!currentUser?.kyc_status || currentUser?.kyc_status === "NOT_SUBMITTED" || currentUser?.kyc_status === "REJECTED") && !showKycUpload && (
                       <button
                         type="button"
-                        onClick={() => router.push("/dashboard/profile-builder?step=11")}
+                        onClick={() => setShowKycUpload(true)}
                         className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm shrink-0 flex items-center gap-1 active:scale-95 cursor-pointer"
                       >
                         Verify Now
@@ -757,6 +759,32 @@ export default function SettingsPage() {
                       </button>
                     )}
                   </div>
+
+                  {showKycUpload && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="border border-gray-150 rounded-xl p-5 bg-white shadow-xs space-y-4 mt-4"
+                    >
+                      <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+                        <h4 className="font-bold text-sm text-gray-950">Upload Identity Documents</h4>
+                        <button
+                          type="button"
+                          onClick={() => setShowKycUpload(false)}
+                          className="text-xs font-bold text-rose-600 hover:text-rose-700 transition-colors cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                      <IdentityVerificationForm 
+                        isWizard={false}
+                        onSuccess={() => {
+                          setShowKycUpload(false);
+                          refreshUser();
+                        }}
+                      />
+                    </motion.div>
+                  )}
                 </div>
               </>
             )}

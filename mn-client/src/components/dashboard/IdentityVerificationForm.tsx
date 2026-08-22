@@ -31,9 +31,10 @@ interface IdentityVerificationFormProps {
   isWizard?: boolean;
   onBack?: () => void;
   onNext?: () => void;
+  onSuccess?: () => void;
 }
 
-export default function IdentityVerificationForm({ isWizard = false, onBack, onNext }: IdentityVerificationFormProps) {
+export default function IdentityVerificationForm({ isWizard = false, onBack, onNext, onSuccess }: IdentityVerificationFormProps) {
   const [kycInfo, setKycInfo] = useState<UserKycInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -211,6 +212,9 @@ export default function IdentityVerificationForm({ isWizard = false, onBack, onN
         setBackFile(null);
         localStorage.setItem("mn_kyc_status", "PENDING");
         await fetchKycStatus();
+        if (onSuccess) {
+          onSuccess();
+        }
         if (isWizard && onNext) {
           setTimeout(() => {
             onNext();
