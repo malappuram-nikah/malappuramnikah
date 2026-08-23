@@ -388,8 +388,16 @@ export default function AdminIdVerificationPage() {
                     </div>
                   )}
                   {!selected.kyc_front_url && !selected.kyc_back_url && (
-                    <div className="col-span-2 py-8 text-center text-xs text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                      No document files uploaded for this user.
+                    <div className="col-span-2 py-8 px-4 text-center text-xs rounded-xl border border-dashed bg-emerald-50/60 border-emerald-200 text-emerald-800 space-y-1">
+                      <div className="flex items-center justify-center gap-1.5 font-bold text-emerald-900">
+                        <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                        {selected.kyc_status === "VERIFIED" ? "ID Document Purged (DPDP Act Compliant)" : "No ID Document Files"}
+                      </div>
+                      <p className="text-[11px] text-emerald-700 max-w-sm mx-auto">
+                        {selected.kyc_status === "VERIFIED"
+                          ? "In adherence to India's DPDP Act 2023 data minimisation rules, sensitive Government ID proof images are permanently deleted upon admin verification."
+                          : "No document files are currently on record for this member."}
+                      </p>
                     </div>
                   )}
                 </div>

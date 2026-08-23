@@ -3,12 +3,13 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Lock, Bell, Shield, ChevronRight, Sparkles, AlertCircle, ArrowRight, Save, CheckCircle2, Phone, Loader2, MessageSquarePlus, Star, Check, UserCog } from "lucide-react";
+import { User, Lock, Bell, Shield, ChevronRight, Sparkles, AlertCircle, ArrowRight, Save, CheckCircle2, Phone, Loader2, MessageSquarePlus, Star, Check, UserCog, Download, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { LOCATIONS } from "@/lib/constants";
 import { useUser } from "@/context/UserContext";
 import { API_URL } from "@/lib/config";
-import { setToken } from "@/lib/auth-session";
+import { getToken, setToken } from "@/lib/auth-session";
 import IdentityVerificationForm from "@/components/dashboard/IdentityVerificationForm";
 
 const tabs = [
@@ -31,6 +32,8 @@ export default function SettingsPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showKycUpload, setShowKycUpload] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportSuccess, setExportSuccess] = useState(false);
 
   // Feedback Form State
   const [feedbackCategory, setFeedbackCategory] = useState("SUGGESTION");
@@ -246,6 +249,38 @@ export default function SettingsPage() {
       }
     }
   }, [currentUser]);
+
+  const handleExportData = async () => {
+    setIsExporting(true);
+    setExportSuccess(false);
+    try {
+      const token = getToken();
+      const res = await fetch(`${API_URL}/user/export-my-data`, {
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Failed to export data");
+      }
+
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data.data, null, 2));
+      const downloadAnchor = document.createElement("a");
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `malappuram_nikah_data_export_${userId || "user"}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      setExportSuccess(true);
+      setTimeout(() => setExportSuccess(false), 5000);
+    } catch (err: any) {
+      alert(err.message || "Failed to export personal data.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const handleFeedbackSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -832,7 +867,20 @@ export default function SettingsPage() {
 
             {activeTab === "privacy" && (
               <>
-                <h2 className="text-lg font-bold text-gray-900">Privacy</h2>
+                <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900">Privacy & Data Controls</h2>
+                    <p className="text-xs text-gray-500">Manage your profile visibility, privacy settings, and statutory data rights.</p>
+                  </div>
+                  <Link
+                    href="/privacy"
+                    target="_blank"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-brand-600 hover:text-brand-700 bg-brand-50 px-2.5 py-1 rounded-lg border border-brand-100 transition-colors"
+                  >
+                    <FileText className="w-3.5 h-3.5" /> Privacy Policy
+                  </Link>
+                </div>
+
                 <div className="space-y-4">
                   {[
                     { label: "Hide my profile from search", desc: "Your profile won't appear in search results" },
@@ -853,6 +901,65 @@ export default function SettingsPage() {
                   ))}
                 </div>
 
+                {/* DPDP Act 2023 Statutory Rights */}
+                <div className="bg-slate-50 border border-gray-200 rounded-2xl p-5 space-y-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-brand-100 flex items-center justify-center text-brand-700 font-bold shrink-0">
+                      <Shield className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-900">Your Data Principal Rights (DPDP Act 2023)</h3>
+                      <p className="text-[11px] text-gray-500">Access, download, or request correction of your personal and matrimonial data anytime.</p>
+                    </div>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-3 pt-1">
+                    <div className="bg-white p-3.5 rounded-xl border border-gray-150 space-y-2">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-gray-900">
+                        <Download className="w-3.5 h-3.5 text-brand-600" />
+                        Right to Access & Portability
+                      </div>
+                      <p className="text-[11px] text-gray-500 leading-normal">
+                        Download a machine-readable JSON copy of your personal data, activities, and communication records.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleExportData}
+                        disabled={isExporting}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-lg transition-all shadow-xs disabled:opacity-50"
+                      >
+                        {isExporting ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Exporting...
+                          </>
+                        ) : (
+                          <>
+                            <Download className="w-3.5 h-3.5" /> Download My Data
+                          </>
+                        )}
+                      </button>
+                      {exportSuccess && (
+                        <span className="block text-[10px] text-emerald-600 font-bold">
+                          ✓ Personal data export downloaded successfully!
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="bg-white p-3.5 rounded-xl border border-gray-150 space-y-2">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        ID Proof Purge Policy
+                      </div>
+                      <p className="text-[11px] text-gray-500 leading-normal">
+                        In accordance with Section 8(5) data minimisation, your raw Government ID cards uploaded for KYC verification are permanently deleted once verified.
+                      </p>
+                      <span className="inline-block text-[10px] font-bold text-gray-400">
+                        Auto-Purged on Admin Approval
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Danger Zone */}
                 <div className="border-t border-red-100 pt-6 mt-6 space-y-4">
                   <div>
@@ -861,7 +968,7 @@ export default function SettingsPage() {
                       Danger Zone
                     </h3>
                     <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
-                      Permanently delete your matrimonial profile and all associated verify documents, message logs, and match lists. This action is irreversible.
+                      Permanently delete your matrimonial profile and all associated verify documents, message logs, and match lists pursuant to DPDP Act Right to Erasure. This action is irreversible.
                     </p>
                   </div>
                   <button

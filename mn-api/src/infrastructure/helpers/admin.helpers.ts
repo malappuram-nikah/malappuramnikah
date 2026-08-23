@@ -40,6 +40,32 @@ export const ADMIN_USER_SELECT = {
   referral_points: true,
 } as const;
 
+import path from "path";
+import fs from "fs";
+import { MediaStorageService } from "../service/MediaStorageService";
+
+export const KYC_UPLOADS_DIR = path.join(process.cwd(), "public", "uploads", "kyc");
+
+export async function deleteKycFile(fileName: string | null): Promise<void> {
+  if (!fileName) return;
+  try {
+    const filePath = path.join(KYC_UPLOADS_DIR, fileName);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log(`[DPDP Cleanup] Deleted local KYC document file: ${fileName}`);
+    }
+
+    if (MediaStorageService.isCloudinaryConfigured) {
+      const publicId = `malappuram_nikah/kyc/${path.parse(fileName).name}`;
+      const { v2: cloudinary } = require("cloudinary");
+      await cloudinary.uploader.destroy(publicId, { type: "authenticated" });
+      console.log(`[DPDP Cleanup] Deleted Cloudinary KYC document file: ${publicId}`);
+    }
+  } catch (err) {
+    console.error(`[DPDP Cleanup] Failed to delete KYC file ${fileName}:`, err);
+  }
+}
+
 export function buildKycDocumentUrl(fileName: string | null, token?: string): string | null {
   if (!fileName) return null;
   if (fileName.startsWith("http://") || fileName.startsWith("https://")) return fileName;
@@ -47,3 +73,4 @@ export function buildKycDocumentUrl(fileName: string | null, token?: string): st
   const qs = token ? `?token=${token}` : "";
   return `${base}/user/kyc/document/${fileName}${qs}`;
 }
+

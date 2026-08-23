@@ -538,6 +538,55 @@ user_route.get('/kyc/document/:fileName', async (req: Request, res: Response) =>
   }
 });
 
+/* ─── DPDP ACT DATA EXPORT (RIGHT TO ACCESS) ─────────────────── */
+user_route.get('/export-my-data', async (req: Request, res: Response) => {
+  try {
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized. Please log in." });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        sent_interests: true,
+        received_interests: true,
+        sent_messages: { select: { id: true, receiver_id: true, content: true, created_at: true } },
+        received_messages: { select: { id: true, sender_id: true, content: true, created_at: true } },
+        feedbacks: true,
+      }
+    });
+
+    if (!user) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
+    }
+
+    const { password, kyc_front_url, kyc_back_url, sent_interests, received_interests, sent_messages, received_messages, feedbacks, ...safeUserData } = user as any;
+
+    const dataExportPayload = {
+      complianceNotice: "Data export generated pursuant to the Digital Personal Data Protection (DPDP) Act, 2023 (Section 11: Right to Access & Data Portability).",
+      exportGeneratedAt: new Date().toISOString(),
+      userProfile: safeUserData,
+      matrimonyActivities: {
+        sentInterestsCount: sent_interests?.length || 0,
+        receivedInterestsCount: received_interests?.length || 0,
+        sentInterests: sent_interests || [],
+        receivedInterests: received_interests || [],
+        sentMessages: sent_messages || [],
+        receivedMessages: received_messages || [],
+        feedbacks: feedbacks || [],
+      }
+    };
+
+    res.status(200).json({ success: true, data: dataExportPayload });
+  } catch (error: any) {
+    console.error("DPDP data export error:", error);
+    res.status(500).json({ success: false, message: error.message || "Failed to export personal data" });
+  }
+});
+
 user_route.delete('/:id', async (req: Request, res: Response) => {
   try {
     const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);

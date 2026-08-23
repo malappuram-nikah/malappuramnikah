@@ -15,6 +15,7 @@ import {
   averageProfileCompletion,
   buildKycDocumentUrl,
   calculateProfileCompletion,
+  deleteKycFile,
 } from "../../infrastructure/helpers/admin.helpers";
 
 const admin_route = Router();
@@ -1143,12 +1144,18 @@ admin_route.post("/kyc/:id/approve", adminGuard, async (req: Request, res: Respo
       return;
     }
 
+    // Purge sensitive ID documents upon verification in compliance with DPDP Act 2023
+    await deleteKycFile(user.kyc_front_url);
+    await deleteKycFile(user.kyc_back_url);
+
     const updatedUser = await prisma.user.update({
       where: { id },
       data: {
         kyc_status: "VERIFIED",
         kyc_verified_at: new Date(),
-        kyc_rejected_reason: null
+        kyc_rejected_reason: null,
+        kyc_front_url: null,
+        kyc_back_url: null,
       }
     });
 
@@ -1265,11 +1272,17 @@ admin_route.post("/kyc/:id/reject", adminGuard, async (req: Request, res: Respon
       return;
     }
 
+    // Purge rejected ID documents from storage
+    await deleteKycFile(user.kyc_front_url);
+    await deleteKycFile(user.kyc_back_url);
+
     await prisma.user.update({
       where: { id },
       data: {
         kyc_status: "REJECTED",
-        kyc_rejected_reason: reason
+        kyc_rejected_reason: reason,
+        kyc_front_url: null,
+        kyc_back_url: null,
       }
     });
 

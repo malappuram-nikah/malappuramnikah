@@ -2,6 +2,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { CheckCircle2, ChevronRight, Edit3, User, Heart, BookOpen, Users, MapPin, Briefcase, Camera, Mic } from "lucide-react";
 import { showChildrenField } from "./BasicDetailsStep";
@@ -62,6 +63,7 @@ export default function ReviewStep({ onComplete, onBack, onEditSection, onComple
   const [drafts, setDrafts] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [consentGiven, setConsentGiven] = useState(true);
 
   useEffect(() => {
     // Load all drafts from localStorage
@@ -287,40 +289,61 @@ export default function ReviewStep({ onComplete, onBack, onEditSection, onComple
         </section>
 
         {/* Footer Actions */}
-        <div className="pt-8 border-t border-gray-100 flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            By submitting, you agree to our Terms of Service & Privacy Policy.
-          </div>
+        <div className="pt-6 border-t border-gray-100 space-y-4">
+          <label className="flex items-start gap-2.5 cursor-pointer select-none bg-brand-50/40 p-3.5 rounded-xl border border-brand-100">
+            <input
+              type="checkbox"
+              checked={consentGiven}
+              onChange={(e) => setConsentGiven(e.target.checked)}
+              className="mt-0.5 w-4 h-4 rounded text-brand-600 focus:ring-brand-500/20 border-gray-300 cursor-pointer"
+            />
+            <span className="text-xs text-gray-700 leading-normal">
+              I have reviewed my details and explicitly consent to the collection and processing of my personal data for matrimonial matchmaking pursuant to the{" "}
+              <Link href="/terms" target="_blank" className="font-bold text-brand-600 underline hover:text-brand-700">
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link href="/privacy" target="_blank" className="font-bold text-brand-600 underline hover:text-brand-700">
+                Privacy Policy (DPDP Act 2023)
+              </Link>.
+            </span>
+          </label>
 
-          <div className="flex w-full sm:w-auto gap-3">
-            {onBack && (
+          <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
+            <div className="text-[11px] text-gray-400">
+              KYC verification documents are permanently purged upon admin approval.
+            </div>
+
+            <div className="flex w-full sm:w-auto gap-3">
+              {onBack && (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  disabled={isSubmitting}
+                  className="w-full sm:w-auto px-6 py-3.5 bg-white border border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 active:scale-[0.98] transition-all disabled:opacity-50"
+                >
+                  Back
+                </button>
+              )}
               <button
                 type="button"
-                onClick={onBack}
-                disabled={isSubmitting}
-                className="w-full sm:w-auto px-6 py-3.5 bg-white border border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 active:scale-[0.98] transition-all disabled:opacity-50"
+                onClick={handleSubmit}
+                disabled={isSubmitting || !consentGiven}
+                className="w-full sm:w-auto px-8 py-3.5 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 active:scale-[0.98] transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                Back
+                {isSubmitting ? (
+                  <>
+                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Submitting Profile...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-5 h-5" />
+                    Submit Profile
+                  </>
+                )}
               </button>
-            )}
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="w-full sm:w-auto px-8 py-3.5 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 active:scale-[0.98] transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-70"
-            >
-              {isSubmitting ? (
-                <>
-                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Submitting Profile...
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="w-5 h-5" />
-                  Submit Profile
-                </>
-              )}
-            </button>
+            </div>
           </div>
         </div>
       </div>
