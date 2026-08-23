@@ -59,14 +59,14 @@ export default function InstantRegistrationPage() {
     setExtractedData(null);
 
     try {
-      const res = await adminApi.instantRegistration(base64, file.type);
+      const res = await adminApi.extractId(base64, file.type);
       if (res.success && res.data) {
         setExtractedData({
           fullName: res.data.fullName || "",
           dateOfBirth: res.data.dateOfBirth || "1995-01-01",
           gender: res.data.gender || "Male",
-          mobileNumber: res.data.mobile || "",
-          address: res.data.location || "",
+          mobileNumber: res.data.mobileNumber || "",
+          address: res.data.address || "",
           caste: res.data.caste || "Other",
         });
       } else {
@@ -87,42 +87,26 @@ export default function InstantRegistrationPage() {
     setError(null);
 
     try {
-      // Re-upload/register with the validated fields from form
-      const payload = {
-        fullName: extractedData.fullName,
-        dateOfBirth: extractedData.dateOfBirth,
-        gender: extractedData.gender,
-        mobileNumber: extractedData.mobileNumber,
-        address: extractedData.address,
-        caste: extractedData.caste,
-      };
+      const res = await adminApi.instantRegistration(
+        base64,
+        extractedData.fullName,
+        extractedData.dateOfBirth,
+        extractedData.gender,
+        extractedData.mobileNumber,
+        extractedData.address,
+        extractedData.caste
+      );
 
-      // Since we already did extraction and generated document URL, we call register
-      // We pass the updated/corrected fields from admin form directly
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333"}/user/admin/instant-registration`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("admin_token")}`
-        },
-        body: JSON.stringify({
-          base64File: base64,
-          mimeType: file.type,
-          ...payload
-        })
-      });
-
-      const data = await response.json();
-      if (!response.ok || data.success === false) {
-        throw new Error(data.message || "Instant registration failed.");
+      if (res.success && res.data) {
+        setSuccessResult({
+          profileId: res.data.profileId,
+          fullName: res.data.fullName,
+          mobile: res.data.mobile,
+          rawPassword: res.data.rawPassword,
+        });
+      } else {
+        throw new Error("Instant registration failed.");
       }
-
-      setSuccessResult({
-        profileId: data.data.profileId,
-        fullName: data.data.fullName,
-        mobile: data.data.mobile,
-        rawPassword: data.data.rawPassword,
-      });
     } catch (err: any) {
       setError(err?.message || "Failed to complete instant registration.");
     } finally {

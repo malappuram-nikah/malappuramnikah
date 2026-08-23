@@ -189,7 +189,32 @@ export const adminApi = {
     }>(`/user/admin/referral-records?${qs}`);
   },
 
-  instantRegistration: (base64File: string, mimeType: string) =>
+  extractId: (base64File: string, mimeType: string) =>
+    adminFetch<{
+      success: true;
+      message: string;
+      data: {
+        fullName: string;
+        dateOfBirth: string;
+        gender: string;
+        mobileNumber: string;
+        address: string;
+        caste: string;
+      };
+    }>("/user/admin/extract-id", {
+      method: "POST",
+      body: JSON.stringify({ base64File, mimeType }),
+    }),
+
+  instantRegistration: (
+    base64File: string,
+    fullName: string,
+    dateOfBirth: string,
+    gender: string,
+    mobileNumber: string,
+    address: string,
+    caste: string
+  ) =>
     adminFetch<{
       success: true;
       message: string;
@@ -207,6 +232,14 @@ export const adminApi = {
       };
     }>("/user/admin/instant-registration", {
       method: "POST",
-      body: JSON.stringify({ base64File, mimeType }),
+      body: JSON.stringify({
+        base64File,
+        fullName,
+        dateOfBirth,
+        gender,
+        mobileNumber,
+        address,
+        caste,
+      }),
     }),
 };

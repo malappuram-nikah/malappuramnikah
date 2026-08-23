@@ -1,15 +1,8 @@
 import prisma from "../../../infrastructure/prisma/prisamClient";
 import bcrypt from "bcryptjs";
-import { GeminiExtractionService } from "../../../infrastructure/service/GeminiExtractionService";
 import { MediaStorageService } from "../../../infrastructure/service/MediaStorageService";
 
 export class InstantRegistrationUseCase {
-  private geminiService: GeminiExtractionService;
-
-  constructor() {
-    this.geminiService = new GeminiExtractionService();
-  }
-
   private calculateAge(dobString: string): number {
     if (!dobString) return 25;
     const birthDate = new Date(dobString);
@@ -31,24 +24,23 @@ export class InstantRegistrationUseCase {
     return password;
   }
 
-  async execute(base64File: string, mimeType: string): Promise<any> {
+  async execute(
+    base64File: string,
+    fullName: string,
+    dob: string,
+    gender: string,
+    mobileNumber: string,
+    location: string,
+    caste: string
+  ): Promise<any> {
     if (!base64File) {
       throw new Error("No identity document file provided.");
     }
-
-    // 1. Extract metadata from document via Gemini 1.5 Flash
-    const extracted = await this.geminiService.extractIdData(base64File, mimeType);
-    const fullName = (extracted.fullName || "").trim();
-    let mobile = (extracted.mobileNumber || "").replace(/\D/g, ""); // strip non-digits
-
-    if (!fullName) {
-      throw new Error("Could not extract a valid full name from the document.");
+    if (!fullName || !mobileNumber) {
+      throw new Error("Full name and Mobile number are required for registration.");
     }
 
-    // Default mobile number if not extracted
-    if (!mobile || mobile.length < 8) {
-      throw new Error("Could not extract a valid mobile number from the document.");
-    }
+    let mobile = mobileNumber.replace(/\D/g, ""); // strip non-digits
 
     // Standardize to Indian mobile number structure if 10-digits
     if (mobile.length === 10) {
@@ -57,7 +49,7 @@ export class InstantRegistrationUseCase {
       mobile = `+${mobile}`;
     }
 
-    // 2. Check if mobile number already exists in DB
+    // 1. Check if mobile number already exists in DB
     const existing = await prisma.user.findUnique({
       where: { mobile_number: mobile }
     });
@@ -66,47 +58,43 @@ export class InstantRegistrationUseCase {
       throw new Error(`A member with mobile number ${mobile} is already registered.`);
     }
 
-    // 3. Upload ID document to media storage
+    // 2. Upload ID document to media storage
     const documentUrl = await MediaStorageService.uploadMedia(base64File, "kyc");
 
-    // 4. Generate random temporary password
+    // 3. Generate random temporary password
     const rawPassword = this.generateTemporaryPassword();
     const hashedPassword = await bcrypt.hash(rawPassword, 10);
 
-    // 5. Structure fields for DB
-    const dob = extracted.dateOfBirth || "1995-01-01";
+    // 4. Structure fields for DB
     const age = this.calculateAge(dob);
     
-    let gender = (extracted.gender || "Male").trim();
-    gender = gender.charAt(0).toUpperCase() + gender.slice(1).toLowerCase();
-    if (gender !== "Male" && gender !== "Female") {
-      gender = "Male";
+    let sanitizedGender = (gender || "Male").trim();
+    sanitizedGender = sanitizedGender.charAt(0).toUpperCase() + sanitizedGender.slice(1).toLowerCase();
+    if (sanitizedGender !== "Male" && sanitizedGender !== "Female") {
+      sanitizedGender = "Male";
     }
 
-    const location = (extracted.address || "Malappuram").trim();
-    const caste = (extracted.caste || "Other").trim();
-
-    // 6. Build the profile details draft objects
+    // 5. Build the profile details draft objects
     const profileDetails = {
       mn_basic_details_draft: {
         fullName,
         dob,
         age,
-        gender,
+        gender: sanitizedGender,
         location,
         maritalStatus: "Never Married",
         profileCreatedBy: "Admin Support (Instant Campaign)"
       },
       mn_religious_info_draft: {
         religion: "Muslim",
-        caste
+        caste: caste || "Other"
       },
       mn_profile_photos_draft: {
         photos: []
       }
     };
 
-    // 7. Create User inside database
+    // 6. Create User inside database
     const newUser = await prisma.user.create({
       data: {
         first_name: fullName,
@@ -114,9 +102,9 @@ export class InstantRegistrationUseCase {
         mobile_number: mobile,
         password: hashedPassword,
         dob,
-        gender,
+        gender: sanitizedGender,
         location,
-        cast: caste,
+        cast: caste || "Other",
         profile_for: "Myself",
         status: "active", // Mark active immediately
         kyc_status: "VERIFIED", // Mark KYC Verified instantly since verified by Admin physically
@@ -125,7 +113,7 @@ export class InstantRegistrationUseCase {
       }
     });
 
-    // 8. Return computed response
+    // 7. Return computed response
     const profileId = `MN-${100000 + newUser.id}`;
 
     return {
@@ -134,9 +122,9 @@ export class InstantRegistrationUseCase {
       fullName,
       mobile,
       rawPassword,
-      gender,
+      gender: sanitizedGender,
       location,
-      caste,
+      caste: caste || "Other",
       documentUrl,
       dateOfBirth: dob
     };

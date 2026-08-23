@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import prisma from "../../infrastructure/prisma/prisamClient";
 import { InstantRegistrationUseCase } from "../../applications/use-cases/user/InstantRegistration.usecase";
+import { GeminiExtractionService } from "../../infrastructure/service/GeminiExtractionService";
 import { getUserIdFromRequest } from "./interest.route";
 import { io } from "../../index";
 import fs from "fs";
@@ -430,16 +431,45 @@ admin_route.get("/stats", adminGuard, async (req: Request, res: Response) => {
   }
 });
 
-// 2e. POST Instant Registration (POST /user/admin/instant-registration)
-const instantRegistrationUseCase = new InstantRegistrationUseCase();
-admin_route.post("/instant-registration", adminGuard, async (req: Request, res: Response) => {
+// 2e. POST Extract ID Metadata (POST /user/admin/extract-id)
+const geminiExtractionService = new GeminiExtractionService();
+admin_route.post("/extract-id", adminGuard, async (req: Request, res: Response) => {
   try {
     const { base64File, mimeType } = req.body;
     if (!base64File || !mimeType) {
       return res.status(400).json({ success: false, message: "Identity file and MIME type are required." });
     }
 
-    const result = await instantRegistrationUseCase.execute(base64File, mimeType);
+    const data = await geminiExtractionService.extractIdData(base64File, mimeType);
+    return res.status(200).json({
+      success: true,
+      message: "Metadata extracted successfully!",
+      data
+    });
+  } catch (error: any) {
+    console.error("ID extraction error:", error);
+    return res.status(500).json({ success: false, message: error.message || "Failed to parse identity document." });
+  }
+});
+
+// 2f. POST Instant Registration (POST /user/admin/instant-registration)
+const instantRegistrationUseCase = new InstantRegistrationUseCase();
+admin_route.post("/instant-registration", adminGuard, async (req: Request, res: Response) => {
+  try {
+    const { base64File, fullName, dateOfBirth, gender, mobileNumber, address, caste } = req.body;
+    if (!base64File || !fullName || !mobileNumber) {
+      return res.status(400).json({ success: false, message: "File, Full Name, and Mobile Number are required." });
+    }
+
+    const result = await instantRegistrationUseCase.execute(
+      base64File,
+      fullName,
+      dateOfBirth,
+      gender,
+      mobileNumber,
+      address,
+      caste
+    );
     return res.status(200).json({
       success: true,
       message: "Member registered instantly successfully!",
