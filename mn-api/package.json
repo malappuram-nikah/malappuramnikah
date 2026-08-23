@@ -18,7 +18,8 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "npx prisma generate && tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "purge-verified-kyc": "npx ts-node src/scripts/purge-verified-kyc.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

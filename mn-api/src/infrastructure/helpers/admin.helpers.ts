@@ -56,10 +56,30 @@ export async function deleteKycFile(fileName: string | null): Promise<void> {
     }
 
     if (MediaStorageService.isCloudinaryConfigured) {
-      const publicId = `malappuram_nikah/kyc/${path.parse(fileName).name}`;
       const { v2: cloudinary } = require("cloudinary");
-      await cloudinary.uploader.destroy(publicId, { type: "authenticated" });
-      console.log(`[DPDP Cleanup] Deleted Cloudinary KYC document file: ${publicId}`);
+      let baseName = path.parse(fileName).name;
+
+      if (fileName.includes("cloudinary.com")) {
+        const parts = fileName.split(/\/upload\/(?:v\d+\/)?/)[1] || fileName.split(/\/authenticated\/(?:v\d+\/)?/)[1];
+        if (parts) {
+          baseName = parts.substring(0, parts.lastIndexOf(".")) || parts;
+        }
+      }
+
+      const candidateIds = [
+        `malappuram_nikah/kyc/${baseName}`,
+        baseName,
+      ];
+
+      for (const id of candidateIds) {
+        try {
+          await cloudinary.uploader.destroy(id, { type: "authenticated", invalidate: true });
+          await cloudinary.uploader.destroy(id, { type: "upload", invalidate: true });
+        } catch {
+          // ignore single candidate failure
+        }
+      }
+      console.log(`[DPDP Cleanup] Purged Cloudinary KYC document: ${baseName}`);
     }
   } catch (err) {
     console.error(`[DPDP Cleanup] Failed to delete KYC file ${fileName}:`, err);

@@ -154,6 +154,12 @@ export const adminApi = {
       body: JSON.stringify({ reason }),
     }),
 
+  purgeLegacyVerifiedKyc: () =>
+    adminFetch<{ success: true; message: string; purgedCount: number }>(
+      "/user/admin/kyc/purge-legacy-verified",
+      { method: "POST" }
+    ),
+
   getAdminProfile: () =>
     adminFetch<{ success: true; admin: AdminUser & { role: string; isAdmin: boolean } }>(
       "/user/admin/me"

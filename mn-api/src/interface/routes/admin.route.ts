@@ -1320,6 +1320,63 @@ admin_route.post("/kyc/:id/reject", adminGuard, async (req: Request, res: Respon
   }
 });
 
+// KYC 5. Purge all legacy verified ID cards from Cloudinary & DB (POST /user/admin/kyc/purge-legacy-verified)
+admin_route.post("/kyc/purge-legacy-verified", adminGuard, async (req: Request, res: Response) => {
+  try {
+    const verifiedUsers = await prisma.user.findMany({
+      where: {
+        kyc_status: "VERIFIED",
+        OR: [
+          { kyc_front_url: { not: null } },
+          { kyc_back_url: { not: null } }
+        ]
+      },
+      select: {
+        id: true,
+        first_name: true,
+        last_name: true,
+        kyc_front_url: true,
+        kyc_back_url: true,
+      }
+    });
+
+    let purgedCount = 0;
+    for (const user of verifiedUsers) {
+      if (user.kyc_front_url) await deleteKycFile(user.kyc_front_url);
+      if (user.kyc_back_url) await deleteKycFile(user.kyc_back_url);
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          kyc_front_url: null,
+          kyc_back_url: null,
+        }
+      });
+      purgedCount++;
+    }
+
+    // Write audit log
+    const store = getAdminStore();
+    const adminUser = await prisma.user.findUnique({ where: { id: getUserIdFromRequest(req) || 2 } });
+    const adminName = adminUser ? `${adminUser.first_name} ${adminUser.last_name}` : "Super Admin";
+    store.activity_logs.unshift({
+      id: Date.now(),
+      admin: adminName,
+      action: `Executed DPDP Act purge of legacy verified ID documents (${purgedCount} profiles purged)`,
+      time: new Date().toISOString().replace("T", " ").substring(0, 19)
+    });
+    saveAdminStore(store);
+
+    res.status(200).json({
+      success: true,
+      message: `Successfully purged ID cards for ${purgedCount} verified profile(s) from Cloudinary & database in compliance with DPDP Act 2023.`,
+      purgedCount
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || "Failed to purge legacy KYC documents." });
+  }
+});
+
 // REFERRAL 1. GET Referrals List (GET /user/admin/referrals)
 admin_route.get("/referrals", adminGuard, async (req: Request, res: Response) => {
   try {
