@@ -28,3 +28,7 @@ dist-ssr
 .agents
 .skills
 .gemini
+
+# TypeScript build cache and Next.js env files
+*.tsbuildinfo
+next-env.d.ts
