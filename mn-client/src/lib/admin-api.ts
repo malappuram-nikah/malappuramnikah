@@ -188,4 +188,25 @@ export const adminApi = {
       pagination: { page: number; limit: number; total: number; totalPages: number };
     }>(`/user/admin/referral-records?${qs}`);
   },
+
+  instantRegistration: (base64File: string, mimeType: string) =>
+    adminFetch<{
+      success: true;
+      message: string;
+      data: {
+        userId: number;
+        profileId: string;
+        fullName: string;
+        mobile: string;
+        rawPassword: string;
+        gender: string;
+        location: string;
+        caste: string;
+        documentUrl: string;
+        dateOfBirth: string;
+      };
+    }>("/user/admin/instant-registration", {
+      method: "POST",
+      body: JSON.stringify({ base64File, mimeType }),
+    }),
 };

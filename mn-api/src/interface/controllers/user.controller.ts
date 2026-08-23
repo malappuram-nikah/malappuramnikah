@@ -8,6 +8,7 @@ import { GenerateGuestReferralUseCase } from "../../applications/use-cases/user/
 import { MediaStorageService } from "../../infrastructure/service/MediaStorageService";
 import { getUserIdFromRequest } from "../routes/interest.route";
 import prisma from "../../infrastructure/prisma/prisamClient";
+import { InstantRegistrationUseCase } from "../../applications/use-cases/user/InstantRegistration.usecase";
 
 export class UserController {
   constructor(
@@ -18,6 +19,27 @@ export class UserController {
     private updateProfileDetails: UpdateProfileDetailsUseCase,
     private generateGuestReferral: GenerateGuestReferralUseCase
   ) {}
+
+  private instantRegistrationUseCase = new InstantRegistrationUseCase();
+
+  async instantRegistration(req: Request, res: Response) {
+    try {
+      const { base64File, mimeType } = req.body;
+      if (!base64File || !mimeType) {
+        return res.status(400).json({ success: false, message: "Identity file and MIME type are required." });
+      }
+
+      const result = await this.instantRegistrationUseCase.execute(base64File, mimeType);
+      return res.status(200).json({
+        success: true,
+        message: "Member registered instantly successfully!",
+        data: result
+      });
+    } catch (error: any) {
+      console.error("Instant registration error:", error);
+      return res.status(500).json({ success: false, message: error.message || "Failed to process instant registration." });
+    }
+  }
 
   async generateReferral(req: Request, res: Response) {
     try {

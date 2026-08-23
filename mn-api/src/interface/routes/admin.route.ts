@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import prisma from "../../infrastructure/prisma/prisamClient";
+import { InstantRegistrationUseCase } from "../../applications/use-cases/user/InstantRegistration.usecase";
 import { getUserIdFromRequest } from "./interest.route";
 import { io } from "../../index";
 import fs from "fs";
@@ -426,6 +427,27 @@ admin_route.get("/stats", adminGuard, async (req: Request, res: Response) => {
     });
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message || "Failed to load admin stats." });
+  }
+});
+
+// 2e. POST Instant Registration (POST /user/admin/instant-registration)
+const instantRegistrationUseCase = new InstantRegistrationUseCase();
+admin_route.post("/instant-registration", adminGuard, async (req: Request, res: Response) => {
+  try {
+    const { base64File, mimeType } = req.body;
+    if (!base64File || !mimeType) {
+      return res.status(400).json({ success: false, message: "Identity file and MIME type are required." });
+    }
+
+    const result = await instantRegistrationUseCase.execute(base64File, mimeType);
+    return res.status(200).json({
+      success: true,
+      message: "Member registered instantly successfully!",
+      data: result
+    });
+  } catch (error: any) {
+    console.error("Instant registration error:", error);
+    return res.status(500).json({ success: false, message: error.message || "Failed to process instant registration." });
   }
 });
 

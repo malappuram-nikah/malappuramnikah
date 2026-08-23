@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Users, ShieldCheck, Award, User,
   Shirt, Camera, Heart, Briefcase, Calendar, Star, DollarSign,
-  ChevronRight, Menu, LogOut, X,
+  ChevronRight, Menu, LogOut, X, Zap,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -24,6 +24,7 @@ const adminSections: NavSection[] = [
     title: "Main Platform Management",
     items: [
       { href: "/admin/users", icon: Users, label: "Users" },
+      { href: "/admin/instant-registration", icon: Zap, label: "Instant Registration" },
       { href: "/admin/id-verification", icon: ShieldCheck, label: "ID Verification" },
       { href: "/admin/referrals", icon: Award, label: "Referrals" },
     ],
