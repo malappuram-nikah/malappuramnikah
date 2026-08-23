@@ -17,7 +17,6 @@ model User {
   cast           String
   location       String
   email          String?   @unique
-  email_verified Boolean   @default(false)
   mobile_number  String    @unique 
   password       String
   dob            String
