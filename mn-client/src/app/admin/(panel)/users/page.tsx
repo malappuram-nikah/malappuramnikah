@@ -205,7 +205,7 @@ export default function AdminUsersPage() {
   const handleDownloadPdf = async () => {
     setDownloadingPdf(true);
     try {
-      const params: Record<string, string | number> = { page: 1, limit: 1000 };
+      const params: Record<string, string | number> = { page: 1, limit: 100000 };
       if (search.trim()) params.search = search.trim();
       if (statusFilter) params.status = statusFilter;
       if (genderFilter) params.gender = genderFilter;
@@ -230,7 +230,7 @@ export default function AdminUsersPage() {
   const handleDownloadCsv = async () => {
     setDownloadingCsv(true);
     try {
-      const params: Record<string, string | number> = { page: 1, limit: 1000 };
+      const params: Record<string, string | number> = { page: 1, limit: 100000 };
       if (search.trim()) params.search = search.trim();
       if (statusFilter) params.status = statusFilter;
       if (genderFilter) params.gender = genderFilter;

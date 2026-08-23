@@ -433,7 +433,7 @@ admin_route.get("/stats", adminGuard, async (req: Request, res: Response) => {
 admin_route.get("/users", adminGuard, async (req: Request, res: Response) => {
   try {
     const page = Math.max(parseInt(req.query.page as string || "1", 10), 1);
-    const limit = Math.min(Math.max(parseInt(req.query.limit as string || "10", 10), 1), 100);
+    const limit = Math.min(Math.max(parseInt(req.query.limit as string || "10", 10), 1), 100000);
     const search = (req.query.search as string || "").trim();
     const status = (req.query.status as string || "").trim();
     const kycStatus = (req.query.kyc_status as string || "").trim();

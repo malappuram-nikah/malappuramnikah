@@ -57,6 +57,7 @@ export function exportUsersToPdf(users: AdminUser[], filterTitle: string = "User
       "Profile ID",
       "Member Name",
       "Mobile",
+      "Email ID",
       "Gender",
       "Place",
       "Marriage Status",
@@ -72,6 +73,7 @@ export function exportUsersToPdf(users: AdminUser[], filterTitle: string = "User
     user.profileId || (user.id ? `MN-${100000 + user.id}` : "—"),
     `${user.first_name || ""} ${user.last_name || ""}`.trim() || "—",
     user.mobile_number || "—",
+    user.email || "—",
     user.gender || "Male",
     getUserPlace(user),
     getMaritalStatus(user),
@@ -99,16 +101,17 @@ export function exportUsersToPdf(users: AdminUser[], filterTitle: string = "User
     },
     columnStyles: {
       0: { cellWidth: 8 },
-      1: { cellWidth: 20, fontStyle: "bold" },
-      2: { cellWidth: 32, fontStyle: "bold" },
-      3: { cellWidth: 26 },
-      4: { cellWidth: 15 },
-      5: { cellWidth: 24 },
-      6: { cellWidth: 24 },
-      7: { cellWidth: 22 },
-      8: { cellWidth: 22 },
-      9: { cellWidth: 22 },
-      10: { cellWidth: 54 },
+      1: { cellWidth: 18, fontStyle: "bold" },
+      2: { cellWidth: 28, fontStyle: "bold" },
+      3: { cellWidth: 24 },
+      4: { cellWidth: 26 }, // Email ID
+      5: { cellWidth: 12 }, // Gender
+      6: { cellWidth: 22 }, // Place
+      7: { cellWidth: 20 }, // Marriage Status
+      8: { cellWidth: 20 }, // Register Date
+      9: { cellWidth: 20 }, // Call Status
+      10: { cellWidth: 20 }, // Called Date
+      11: { cellWidth: 42 }, // Customer Response
     },
     didDrawPage: (data) => {
       const pageStr = `Page ${data.pageNumber} of ${doc.getNumberOfPages()}`;
