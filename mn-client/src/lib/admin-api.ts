@@ -154,6 +154,18 @@ export const adminApi = {
       body: JSON.stringify({ reason }),
     }),
 
+  manualVerifyKyc: (
+    id: number,
+    data: { document_type?: string; notes?: string } = {}
+  ) =>
+    adminFetch<{ success: true; message: string; user: AdminUser }>(
+      `/user/admin/users/${id}/manual-verify-kyc`,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      }
+    ),
+
   purgeLegacyVerifiedKyc: () =>
     adminFetch<{ success: true; message: string; purgedCount: number }>(
       "/user/admin/kyc/purge-legacy-verified",

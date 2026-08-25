@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ShieldCheck, X, Check, Sparkles, Trash2, Loader2 } from "lucide-react";
+import { ShieldCheck, X, Check, Sparkles, Trash2, Loader2, Search, UserPlus, CheckCircle2 } from "lucide-react";
 import AdminAlert from "@/components/admin/AdminAlert";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { adminApi, AdminUser } from "@/lib/admin-api";
@@ -109,9 +109,58 @@ export default function AdminIdVerificationPage() {
   const [isPurging, setIsPurging] = useState(false);
   const [alert, setAlert] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
+  // Direct Manual KYC State (Verify Without Upload)
+  const [showDirectVerifyModal, setShowDirectVerifyModal] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [userSearchResults, setUserSearchResults] = useState<AdminUser[]>([]);
+  const [searchingUsers, setSearchingUsers] = useState(false);
+  const [selectedUserToVerify, setSelectedUserToVerify] = useState<AdminUser | null>(null);
+  const [directDocType, setDirectDocType] = useState("Aadhaar Card (Offline / WhatsApp)");
+  const [directNotes, setDirectNotes] = useState("");
+  const [savingDirectVerify, setSavingDirectVerify] = useState(false);
+
   const triggerAlert = (text: string, type: "success" | "error" = "success") => {
     setAlert({ text, type });
     setTimeout(() => setAlert(null), 4000);
+  };
+
+  const handleSearchMembers = async (q: string) => {
+    setUserSearchQuery(q);
+    if (!q.trim() || q.trim().length < 2) {
+      setUserSearchResults([]);
+      return;
+    }
+    setSearchingUsers(true);
+    try {
+      const res = await adminApi.getUsers({ search: q.trim(), limit: 8 });
+      setUserSearchResults(res.users);
+    } catch {
+      setUserSearchResults([]);
+    } finally {
+      setSearchingUsers(false);
+    }
+  };
+
+  const handleDirectManualVerify = async () => {
+    if (!selectedUserToVerify) return;
+    setSavingDirectVerify(true);
+    try {
+      const res = await adminApi.manualVerifyKyc(selectedUserToVerify.id, {
+        document_type: directDocType,
+        notes: directNotes,
+      });
+      triggerAlert(res.message || "Member marked as VERIFIED in database! ✅");
+      setShowDirectVerifyModal(false);
+      setSelectedUserToVerify(null);
+      setUserSearchQuery("");
+      setUserSearchResults([]);
+      setDirectNotes("");
+      await loadRequests();
+    } catch (err: any) {
+      triggerAlert(err?.message || "Failed to verify member.", "error");
+    } finally {
+      setSavingDirectVerify(false);
+    }
   };
 
   const handlePurgeLegacy = async () => {
@@ -244,6 +293,20 @@ export default function AdminIdVerificationPage() {
               onChange={(e) => setSearch(e.target.value)}
               className="flex-1 p-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
             />
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedUserToVerify(null);
+                setUserSearchQuery("");
+                setUserSearchResults([]);
+                setDirectNotes("");
+                setShowDirectVerifyModal(true);
+              }}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors shrink-0"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Direct Verify (No Upload)
+            </button>
             <button
               type="button"
               onClick={() => setShowPurgeModal(true)}
@@ -466,6 +529,160 @@ export default function AdminIdVerificationPage() {
           </div>
         )}
       </div>
+
+      {/* Direct Manual Verification Modal */}
+      {showDirectVerifyModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 w-full max-w-lg space-y-4 border border-gray-150 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 text-sm">Direct Profile Verification</h3>
+                  <p className="text-[11px] text-gray-500">Verify a member without requiring a website upload</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDirectVerifyModal(false)}
+                className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-xl text-xs text-blue-900 leading-relaxed">
+              Use this when a registered member sends their ID proof (Aadhaar / Passport / Voter ID) personally to the support admin team via WhatsApp, call, or email.
+            </div>
+
+            {/* Member Search */}
+            <div className="space-y-2">
+              <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider">
+                1. Select Member to Verify
+              </label>
+              <div className="relative">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
+                <input
+                  type="text"
+                  placeholder="Type name, phone (+91...), or MN-100001..."
+                  value={userSearchQuery}
+                  onChange={(e) => handleSearchMembers(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2.5 text-xs rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                />
+                {searchingUsers && (
+                  <Loader2 className="w-4 h-4 text-brand-500 animate-spin absolute right-3 top-3" />
+                )}
+              </div>
+
+              {/* Search Results Dropdown */}
+              {userSearchResults.length > 0 && !selectedUserToVerify && (
+                <div className="max-h-48 overflow-y-auto rounded-xl border border-gray-200 bg-white divide-y divide-gray-100 shadow-lg">
+                  {userSearchResults.map((u) => (
+                    <button
+                      key={u.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedUserToVerify(u);
+                        setUserSearchQuery(`${u.first_name} ${u.last_name} (${u.profileId || `MN-${100000 + u.id}`})`);
+                      }}
+                      className="w-full text-left p-2.5 hover:bg-blue-50/60 flex items-center justify-between transition-colors text-xs"
+                    >
+                      <div>
+                        <span className="font-bold text-gray-900">{u.first_name} {u.last_name}</span>
+                        <span className="text-[10px] text-gray-500 ml-2">{u.mobile_number}</span>
+                      </div>
+                      <span className="font-mono text-[10px] font-semibold text-brand-700 bg-brand-50 px-2 py-0.5 rounded">
+                        {u.profileId || `MN-${100000 + u.id}`}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Selected User Badge */}
+              {selectedUserToVerify && (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-xs">
+                  <div>
+                    <div className="flex items-center gap-1.5 font-bold text-emerald-900">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      {selectedUserToVerify.first_name} {selectedUserToVerify.last_name}
+                    </div>
+                    <p className="text-[11px] text-emerald-700 mt-0.5">
+                      {selectedUserToVerify.profileId || `MN-${100000 + selectedUserToVerify.id}`} · {selectedUserToVerify.mobile_number}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedUserToVerify(null);
+                      setUserSearchQuery("");
+                    }}
+                    className="text-[11px] font-bold text-red-600 hover:underline"
+                  >
+                    Change
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Document Type & Notes */}
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                  2. Document Verification Method
+                </label>
+                <select
+                  value={directDocType}
+                  onChange={(e) => setDirectDocType(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                >
+                  <option value="Aadhaar Card (Offline / WhatsApp)">Aadhaar Card (Offline / WhatsApp)</option>
+                  <option value="Passport (Offline / WhatsApp)">Passport (Offline / WhatsApp)</option>
+                  <option value="Voter ID (Offline / WhatsApp)">Voter ID (Offline / WhatsApp)</option>
+                  <option value="Driving License (Offline / Support)">Driving License (Offline / Support)</option>
+                  <option value="Government ID (Direct Support Check)">Government ID (Direct Support Check)</option>
+                  <option value="Personal / Family Reference Verified">Personal / Family Reference Verified</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                  3. Support Admin Notes
+                </label>
+                <textarea
+                  value={directNotes}
+                  onChange={(e) => setDirectNotes(e.target.value)}
+                  placeholder="e.g., ID proof verified directly via WhatsApp support chat on 25 Aug 2026."
+                  rows={2}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2.5 pt-2 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => setShowDirectVerifyModal(false)}
+                disabled={savingDirectVerify}
+                className="flex-1 py-2.5 border border-gray-200 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDirectManualVerify}
+                disabled={savingDirectVerify || !selectedUserToVerify}
+                className="flex-1 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 disabled:opacity-50"
+              >
+                {savingDirectVerify ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
+                Confirm & Mark Verified
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showRejectModal && selected && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">

@@ -682,6 +682,147 @@ admin_route.post("/users/:id/call-log", adminGuard, async (req: Request, res: Re
   }
 });
 
+// 2e. POST Manual Direct KYC Verification (POST /user/admin/users/:id/manual-verify-kyc)
+admin_route.post("/users/:id/manual-verify-kyc", adminGuard, async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+    const { document_type, notes } = req.body as {
+      document_type?: string;
+      notes?: string;
+    };
+
+    if (isNaN(id)) {
+      res.status(400).json({ success: false, message: "Invalid user ID" });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
+    }
+
+    // Delete any previous uploaded kyc files if any exist
+    await deleteKycFile(user.kyc_front_url);
+    await deleteKycFile(user.kyc_back_url);
+
+    const adminUserId = getUserIdFromRequest(req) || 2;
+    let adminName = "Support Admin";
+    try {
+      const adminUser = await prisma.user.findUnique({ where: { id: adminUserId }, select: { first_name: true, last_name: true } });
+      if (adminUser) {
+        adminName = `${adminUser.first_name} ${adminUser.last_name}`.trim() || "Support Admin";
+      } else {
+        const rawAdmin: any[] = await prisma.$queryRawUnsafe(`SELECT name FROM admin WHERE id = $1 LIMIT 1`, adminUserId);
+        if (rawAdmin && rawAdmin[0]?.name) adminName = rawAdmin[0].name;
+      }
+    } catch {}
+
+    const existingDetails = (user.profile_details as Record<string, unknown>) || {};
+    const docType = document_type?.trim() || "Manual Offline Verification (Support Team)";
+    const verificationNotes = notes?.trim() || "Verified offline by support admin team via direct document submission.";
+
+    const updatedProfileDetails = {
+      ...existingDetails,
+      manual_verification: {
+        is_manual: true,
+        verified_by: "Support Admin (Manual Verification)",
+        admin_name: adminName,
+        admin_id: adminUserId,
+        document_type: docType,
+        notes: verificationNotes,
+        verified_at: new Date().toISOString(),
+      },
+    };
+
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: {
+        kyc_status: "VERIFIED",
+        kyc_verified_at: new Date(),
+        kyc_document_type: docType,
+        kyc_rejected_reason: null,
+        kyc_front_url: null,
+        kyc_back_url: null,
+        profile_details: updatedProfileDetails,
+      },
+      select: ADMIN_USER_SELECT,
+    });
+
+    // Write audit log
+    const store = getAdminStore();
+    store.activity_logs.unshift({
+      id: Date.now(),
+      admin: adminName,
+      action: `Manually verified identity (No upload) for user ${user.first_name} ${user.last_name} (ID: ${id}) [${docType}]`,
+      time: new Date().toISOString().replace("T", " ").substring(0, 19),
+    });
+    saveAdminStore(store);
+
+    // Process referral reward if any
+    try {
+      const referral = await prisma.referral.findUnique({ where: { referred_user_id: id } });
+      if (referral && !referral.rewarded) {
+        const settings = await prisma.referralSettings.findUnique({ where: { id: 1 } });
+        if (settings && settings.enabled && settings.reward_condition === "KYC") {
+          await prisma.$transaction([
+            prisma.referralTransaction.create({
+              data: {
+                user_id: referral.referrer_id,
+                referral_id: referral.id,
+                points: settings.points_per_referral,
+                type: "EARN",
+                reason: "Referral KYC Verification Bonus",
+              },
+            }),
+            prisma.user.update({
+              where: { id: referral.referrer_id },
+              data: { referral_points: { increment: settings.points_per_referral } },
+            }),
+            prisma.referral.update({
+              where: { id: referral.id },
+              data: { status: "SUCCESS", rewarded: true },
+            }),
+          ]);
+        }
+      }
+    } catch (refErr) {
+      console.error("Referral reward error on manual KYC:", refErr);
+    }
+
+    // Send in-app notification & socket
+    try {
+      await prisma.notification.create({
+        data: {
+          user_id: id,
+          sender_id: adminUserId,
+          type: "KYC_APPROVED",
+          title: "Identity Verified! ✅",
+          message: "Your profile identity has been verified by the support team. Your profile now features the official 'ID Verified' badge.",
+        },
+      });
+      io.to(`user_${id}`).emit("notification", {
+        type: "KYC_APPROVED",
+        title: "Identity Verified! ✅",
+        message: "Your profile identity has been verified by the support team. Your profile now features the official 'ID Verified' badge.",
+      });
+    } catch {}
+
+    res.status(200).json({
+      success: true,
+      message: `User ${user.first_name} ${user.last_name} has been marked as VERIFIED successfully.`,
+      user: {
+        ...updatedUser,
+        profileId: `MN-${100000 + updatedUser.id}`,
+        profileCompletion: calculateProfileCompletion(updatedUser),
+      },
+    });
+  } catch (err: any) {
+    console.error("Manual KYC verify error:", err);
+    res.status(500).json({ success: false, message: err.message || "Failed to manually verify user." });
+  }
+});
+
 // 3. User verification / Profile approval (POST /user/admin/users/:id/verify)
 admin_route.post("/users/:id/verify", adminGuard, async (req: Request, res: Response) => {
   try {

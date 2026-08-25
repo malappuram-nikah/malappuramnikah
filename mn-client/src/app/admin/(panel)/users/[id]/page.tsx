@@ -14,6 +14,8 @@ import {
   Calendar,
   MessageSquare,
   Loader2,
+  ShieldCheck,
+  CheckCircle2,
 } from "lucide-react";
 import AdminAlert from "@/components/admin/AdminAlert";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
@@ -197,6 +199,30 @@ export default function AdminUserDetailPage() {
     }
   };
 
+  // Manual KYC Verification State
+  const [manualVerifyOpen, setManualVerifyOpen] = useState(false);
+  const [manualDocType, setManualDocType] = useState("Aadhaar Card (Offline / WhatsApp)");
+  const [manualNotes, setManualNotes] = useState("");
+  const [savingManualVerify, setSavingManualVerify] = useState(false);
+
+  const handleManualVerify = async () => {
+    if (!user) return;
+    setSavingManualVerify(true);
+    try {
+      const res = await adminApi.manualVerifyKyc(user.id, {
+        document_type: manualDocType,
+        notes: manualNotes,
+      });
+      triggerAlert(res.message || "Profile manually verified successfully! ✅");
+      setManualVerifyOpen(false);
+      await loadUser();
+    } catch (err: any) {
+      triggerAlert(err?.message || "Failed to verify profile.", "error");
+    } finally {
+      setSavingManualVerify(false);
+    }
+  };
+
   const handleStatus = async (action: "activate" | "deactivate" | "suspend" | "restore") => {
     try {
       const res = await adminApi.updateUserStatus(userId, action);
@@ -337,6 +363,15 @@ export default function AdminUserDetailPage() {
         >
           <PhoneCall className="w-3.5 h-3.5" /> Record / Edit Call Log
         </button>
+        {user.kyc_status !== "VERIFIED" && (
+          <button
+            type="button"
+            onClick={() => setManualVerifyOpen(true)}
+            className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-sm"
+          >
+            <ShieldCheck className="w-3.5 h-3.5" /> Manual Verify ID
+          </button>
+        )}
 
         {user.status !== "active" && (
           <button
@@ -460,11 +495,29 @@ export default function AdminUserDetailPage() {
         </Section>
 
         <Section title="ID Verification">
+          {((user.profile_details as any)?.manual_verification) && (
+            <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-900 text-xs space-y-1 mb-2">
+              <div className="font-bold flex items-center gap-1.5 text-emerald-800">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                Verified Manually by Support Admin
+              </div>
+              <p className="text-[11px] text-emerald-700">
+                <strong>Admin:</strong> {(user.profile_details as any).manual_verification.admin_name || "Support Admin"} · <strong>Type:</strong> {(user.profile_details as any).manual_verification.document_type}
+              </p>
+              {(user.profile_details as any).manual_verification.notes && (
+                <p className="text-[11px] text-emerald-800 italic bg-emerald-100/60 p-1.5 rounded-lg">
+                  "{(user.profile_details as any).manual_verification.notes}"
+                </p>
+              )}
+            </div>
+          )}
+
           <Field label="Status" value={user.kyc_status.replace("_", " ")} />
           <Field label="Document type" value={user.kyc_document_type} />
           <Field label="Submitted" value={formatDateTime(user.kyc_submitted_at)} />
           <Field label="Verified" value={formatDateTime(user.kyc_verified_at)} />
           <Field label="Rejection reason" value={user.kyc_rejected_reason} />
+          
           <div className="flex flex-wrap gap-3 pt-2">
             {user.kyc_front_url && (
               <a
@@ -487,8 +540,104 @@ export default function AdminUserDetailPage() {
               </a>
             )}
           </div>
+
+          {user.kyc_status !== "VERIFIED" && (
+            <div className="pt-3 border-t border-gray-100 mt-2">
+              <button
+                type="button"
+                onClick={() => setManualVerifyOpen(true)}
+                className="w-full py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors"
+              >
+                <ShieldCheck className="w-4 h-4 text-blue-600" />
+                Verify ID Manually (Offline / WhatsApp Submission)
+              </button>
+            </div>
+          )}
         </Section>
       </div>
+
+      {/* Manual Verification Modal */}
+      {manualVerifyOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="relative w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl space-y-4 border border-gray-100">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div>
+                <h3 className="font-bold text-gray-900 text-sm flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-blue-600" />
+                  Manual ID Verification: {user.first_name} {user.last_name}
+                </h3>
+                <span className="text-[10px] text-gray-400 font-mono">
+                  {user.profileId || `MN-${100000 + user.id}`} · Mobile: {user.mobile_number}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setManualVerifyOpen(false)}
+                className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-xl text-xs text-blue-900 leading-relaxed">
+              Use this when a member has sent their identity proof directly to the support team (via WhatsApp, email, or in-person) without uploading on the website.
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                  Verified Document Type
+                </label>
+                <select
+                  value={manualDocType}
+                  onChange={(e) => setManualDocType(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                >
+                  <option value="Aadhaar Card (Offline / WhatsApp)">Aadhaar Card (Offline / WhatsApp)</option>
+                  <option value="Passport (Offline / WhatsApp)">Passport (Offline / WhatsApp)</option>
+                  <option value="Voter ID (Offline / WhatsApp)">Voter ID (Offline / WhatsApp)</option>
+                  <option value="Driving License (Offline / Support)">Driving License (Offline / Support)</option>
+                  <option value="Government ID (Direct Support Check)">Government ID (Direct Support Check)</option>
+                  <option value="Personal / Family Reference Verified">Personal / Family Reference Verified</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                  Support Admin Remarks / Notes
+                </label>
+                <textarea
+                  value={manualNotes}
+                  onChange={(e) => setManualNotes(e.target.value)}
+                  placeholder="e.g., Member provided Aadhaar photo via support WhatsApp. Document verified by support team."
+                  rows={3}
+                  className="w-full p-2.5 rounded-xl border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2.5 pt-2 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => setManualVerifyOpen(false)}
+                disabled={savingManualVerify}
+                className="flex-1 py-2.5 border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleManualVerify}
+                disabled={savingManualVerify}
+                className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-xs transition-colors flex items-center justify-center gap-1.5"
+              >
+                {savingManualVerify ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                Mark Verified in DB
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Admin Call Log Modal */}
       {callModalOpen && (
