@@ -3,10 +3,13 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, Save, Trash2, Plus } from "lucide-react";
+import { CheckCircle2, Save, Trash2, Plus, Crop, ZoomIn } from "lucide-react";
 
 import { saveProfileSection } from "@/lib/profile-utils";
 import { useUser } from "@/context/UserContext";
+import ImageCropModal from "@/components/common/ImageCropModal";
+import PhotoLightboxModal from "@/components/common/PhotoLightboxModal";
+import { applyWatermarkToImage } from "@/lib/watermark-utils";
 
 export interface PhotoData {
   id: string;
@@ -38,6 +41,8 @@ export default function ProfilePhotosStep({ initialData, onComplete, onBack }: P
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof ProfilePhotosData, string>>>({});
   const [isUploading, setIsUploading] = useState(false);
+  const [cropTarget, setCropTarget] = useState<{ id?: string; url: string } | null>(null);
+  const [zoomIndex, setZoomIndex] = useState<number | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -96,18 +101,21 @@ export default function ProfilePhotosStep({ initialData, onComplete, onBack }: P
       try {
         const loadedPhotos = await Promise.all(
           files.map(async (file) => {
-            return new Promise<PhotoData>((resolve, reject) => {
+            const rawBase64 = await new Promise<string>((resolve, reject) => {
               const reader = new FileReader();
-              reader.onload = (ev) => {
-                resolve({
-                  id: Math.random().toString(36).substring(2, 9),
-                  dataUrl: ev.target?.result as string,
-                  isPrimary: false,
-                });
-              };
+              reader.onload = (ev) => resolve(ev.target?.result as string);
               reader.onerror = reject;
               reader.readAsDataURL(file);
             });
+
+            // Automatically apply watermark
+            const watermarked = await applyWatermarkToImage(rawBase64, "Malappuram Nikah");
+
+            return {
+              id: Math.random().toString(36).substring(2, 9),
+              dataUrl: watermarked,
+              isPrimary: false,
+            };
           })
         );
 
@@ -128,6 +136,18 @@ export default function ProfilePhotosStep({ initialData, onComplete, onBack }: P
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+  };
+
+  const handleCropSave = (croppedUrl: string) => {
+    if (!cropTarget) return;
+    if (cropTarget.id) {
+      setFormData({
+        photos: formData.photos.map((p) =>
+          p.id === cropTarget.id ? { ...p, dataUrl: croppedUrl } : p
+        ),
+      });
+    }
+    setCropTarget(null);
   };
 
   const removePhoto = (id: string) => {
@@ -198,7 +218,7 @@ export default function ProfilePhotosStep({ initialData, onComplete, onBack }: P
         {/* Upload/Preview Section */}
         <div className="space-y-4">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {formData.photos.map((photo) => (
+            {formData.photos.map((photo, i) => (
               <div 
                 key={photo.id}
                 className="relative rounded-xl overflow-hidden border border-gray-200 aspect-[3/4] group bg-gray-55 shadow-xs"
@@ -210,7 +230,7 @@ export default function ProfilePhotosStep({ initialData, onComplete, onBack }: P
                 />
                 
                 {/* Primary star badge */}
-                <div className="absolute top-2 left-2 flex gap-1">
+                <div className="absolute top-2 left-2 flex gap-1 z-10">
                   {photo.isPrimary ? (
                     <span className="bg-amber-500 text-white w-6 h-6 rounded-full text-[12px] font-extrabold shadow-sm flex items-center justify-center" title="Primary Profile Photo">
                       ★
@@ -227,15 +247,33 @@ export default function ProfilePhotosStep({ initialData, onComplete, onBack }: P
                   )}
                 </div>
 
-                {/* Remove button */}
-                <button
-                  type="button"
-                  onClick={() => removePhoto(photo.id)}
-                  className="absolute bottom-2 right-2 bg-red-605 hover:bg-red-700 text-white p-2 rounded-full shadow-md transition-all opacity-0 group-hover:opacity-100 active:scale-90 cursor-pointer"
-                  title="Remove Photo"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {/* Hover overlay actions */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-2.5 gap-1.5 z-10">
+                  <button
+                    type="button"
+                    onClick={() => setZoomIndex(i)}
+                    title="Zoom Photo"
+                    className="p-1.5 bg-white/95 rounded-full shadow hover:scale-110 transition-transform cursor-pointer"
+                  >
+                    <ZoomIn className="w-3.5 h-3.5 text-gray-800" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCropTarget({ id: photo.id, url: photo.dataUrl })}
+                    title="Crop & Adjust"
+                    className="p-1.5 bg-white/95 rounded-full shadow hover:scale-110 transition-transform cursor-pointer"
+                  >
+                    <Crop className="w-3.5 h-3.5 text-brand-600" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removePhoto(photo.id)}
+                    className="p-1.5 bg-white/95 rounded-full shadow hover:scale-110 transition-transform cursor-pointer"
+                    title="Remove Photo"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                  </button>
+                </div>
               </div>
             ))}
 
@@ -311,6 +349,23 @@ export default function ProfilePhotosStep({ initialData, onComplete, onBack }: P
           </div>
         </div>
       </form>
+
+      {cropTarget && (
+        <ImageCropModal
+          imageSrc={cropTarget.url}
+          onCropComplete={handleCropSave}
+          onCancel={() => setCropTarget(null)}
+        />
+      )}
+
+      {zoomIndex !== null && (
+        <PhotoLightboxModal
+          photos={formData.photos.map((p) => p.dataUrl)}
+          initialIndex={zoomIndex}
+          userName="Profile Photos"
+          onClose={() => setZoomIndex(null)}
+        />
+      )}
     </div>
   );
 }

@@ -68,6 +68,7 @@ export default function InterestsPage() {
     if (!u) return null;
     return {
       id: u.id,
+      uuid: u.uuid || String(u.id),
       name: `${u.first_name} ${u.last_name}`,
       age: u.dob ? Math.floor((new Date().getTime() - new Date(u.dob).getTime()) / 31557600000) : 25,
       location: u.location || "Kerala",
@@ -345,15 +346,16 @@ export default function InterestsPage() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: idx * 0.05 }}
-                className="bg-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-lg hover:shadow-brand-900/5 hover:border-brand-100 transition-all duration-300 flex flex-col"
+                onClick={() => router.push(`/dashboard/profile/${p.uuid || p.id}`)}
+                className="bg-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-lg hover:shadow-brand-900/5 hover:border-brand-100 transition-all duration-300 flex flex-col cursor-pointer group"
               >
                 {/* Profile Card Header with Photo */}
-                <div className="h-44 relative bg-gray-50 overflow-hidden cursor-pointer" onClick={() => router.push(`/dashboard/profile/${p.uuid || p.id}`)}>
+                <div className="h-44 relative bg-gray-50 overflow-hidden">
                   {p.img ? (
                     <img
                       src={p.img}
                       alt={p.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-[#026d77]/10 to-[#026d77]/25 flex flex-col items-center justify-center p-4">
@@ -363,7 +365,7 @@ export default function InterestsPage() {
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/10 to-transparent" />
                   <div className="absolute bottom-3 left-4 right-4 text-white">
-                    <h3 className="font-bold text-sm truncate">{p.name}</h3>
+                    <h3 className="font-bold text-sm truncate group-hover:text-brand-200 transition-colors">{p.name}</h3>
                     <p className="text-[10px] text-gray-200 mt-0.5">{p.age} yrs • {p.location}</p>
                   </div>
                   {isMatched && (
@@ -380,11 +382,14 @@ export default function InterestsPage() {
                     <span className="text-brand-600 bg-brand-50 px-2 py-0.5 rounded-md font-semibold">Verified</span>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                     {/* Actions */}
                     {isMatched ? (
                       <button
-                        onClick={() => router.push("/dashboard/chat")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push("/dashboard/chat");
+                        }}
                         className="w-full py-2.5 bg-brand-600 text-white hover:bg-brand-700 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.98] cursor-pointer"
                       >
                         <Unlock className="w-3.5 h-3.5" /> Chat Now
@@ -394,13 +399,19 @@ export default function InterestsPage() {
                         {activeTab === "received" && (
                           <>
                             <button
-                              onClick={() => handleAction(p.id, `Match established with ${p.name}! 🎉`)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAction(p.id, `Match established with ${p.name}! 🎉`);
+                              }}
                               className="flex-1 py-2.5 bg-brand-600 text-white hover:bg-brand-700 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-[0.98] cursor-pointer"
                             >
                               <Check className="w-3.5 h-3.5" /> Accept
                             </button>
                             <button
-                              onClick={() => handleAction(p.id, `Interest request from ${p.name} declined.`)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAction(p.id, `Interest request from ${p.name} declined.`);
+                              }}
                               className="flex-1 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 border border-gray-200 active:scale-[0.98] cursor-pointer"
                             >
                               <X className="w-3.5 h-3.5 text-gray-400" /> Ignore
@@ -410,7 +421,10 @@ export default function InterestsPage() {
 
                         {activeTab === "sent" && (
                           <button
-                            onClick={() => handleAction(p.id, `Withdrew interest for ${p.name}.`)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAction(p.id, `Withdrew interest for ${p.name}.`);
+                            }}
                             className="w-full py-2.5 bg-pink-50 text-pink-700 hover:bg-pink-100 hover:text-pink-800 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-[0.98] cursor-pointer"
                           >
                             <X className="w-3.5 h-3.5" /> Withdraw Request
@@ -420,13 +434,19 @@ export default function InterestsPage() {
                         {(activeTab === "viewed_me" || activeTab === "visited") && (
                           <div className="flex w-full gap-2">
                             <button
-                              onClick={() => router.push(`/dashboard/profile/${p.uuid || p.id}`)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/dashboard/profile/${p.uuid || p.id}`);
+                              }}
                               className="flex-1 py-2.5 bg-brand-600 text-white hover:bg-brand-700 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                             >
                               View Profile
                             </button>
                             <button
-                              onClick={() => handleAction(p.id, `Expressed interest in ${p.name}!`)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAction(p.id, `Expressed interest in ${p.name}!`);
+                              }}
                               className="px-3 py-2.5 bg-brand-50 text-brand-700 hover:bg-brand-100 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer"
                               title="Express Interest"
                             >

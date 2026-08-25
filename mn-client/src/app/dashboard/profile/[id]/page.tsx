@@ -7,7 +7,7 @@ import {
   Heart, MessageCircle, Star, ArrowLeft, Loader2, Sparkles, 
   Lock, Unlock, ShieldCheck, Volume2, Video, MapPin, 
   BookOpen, Briefcase, Award, Users, HeartHandshake, Smile, Layers,
-  Ban, MoreVertical, Flag, TrendingUp
+  Ban, MoreVertical, Flag, TrendingUp, ZoomIn
 } from "lucide-react";
 import { getEnrichedProfile } from "@/lib/profile-utils";
 import BiodataDownload from "@/components/dashboard/BiodataDownload";
@@ -17,6 +17,7 @@ import { FullProfileSkeleton } from "@/components/dashboard/Skeleton";
 import { useProfileActions } from "@/hooks/useProfileActions";
 import { API_URL } from "@/lib/config";
 import VerificationModal from "@/components/dashboard/VerificationModal";
+import PhotoLightboxModal from "@/components/common/PhotoLightboxModal";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -32,6 +33,7 @@ export default function ProfileDetailPage({ params }: PageProps) {
   const { toggleFavourite, toggleBlock, isFavourite, isBlocked } = useProfileActions();
   const menuRef = useRef<HTMLDivElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
@@ -250,12 +252,20 @@ export default function ProfileDetailPage({ params }: PageProps) {
         <div className="md:col-span-1 space-y-5 md:sticky md:top-6 self-start">
           {/* Main profile card */}
           <div className="bg-white rounded-xl border border-gray-150/85 overflow-hidden shadow-sm">
-            <div className="h-72 bg-gray-100 relative overflow-hidden flex items-center justify-center">
+            <div 
+              onClick={() => {
+                if (canViewProfile && (activePhoto || profile.img)) setLightboxOpen(true);
+              }}
+              className={`h-72 bg-gray-100 relative overflow-hidden flex items-center justify-center ${
+                canViewProfile && (activePhoto || profile.img) ? "cursor-pointer group" : ""
+              }`}
+              title={canViewProfile ? "Click to view full photo & zoom" : ""}
+            >
               {activePhoto || profile.img ? (
                 <img 
                   src={activePhoto || profile.img} 
                   alt={profile.name} 
-                  className={`w-full h-full object-cover object-[center_20%] transition-transform duration-700 ${!canViewProfile ? "filter blur-[18px] select-none" : ""}`} 
+                  className={`w-full h-full object-cover object-[center_20%] group-hover:scale-105 transition-transform duration-700 ${!canViewProfile ? "filter blur-[18px] select-none" : ""}`} 
                 />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-[#026d77]/10 via-[#026d77]/20 to-[#026d77]/35 flex flex-col items-center justify-center p-6 text-center">
@@ -270,6 +280,14 @@ export default function ProfileDetailPage({ params }: PageProps) {
                     <Lock className="w-4 h-4 text-brand-600" />
                     <span className="text-[10px] font-bold text-gray-700">Connect mutually to view photo</span>
                   </div>
+                </div>
+              )}
+
+              {/* Zoom hint on hover */}
+              {canViewProfile && (activePhoto || profile.img) && (
+                <div className="absolute top-3 right-3 z-20 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow">
+                  <ZoomIn className="w-3.5 h-3.5" />
+                  <span>Zoom</span>
                 </div>
               )}
 
@@ -761,6 +779,19 @@ export default function ProfileDetailPage({ params }: PageProps) {
         onClose={() => setShowKycModal(false)}
         kycStatus={currentUser?.kyc_status}
       />
+
+      {lightboxOpen && profile && (
+        <PhotoLightboxModal
+          photos={
+            profile.photos && profile.photos.length > 0
+              ? profile.photos.map((p: any) => p.dataUrl || p)
+              : [activePhoto || profile.img].filter(Boolean)
+          }
+          initialIndex={0}
+          userName={profile.name}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
     </div>
   );
 }

@@ -9,13 +9,16 @@ import {
   ArrowLeft, Camera, Edit2, Check, X, Upload, Trash2,
   ShieldCheck, Star, MapPin, Briefcase, BookOpen, Heart,
   Users, Volume2, Video, Plus, AlertCircle, Loader2,
-  CheckCircle2, User, Smile
+  CheckCircle2, User, Smile, Crop, ZoomIn
 } from "lucide-react";
 import { getEnrichedProfile } from "@/lib/profile-utils";
 import { updateProfileSection, updateProfileSectionByDraftKey, fetchProfileSection, DRAFT_KEY_TO_SECTION } from "@/lib/profile-api";
 import { useProfileCompletion } from "@/hooks/useProfileCompletion";
 import { useUser } from "@/context/UserContext";
 import { API_URL } from "@/lib/config";
+import ImageCropModal from "@/components/common/ImageCropModal";
+import PhotoLightboxModal from "@/components/common/PhotoLightboxModal";
+import { applyWatermarkToImage } from "@/lib/watermark-utils";
 
 /* ──────────────────────────────────────────────────
    AUTH HELPERS  (parsed once, memoized via ref)
@@ -320,38 +323,48 @@ function PhotoManagerModal({
   const [photos, setPhotos] = useState<PhotoData[]>(initialPhotos);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [cropTarget, setCropTarget] = useState<{ id?: string; url: string } | null>(null);
+  const [zoomIndex, setZoomIndex] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => () => { abortRef.current?.abort(); }, []);
 
-  const handleFiles = useCallback((files: FileList | null) => {
+  const handleFiles = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setUploading(true);
-    const reads = Array.from(files).map(
-      (file) =>
-        new Promise<PhotoData>((resolve) => {
+    try {
+      const fileArray = Array.from(files);
+      const processed: PhotoData[] = [];
+
+      for (const file of fileArray) {
+        const rawBase64 = await new Promise<string>((resolve) => {
           const r = new FileReader();
-          r.onload = (e) =>
-            resolve({
-              id: `p_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-              dataUrl: e.target?.result as string,
-              isPrimary: false,
-            });
+          r.onload = (e) => resolve(e.target?.result as string);
           r.readAsDataURL(file);
-        })
-    );
-    Promise.all(reads).then((newPhotos) => {
+        });
+
+        // Apply automatic elegant watermark
+        const watermarked = await applyWatermarkToImage(rawBase64, "Malappuram Nikah");
+        processed.push({
+          id: `p_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+          dataUrl: watermarked,
+          isPrimary: false,
+        });
+      }
+
       setPhotos((prev) => {
-        const merged = [...prev, ...newPhotos];
-        // If no primary yet, set first as primary
+        const merged = [...prev, ...processed];
         if (!merged.some((p) => p.isPrimary) && merged.length > 0) {
           merged[0] = { ...merged[0], isPrimary: true };
         }
         return merged;
       });
+    } catch (err) {
+      console.error("Error processing photos:", err);
+    } finally {
       setUploading(false);
-    });
+    }
   }, []);
 
   const setPrimary = useCallback((id: string) => {
@@ -367,6 +380,27 @@ function PhotoManagerModal({
       return next;
     });
   }, []);
+
+  const handleCropSave = (croppedUrl: string) => {
+    if (!cropTarget) return;
+    if (cropTarget.id) {
+      // Update existing photo
+      setPhotos((prev) =>
+        prev.map((p) => (p.id === cropTarget.id ? { ...p, dataUrl: croppedUrl } : p))
+      );
+    } else {
+      // Add as new photo
+      setPhotos((prev) => {
+        const newPhoto: PhotoData = {
+          id: `p_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+          dataUrl: croppedUrl,
+          isPrimary: prev.length === 0,
+        };
+        return [...prev, newPhoto];
+      });
+    }
+    setCropTarget(null);
+  };
 
   const handleSave = useCallback(async () => {
     abortRef.current?.abort();
@@ -396,129 +430,178 @@ function PhotoManagerModal({
   }, [photos, onClose, onSaved, onAfterSave]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="absolute inset-0 bg-black/55 backdrop-blur-sm" onClick={onClose} />
-      <motion.div
-        initial={{ opacity: 0, y: "100%" }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: "100%" }}
-        transition={{ type: "spring", damping: 32, stiffness: 300 }}
-        className="relative bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col z-10"
-      >
-        <div className="flex justify-center pt-3 pb-1 sm:hidden">
-          <div className="w-10 h-1 bg-gray-200 rounded-full" />
-        </div>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-            <Camera className="w-4 h-4 text-brand-600" />
-            Manage Photos
-          </h2>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+    <>
+      {cropTarget && (
+        <ImageCropModal
+          imageSrc={cropTarget.url}
+          onCropComplete={handleCropSave}
+          onCancel={() => setCropTarget(null)}
+        />
+      )}
 
-        <div className="overflow-y-auto p-5 flex-1 space-y-4">
-          {/* Upload area */}
-          <label className="flex flex-col items-center gap-2 border-2 border-dashed border-brand-200 hover:border-brand-400 rounded-2xl p-6 cursor-pointer transition-all bg-brand-50/20 hover:bg-brand-50 group">
-            {uploading ? (
-              <Loader2 className="w-7 h-7 animate-spin text-brand-500" />
+      {zoomIndex !== null && (
+        <PhotoLightboxModal
+          photos={photos.map((p) => p.dataUrl)}
+          initialIndex={zoomIndex}
+          userName="My Photos"
+          onClose={() => setZoomIndex(null)}
+        />
+      )}
+
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div className="absolute inset-0 bg-black/55 backdrop-blur-sm" onClick={onClose} />
+        <motion.div
+          initial={{ opacity: 0, y: "100%" }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: "100%" }}
+          transition={{ type: "spring", damping: 32, stiffness: 300 }}
+          className="relative bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col z-10"
+        >
+          <div className="flex justify-center pt-3 pb-1 sm:hidden">
+            <div className="w-10 h-1 bg-gray-200 rounded-full" />
+          </div>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+              <Camera className="w-4 h-4 text-brand-600" />
+              Manage Photos
+            </h2>
+            <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="overflow-y-auto p-5 flex-1 space-y-4">
+            {/* Upload area */}
+            <label className="flex flex-col items-center gap-2 border-2 border-dashed border-brand-200 hover:border-brand-400 rounded-2xl p-6 cursor-pointer transition-all bg-brand-50/20 hover:bg-brand-50 group">
+              {uploading ? (
+                <Loader2 className="w-7 h-7 animate-spin text-brand-500" />
+              ) : (
+                <div className="w-12 h-12 bg-brand-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Upload className="w-5 h-5 text-brand-600" />
+                </div>
+              )}
+              <div className="text-center">
+                <p className="text-sm font-bold text-gray-700">Click to upload photos</p>
+                <p className="text-xs text-gray-400 mt-0.5">Auto-watermarked · JPG or PNG</p>
+              </div>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                multiple
+                hidden
+                onChange={(e) => handleFiles(e.target.files)}
+              />
+            </label>
+
+            {/* Grid */}
+            {photos.length === 0 ? (
+              <div className="text-center py-10">
+                <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Camera className="w-6 h-6 text-gray-300" />
+                </div>
+                <p className="text-sm text-gray-400">No photos yet. Upload above.</p>
+              </div>
             ) : (
-              <div className="w-12 h-12 bg-brand-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Upload className="w-5 h-5 text-brand-600" />
-              </div>
-            )}
-            <div className="text-center">
-              <p className="text-sm font-bold text-gray-700">Click to upload photos</p>
-              <p className="text-xs text-gray-400 mt-0.5">JPG or PNG · multiple allowed</p>
-            </div>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              multiple
-              hidden
-              onChange={(e) => handleFiles(e.target.files)}
-            />
-          </label>
-
-          {/* Grid */}
-          {photos.length === 0 ? (
-            <div className="text-center py-10">
-              <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Camera className="w-6 h-6 text-gray-300" />
-              </div>
-              <p className="text-sm text-gray-400">No photos yet. Upload above.</p>
-            </div>
-          ) : (
-            <>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                {photos.length} photo{photos.length !== 1 ? "s" : ""} — hover to manage
-              </p>
-              <div className="grid grid-cols-3 gap-2.5">
-                <AnimatePresence>
-                  {photos.map((p) => (
-                    <motion.div
-                      key={p.id}
-                      layout
-                      initial={{ opacity: 0, scale: 0.85 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.85 }}
-                      className="relative group aspect-square rounded-xl overflow-hidden border-2 border-transparent hover:border-brand-300 transition-all"
-                    >
-                      <img src={p.dataUrl} alt="" className="w-full h-full object-cover" />
-                      {p.isPrimary && (
-                        <div className="absolute top-1.5 left-1.5 bg-brand-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow">
-                          PRIMARY
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-2 gap-2">
-                        {!p.isPrimary && (
+              <>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                  {photos.length} photo{photos.length !== 1 ? "s" : ""} — hover to manage / crop / zoom
+                </p>
+                <div className="grid grid-cols-3 gap-2.5">
+                  <AnimatePresence>
+                    {photos.map((p, i) => (
+                      <motion.div
+                        key={p.id}
+                        layout
+                        initial={{ opacity: 0, scale: 0.85 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.85 }}
+                        className="relative group aspect-square rounded-xl overflow-hidden border-2 border-transparent hover:border-brand-300 transition-all cursor-pointer shadow-xs"
+                      >
+                        <img src={p.dataUrl} alt="" className="w-full h-full object-cover" />
+                        {p.isPrimary && (
+                          <div className="absolute top-1.5 left-1.5 bg-brand-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow z-10">
+                            PRIMARY
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-2 gap-1.5 z-10">
                           <button
-                            onClick={() => setPrimary(p.id)}
-                            title="Set as primary"
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setZoomIndex(i);
+                            }}
+                            title="Zoom Fullscreen"
                             className="p-1.5 bg-white/95 rounded-full shadow hover:scale-110 transition-transform"
                           >
-                            <Star className="w-3.5 h-3.5 text-amber-500" />
+                            <ZoomIn className="w-3.5 h-3.5 text-gray-800" />
                           </button>
-                        )}
-                        <button
-                          onClick={() => remove(p.id)}
-                          title="Delete"
-                          className="p-1.5 bg-white/95 rounded-full shadow hover:scale-110 transition-transform"
-                        >
-                          <Trash2 className="w-3.5 h-3.5 text-red-500" />
-                        </button>
-                      </div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
-            </>
-          )}
-        </div>
-
-        <div className="px-5 py-4 border-t border-gray-100 flex gap-3 bg-white">
-          <button
-            onClick={onClose}
-            className="flex-1 py-3 rounded-xl text-sm font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex-1 py-3 rounded-xl text-sm font-bold bg-brand-600 hover:bg-brand-700 text-white transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
-          >
-            {saving ? (
-              <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
-            ) : (
-              <><Check className="w-4 h-4" /> Save Photos ({photos.length})</>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCropTarget({ id: p.id, url: p.dataUrl });
+                            }}
+                            title="Crop & Adjust"
+                            className="p-1.5 bg-white/95 rounded-full shadow hover:scale-110 transition-transform"
+                          >
+                            <Crop className="w-3.5 h-3.5 text-brand-600" />
+                          </button>
+                          {!p.isPrimary && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPrimary(p.id);
+                              }}
+                              title="Set as primary"
+                              className="p-1.5 bg-white/95 rounded-full shadow hover:scale-110 transition-transform"
+                            >
+                              <Star className="w-3.5 h-3.5 text-amber-500" />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              remove(p.id);
+                            }}
+                            title="Delete"
+                            className="p-1.5 bg-white/95 rounded-full shadow hover:scale-110 transition-transform"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                          </button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </>
             )}
-          </button>
-        </div>
-      </motion.div>
-    </div>
+          </div>
+
+          <div className="px-5 py-4 border-t border-gray-100 flex gap-3 bg-white">
+            <button
+              onClick={onClose}
+              className="flex-1 py-3 rounded-xl text-sm font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex-1 py-3 rounded-xl text-sm font-bold bg-brand-600 hover:bg-brand-700 text-white transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+            >
+              {saving ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
+              ) : (
+                <><Check className="w-4 h-4" /> Save Photos ({photos.length})</>
+              )}
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    </>
   );
 }
 
@@ -882,7 +965,11 @@ export default function MyProfilePage() {
           <div className="md:col-span-1 space-y-4 md:sticky md:top-6">
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
               {/* Main photo */}
-              <div className="relative h-72 bg-gray-100 overflow-hidden">
+              <div
+                onClick={() => setPhotoModal(true)}
+                className="relative h-72 bg-gray-100 overflow-hidden cursor-pointer group"
+                title="Click to edit / add photos"
+              >
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={activePhoto ?? "placeholder"}
@@ -893,7 +980,7 @@ export default function MyProfilePage() {
                     className="absolute inset-0"
                   >
                     {activePhoto ? (
-                      <img src={activePhoto} alt="" className="w-full h-full object-cover" />
+                      <img src={activePhoto} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-[#026d77]/10 via-[#026d77]/20 to-[#026d77]/35 flex flex-col items-center justify-center p-6 text-center">
                         <img src="/logoMain-01.svg" alt="MN Logo" className="w-20 h-20 object-contain opacity-55 mb-2" />
@@ -905,24 +992,35 @@ export default function MyProfilePage() {
 
                 <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent pointer-events-none" />
 
+                {/* Hover overlay hint */}
+                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                  <div className="bg-white/95 backdrop-blur-sm text-gray-800 text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5">
+                    <Camera className="w-4 h-4 text-brand-600" />
+                    <span>Change Photo</span>
+                  </div>
+                </div>
+
                 {/* Verified badge */}
                 {isVerified && (
-                  <div className="absolute top-3 right-3 bg-blue-600/90 text-white text-[9px] font-bold px-2 py-1 rounded-full backdrop-blur-sm flex items-center gap-1 shadow">
+                  <div className="absolute top-3 right-3 bg-blue-600/90 text-white text-[9px] font-bold px-2 py-1 rounded-full backdrop-blur-sm flex items-center gap-1 shadow z-10">
                     <ShieldCheck className="w-3 h-3" /> Verified
                   </div>
                 )}
 
                 {/* Manage photos */}
                 <button
-                  onClick={() => setPhotoModal(true)}
-                  className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-white/90 backdrop-blur-sm text-gray-800 text-[11px] font-bold px-2.5 py-1.5 rounded-full shadow hover:bg-white transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPhotoModal(true);
+                  }}
+                  className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-white/90 backdrop-blur-sm text-gray-800 text-[11px] font-bold px-2.5 py-1.5 rounded-full shadow hover:bg-white transition-colors z-10"
                 >
                   <Camera className="w-3.5 h-3.5 text-brand-600" />
                   {photos.length > 0 ? `${photos.length} Photos` : "Add Photo"}
                 </button>
 
                 {/* Name */}
-                <div className="absolute bottom-10 left-4 right-28">
+                <div className="absolute bottom-10 left-4 right-28 pointer-events-none z-10">
                   <h1 className="text-xl font-bold text-white drop-shadow leading-tight">
                     {profile.name}
                   </h1>

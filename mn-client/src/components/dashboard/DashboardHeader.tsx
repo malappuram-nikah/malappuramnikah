@@ -32,6 +32,7 @@ import { handleSignOut } from "@/lib/auth";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
 import { Photo } from "@/types";
+import { soundEffects } from "@/lib/sound-effects";
 
 interface Notification {
   id: number;
@@ -120,6 +121,7 @@ export default function DashboardHeader() {
 
           // Realtime incoming notifications alert handler
           socket.on("notification", () => {
+            soundEffects.playNotificationSound();
             fetchNotificationsList(storedToken);
           });
 

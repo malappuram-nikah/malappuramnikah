@@ -692,7 +692,15 @@ export default function SettingsPage() {
                   {[
                     { label: "First Name",    value: firstName,   onChange: setFirstName,   placeholder: "Your first name", type: "text" },
                     { label: "Last Name",     value: lastName,    onChange: setLastName,    placeholder: "Your last name", type: "text" },
-                    { label: "Mobile Number", value: mobile,      onChange: setMobile,      placeholder: "+91 98765 43210", type: "text" },
+                    { 
+                      label: "Registered Mobile Number", 
+                      value: mobile,      
+                      onChange: () => {}, 
+                      placeholder: "+91 98765 43210", 
+                      type: "text", 
+                      disabled: true,
+                      helper: "🔒 Verified registered mobile number cannot be modified. Contact support to change."
+                    },
                     { label: "Location",      value: location,    onChange: setLocation,    placeholder: "Select Location", type: "select", options: LOCATIONS },
                     { label: "Age",           value: age,         onChange: setAge,         placeholder: "e.g. 24", type: "number" },
                     { label: "Community",     value: community,   onChange: setCommunity,   placeholder: "e.g. Sunni", type: "text" },
@@ -702,7 +710,14 @@ export default function SettingsPage() {
                     { label: "Quran Reading Habits", value: quranReading, onChange: setQuranReading, placeholder: "Select Quran Reading Habits", type: "select", options: ["Daily", "Weekly", "Occasionally", "Rarely"] },
                   ].map((f, i) => (
                     <div key={i}>
-                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">{f.label}</label>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">{f.label}</label>
+                        {f.disabled && (
+                          <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                            <Lock className="w-2.5 h-2.5" /> Locked
+                          </span>
+                        )}
+                      </div>
                       {f.type === "select" ? (
                         <select
                           value={f.value}
@@ -720,10 +735,18 @@ export default function SettingsPage() {
                           value={f.value}
                           onChange={(e) => f.onChange(e.target.value)}
                           placeholder={f.placeholder}
+                          disabled={f.disabled}
                           min={f.type === "number" ? "18" : undefined}
                           max={f.type === "number" ? "100" : undefined}
-                          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-medium text-gray-800"
+                          className={`w-full px-4 py-3 rounded-xl border text-sm transition-all font-medium ${
+                            f.disabled
+                              ? "bg-gray-100/75 border-gray-200 text-gray-500 cursor-not-allowed select-none"
+                              : "border-gray-200 text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+                          }`}
                         />
+                      )}
+                      {f.helper && (
+                        <p className="text-[11px] text-gray-400 mt-1 font-medium leading-tight">{f.helper}</p>
                       )}
                     </div>
                   ))}

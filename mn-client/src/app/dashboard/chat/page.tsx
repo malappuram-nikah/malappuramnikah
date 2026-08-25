@@ -8,6 +8,7 @@ import { io, Socket } from "socket.io-client";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { API_URL } from "@/lib/config";
+import { soundEffects } from "@/lib/sound-effects";
 
 interface PeerProfile {
   id: number;
@@ -79,6 +80,10 @@ export default function ChatPage() {
 
           // Handle real-time private messages
           socket.on("private_message", (msg: Message) => {
+            if (msg.sender_id !== payload.userId) {
+              soundEffects.playMessageSound();
+            }
+
             setMessages((prev) => {
               // Append only if the message belongs to current selected peer session
               const currentPeer = selectedPeerRef.current;

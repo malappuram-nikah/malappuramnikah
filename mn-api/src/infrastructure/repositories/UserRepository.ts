@@ -179,7 +179,7 @@ export class UserRepository implements IUserRepository {
             if (coreFields) {
                 if (coreFields.first_name !== undefined) dataToUpdate.first_name = coreFields.first_name;
                 if (coreFields.last_name !== undefined) dataToUpdate.last_name = coreFields.last_name;
-                if (coreFields.mobile_number !== undefined) dataToUpdate.mobile_number = coreFields.mobile_number;
+                // mobile_number is strictly protected from general profile updates
                 if (coreFields.location !== undefined) dataToUpdate.location = coreFields.location;
                 if (coreFields.dob !== undefined) dataToUpdate.dob = coreFields.dob;
                 if (coreFields.cast !== undefined) dataToUpdate.cast = coreFields.cast;

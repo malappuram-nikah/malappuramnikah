@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Heart, MessageCircle, Sparkles, Volume2, Video, ShieldCheck, Lock, ChevronLeft, ChevronRight, ExternalLink, Star, MoreVertical, Ban, Flag, TrendingUp } from "lucide-react";
+import { X, Heart, MessageCircle, Sparkles, Volume2, Video, ShieldCheck, Lock, ChevronLeft, ChevronRight, ExternalLink, Star, MoreVertical, Ban, Flag, TrendingUp, ZoomIn } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getEnrichedProfile } from "@/lib/profile-utils";
 import BiodataDownload from "./BiodataDownload";
 import { SlideOverSkeleton } from "./Skeleton";
 import { useProfileActions } from "@/hooks/useProfileActions";
 import { API_URL } from "@/lib/config";
+import PhotoLightboxModal from "@/components/common/PhotoLightboxModal";
 
 import { useUser } from "@/context/UserContext";
 import VerificationModal from "./VerificationModal";
@@ -49,6 +50,7 @@ export default function ProfileSlideOver({
   const [loading, setLoading] = useState(true);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [photos, setPhotos] = useState<string[]>([]);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -186,78 +188,105 @@ export default function ProfileSlideOver({
           transition={{ type: "spring", damping: 28, stiffness: 260 }}
           className="relative w-full max-w-md bg-white rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col z-10 max-h-[94vh] sm:max-h-[90vh] overflow-hidden"
         >
-          {/* ─── PHOTO CAROUSEL ─── */}
-          <div className="relative h-64 sm:h-72 bg-gray-100 flex-shrink-0 overflow-hidden rounded-t-2xl">
-            {/* Photo with animated slide */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={photoIndex}
-                initial={{ opacity: 0, x: 30 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -30 }}
-                transition={{ duration: 0.2 }}
-                className="absolute inset-0"
-              >
-                {currentPhoto ? (
-                  <img
-                    src={currentPhoto}
-                    alt=""
-                    className={`w-full h-full object-cover object-[center_20%] ${!canViewProfile ? "filter blur-[16px] scale-110 select-none" : ""}`}
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-[#026d77]/10 via-[#026d77]/20 to-[#026d77]/35 flex flex-col items-center justify-center p-6 text-center">
-                    <img src="/logoMain-01.svg" alt="MN Logo" className="w-20 h-20 object-contain opacity-55 mb-2" />
-                    <span className="text-[10px] font-bold text-[#026d77]/70 uppercase tracking-widest">Malappuram Nikah</span>
+          {/* ─── PHOTO CAROUSEL & LIGHTBOX TRIGGER ─── */}
+          <div className="relative bg-gray-900 flex-shrink-0 overflow-hidden rounded-t-2xl">
+            <div
+              onClick={() => {
+                if (canViewProfile && currentPhoto) setLightboxOpen(true);
+              }}
+              className={`relative h-64 sm:h-72 w-full overflow-hidden ${
+                canViewProfile && currentPhoto ? "cursor-pointer group" : ""
+              }`}
+              title={canViewProfile && currentPhoto ? "Click to view fullscreen & zoom" : ""}
+            >
+              {/* Photo with animated slide */}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={photoIndex}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute inset-0"
+                >
+                  {currentPhoto ? (
+                    <img
+                      src={currentPhoto}
+                      alt=""
+                      className={`w-full h-full object-cover object-[center_20%] group-hover:scale-105 transition-transform duration-500 ${
+                        !canViewProfile ? "filter blur-[16px] scale-110 select-none" : ""
+                      }`}
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-[#026d77]/10 via-[#026d77]/20 to-[#026d77]/35 flex flex-col items-center justify-center p-6 text-center">
+                      <img src="/logoMain-01.svg" alt="MN Logo" className="w-20 h-20 object-contain opacity-55 mb-2" />
+                      <span className="text-[10px] font-bold text-[#026d77]/70 uppercase tracking-widest">Malappuram Nikah</span>
+                    </div>
+                  )}
+                </motion.div>
+              </AnimatePresence>
+
+              {/* Blurred lock overlay */}
+              {!canViewProfile && (
+                <div className="absolute inset-0 bg-black/30 flex items-center justify-center z-10">
+                  <div className="bg-white/95 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm border border-white/30 flex items-center gap-2">
+                    <Lock className="w-3.5 h-3.5 text-brand-600" />
+                    <span className="text-[11px] font-bold text-gray-700">Connect mutually to view photos</span>
                   </div>
-                )}
-              </motion.div>
-            </AnimatePresence>
-
-            {/* Blurred lock overlay */}
-            {!canViewProfile && (
-              <div className="absolute inset-0 bg-black/10 flex items-center justify-center z-10">
-                <div className="bg-white/95 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm border border-white/30 flex items-center gap-2">
-                  <Lock className="w-3.5 h-3.5 text-brand-600" />
-                  <span className="text-[11px] font-bold text-gray-700">Connect mutually to view photos</span>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Prev / Next arrows – only if multiple photos and connected */}
+              {/* Zoom hint overlay on hover */}
+              {canViewProfile && currentPhoto && (
+                <div className="absolute bottom-3 right-3 z-20 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow">
+                  <ZoomIn className="w-3 h-3" />
+                  <span>Click to zoom</span>
+                </div>
+              )}
+
+              {/* Prev / Next arrows */}
+              {photos.length > 1 && canViewProfile && (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      prevPhoto();
+                    }}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-1.5 bg-black/40 hover:bg-black/70 backdrop-blur-sm rounded-full text-white transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      nextPhoto();
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-1.5 bg-black/40 hover:bg-black/70 backdrop-blur-sm rounded-full text-white transition-colors"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Multiple Photos Thumbnail Strip */}
             {photos.length > 1 && canViewProfile && (
-              <>
-                <button
-                  onClick={prevPhoto}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-1.5 bg-black/35 hover:bg-black/55 backdrop-blur-sm rounded-full text-white transition-colors"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={nextPhoto}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-1.5 bg-black/35 hover:bg-black/55 backdrop-blur-sm rounded-full text-white transition-colors"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </>
-            )}
-
-            {/* Dot indicators */}
-            {photos.length > 1 && (
-              <div className="absolute bottom-[52px] left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
-                {photos.map((_, i) => (
+              <div className="px-4 py-2 bg-gray-900/90 border-t border-white/10 flex items-center gap-2 overflow-x-auto">
+                {photos.map((p, i) => (
                   <button
                     key={i}
                     onClick={() => setPhotoIndex(i)}
-                    className={`rounded-full transition-all ${
-                      i === photoIndex ? "w-5 h-1.5 bg-white" : "w-1.5 h-1.5 bg-white/50"
+                    className={`w-11 h-11 rounded-lg overflow-hidden border-2 transition-all shrink-0 ${
+                      i === photoIndex
+                        ? "border-brand-500 scale-105 shadow-md"
+                        : "border-transparent opacity-50 hover:opacity-100"
                     }`}
-                  />
+                  >
+                    <img src={p} alt="" className="w-full h-full object-cover" />
+                  </button>
                 ))}
               </div>
             )}
-
-            {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent z-10 pointer-events-none" />
 
             {/* Overlay actions: Close | Favourite | More */}
             <div className="absolute top-3 right-3 z-30 flex items-center gap-1.5">
@@ -268,7 +297,7 @@ export default function ProfileSlideOver({
                   const result = await toggleFavourite(profile.id);
                   showToast(result === "FAVOURITED" ? "⭐ Added to favourites" : "Removed from favourites");
                 }}
-                className="p-1.5 bg-black/30 hover:bg-black/55 backdrop-blur-sm rounded-full text-white transition-colors"
+                className="p-1.5 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full text-white transition-colors"
                 title="Favourite"
               >
                 <Star className={`w-4 h-4 ${isFavourite(profile.id) ? "fill-amber-400 text-amber-400" : ""}`} />
@@ -278,7 +307,7 @@ export default function ProfileSlideOver({
               <div className="relative" ref={menuRef}>
                 <button
                   onClick={() => setMenuOpen((v) => !v)}
-                  className="p-1.5 bg-black/30 hover:bg-black/55 backdrop-blur-sm rounded-full text-white transition-colors"
+                  className="p-1.5 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full text-white transition-colors"
                   title="More actions"
                 >
                   <MoreVertical className="w-4 h-4" />
@@ -324,7 +353,7 @@ export default function ProfileSlideOver({
               {/* Close */}
               <button
                 onClick={onClose}
-                className="p-1.5 bg-black/30 hover:bg-black/50 backdrop-blur-sm rounded-full text-white transition-colors"
+                className="p-1.5 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full text-white transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -338,33 +367,35 @@ export default function ProfileSlideOver({
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="absolute bottom-16 left-1/2 -translate-x-1/2 z-30 bg-gray-900/90 text-white text-[11px] font-semibold px-3.5 py-1.5 rounded-full shadow-lg whitespace-nowrap"
+                  className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 bg-gray-900/90 text-white text-[11px] font-semibold px-3.5 py-1.5 rounded-full shadow-lg whitespace-nowrap"
                 >
                   {toast}
                 </motion.div>
               )}
             </AnimatePresence>
-
-            {/* Name / info overlay */}
-            <div className="absolute bottom-3 left-4 right-4 z-20">
-              <div className="flex items-end justify-between">
-                <div>
-                  <h2 className="text-lg font-bold text-white drop-shadow flex items-center gap-1.5">
-                    {profile.name}
-                    {(fullUser?.kyc_status || profile.kyc_status) === "VERIFIED" && (
-                      <ShieldCheck className="w-4 h-4 text-blue-400 fill-blue-900/40 shrink-0" />
-                    )}
-                  </h2>
-                  <p className="text-gray-200 text-xs mt-0.5 font-medium">
-                    {profile.age} yrs • {isMutual || (currentUser && profile ? currentUser.id === profile.id : false) ? profile.location : (profile.location?.split(",")[0] || "N/A")} • {profile.caste || profile.community}
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* ─── SCROLLABLE BODY ─── */}
           <div className="flex-1 overflow-y-auto scrollbar-thin">
+            {/* Clean Profile Header - Placed below photo */}
+            <div className="p-4 sm:p-5 pb-3 border-b border-gray-100 bg-white">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 flex items-center gap-1.5">
+                    {profile.name}
+                    {(fullUser?.kyc_status || profile.kyc_status) === "VERIFIED" && (
+                      <span title="ID Verified" className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-100">
+                        <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                        Verified
+                      </span>
+                    )}
+                  </h2>
+                  <p className="text-gray-500 text-xs mt-1 font-medium">
+                    {profile.age} yrs • {isMutual || (currentUser && profile ? currentUser.id === profile.id : false) ? profile.location : (profile.location?.split(",")[0] || "N/A")} • {profile.caste || profile.community || "Sunni"}
+                  </p>
+                </div>
+              </div>
+            </div>
             {loading ? (
               <div className="p-5">
                 <SlideOverSkeleton />
@@ -602,6 +633,15 @@ export default function ProfileSlideOver({
         onClose={() => setShowKycModal(false)}
         kycStatus={currentUser?.kyc_status}
       />
+
+      {lightboxOpen && photos.length > 0 && (
+        <PhotoLightboxModal
+          photos={photos}
+          initialIndex={photoIndex}
+          userName={profile.name}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
     </>
   );
 }
