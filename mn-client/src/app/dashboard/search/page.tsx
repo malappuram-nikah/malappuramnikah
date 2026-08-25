@@ -377,7 +377,7 @@ export default function SearchPage() {
                 return (
                   <div 
                     key={p.id} 
-                    onClick={() => setSelectedProfile(p)}
+                    onClick={() => router.push(`/dashboard/profile/${p.uuid || p.id}`)}
                     className="group relative h-[420px] rounded-xl border border-gray-200 overflow-hidden cursor-pointer hover:shadow-xl hover:border-brand-300 transition-all duration-300 flex flex-col justify-end"
                   >
                     {/* Image Background */}

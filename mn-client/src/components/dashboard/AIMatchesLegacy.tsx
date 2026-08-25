@@ -658,7 +658,7 @@ export default function AIMatchesLegacy() {
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.1 }}
-                    onClick={() => setSelectedProfile(profile)}
+                    onClick={() => router.push(`/dashboard/profile/${profile.uuid || profile.id}`)}
                     className="relative h-[440px] rounded-xl border border-gray-100 overflow-hidden hover:shadow-xl hover:border-brand-200 transition-all duration-300 group cursor-pointer flex flex-col justify-end"
                   >
                     {profile.img ? (
@@ -749,11 +749,11 @@ export default function AIMatchesLegacy() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedProfile(profile);
+                          router.push(`/dashboard/profile/${profile.uuid || profile.id}`);
                         }}
                         className="w-full py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1 shadow-md"
                       >
-                        <Info className="w-3.5 h-3.5" /> View Analysis & Connect
+                        <Info className="w-3.5 h-3.5" /> View Full Profile & Connect
                       </button>
                     </div>
                   </motion.div>
@@ -778,7 +778,7 @@ export default function AIMatchesLegacy() {
                     <div 
                       key={profile.id} 
                       className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer border border-transparent hover:border-gray-100"
-                      onClick={() => setSelectedProfile(profile)}
+                      onClick={() => router.push(`/dashboard/profile/${profile.uuid || profile.id}`)}
                     >
                       <div className="relative w-14 h-14 shrink-0 rounded-full overflow-hidden shadow-sm bg-gray-50">
                         {profile.img ? (
@@ -850,7 +850,7 @@ export default function AIMatchesLegacy() {
                     <div 
                       key={profile.id} 
                       className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer border border-transparent hover:border-gray-100"
-                      onClick={() => setSelectedProfile(profile)}
+                      onClick={() => router.push(`/dashboard/profile/${profile.uuid || profile.id}`)}
                     >
                       <div className="relative w-14 h-14 shrink-0 rounded-full overflow-hidden shadow-sm bg-gray-50 flex items-center justify-center">
                         {profile.img ? (

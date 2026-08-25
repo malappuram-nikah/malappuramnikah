@@ -323,7 +323,7 @@ export default function DashboardPage() {
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 + i * 0.07, type: "spring", stiffness: 85 }}
-                  onClick={() => setSelectedProfile(match)}
+                  onClick={() => router.push(`/dashboard/profile/${match.uuid || match.id}`)}
                   className="relative h-[420px] rounded-2xl overflow-hidden border border-gray-100 shadow-[0_4px_25px_-5px_rgba(0,0,0,0.03)] hover:shadow-[0_15px_30px_-5px_rgba(2,109,119,0.15)] hover:scale-[1.03] transition-all duration-300 group flex flex-col justify-end cursor-pointer"
                 >
                   {/* Image Background */}
