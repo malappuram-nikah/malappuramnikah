@@ -1,10 +1,18 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { DM_Sans } from "next/font/google";
 import "./globals.css";
+import "@/lib/safari-compat";
 import { Toaster } from "sonner";
 import AppProviders from "@/components/auth/AppProviders";
 
 const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-sans" });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: "#026d77",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.malappuramnikah.com"),

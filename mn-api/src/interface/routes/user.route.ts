@@ -486,7 +486,10 @@ user_route.get('/kyc/document/:fileName', async (req: Request, res: Response) =>
       return;
     }
 
-    const fileName = (Array.isArray(req.params.fileName) ? req.params.fileName[0] : req.params.fileName) as string;
+    let fileName = (Array.isArray(req.params.fileName) ? req.params.fileName[0] : req.params.fileName) as string;
+    if (fileName.includes("?")) {
+      fileName = fileName.split("?")[0];
+    }
 
     // If not verified admin, check ownership or admin rights in DB
     if (!isAdmin) {
@@ -519,6 +522,7 @@ user_route.get('/kyc/document/:fileName', async (req: Request, res: Response) =>
 
       res.setHeader("Content-Type", contentType);
       res.setHeader("Content-Disposition", `inline; filename="${fileName}"`);
+      res.setHeader("Cache-Control", "private, max-age=86400");
 
       const fileStream = fs.createReadStream(filePath);
       fileStream.pipe(res);
@@ -527,7 +531,8 @@ user_route.get('/kyc/document/:fileName', async (req: Request, res: Response) =>
 
     if (MediaStorageService.isCloudinaryConfigured) {
       const signedUrl = MediaStorageService.getPrivateMediaUrl(fileName);
-      res.redirect(signedUrl);
+      res.setHeader("Cache-Control", "private, max-age=3600");
+      res.redirect(302, signedUrl);
       return;
     }
 

@@ -1,5 +1,6 @@
 "use client";
 
+import "@/lib/safari-compat";
 import { Suspense } from "react";
 import { AuthProvider } from "@/context/AuthContext";
 

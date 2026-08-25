@@ -11,11 +11,21 @@ import { API_URL } from "@/lib/config";
 
 function resolveDocUrl(url: string | null): string {
   if (!url) return "";
+  const token = typeof window !== "undefined"
+    ? (localStorage.getItem("mn_admin_token") || localStorage.getItem("mn_token"))
+    : "";
+  let fullUrl = url;
   if (url.includes("localhost:")) {
     const relativePath = url.substring(url.indexOf("/user/kyc/document"));
-    return `${API_URL}${relativePath}`;
+    fullUrl = `${API_URL}${relativePath}`;
+  } else if (!url.startsWith("http")) {
+    const cleanPath = url.replace(/^\/?(api\/)?(user\/kyc\/document\/)?/, "");
+    fullUrl = `${API_URL}/user/kyc/document/${cleanPath}`;
   }
-  return url;
+  if (token && !fullUrl.includes("token=")) {
+    fullUrl += (fullUrl.includes("?") ? "&" : "?") + `token=${encodeURIComponent(token)}`;
+  }
+  return fullUrl;
 }
 
 const STATUS_OPTIONS = [
@@ -278,7 +288,9 @@ export default function AdminIdVerificationPage() {
                 <div className="border border-gray-100 rounded-xl overflow-hidden">
                   <table className="w-full text-left text-xs">
                     <thead>
-                      <tr className="bg-gray-50 text-gray-400 font-bold uppercase border-b border-gray-100">
+                      <tr className="bg-gray-50 text-gray-500 font-bold uppercase border-b border-gray-100">
+                        <th className="p-3">#</th>
+                        <th className="p-3">Member</th>
                         <th className="p-3">Profile ID</th>
                         <th className="p-3">Gender</th>
                         <th className="p-3">Document</th>
@@ -383,11 +395,12 @@ export default function AdminIdVerificationPage() {
                           Open Original ↗
                         </a>
                       </div>
-                      <div className="p-2 flex items-center justify-center bg-white min-h-[160px]">
+                      <div className="p-3 flex items-center justify-center bg-gray-50/50 min-h-[180px] relative">
                         <img
                           src={resolveDocUrl(selected.kyc_front_url)}
                           alt="Front ID Document"
-                          className="w-full max-h-52 object-contain rounded"
+                          className="w-full max-h-56 object-contain rounded bg-white shadow-xs border border-gray-150"
+                          loading="lazy"
                         />
                       </div>
                     </div>
@@ -405,11 +418,12 @@ export default function AdminIdVerificationPage() {
                           Open Original ↗
                         </a>
                       </div>
-                      <div className="p-2 flex items-center justify-center bg-white min-h-[160px]">
+                      <div className="p-3 flex items-center justify-center bg-gray-50/50 min-h-[180px] relative">
                         <img
                           src={resolveDocUrl(selected.kyc_back_url)}
                           alt="Back ID Document"
-                          className="w-full max-h-52 object-contain rounded"
+                          className="w-full max-h-56 object-contain rounded bg-white shadow-xs border border-gray-150"
+                          loading="lazy"
                         />
                       </div>
                     </div>

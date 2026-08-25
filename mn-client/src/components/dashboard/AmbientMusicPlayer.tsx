@@ -11,27 +11,22 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || `${API_URL}`;
 const DEFAULT_PLAYLIST = [
   {
     id: "track-1",
-    title: "Nikah Wedding Symphony",
-    url: "https://res.cloudinary.com/dq4xyiyzi/video/upload/v1783263413/malappuram_nikah/music/kvqcq9qcipfmrfunj7d2.mp3"
-  },
-  {
-    id: "track-2",
-    title: "Acoustic Ambient Harmony",
+    title: "Peaceful Nikah Ambient (Royalty Free)",
     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
   },
   {
-    id: "track-3",
-    title: "Peaceful Strings & Piano",
+    id: "track-2",
+    title: "Acoustic Harmony (Royalty Free)",
     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
   },
   {
-    id: "track-4",
-    title: "Calm Malabar Melodies",
+    id: "track-3",
+    title: "Calm Malabar Strings (Royalty Free)",
     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"
   },
   {
-    id: "track-5",
-    title: "Golden Sunrise Instrumental",
+    id: "track-4",
+    title: "Golden Sunrise Instrumental (Royalty Free)",
     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3"
   }
 ];

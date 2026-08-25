@@ -162,11 +162,20 @@ export class MediaStorageService {
 
   static getPrivateMediaUrl(fileName: string): string {
     if (hasCloudinary) {
-      const publicId = `malappuram_nikah/kyc/${path.parse(fileName).name}`;
+      let baseName = path.parse(fileName).name;
+      if (baseName.startsWith("http")) {
+        try {
+          baseName = path.parse(new URL(fileName).pathname).name;
+        } catch {}
+      }
+      const publicId = `malappuram_nikah/kyc/${baseName}`;
       const ext = path.extname(fileName).replace(".", "") || "jpg";
-      return cloudinary.utils.private_download_url(publicId, ext, {
-        expires_at: Math.floor(Date.now() / 1000) + 3600, // 1 hour
-        type: "authenticated"
+      return cloudinary.url(`${publicId}.${ext}`, {
+        type: "authenticated",
+        sign_url: true,
+        secure: true,
+        resource_type: "image",
+        expires_at: Math.floor(Date.now() / 1000) + 7200, // 2 hours
       });
     }
     return path.join(process.cwd(), "public", "uploads", "kyc", fileName);
