@@ -22,13 +22,8 @@ export class SendOtpUseCase {
       otp.expiresIn
     );
 
-    // If target is mobile and recipient email is also provided (or vice-versa), also register OTP under the alternate identifier
     const emailToUse = targetIdentifier.includes("@") ? targetIdentifier : recipientEmail;
     const phoneToUse = !targetIdentifier.includes("@") ? targetIdentifier : undefined;
-
-    if (emailToUse && emailToUse !== targetIdentifier) {
-      await this.otpRepository.saveOtp(otpCode, emailToUse, otp.expiresIn);
-    }
 
     // 1. Dispatch OTP via Email
     if (emailToUse) {
