@@ -18,7 +18,7 @@ export function getAccountBlockForUser(user: {
     };
   }
 
-  if (user.status === "in_active" && user.last_login) {
+  if (user.status === "deactivated") {
     return {
       code: "ACCOUNT_DEACTIVATED",
       message: "Your account has been deactivated. Please contact support if you believe this is a mistake.",

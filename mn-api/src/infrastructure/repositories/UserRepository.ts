@@ -228,9 +228,17 @@ export class UserRepository implements IUserRepository {
 
     async updateLastLogin(id: number): Promise<void> {
         try {
+            const user = await prisma.user.findUnique({
+                where: { id },
+                select: { status: true }
+            });
+            const dataToUpdate: any = { last_login: new Date() };
+            if (user?.status === "in_active") {
+                dataToUpdate.status = "active";
+            }
             await prisma.user.update({
                 where: { id },
-                data: { last_login: new Date() }
+                data: dataToUpdate
             });
         } catch (error) {
             console.error('Error updating last login:', error);

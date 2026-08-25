@@ -22,18 +22,39 @@ export class SendOtpUseCase {
       otp.expiresIn
     );
 
-    // 1. Dispatch OTP via Nodemailer Email (Primary OTP Channel)
+    // If target is mobile and recipient email is also provided (or vice-versa), also register OTP under the alternate identifier
     const emailToUse = targetIdentifier.includes("@") ? targetIdentifier : recipientEmail;
-    if (emailToUse) {
-      await EmailOtpService.sendOtp(emailToUse, otpCode, recipientName);
-    } else {
-      console.warn(`[OTP WARNING] Email address missing for target ${targetIdentifier}. Unable to deliver Email OTP.`);
+    const phoneToUse = !targetIdentifier.includes("@") ? targetIdentifier : undefined;
+
+    if (emailToUse && emailToUse !== targetIdentifier) {
+      await this.otpRepository.saveOtp(otpCode, emailToUse, otp.expiresIn);
     }
 
-    // 2. WhatsApp / SMS OTP is currently disabled per configuration. Email OTP is primary.
-    // if (!targetIdentifier.includes("@")) {
-    //   await WhatsappOtpService.sendOtp(targetIdentifier, otpCode);
-    // }
+    // 1. Dispatch OTP via Email
+    if (emailToUse) {
+      try {
+        await EmailOtpService.sendOtp(emailToUse, otpCode, recipientName);
+      } catch (err) {
+        console.error(`[EMAIL OTP ERROR] Failed to send to ${emailToUse}:`, err);
+      }
+    }
+
+    // 2. Dispatch OTP via WhatsApp (if mobile is available and credentials are configured)
+    if (phoneToUse) {
+      const hasWaConfig = !!(
+        process.env.META_WA_ACCESS_TOKEN ||
+        process.env.WHATSAPP_TOKEN ||
+        process.env.MSG91_AUTH_KEY ||
+        process.env.ULTRAMSG_TOKEN
+      );
+      if (hasWaConfig) {
+        try {
+          await WhatsappOtpService.sendOtp(phoneToUse, otpCode);
+        } catch (err) {
+          console.error(`[WHATSAPP OTP ERROR] Failed to send to ${phoneToUse}:`, err);
+        }
+      }
+    }
 
     return otpCode;
   }

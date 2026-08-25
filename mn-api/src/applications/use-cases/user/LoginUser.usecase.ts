@@ -20,14 +20,6 @@ export class LoginUser {
       return { status: accountBlock.httpStatus, message: accountBlock.message, code: accountBlock.code };
     }
 
-    if (user.status === "in_active") {
-      return {
-        status: 403,
-        message: "Your account is not verified. Please complete OTP verification to activate your account.",
-        code: "ACCOUNT_UNVERIFIED",
-      };
-    }
-
     const isValidPassword = await this.userRepository.validatePassword(data.password, user.password);
     if (!isValidPassword) {
       return { status: 401, message: 'Incorrect password' };

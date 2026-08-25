@@ -20,7 +20,7 @@ model User {
   mobile_number  String    @unique 
   password       String
   dob            String
-  status         String    @default("in_active")
+  status         String    @default("active")
   is_premium     Boolean   @default(false)
   is_new_user    Boolean   @default(true)
   last_login     DateTime?
