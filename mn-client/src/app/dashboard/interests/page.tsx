@@ -66,16 +66,23 @@ export default function InterestsPage() {
 
   const mapUser = (u: any, idx: number) => {
     if (!u) return null;
+    const profileDetails = u.profile_details || {};
+    const professional = profileDetails.mn_professional_info_draft || {};
+    const basic = profileDetails.mn_basic_details_draft || {};
     return {
       id: u.id,
       uuid: u.uuid || String(u.id),
-      name: `${u.first_name} ${u.last_name}`,
+      mnId: (u as any).mn_id || (u.id ? `MN-${100000 + u.id}` : "MN-ID"),
+      name: `${u.first_name || ""} ${u.last_name || ""}`.trim() || "Member",
       age: u.dob ? Math.floor((new Date().getTime() - new Date(u.dob).getTime()) / 31557600000) : 25,
-      location: u.location || "Kerala",
+      location: basic.presentLocation || u.location || "Kerala",
       img: resolveAvatar(u, idx),
       caste: u.cast || "Sunni",
       gender: u.gender,
+      education: professional.education || "Not specified",
+      profession: professional.profession || "Not specified",
       interest_status: u.interest_status || "PENDING",
+      is_online: Boolean(u.is_online),
       viewed_at: u.viewed_at || null
     };
   };
@@ -335,7 +342,7 @@ export default function InterestsPage() {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"
+          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6"
         >
           {activeList.map((p, idx) => {
             const isMatched = p.interest_status === "ACCEPTED";
@@ -343,71 +350,102 @@ export default function InterestsPage() {
             return (
               <motion.div
                 key={p.id}
-                initial={{ opacity: 0, scale: 0.95 }}
+                initial={{ opacity: 0, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: idx * 0.05 }}
+                transition={{ delay: idx * 0.04 }}
                 onClick={() => router.push(`/dashboard/profile/${p.uuid || p.id}`)}
-                className="bg-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-lg hover:shadow-brand-900/5 hover:border-brand-100 transition-all duration-300 flex flex-col cursor-pointer group"
+                className="bg-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-xl hover:shadow-brand-900/10 hover:border-brand-200 transition-all duration-300 flex flex-col cursor-pointer group select-none"
               >
-                {/* Profile Card Header with Photo */}
-                <div className="h-44 relative bg-gray-50 overflow-hidden">
+                {/* Profile Card Header with Portrait Photo (aspect-[4/5]) */}
+                <div className="relative aspect-[4/5] w-full bg-gray-900 overflow-hidden">
                   {p.img ? (
                     <img
                       src={p.img}
                       alt={p.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-[#026d77]/10 to-[#026d77]/25 flex flex-col items-center justify-center p-4">
-                      <img src="/logoMain-01.svg" alt="MN Logo" className="w-16 h-16 object-contain opacity-60 mb-1" />
-                      <span className="text-[10px] font-semibold text-[#026d77]/60 tracking-wider">Malappuram Nikah</span>
+                    <div className="w-full h-full bg-gradient-to-br from-[#026d77]/20 to-[#026d77]/40 flex flex-col items-center justify-center p-4">
+                      <img src="/logoMain-01.svg" alt="MN Logo" className="w-20 h-20 object-contain opacity-70 mb-2" />
+                      <span className="text-xs font-bold text-white/80 tracking-wider">Malappuram Nikah</span>
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/10 to-transparent" />
-                  <div className="absolute bottom-3 left-4 right-4 text-white">
-                    <h3 className="font-bold text-sm truncate group-hover:text-brand-200 transition-colors">{p.name}</h3>
-                    <p className="text-[10px] text-gray-200 mt-0.5">{p.age} yrs • {p.location}</p>
-                  </div>
-                  {isMatched && (
-                    <span className="absolute top-3 right-3 bg-pink-600 text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1">
-                      <Check className="w-2.5 h-2.5" /> Accepted
+
+                  {/* Top Badges */}
+                  <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none z-10">
+                    <span className="bg-black/50 backdrop-blur-md text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border border-white/20 shadow-sm">
+                      {p.mnId}
                     </span>
-                  )}
+                    {isMatched ? (
+                      <span className="bg-pink-600/90 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+                        <Check className="w-3 h-3" /> Connected
+                      </span>
+                    ) : (
+                      <span className="bg-emerald-600/90 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                        Verified ID
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Bottom Vignette Gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none" />
+
+                  {/* Overlay Name & Age & Location */}
+                  <div className="absolute bottom-3 left-3 right-3 text-white pointer-events-none z-10">
+                    <h3 className="font-bold text-base truncate flex items-center gap-1.5 group-hover:text-brand-200 transition-colors">
+                      {p.name}
+                      {p.is_online && (
+                        <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse shrink-0" title="Online now" />
+                      )}
+                    </h3>
+                    <p className="text-xs text-gray-200 mt-0.5 font-medium truncate">
+                      {p.age} yrs • {p.caste || "Muslim"} • {p.location}
+                    </p>
+                  </div>
                 </div>
 
                 {/* Card Details & Actions */}
-                <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
-                  <div className="text-[11px] text-gray-500 font-medium flex items-center justify-between">
-                    <span>Community: <strong className="text-gray-800 font-semibold">{p.caste}</strong></span>
-                    <span className="text-brand-600 bg-brand-50 px-2 py-0.5 rounded-md font-semibold">Verified</span>
+                <div className="p-3.5 flex-1 flex flex-col justify-between space-y-3 bg-white">
+                  <div className="grid grid-cols-2 gap-2 text-[11px] bg-gray-50/80 p-2.5 rounded-xl border border-gray-150">
+                    <div className="flex flex-col truncate">
+                      <span className="text-[10px] text-gray-400 font-medium">Profession</span>
+                      <span className="font-semibold text-gray-800 truncate">{p.profession || "Not specified"}</span>
+                    </div>
+                    <div className="flex flex-col truncate">
+                      <span className="text-[10px] text-gray-400 font-medium">Education</span>
+                      <span className="font-semibold text-gray-800 truncate">{p.education || "Not specified"}</span>
+                    </div>
                   </div>
 
-                  <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex gap-2 pt-0.5" onClick={(e) => e.stopPropagation()}>
                     {/* Actions */}
                     {isMatched ? (
                       <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           router.push("/dashboard/chat");
                         }}
-                        className="w-full py-2.5 bg-brand-600 text-white hover:bg-brand-700 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.98] cursor-pointer"
+                        className="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.98] cursor-pointer"
                       >
-                        <Unlock className="w-3.5 h-3.5" /> Chat Now
+                        <MessageCircle className="w-3.5 h-3.5" /> Start Chat
                       </button>
                     ) : (
                       <>
                         {activeTab === "received" && (
                           <>
                             <button
+                              type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleAction(p.id, `Match established with ${p.name}! 🎉`);
                               }}
-                              className="flex-1 py-2.5 bg-brand-600 text-white hover:bg-brand-700 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-[0.98] cursor-pointer"
+                              className="flex-1 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.98] cursor-pointer"
                             >
                               <Check className="w-3.5 h-3.5" /> Accept
                             </button>
                             <button
+                              type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleAction(p.id, `Interest request from ${p.name} declined.`);
@@ -421,11 +459,12 @@ export default function InterestsPage() {
 
                         {activeTab === "sent" && (
                           <button
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleAction(p.id, `Withdrew interest for ${p.name}.`);
                             }}
-                            className="w-full py-2.5 bg-pink-50 text-pink-700 hover:bg-pink-100 hover:text-pink-800 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-[0.98] cursor-pointer"
+                            className="w-full py-2.5 bg-pink-50 text-pink-700 hover:bg-pink-100 hover:text-pink-800 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-[0.98] cursor-pointer border border-pink-100"
                           >
                             <X className="w-3.5 h-3.5" /> Withdraw Request
                           </button>
@@ -434,23 +473,25 @@ export default function InterestsPage() {
                         {(activeTab === "viewed_me" || activeTab === "visited") && (
                           <div className="flex w-full gap-2">
                             <button
+                              type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 router.push(`/dashboard/profile/${p.uuid || p.id}`);
                               }}
-                              className="flex-1 py-2.5 bg-brand-600 text-white hover:bg-brand-700 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                              className="flex-1 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
                             >
                               View Profile
                             </button>
                             <button
+                              type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleAction(p.id, `Expressed interest in ${p.name}!`);
                               }}
-                              className="px-3 py-2.5 bg-brand-50 text-brand-700 hover:bg-brand-100 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer"
+                              className="px-3.5 py-2.5 bg-pink-50 text-pink-700 hover:bg-pink-100 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer border border-pink-100"
                               title="Express Interest"
                             >
-                              <Heart className="w-3.5 h-3.5 text-brand-600 fill-brand-600" />
+                              <Heart className="w-4 h-4 text-pink-600 fill-pink-600" />
                             </button>
                           </div>
                         )}
