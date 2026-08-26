@@ -76,21 +76,20 @@ export default function DashboardSidebar() {
         collapsed ? "w-20" : "w-64"
       )}>
         {/* Logo */}
-        <div className="flex items-center justify-between px-5 py-5">
-          {!collapsed && (
-            <div
-              onClick={() => navigateTo("/dashboard")}
-              className="cursor-pointer block"
-            >
-              <Image
-                src="/logoMain-01.svg"
-                alt="Malappuram Nikah"
-                width={110}
-                height={55}
-                className="h-10 w-auto object-contain pointer-events-none"
-              />
-            </div>
-          )}
+        <div className={cn("flex items-center py-5", collapsed ? "flex-col gap-3 px-2 justify-center" : "justify-between px-5")}>
+          <div
+            onClick={() => navigateTo("/dashboard")}
+            className="cursor-pointer block"
+            title="Go to Dashboard"
+          >
+            <Image
+              src="/logoMain-01.svg"
+              alt="Malappuram Nikah"
+              width={collapsed ? 36 : 110}
+              height={collapsed ? 36 : 55}
+              className={cn("object-contain pointer-events-none transition-all", collapsed ? "h-8 w-8" : "h-10 w-auto")}
+            />
+          </div>
           <button
             type="button"
             onClick={() => setCollapsed(!collapsed)}
