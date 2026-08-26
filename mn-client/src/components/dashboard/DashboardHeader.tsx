@@ -361,12 +361,17 @@ export default function DashboardHeader() {
                       <div className="space-y-3">
                         {/* Profile Details */}
                         <div>
-                          <h2 className="text-base font-bold text-gray-900 font-playfair">
-                            {user
-                              ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
-                              : "My Profile"}
-                          </h2>
-                          <p className="text-[11px] text-gray-500">
+                          <div className="flex items-center justify-between gap-2">
+                            <h2 className="text-base font-bold text-gray-900 font-playfair truncate">
+                              {user
+                                ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
+                                : "My Profile"}
+                            </h2>
+                            <span className="shrink-0 bg-brand-50 text-brand-700 font-mono font-bold text-[10px] px-2 py-0.5 rounded-md border border-brand-200 shadow-xs">
+                              {(user as any)?.mn_id || (user?.id ? `MN-${100000 + user.id}` : "MN-ID")}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-gray-500 mt-0.5">
                             {user?.mobile_number || ""}
                           </p>
                         </div>
