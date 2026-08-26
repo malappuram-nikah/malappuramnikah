@@ -64,9 +64,51 @@ if (typeof window !== "undefined") {
     } catch {}
   }
 
-  // 5. AudioContext WebKit Prefix Guard (iOS Safari < 14.5)
-  if (typeof window.AudioContext === "undefined" && typeof (window as any).webkitAudioContext !== "undefined") {
-    window.AudioContext = (window as any).webkitAudioContext;
+  // 6. Polyfill String.prototype.replaceAll (Safari < 14.1)
+  if (!(String.prototype as any).replaceAll) {
+    (String.prototype as any).replaceAll = function (str: string | RegExp, newSubstr: any) {
+      if (Object.prototype.toString.call(str).toLowerCase() === "[object regexp]") {
+        return this.replace(str as RegExp, newSubstr);
+      }
+      return this.replace(new RegExp((str as string).replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&"), "g"), newSubstr);
+    };
+  }
+
+  // 7. Polyfill Object.hasOwn (Safari < 15.4)
+  if (!(Object as any).hasOwn) {
+    (Object as any).hasOwn = function (object: any, property: PropertyKey): boolean {
+      return Object.prototype.hasOwnProperty.call(object, property);
+    };
+  }
+
+  // 8. Polyfill Promise.allSettled (Safari < 13)
+  if (!(Promise as any).allSettled) {
+    (Promise as any).allSettled = function (promises: Iterable<any>) {
+      return Promise.all(
+        Array.from(promises).map((p) =>
+          Promise.resolve(p).then(
+            (value) => ({ status: "fulfilled" as const, value }),
+            (reason) => ({ status: "rejected" as const, reason })
+          )
+        )
+      );
+    };
+  }
+
+  // 9. Polyfill requestIdleCallback (Safari < 16.4)
+  if (typeof window.requestIdleCallback === "undefined") {
+    (window as any).requestIdleCallback = function (cb: (deadline: any) => void) {
+      const start = Date.now();
+      return setTimeout(() => {
+        cb({
+          didTimeout: false,
+          timeRemaining: () => Math.max(0, 50 - (Date.now() - start)),
+        });
+      }, 1);
+    };
+    (window as any).cancelIdleCallback = function (id: any) {
+      clearTimeout(id);
+    };
   }
 }
 

@@ -23,6 +23,7 @@ import {
   MessageCircle,
   ChevronDown,
   CheckCircle2,
+  Crop,
 } from "lucide-react";
 import { toast } from "sonner";
 import { io, Socket } from "socket.io-client";
@@ -33,6 +34,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
 import { Photo } from "@/types";
 import { soundEffects } from "@/lib/sound-effects";
+import ImageCropModal from "@/components/common/ImageCropModal";
+import { applyWatermarkToImage } from "@/lib/watermark-utils";
 
 interface Notification {
   id: number;
@@ -69,6 +72,7 @@ export default function DashboardHeader() {
   const [showPhotosModal, setShowPhotosModal] = useState(false);
   const [localPhotos, setLocalPhotos] = useState<Photo[]>([]);
   const [isSavingPhotos, setIsSavingPhotos] = useState(false);
+  const [cropTarget, setCropTarget] = useState<{ id?: string; url: string } | null>(null);
   const [mounted, setMounted] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -154,14 +158,16 @@ export default function DashboardHeader() {
   }
 
   const handleMarkAllRead = async () => {
+    const activeToken = localStorage.getItem("mn_token") || token;
     // Optimistically set all local notifications to is_read: true immediately
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    toast.success("All notifications marked as read");
 
-    if (!token) return;
+    if (!activeToken) return;
     try {
       await fetch(`${API_URL}/user/notifications/read-all`, {
         method: "PUT",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${activeToken}` },
       });
     } catch (err) {
       console.error("Failed to mark notifications as read:", err);
@@ -173,6 +179,7 @@ export default function DashboardHeader() {
   };
 
   const handleNotificationClick = async (notif: Notification) => {
+    const activeToken = localStorage.getItem("mn_token") || token;
     // 1. Optimistically mark read in local state immediately
     setNotifications((prev) =>
       prev.map((n) => (n.id === notif.id ? { ...n, is_read: true } : n)),
@@ -180,20 +187,29 @@ export default function DashboardHeader() {
     setShowDropdown(false);
 
     // 2. Dispatch DB update asynchronously in background
-    if (token) {
+    if (activeToken) {
       fetch(`${API_URL}/user/notifications/${notif.id}/read`, {
         method: "PUT",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${activeToken}` },
       }).catch((err) => console.error("Failed to mark notification read:", err));
     }
 
-    // Smart Redirect based on notification trigger type — delay 150ms to let drawer exit animation complete
-    const interestTypes = ["INTEREST_RECEIVED", "INTEREST_ACCEPTED", "INTEREST_WITHDRAWN", "MUTUAL_MATCH"];
+    // Smart Redirect based on notification trigger type
     setTimeout(() => {
       if (notif.type === "NEW_MESSAGE") {
         router.push("/dashboard/chat");
-      } else if (interestTypes.includes(notif.type)) {
-        router.push("/dashboard/interests");
+      } else if (notif.type === "INTEREST_RECEIVED" || notif.type.includes("RECEIVED")) {
+        router.push("/dashboard/interests?tab=received");
+      } else if (notif.type === "INTEREST_ACCEPTED" || notif.type === "MUTUAL_MATCH") {
+        router.push("/dashboard/interests?tab=mutual");
+      } else if (notif.type === "INTEREST_SENT" || notif.type === "INTEREST_WITHDRAWN") {
+        router.push("/dashboard/interests?tab=sent");
+      } else if (notif.type === "PROFILE_VIEW") {
+        router.push("/dashboard/interests?tab=viewed_me");
+      } else if (notif.type.startsWith("INTEREST")) {
+        router.push("/dashboard/interests?tab=received");
+      } else if (notif.type.startsWith("KYC_")) {
+        router.push("/dashboard/settings");
       } else {
         router.push("/dashboard/search");
       }
@@ -339,15 +355,16 @@ export default function DashboardHeader() {
                           <img
                             src={userPhotoUrl}
                             alt={userName}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform pointer-events-none"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                           />
                         ) : (
-                          <div className="w-full h-full bg-brand-50 p-2 flex items-center justify-center pointer-events-none">
+                          <div className="w-full h-full bg-brand-50 p-2 flex items-center justify-center">
                             <img src="/logoMain-01.svg" alt="MN Logo" className="w-full h-full object-contain opacity-80" />
                           </div>
                         )}
-                        <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[10px] text-white font-bold pointer-events-none">
-                          Edit
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-[9px] text-white font-bold">
+                          <Camera className="w-4 h-4 mb-0.5" />
+                          EDIT
                         </div>
                       </button>
                       {user?.kyc_status === "VERIFIED" && (
@@ -445,81 +462,86 @@ export default function DashboardHeader() {
                           </h3>
 
                           <button
+                            type="button"
                             onClick={() => {
                               setShowProfileDropdown(false);
                               router.push(`/dashboard/profile/${user?.uuid || user?.id}`);
                             }}
-                            className="w-full text-left px-3 py-2.5 text-xs font-bold text-gray-700 hover:bg-brand-50 hover:text-brand-700 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-brand-100 group cursor-pointer"
+                            className="w-full text-left px-3.5 py-3 text-xs font-bold text-gray-700 hover:bg-brand-50 hover:text-brand-700 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-brand-100 group cursor-pointer active:scale-[0.99]"
                           >
-                            <div className="flex items-center gap-2.5 pointer-events-none">
+                            <div className="flex items-center gap-2.5">
                               <Eye className="w-4 h-4 text-gray-400 group-hover:text-brand-600 transition-colors" />
                               <span>Preview Full Profile</span>
                             </div>
-                            <span className="text-gray-400 group-hover:text-brand-600 group-hover:translate-x-0.5 transition-all pointer-events-none">
+                            <span className="text-gray-400 group-hover:text-brand-600 group-hover:translate-x-1 transition-transform font-bold">
                               &rarr;
                             </span>
                           </button>
 
                           <button
+                            type="button"
                             onClick={() => {
                               setShowProfileDropdown(false);
                               setShowPhotosModal(true);
                             }}
-                            className="w-full text-left px-3 py-2.5 text-xs font-bold text-gray-700 hover:bg-brand-50 hover:text-brand-700 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-brand-100 group cursor-pointer"
+                            className="w-full text-left px-3.5 py-3 text-xs font-bold text-gray-700 hover:bg-brand-50 hover:text-brand-700 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-brand-100 group cursor-pointer active:scale-[0.99]"
                           >
-                            <div className="flex items-center gap-2.5 pointer-events-none">
+                            <div className="flex items-center gap-2.5">
                               <Camera className="w-4 h-4 text-gray-400 group-hover:text-brand-600 transition-colors" />
                               <span>Upload Multiple Photos</span>
                             </div>
-                            <span className="text-gray-400 group-hover:text-brand-600 group-hover:translate-x-0.5 transition-all pointer-events-none">
+                            <span className="text-gray-400 group-hover:text-brand-600 group-hover:translate-x-1 transition-transform font-bold">
                               &rarr;
                             </span>
                           </button>
 
                           <button
+                            type="button"
                             onClick={() => {
                               setShowProfileDropdown(false);
                               router.push("/dashboard/profile-builder");
                             }}
-                            className="w-full text-left px-3 py-2.5 text-xs font-bold text-gray-700 hover:bg-brand-50 hover:text-brand-700 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-brand-100 group cursor-pointer"
+                            className="w-full text-left px-3.5 py-3 text-xs font-bold text-gray-700 hover:bg-brand-50 hover:text-brand-700 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-brand-100 group cursor-pointer active:scale-[0.99]"
                           >
-                            <div className="flex items-center gap-2.5 pointer-events-none">
+                            <div className="flex items-center gap-2.5">
                               <User className="w-4 h-4 text-gray-400 group-hover:text-brand-600 transition-colors" />
                               <span>Edit Matrimony Profile</span>
                             </div>
-                            <span className="text-gray-400 group-hover:text-brand-600 group-hover:translate-x-0.5 transition-all pointer-events-none">
+                            <span className="text-gray-400 group-hover:text-brand-600 group-hover:translate-x-1 transition-transform font-bold">
                               &rarr;
                             </span>
                           </button>
 
                           <button
+                            type="button"
                             onClick={() => {
                               setShowProfileDropdown(false);
                               router.push("/dashboard/settings");
                             }}
-                            className="w-full text-left px-3 py-2.5 text-xs font-bold text-gray-700 hover:bg-brand-50 hover:text-brand-700 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-brand-100 group cursor-pointer"
+                            className="w-full text-left px-3.5 py-3 text-xs font-bold text-gray-700 hover:bg-brand-50 hover:text-brand-700 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-brand-100 group cursor-pointer active:scale-[0.99]"
                           >
-                            <div className="flex items-center gap-2.5 pointer-events-none">
+                            <div className="flex items-center gap-2.5">
                               <Settings className="w-4 h-4 text-gray-400 group-hover:text-brand-600 transition-colors" />
                               <span>Account Settings</span>
                             </div>
-                            <span className="text-gray-400 group-hover:text-brand-600 group-hover:translate-x-0.5 transition-all pointer-events-none">
+                            <span className="text-gray-400 group-hover:text-brand-600 group-hover:translate-x-1 transition-transform font-bold">
                               &rarr;
                             </span>
                           </button>
 
                           <button
+                            type="button"
                             onClick={() => {
                               setShowProfileDropdown(false);
                               handleSignOut();
                             }}
-                            className="w-full text-left px-3 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 hover:text-red-700 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-red-100 group cursor-pointer"
+                            className="w-full text-left px-3.5 py-3 text-xs font-bold text-red-600 hover:bg-red-50 hover:text-red-700 rounded-xl transition-all flex items-center justify-between border border-transparent hover:border-red-100 group cursor-pointer active:scale-[0.99]"
                           >
-                            <div className="flex items-center gap-2.5 pointer-events-none">
+                            <div className="flex items-center gap-2.5">
                               <LogOut className="w-4 h-4 text-red-400 group-hover:text-red-600 transition-colors" />
                               <span>Sign Out</span>
                             </div>
-                            <span className="text-red-400 group-hover:text-red-600 group-hover:translate-x-0.5 transition-all pointer-events-none">
+                            <span className="text-red-400 group-hover:text-red-600 group-hover:translate-x-1 transition-transform font-bold">
                               &rarr;
                             </span>
                           </button>
@@ -710,7 +732,7 @@ export default function DashboardHeader() {
                     initial={{ opacity: 0, scale: 0.95, y: 10 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                    className="relative bg-white rounded-xl border border-gray-150 shadow-2xl w-full max-w-xl overflow-hidden z-10 flex flex-col max-h-[90vh]"
+                    className="relative bg-white rounded-2xl border border-gray-150 shadow-2xl w-full max-w-xl overflow-hidden z-10 flex flex-col max-h-[90vh]"
                   >
                     {/* Modal Header */}
                     <div className="p-6 border-b border-gray-100 flex items-center justify-between shrink-0">
@@ -719,7 +741,7 @@ export default function DashboardHeader() {
                           Manage Profile Photos
                         </h3>
                         <p className="text-xs text-gray-500 mt-0.5">
-                          Upload up to 5 portrait photographs. Main photo is
+                          Upload up to 5 portrait photographs with automatic MN watermark. Main photo is
                           marked with primary star.
                         </p>
                       </div>
@@ -753,6 +775,7 @@ export default function DashboardHeader() {
                                 </span>
                               ) : (
                                 <button
+                                  type="button"
                                   onClick={() => {
                                     setLocalPhotos(
                                       localPhotos.map((p) => ({
@@ -769,31 +792,43 @@ export default function DashboardHeader() {
                               )}
                             </div>
 
-                            {/* Delete button */}
-                            <button
-                              onClick={() => {
-                                const filtered = localPhotos.filter(
-                                  (p) => p.id !== photo.id,
-                                );
-                                if (
-                                  filtered.length > 0 &&
-                                  !filtered.some((p) => p.isPrimary)
-                                ) {
-                                  filtered[0].isPrimary = true;
-                                }
-                                setLocalPhotos(filtered);
-                              }}
-                              className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full shadow-md transition-all active:scale-90 cursor-pointer z-10"
-                              title="Delete Photo"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
+                            {/* Action Buttons: Crop + Delete */}
+                            <div className="absolute top-1 right-1 flex items-center gap-1 z-10">
+                              <button
+                                type="button"
+                                onClick={() => setCropTarget({ id: photo.id, url: photo.dataUrl })}
+                                className="bg-black/60 hover:bg-black/80 text-white p-1 rounded-full shadow-md transition-all active:scale-90 cursor-pointer"
+                                title="Crop & Adjust Photo"
+                              >
+                                <Crop className="w-3 h-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const filtered = localPhotos.filter(
+                                    (p) => p.id !== photo.id,
+                                  );
+                                  if (
+                                    filtered.length > 0 &&
+                                    !filtered.some((p) => p.isPrimary)
+                                  ) {
+                                    filtered[0].isPrimary = true;
+                                  }
+                                  setLocalPhotos(filtered);
+                                }}
+                                className="bg-red-500 hover:bg-red-600 text-white p-1 rounded-full shadow-md transition-all active:scale-90 cursor-pointer"
+                                title="Delete Photo"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
                           </div>
                         ))}
 
                         {/* Add Photo Button Slot */}
                         {localPhotos.length < 5 && (
                           <button
+                            type="button"
                             onClick={() => photosFileInputRef.current?.click()}
                             className="border-2 border-dashed border-gray-200 hover:border-brand-500 rounded-xl aspect-[3/4] flex flex-col items-center justify-center text-gray-400 hover:text-brand-600 transition-all bg-gray-50/50 hover:bg-brand-50/10 cursor-pointer group"
                           >
@@ -809,44 +844,21 @@ export default function DashboardHeader() {
                         type="file"
                         ref={photosFileInputRef}
                         accept="image/*"
-                        multiple
                         onChange={async (e) => {
-                          if (e.target.files) {
-                            const files = Array.from(e.target.files);
-                            if (localPhotos.length + files.length > 5) {
-                              toast.error(
-                                "You can upload a maximum of 5 photos.",
-                              );
+                          if (e.target.files && e.target.files.length > 0) {
+                            const file = e.target.files[0];
+                            if (localPhotos.length >= 5) {
+                              toast.error("You can upload a maximum of 5 photos.");
                               return;
                             }
 
-                            const loaded = await Promise.all(
-                              files.map(async (file) => {
-                                return new Promise<Photo>((resolve, reject) => {
-                                  const reader = new FileReader();
-                                  reader.onload = (ev) => {
-                                    resolve({
-                                      id: Math.random()
-                                        .toString(36)
-                                        .substring(2, 9),
-                                      dataUrl: ev.target?.result as string,
-                                      isPrimary: false,
-                                    });
-                                  };
-                                  reader.onerror = reject;
-                                  reader.readAsDataURL(file);
-                                });
-                              }),
-                            );
-
-                            const merged = [...localPhotos, ...loaded];
-                            if (
-                              merged.length > 0 &&
-                              !merged.some((p) => p.isPrimary)
-                            ) {
-                              merged[0].isPrimary = true;
-                            }
-                            setLocalPhotos(merged);
+                            const reader = new FileReader();
+                            reader.onload = (ev) => {
+                              if (ev.target?.result) {
+                                setCropTarget({ url: ev.target.result as string });
+                              }
+                            };
+                            reader.readAsDataURL(file);
                           }
                           if (photosFileInputRef.current) {
                             photosFileInputRef.current.value = "";
@@ -861,9 +873,8 @@ export default function DashboardHeader() {
                         </span>
                         <p className="leading-relaxed">
                           Please upload high quality vertical portrait
-                          photographs (standard matrimonial size). To change
-                          your primary profile picture, hover over an image and
-                          click the star icon.
+                          photographs (standard matrimonial size). Photos are automatically
+                          protected with the official <strong>Malappuram Nikah</strong> watermark. Click the crop icon on any image to adjust positioning and zoom.
                         </p>
                       </div>
                     </div>
@@ -871,12 +882,14 @@ export default function DashboardHeader() {
                     {/* Modal Footer */}
                     <div className="px-6 py-4 bg-gray-50/50 border-t border-gray-100 flex items-center justify-end gap-3 shrink-0">
                       <button
+                        type="button"
                         onClick={() => setShowPhotosModal(false)}
                         className="px-4 py-2 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 text-xs font-bold transition-colors cursor-pointer"
                       >
                         Cancel
                       </button>
                       <button
+                        type="button"
                         disabled={isSavingPhotos}
                         onClick={async () => {
                           if (!user) return;
@@ -906,7 +919,6 @@ export default function DashboardHeader() {
 
                             const data = await res.json();
                             if (data.success) {
-                              // Update drafts
                               localStorage.setItem(
                                 "mn_profile_photos_draft",
                                 JSON.stringify({ photos: localPhotos }),
@@ -930,7 +942,13 @@ export default function DashboardHeader() {
                         }}
                         className="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm shrink-0 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                       >
-                        {isSavingPhotos ? "Saving..." : "Save Gallery"}
+                        {isSavingPhotos ? (
+                          <>
+                            <Sparkles className="w-3.5 h-3.5 animate-spin" /> Saving...
+                          </>
+                        ) : (
+                          "Save Gallery"
+                        )}
                       </button>
                     </div>
                   </motion.div>
@@ -940,6 +958,29 @@ export default function DashboardHeader() {
             document.body,
           )
         : null}
+
+      {/* Image Crop & Watermarking Modal */}
+      {cropTarget && (
+        <ImageCropModal
+          imageSrc={cropTarget.url}
+          onCancel={() => setCropTarget(null)}
+          onCropComplete={async (watermarkedDataUrl) => {
+            if (cropTarget.id) {
+              setLocalPhotos((prev) =>
+                prev.map((p) => (p.id === cropTarget.id ? { ...p, dataUrl: watermarkedDataUrl } : p))
+              );
+            } else {
+              const newPhoto: Photo = {
+                id: Math.random().toString(36).substring(2, 9),
+                dataUrl: watermarkedDataUrl,
+                isPrimary: localPhotos.length === 0,
+              };
+              setLocalPhotos((prev) => [...prev, newPhoto]);
+            }
+            setCropTarget(null);
+          }}
+        />
+      )}
     </header>
   );
 }
