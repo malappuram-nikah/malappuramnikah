@@ -4,9 +4,10 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LayoutDashboard } from "lucide-react";
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
 
 const RegisterModal = dynamic(() => import("@/components/auth/RegisterModal"), {
   ssr: false,
@@ -17,6 +18,8 @@ const ReferralGeneratorModal = dynamic(
 );
 
 export default function Navbar() {
+  const { status } = useAuth();
+  const isLoggedIn = status === "authenticated";
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
@@ -42,7 +45,7 @@ export default function Navbar() {
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl flex items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center group outline-none">
+          <Link href={isLoggedIn ? "/dashboard" : "/"} className="flex items-center group outline-none">
             <Image
               src="/logoMain-01.svg"
               alt="Malappuram Nikah Logo"
@@ -64,19 +67,30 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-5">
             <button 
               onClick={() => setReferralOpen(true)}
-              className="text-sm font-medium text-brand-600 hover:text-brand-700 transition-colors"
+              className="text-sm font-medium text-brand-600 hover:text-brand-700 transition-colors cursor-pointer"
             >
               Referral Generator
             </button>
-            <Link href="/login" className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">
-              Log in
-            </Link>
-            <button 
-              onClick={() => setRegisterOpen(true)}
-              className="text-sm font-medium bg-brand-600 text-white px-5 py-2.5 rounded-xl hover:bg-brand-700 transition-all shadow-sm hover:shadow active:scale-95"
-            >
-              Create Account
-            </button>
+            {isLoggedIn ? (
+              <Link 
+                href="/dashboard"
+                className="text-sm font-bold bg-brand-600 text-white px-5 py-2.5 rounded-xl hover:bg-brand-700 transition-all shadow-sm hover:shadow active:scale-95 flex items-center gap-1.5"
+              >
+                <LayoutDashboard className="w-4 h-4" /> Go to Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">
+                  Log in
+                </Link>
+                <button 
+                  onClick={() => setRegisterOpen(true)}
+                  className="text-sm font-medium bg-brand-600 text-white px-5 py-2.5 rounded-xl hover:bg-brand-700 transition-all shadow-sm hover:shadow active:scale-95 cursor-pointer"
+                >
+                  Create Account
+                </button>
+              </>
+            )}
           </div>
 
           {/* Mobile Toggle */}

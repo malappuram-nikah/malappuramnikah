@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,7 +12,17 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { refreshAuth } = useAuth();
+  const { status, isAdmin, refreshAuth } = useAuth();
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      if (isAdmin) {
+        router.replace("/admin");
+      } else {
+        router.replace("/dashboard");
+      }
+    }
+  }, [status, isAdmin, router]);
 
   // Login Mode: "password" or "otp"
   const [loginMode, setLoginMode] = useState<"password" | "otp">("password");

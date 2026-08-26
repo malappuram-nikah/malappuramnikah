@@ -79,7 +79,7 @@ export default function DashboardSidebar() {
         <div className="flex items-center justify-between px-5 py-5">
           {!collapsed && (
             <div
-              onClick={() => navigateTo("/")}
+              onClick={() => navigateTo("/dashboard")}
               className="cursor-pointer block"
             >
               <Image
