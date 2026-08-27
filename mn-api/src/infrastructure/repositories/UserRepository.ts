@@ -45,10 +45,21 @@ export class UserRepository implements IUserRepository {
         const OR: any[] = [
             { mobile_number: clean },
             { mobile_number: `+91${rawDigits10}` },
+            { mobile_number: `+${digits}` },
             { mobile_number: rawDigits10 },
             { mobile_number: `0${rawDigits10}` },
             { email: { equals: clean, mode: "insensitive" } },
+            {
+              profile_details: {
+                path: ["mn_basic_details_draft", "email"],
+                equals: clean.toLowerCase(),
+              },
+            },
         ];
+
+        if (rawDigits10 && rawDigits10.length >= 10) {
+            OR.push({ mobile_number: { endsWith: rawDigits10 } });
+        }
 
         if (resolvedId && !isNaN(resolvedId)) {
             OR.push({ id: resolvedId });

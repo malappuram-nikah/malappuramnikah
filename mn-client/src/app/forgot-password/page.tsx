@@ -16,6 +16,8 @@ export default function ForgotPasswordPage() {
 
   // Form inputs
   const [email, setEmail] = useState("");
+  const [canonicalEmail, setCanonicalEmail] = useState("");
+  const [canonicalIdentifier, setCanonicalIdentifier] = useState("");
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -65,6 +67,8 @@ export default function ForgotPasswordPage() {
       }
 
       setSuccessMsg(data.message || "Verification code sent to your email.");
+      if (data.email) setCanonicalEmail(data.email);
+      if (data.identifier) setCanonicalIdentifier(data.identifier);
       if (data.devOtp) {
         setDevOtpHint(data.devOtp);
       }
@@ -77,15 +81,42 @@ export default function ForgotPasswordPage() {
     }
   };
 
-  // Step 2: Verify OTP
-  const handleVerifyOtp = (e: React.FormEvent) => {
+  // Step 2: Verify OTP with Server
+  const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!otp || otp.trim().length < 4) {
       setError("Please enter the verification code sent to your email.");
       return;
     }
+    
+    setIsLoading(true);
     setError(null);
-    setStep(3);
+
+    try {
+      const targetInput = canonicalIdentifier || canonicalEmail || email.trim();
+      const res = await fetch(`${API_URL}/user/verify-reset-code`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          identifier: targetInput,
+          email: targetInput,
+          otp: otp.trim(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Invalid verification code. Please check and try again.");
+      }
+
+      setError(null);
+      setStep(3);
+    } catch (err: any) {
+      setError(err.message || "Failed to verify code.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Step 3: Reset Password Submission
@@ -106,11 +137,13 @@ export default function ForgotPasswordPage() {
     setError(null);
 
     try {
+      const targetInput = canonicalIdentifier || canonicalEmail || email.trim();
       const res = await fetch(`${API_URL}/user/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: email.trim(),
+          identifier: targetInput,
+          email: targetInput,
           otp: otp.trim(),
           newPassword: newPassword.trim(),
         }),
@@ -138,16 +171,18 @@ export default function ForgotPasswordPage() {
     setDevOtpHint(null);
 
     try {
+      const targetInput = canonicalIdentifier || canonicalEmail || email.trim();
       const res = await fetch(`${API_URL}/user/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim() }),
+        body: JSON.stringify({ email: targetInput }),
       });
 
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.message || "Failed to resend OTP.");
 
       setSuccessMsg("A new verification code has been sent to your email.");
+      if (data.email) setCanonicalEmail(data.email);
       if (data.devOtp) setDevOtpHint(data.devOtp);
       setResendTimer(60);
     } catch (err: any) {
@@ -313,9 +348,18 @@ export default function ForgotPasswordPage() {
 
               <button
                 type="submit"
-                className="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-[0.98] text-sm"
+                disabled={isLoading}
+                className="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-60 text-sm"
               >
-                Verify Code <ArrowRight className="w-4 h-4" />
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Verifying Code...
+                  </>
+                ) : (
+                  <>
+                    Verify Code <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
               </button>
             </form>
 

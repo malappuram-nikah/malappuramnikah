@@ -963,7 +963,73 @@ user_route.post("/forgot-password", async (req: Request, res: Response) => {
   }
 });
 
-// Password Reset - Step 2: Verify OTP & Reset Password
+// Password Reset - Step 2: Verify Reset Code
+user_route.post("/verify-reset-code", async (req: Request, res: Response) => {
+  try {
+    const { email, identifier, mobile_number, otp } = req.body;
+    const input = (identifier || email || mobile_number || "").toString().trim();
+    if (!input) {
+      res.status(400).json({ success: false, message: "Mobile number or email address is required." });
+      return;
+    }
+
+    if (!otp || typeof otp !== "string" || !otp.trim()) {
+      res.status(400).json({ success: false, message: "Verification code is required." });
+      return;
+    }
+
+    const cleanInput = input.toLowerCase();
+    const digitsOnly = input.replace(/[^0-9]/g, "");
+
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: { equals: cleanInput, mode: "insensitive" } },
+          { mobile_number: { equals: input } },
+          { mobile_number: { equals: `+91${digitsOnly}` } },
+          { mobile_number: { equals: `+${digitsOnly}` } },
+          { mobile_number: { endsWith: digitsOnly.length >= 10 ? digitsOnly.slice(-10) : digitsOnly } },
+          {
+            profile_details: {
+              path: ["mn_basic_details_draft", "email"],
+              equals: cleanInput
+            }
+          }
+        ]
+      }
+    });
+
+    if (!user) {
+      res.status(404).json({ success: false, message: "User account not found." });
+      return;
+    }
+
+    const verifyRecord = await prisma.verify.findFirst({
+      where: {
+        user_id: user.id,
+        otp_code: otp.trim(),
+        is_verified: false,
+        expires_at: { gte: new Date() }
+      }
+    });
+
+    if (!verifyRecord) {
+      res.status(400).json({ success: false, message: "Invalid or expired verification code. Please check and try again." });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Verification code confirmed.",
+      userId: user.id
+    });
+  } catch (err: any) {
+    console.error("Verify reset code error:", err);
+    res.status(500).json({ success: false, message: err.message || "Failed to verify code." });
+  }
+});
+
+// Password Reset - Step 3: Verify OTP & Reset Password
 user_route.post("/reset-password", async (req: Request, res: Response) => {
   try {
     const { email, identifier, mobile_number, otp, newPassword } = req.body;
@@ -1028,10 +1094,15 @@ user_route.post("/reset-password", async (req: Request, res: Response) => {
     // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword.trim(), 10);
 
-    // Update user password
+    // Update user password and ensure verified email is saved if not already
+    const updatePayload: any = { password: hashedPassword };
+    if (cleanInput.includes("@") && (!user.email || user.email.trim() === "")) {
+      updatePayload.email = cleanInput;
+    }
+
     await prisma.user.update({
       where: { id: user.id },
-      data: { password: hashedPassword }
+      data: updatePayload
     });
 
     // Clear verification records
