@@ -869,6 +869,7 @@ user_route.post("/forgot-password", async (req: Request, res: Response) => {
 
     const cleanInput = input.toLowerCase();
     const digitsOnly = input.replace(/[^0-9]/g, "");
+    const rawDigits10 = digitsOnly.length >= 10 ? digitsOnly.slice(-10) : digitsOnly;
 
     // Find user by mobile_number (exact, formatted with +91 or raw) OR email
     const user = await prisma.user.findFirst({
@@ -876,9 +877,11 @@ user_route.post("/forgot-password", async (req: Request, res: Response) => {
         OR: [
           { email: { equals: cleanInput, mode: "insensitive" } },
           { mobile_number: { equals: input } },
-          { mobile_number: { equals: `+91${digitsOnly}` } },
+          { mobile_number: { equals: `+91${rawDigits10}` } },
           { mobile_number: { equals: `+${digitsOnly}` } },
-          { mobile_number: { endsWith: digitsOnly.length >= 10 ? digitsOnly.slice(-10) : digitsOnly } },
+          { mobile_number: { equals: rawDigits10 } },
+          { mobile_number: { equals: `0${rawDigits10}` } },
+          ...(rawDigits10 && rawDigits10.length >= 10 ? [{ mobile_number: { endsWith: rawDigits10 } }] : []),
           {
             profile_details: {
               path: ["mn_basic_details_draft", "email"],
@@ -980,15 +983,18 @@ user_route.post("/verify-reset-code", async (req: Request, res: Response) => {
 
     const cleanInput = input.toLowerCase();
     const digitsOnly = input.replace(/[^0-9]/g, "");
+    const rawDigits10 = digitsOnly.length >= 10 ? digitsOnly.slice(-10) : digitsOnly;
 
     const user = await prisma.user.findFirst({
       where: {
         OR: [
           { email: { equals: cleanInput, mode: "insensitive" } },
           { mobile_number: { equals: input } },
-          { mobile_number: { equals: `+91${digitsOnly}` } },
+          { mobile_number: { equals: `+91${rawDigits10}` } },
           { mobile_number: { equals: `+${digitsOnly}` } },
-          { mobile_number: { endsWith: digitsOnly.length >= 10 ? digitsOnly.slice(-10) : digitsOnly } },
+          { mobile_number: { equals: rawDigits10 } },
+          { mobile_number: { equals: `0${rawDigits10}` } },
+          ...(rawDigits10 && rawDigits10.length >= 10 ? [{ mobile_number: { endsWith: rawDigits10 } }] : []),
           {
             profile_details: {
               path: ["mn_basic_details_draft", "email"],
@@ -1051,6 +1057,7 @@ user_route.post("/reset-password", async (req: Request, res: Response) => {
 
     const cleanInput = input.toLowerCase();
     const digitsOnly = input.replace(/[^0-9]/g, "");
+    const rawDigits10 = digitsOnly.length >= 10 ? digitsOnly.slice(-10) : digitsOnly;
 
     // Find user
     const user = await prisma.user.findFirst({
@@ -1058,9 +1065,11 @@ user_route.post("/reset-password", async (req: Request, res: Response) => {
         OR: [
           { email: { equals: cleanInput, mode: "insensitive" } },
           { mobile_number: { equals: input } },
-          { mobile_number: { equals: `+91${digitsOnly}` } },
+          { mobile_number: { equals: `+91${rawDigits10}` } },
           { mobile_number: { equals: `+${digitsOnly}` } },
-          { mobile_number: { endsWith: digitsOnly.length >= 10 ? digitsOnly.slice(-10) : digitsOnly } },
+          { mobile_number: { equals: rawDigits10 } },
+          { mobile_number: { equals: `0${rawDigits10}` } },
+          ...(rawDigits10 && rawDigits10.length >= 10 ? [{ mobile_number: { endsWith: rawDigits10 } }] : []),
           {
             profile_details: {
               path: ["mn_basic_details_draft", "email"],
