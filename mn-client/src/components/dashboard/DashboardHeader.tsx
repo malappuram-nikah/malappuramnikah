@@ -55,6 +55,7 @@ interface Notification {
 import AmbientMusicPlayer from "@/components/dashboard/AmbientMusicPlayer";
 import { useUser } from "@/context/UserContext";
 import { API_URL } from "@/lib/config";
+import ImageCropper from "@/components/ui/ImageCropper";
 
 export default function DashboardHeader() {
   const router = useRouter();
@@ -69,6 +70,8 @@ export default function DashboardHeader() {
   const [localPhotos, setLocalPhotos] = useState<Photo[]>([]);
   const [isSavingPhotos, setIsSavingPhotos] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [cropQueue, setCropQueue] = useState<string[]>([]);
+  const [currentCropIndex, setCurrentCropIndex] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
   const photosFileInputRef = useRef<HTMLInputElement>(null);
@@ -712,6 +715,41 @@ export default function DashboardHeader() {
 
                     {/* Modal Body */}
                     <div className="p-6 overflow-y-auto space-y-6">
+                      {cropQueue.length > 0 && currentCropIndex < cropQueue.length && (
+                        <ImageCropper
+                          imageSrc={cropQueue[currentCropIndex]}
+                          onCropCompleteAction={(croppedImage) => {
+                            const newPhoto = {
+                              id: Math.random().toString(36).substring(2, 9),
+                              dataUrl: croppedImage,
+                              isPrimary: localPhotos.length === 0 && currentCropIndex === 0
+                            };
+                            setLocalPhotos(prev => {
+                              const updatedPhotos = [...prev, newPhoto];
+                              if (updatedPhotos.length > 0 && !updatedPhotos.some(p => p.isPrimary)) {
+                                updatedPhotos[0].isPrimary = true;
+                              }
+                              return updatedPhotos;
+                            });
+                            
+                            const nextIdx = currentCropIndex + 1;
+                            if (nextIdx >= cropQueue.length) {
+                              setCropQueue([]);
+                            } else {
+                              setCurrentCropIndex(nextIdx);
+                            }
+                          }}
+                          onCancel={() => {
+                            const nextIdx = currentCropIndex + 1;
+                            if (nextIdx >= cropQueue.length) {
+                              setCropQueue([]);
+                            } else {
+                              setCurrentCropIndex(nextIdx);
+                            }
+                          }}
+                        />
+                      )}
+                      
                       {/* Photo Grid */}
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                         {localPhotos.map((photo) => (
@@ -727,23 +765,25 @@ export default function DashboardHeader() {
                             {/* Control badges */}
                             <div className="absolute top-1.5 left-1.5 flex gap-1">
                               {photo.isPrimary ? (
-                                <span className="bg-amber-500 text-white w-5 h-5 rounded-full text-[11px] font-extrabold shadow-sm flex items-center justify-center">
-                                  ★
+                                <span className="bg-amber-500 text-white px-2 py-1 rounded-full text-[10px] font-extrabold shadow-sm flex items-center justify-center">
+                                  Profile Pic
                                 </span>
                               ) : (
                                 <button
                                   onClick={() => {
-                                    setLocalPhotos(
-                                      localPhotos.map((p) => ({
-                                        ...p,
-                                        isPrimary: p.id === photo.id,
-                                      })),
-                                    );
+                                    setLocalPhotos(prev => {
+                                      const photos = [...prev];
+                                      const targetIndex = photos.findIndex(p => p.id === photo.id);
+                                      if (targetIndex > -1) {
+                                        const [target] = photos.splice(targetIndex, 1);
+                                        photos.unshift(target);
+                                      }
+                                      return photos.map((p, idx) => ({ ...p, isPrimary: idx === 0 }));
+                                    });
                                   }}
-                                  className="bg-black/40 hover:bg-black/60 text-white w-5 h-5 rounded-full text-[11px] font-bold shadow-sm opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center"
-                                  title="Make Primary"
+                                  className="bg-black/60 hover:bg-black/80 text-white px-2 py-1 rounded-full text-[10px] font-bold shadow-sm opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center"
                                 >
-                                  ☆
+                                  Set as profile pic
                                 </button>
                               )}
                             </div>
@@ -801,31 +841,17 @@ export default function DashboardHeader() {
 
                             const loaded = await Promise.all(
                               files.map(async (file) => {
-                                return new Promise<Photo>((resolve, reject) => {
+                                return new Promise<string>((resolve, reject) => {
                                   const reader = new FileReader();
-                                  reader.onload = (ev) => {
-                                    resolve({
-                                      id: Math.random()
-                                        .toString(36)
-                                        .substring(2, 9),
-                                      dataUrl: ev.target?.result as string,
-                                      isPrimary: false,
-                                    });
-                                  };
+                                  reader.onload = (ev) => resolve(ev.target?.result as string);
                                   reader.onerror = reject;
                                   reader.readAsDataURL(file);
                                 });
                               }),
                             );
 
-                            const merged = [...localPhotos, ...loaded];
-                            if (
-                              merged.length > 0 &&
-                              !merged.some((p) => p.isPrimary)
-                            ) {
-                              merged[0].isPrimary = true;
-                            }
-                            setLocalPhotos(merged);
+                            setCropQueue(loaded);
+                            setCurrentCropIndex(0);
                           }
                           if (photosFileInputRef.current) {
                             photosFileInputRef.current.value = "";

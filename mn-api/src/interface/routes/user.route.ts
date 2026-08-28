@@ -248,9 +248,42 @@ user_route.get('/:id', async (req: Request, res: Response) => {
     const { password, kyc_front_url, kyc_back_url, ...safeUser } = user as any;
     const canSeeKycDocs = reqIsAdmin || requesterId === targetUserId;
     
-    const finalUser = canSeeKycDocs 
+    let finalUser = canSeeKycDocs 
       ? { ...safeUser, kyc_front_url, kyc_back_url } 
       : safeUser;
+
+    const privacy = finalUser.profile_details?.privacy_settings || {};
+    
+    if (requesterId !== targetUserId && !reqIsAdmin) {
+      if (privacy.hide_profile) {
+        return res.status(403).json({ success: false, message: "Profile is private." });
+      }
+      
+      if (privacy.premium_only && requester && !requester.is_premium) {
+        return res.status(403).json({ success: false, message: "This profile is only visible to premium members." });
+      }
+      
+      if (privacy.hide_last_seen) {
+        finalUser.last_login = null;
+      }
+      
+      if (privacy.blur_photo) {
+        const mutualInterest = await prisma.interest.findFirst({
+          where: {
+            status: 'ACCEPTED',
+            OR: [
+              { sender_id: requesterId, receiver_id: targetUserId },
+              { sender_id: targetUserId, receiver_id: requesterId }
+            ]
+          }
+        });
+        finalUser.isPhotoBlurred = !mutualInterest;
+      } else {
+        finalUser.isPhotoBlurred = false;
+      }
+    } else {
+      finalUser.isPhotoBlurred = false;
+    }
 
     const { onlineUsers } = require("../../infrastructure/onlineTracker");
     const responsePayload: Record<string, unknown> = {

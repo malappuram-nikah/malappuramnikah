@@ -71,6 +71,22 @@ export class SearchController {
 
       const result = await searchService.searchProfiles(filters, requesterId, isPremiumUser);
       
+      // Fetch accepted interests for photo blurring logic
+      const resultIds = result.data.map((u: any) => u.id);
+      const mutualInterests = await prisma.interest.findMany({
+        where: {
+          status: 'ACCEPTED',
+          OR: [
+            { sender_id: requesterId, receiver_id: { in: resultIds } },
+            { sender_id: { in: resultIds }, receiver_id: requesterId }
+          ]
+        }
+      });
+      const acceptedIds = new Set();
+      mutualInterests.forEach(i => {
+        acceptedIds.add(i.sender_id === requesterId ? i.receiver_id : i.sender_id);
+      });
+
       // Clean up passwords and huge base64 strings from profile_details
       const cleanedData = result.data.map((u: any) => {
         const { password, ...safeUser } = u;
@@ -81,6 +97,21 @@ export class SearchController {
           if (safeUser.profile_details.mn_voice_intro_draft?.voice?.dataUrl?.startsWith("data:")) {
             safeUser.profile_details.mn_voice_intro_draft.voice.dataUrl = "TRUNCATED_FOR_LISTING";
           }
+        }
+
+        const privacy = safeUser.profile_details?.privacy_settings || {};
+
+        // Hide last seen logic
+        if (privacy.hide_last_seen) {
+          safeUser.last_login = null;
+        }
+
+        // Blur photo logic
+        if (privacy.blur_photo) {
+          const hasAcceptedInterest = acceptedIds.has(safeUser.id);
+          safeUser.isPhotoBlurred = !hasAcceptedInterest;
+        } else {
+          safeUser.isPhotoBlurred = false;
         }
 
         // Return full details without masking last names

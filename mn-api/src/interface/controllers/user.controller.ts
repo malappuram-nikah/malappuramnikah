@@ -174,9 +174,36 @@ export class UserController {
         users = await this.getAllUsers.execute({ gender: oppositeGender, limit, ids, lightweight });
       }
 
+      // Filter out hidden profiles first
+      let filteredUsers = users;
+      if (!reqIsAdmin) {
+        filteredUsers = users.filter((u: any) => {
+          const privacy = u.profile_details?.privacy_settings || {};
+          if (privacy.hide_profile) return false;
+          if (privacy.premium_only && !requester.is_premium) return false;
+          return true;
+        });
+      }
+
+      // Fetch accepted interests for photo blurring logic
+      const resultIds = filteredUsers.map((u: any) => u.id);
+      const mutualInterests = await prisma.interest.findMany({
+        where: {
+          status: 'ACCEPTED',
+          OR: [
+            { sender_id: requesterId, receiver_id: { in: resultIds } },
+            { sender_id: { in: resultIds }, receiver_id: requesterId }
+          ]
+        }
+      });
+      const acceptedIds = new Set();
+      mutualInterests.forEach(i => {
+        acceptedIds.add(i.sender_id === requesterId ? i.receiver_id : i.sender_id);
+      });
+
       // Map users to include online tracker state and prune base64 assets to save database/networking bandwidth
       const { onlineUsers } = require("../../infrastructure/onlineTracker");
-      const cleanedUsers = users.map((u: any) => {
+      const cleanedUsers = filteredUsers.map((u: any) => {
         const { password, ...safeUser } = u;
         if (safeUser.profile_details) {
           const details = { ...safeUser.profile_details };
@@ -208,6 +235,20 @@ export class UserController {
           }
           safeUser.profile_details = details;
         }
+
+        const privacy = safeUser.profile_details?.privacy_settings || {};
+
+        if (privacy.hide_last_seen) {
+          safeUser.last_login = null;
+        }
+
+        if (privacy.blur_photo) {
+          const hasAcceptedInterest = acceptedIds.has(safeUser.id);
+          safeUser.isPhotoBlurred = !hasAcceptedInterest;
+        } else {
+          safeUser.isPhotoBlurred = false;
+        }
+
         return {
           ...safeUser,
           is_online: onlineUsers.has(safeUser.id)

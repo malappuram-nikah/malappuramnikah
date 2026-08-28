@@ -4,6 +4,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Save, Trash2, Plus } from "lucide-react";
+import ImageCropper from "@/components/ui/ImageCropper";
 
 import { saveProfileSection } from "@/lib/profile-utils";
 import { useUser } from "@/context/UserContext";
@@ -39,6 +40,9 @@ export default function ProfilePhotosStep({ initialData, onComplete, onBack }: P
   const [errors, setErrors] = useState<Partial<Record<keyof ProfilePhotosData, string>>>({});
   const [isUploading, setIsUploading] = useState(false);
   
+  const [cropQueue, setCropQueue] = useState<string[]>([]);
+  const [currentCropIndex, setCurrentCropIndex] = useState(0);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load draft on mount
@@ -96,27 +100,17 @@ export default function ProfilePhotosStep({ initialData, onComplete, onBack }: P
       try {
         const loadedPhotos = await Promise.all(
           files.map(async (file) => {
-            return new Promise<PhotoData>((resolve, reject) => {
+            return new Promise<string>((resolve, reject) => {
               const reader = new FileReader();
-              reader.onload = (ev) => {
-                resolve({
-                  id: Math.random().toString(36).substring(2, 9),
-                  dataUrl: ev.target?.result as string,
-                  isPrimary: false,
-                });
-              };
+              reader.onload = (ev) => resolve(ev.target?.result as string);
               reader.onerror = reject;
               reader.readAsDataURL(file);
             });
           })
         );
-
-        const newPhotos = [...formData.photos, ...loadedPhotos];
-        if (newPhotos.length > 0 && !newPhotos.some(p => p.isPrimary)) {
-          newPhotos[0].isPrimary = true;
-        }
-
-        setFormData({ photos: newPhotos });
+        
+        setCropQueue(loadedPhotos);
+        setCurrentCropIndex(0);
         setErrors({});
       } catch (err) {
         console.error("Error loading image:", err);
@@ -139,11 +133,20 @@ export default function ProfilePhotosStep({ initialData, onComplete, onBack }: P
   };
 
   const makePrimary = (id: string) => {
-    setFormData({
-      photos: formData.photos.map(p => ({
-        ...p,
-        isPrimary: p.id === id
-      }))
+    setFormData((prev) => {
+      const photos = [...prev.photos];
+      const targetIndex = photos.findIndex(p => p.id === id);
+      if (targetIndex > -1) {
+        const [target] = photos.splice(targetIndex, 1);
+        photos.unshift(target);
+      }
+      return {
+        ...prev,
+        photos: photos.map((p, idx) => ({
+          ...p,
+          isPrimary: idx === 0
+        }))
+      };
     });
   };
 
@@ -196,7 +199,42 @@ export default function ProfilePhotosStep({ initialData, onComplete, onBack }: P
       <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6">
         
         {/* Upload/Preview Section */}
-        <div className="space-y-4">
+        <div className="space-y-8">
+          {cropQueue.length > 0 && currentCropIndex < cropQueue.length && (
+            <ImageCropper
+              imageSrc={cropQueue[currentCropIndex]}
+              onCropCompleteAction={(croppedImage) => {
+                const newPhoto = {
+                  id: Math.random().toString(36).substring(2, 9),
+                  dataUrl: croppedImage,
+                  isPrimary: formData.photos.length === 0 && currentCropIndex === 0
+                };
+                setFormData(prev => {
+                  const updatedPhotos = [...prev.photos, newPhoto];
+                  if (updatedPhotos.length > 0 && !updatedPhotos.some(p => p.isPrimary)) {
+                    updatedPhotos[0].isPrimary = true;
+                  }
+                  return { photos: updatedPhotos };
+                });
+                
+                const nextIdx = currentCropIndex + 1;
+                if (nextIdx >= cropQueue.length) {
+                  setCropQueue([]);
+                } else {
+                  setCurrentCropIndex(nextIdx);
+                }
+              }}
+              onCancel={() => {
+                const nextIdx = currentCropIndex + 1;
+                if (nextIdx >= cropQueue.length) {
+                  setCropQueue([]);
+                } else {
+                  setCurrentCropIndex(nextIdx);
+                }
+              }}
+            />
+          )}
+          
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {formData.photos.map((photo) => (
               <div 
@@ -209,20 +247,19 @@ export default function ProfilePhotosStep({ initialData, onComplete, onBack }: P
                   className="w-full h-full object-cover"
                 />
                 
-                {/* Primary star badge */}
+                {/* Primary label / button */}
                 <div className="absolute top-2 left-2 flex gap-1">
                   {photo.isPrimary ? (
-                    <span className="bg-amber-500 text-white w-6 h-6 rounded-full text-[12px] font-extrabold shadow-sm flex items-center justify-center" title="Primary Profile Photo">
-                      ★
+                    <span className="bg-amber-500 text-white px-2 py-1 rounded-full text-[10px] font-extrabold shadow-sm flex items-center justify-center">
+                      Profile Pic
                     </span>
                   ) : (
                     <button
                       type="button"
                       onClick={() => makePrimary(photo.id)}
-                      className="bg-black/40 hover:bg-black/60 text-white w-6 h-6 rounded-full text-[12px] font-bold shadow-sm opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center"
-                      title="Make Primary"
+                      className="bg-black/60 hover:bg-black/80 text-white px-2 py-1 rounded-full text-[10px] font-bold shadow-sm opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center"
                     >
-                      ☆
+                      Set as profile pic
                     </button>
                   )}
                 </div>

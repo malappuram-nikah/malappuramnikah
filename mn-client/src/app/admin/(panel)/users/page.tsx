@@ -20,6 +20,7 @@ import {
   ExternalLink,
   Calendar,
   MessageSquare,
+  Trash2,
 } from "lucide-react";
 import AdminAlert from "@/components/admin/AdminAlert";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
@@ -309,6 +310,17 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleDeleteUser = async (userId: number) => {
+    if (!window.confirm("Are you sure you want to delete this user? This action cannot be undone.")) return;
+    try {
+      const res = await adminApi.deleteUser(userId);
+      triggerAlert(res.message);
+      await loadUsers();
+    } catch (err: unknown) {
+      triggerAlert(err instanceof Error ? err.message : "Failed to delete user.", "error");
+    }
+  };
+
   const applySearch = () => {
     setPage(1);
     loadUsers();
@@ -574,6 +586,14 @@ export default function AdminUsersPage() {
                             }`}
                           >
                             {user.is_premium ? "Premium" : "Free"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteUser(user.id)}
+                            className="p-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg"
+                            title="Delete User"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>

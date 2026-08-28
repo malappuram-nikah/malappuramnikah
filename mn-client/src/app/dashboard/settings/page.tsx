@@ -71,6 +71,12 @@ export default function SettingsPage() {
   const [mobileOtpSent, setMobileOtpSent] = useState(false);
   const [showMobileOtpBanner, setShowMobileOtpBanner] = useState(false);
 
+  // Privacy Settings States
+  const [hideProfile, setHideProfile] = useState(false);
+  const [premiumOnly, setPremiumOnly] = useState(false);
+  const [hideLastSeen, setHideLastSeen] = useState(false);
+  const [blurPhoto, setBlurPhoto] = useState(false);
+
 
 
   const loadProfileData = async () => {
@@ -180,6 +186,13 @@ export default function SettingsPage() {
             const religiousDraft = currentUser.profile_details?.mn_religious_info_draft || {};
             setNamaz(religiousDraft.namaz || "");
             setQuranReading(religiousDraft.quranReading || "");
+
+            // Privacy Settings
+            const privacy = currentUser.profile_details?.privacy_settings || {};
+            setHideProfile(!!privacy.hide_profile);
+            setPremiumOnly(!!privacy.premium_only);
+            setHideLastSeen(!!privacy.hide_last_seen);
+            setBlurPhoto(!!privacy.blur_photo);
 
             userFetched = true;
         }
@@ -340,6 +353,14 @@ export default function SettingsPage() {
     profileDetails["mn_religious_info_draft"].quranReading = quranReading;
     profileDetails["mn_religious_info_draft"].community = community;
     localStorage.setItem("mn_religious_info_draft", JSON.stringify(profileDetails["mn_religious_info_draft"]));
+
+    // Save privacy settings
+    profileDetails["privacy_settings"] = {
+      hide_profile: hideProfile,
+      premium_only: premiumOnly,
+      hide_last_seen: hideLastSeen,
+      blur_photo: blurPhoto,
+    };
 
     // Save approximate DOB derived from Age
     const birthYear = new Date().getFullYear() - parseInt(age || "24", 10);
@@ -807,10 +828,30 @@ export default function SettingsPage() {
                 <h2 className="text-lg font-bold text-gray-900">Privacy</h2>
                 <div className="space-y-4">
                   {[
-                    { label: "Hide my profile from search", desc: "Your profile won't appear in search results" },
-                    { label: "Show profile to premium only", desc: "Only premium members can view your profile"  },
-                    { label: "Hide last seen",               desc: "Others can't see when you were last active"  },
-                    { label: "Blur my photo",                desc: "Photos are blurred until interest is accepted"},
+                    { 
+                      label: "Hide my profile from search", 
+                      desc: "Your profile won't appear in search results",
+                      checked: hideProfile,
+                      onChange: (e: React.ChangeEvent<HTMLInputElement>) => setHideProfile(e.target.checked)
+                    },
+                    { 
+                      label: "Show profile to premium only", 
+                      desc: "Only premium members can view your profile",
+                      checked: premiumOnly,
+                      onChange: (e: React.ChangeEvent<HTMLInputElement>) => setPremiumOnly(e.target.checked)
+                    },
+                    { 
+                      label: "Hide last seen",               
+                      desc: "Others can't see when you were last active",
+                      checked: hideLastSeen,
+                      onChange: (e: React.ChangeEvent<HTMLInputElement>) => setHideLastSeen(e.target.checked)
+                    },
+                    { 
+                      label: "Blur my photo",                
+                      desc: "Photos are blurred until interest is accepted",
+                      checked: blurPhoto,
+                      onChange: (e: React.ChangeEvent<HTMLInputElement>) => setBlurPhoto(e.target.checked)
+                    },
                   ].map((item, i) => (
                     <div key={i} className="flex items-center justify-between py-3 border-b border-gray-50">
                       <div>
@@ -818,7 +859,7 @@ export default function SettingsPage() {
                         <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" className="sr-only peer" />
+                        <input type="checkbox" className="sr-only peer" checked={item.checked} onChange={item.onChange} />
                         <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-brand-600 peer-focus:ring-2 peer-focus:ring-brand-500/20 transition-all after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" />
                       </label>
                     </div>

@@ -507,7 +507,8 @@ export default function AIMatchesLegacy() {
               <div className="flex flex-col md:flex-row relative z-10">
                 <div className="md:w-2/5 h-64 md:h-auto relative bg-gray-900/10 overflow-hidden">
                   {(() => {
-                    const canViewBestProfile = isBestMutual;
+                    let canViewBestProfile = isBestMutual || (bestMatch.gender?.toLowerCase() === "male");
+                    if ((bestMatch as any).isPhotoBlurred) canViewBestProfile = false;
                     return (
                       <>
                         {bestMatch.img ? (
@@ -649,7 +650,8 @@ export default function AIMatchesLegacy() {
                 const isMutual = interests.mutual.includes(profile.id);
                 const isSent = interests.sent.includes(profile.id);
                 const isMale = (profile.gender || "").toLowerCase() === "male";
-                const canViewProfile = isMutual || isMale;
+                let canViewProfile = isMutual || isMale;
+                if ((profile as any).isPhotoBlurred) canViewProfile = false;
 
                 return (
                   <motion.div
@@ -771,7 +773,8 @@ export default function AIMatchesLegacy() {
                   const isMutual = interests.mutual.includes(profile.id);
                   const isSent = interests.sent.includes(profile.id);
                   const isMale = (profile.gender || "").toLowerCase() === "male";
-                  const canViewProfile = isMutual || isMale;
+                  let canViewProfile = isMutual || isMale;
+                  if ((profile as any).isPhotoBlurred) canViewProfile = false;
 
                   return (
                     <div 
@@ -843,7 +846,8 @@ export default function AIMatchesLegacy() {
                   const isMutual = interests.mutual.includes(profile.id);
                   const isSent = interests.sent.includes(profile.id);
                   const isMale = (profile.gender || "").toLowerCase() === "male";
-                  const canViewProfile = isMutual || isMale;
+                  let canViewProfile = isMutual || isMale;
+                  if ((profile as any).isPhotoBlurred) canViewProfile = false;
 
                   return (
                     <div 

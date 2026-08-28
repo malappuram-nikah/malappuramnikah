@@ -16,6 +16,7 @@ import { updateProfileSection, updateProfileSectionByDraftKey, fetchProfileSecti
 import { useProfileCompletion } from "@/hooks/useProfileCompletion";
 import { useUser } from "@/context/UserContext";
 import { API_URL } from "@/lib/config";
+import ImageCropper from "@/components/ui/ImageCropper";
 
 /* ──────────────────────────────────────────────────
    AUTH HELPERS  (parsed once, memoized via ref)
@@ -320,6 +321,8 @@ function PhotoManagerModal({
   const [photos, setPhotos] = useState<PhotoData[]>(initialPhotos);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [cropQueue, setCropQueue] = useState<string[]>([]);
+  const [currentCropIndex, setCurrentCropIndex] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -330,32 +333,29 @@ function PhotoManagerModal({
     setUploading(true);
     const reads = Array.from(files).map(
       (file) =>
-        new Promise<PhotoData>((resolve) => {
+        new Promise<string>((resolve) => {
           const r = new FileReader();
-          r.onload = (e) =>
-            resolve({
-              id: `p_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-              dataUrl: e.target?.result as string,
-              isPrimary: false,
-            });
+          r.onload = (e) => resolve(e.target?.result as string);
           r.readAsDataURL(file);
         })
     );
-    Promise.all(reads).then((newPhotos) => {
-      setPhotos((prev) => {
-        const merged = [...prev, ...newPhotos];
-        // If no primary yet, set first as primary
-        if (!merged.some((p) => p.isPrimary) && merged.length > 0) {
-          merged[0] = { ...merged[0], isPrimary: true };
-        }
-        return merged;
-      });
+    Promise.all(reads).then((loadedPhotos) => {
+      setCropQueue(loadedPhotos);
+      setCurrentCropIndex(0);
       setUploading(false);
     });
   }, []);
 
   const setPrimary = useCallback((id: string) => {
-    setPhotos((prev) => prev.map((p) => ({ ...p, isPrimary: p.id === id })));
+    setPhotos((prev) => {
+      const photos = [...prev];
+      const targetIndex = photos.findIndex(p => p.id === id);
+      if (targetIndex > -1) {
+        const [target] = photos.splice(targetIndex, 1);
+        photos.unshift(target);
+      }
+      return photos.map((p, idx) => ({ ...p, isPrimary: idx === 0 }));
+    });
   }, []);
 
   const remove = useCallback((id: string) => {
@@ -419,6 +419,40 @@ function PhotoManagerModal({
         </div>
 
         <div className="overflow-y-auto p-5 flex-1 space-y-4">
+          {cropQueue.length > 0 && currentCropIndex < cropQueue.length && (
+            <ImageCropper
+              imageSrc={cropQueue[currentCropIndex]}
+              onCropCompleteAction={(croppedImage) => {
+                const newPhoto = {
+                  id: `p_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+                  dataUrl: croppedImage,
+                  isPrimary: photos.length === 0 && currentCropIndex === 0
+                };
+                setPhotos(prev => {
+                  const merged = [...prev, newPhoto];
+                  if (!merged.some(p => p.isPrimary) && merged.length > 0) {
+                    merged[0] = { ...merged[0], isPrimary: true };
+                  }
+                  return merged;
+                });
+                
+                const nextIdx = currentCropIndex + 1;
+                if (nextIdx >= cropQueue.length) {
+                  setCropQueue([]);
+                } else {
+                  setCurrentCropIndex(nextIdx);
+                }
+              }}
+              onCancel={() => {
+                const nextIdx = currentCropIndex + 1;
+                if (nextIdx >= cropQueue.length) {
+                  setCropQueue([]);
+                } else {
+                  setCurrentCropIndex(nextIdx);
+                }
+              }}
+            />
+          )}
           {/* Upload area */}
           <label className="flex flex-col items-center gap-2 border-2 border-dashed border-brand-200 hover:border-brand-400 rounded-2xl p-6 cursor-pointer transition-all bg-brand-50/20 hover:bg-brand-50 group">
             {uploading ? (
@@ -469,17 +503,17 @@ function PhotoManagerModal({
                       <img src={p.dataUrl} alt="" className="w-full h-full object-cover" />
                       {p.isPrimary && (
                         <div className="absolute top-1.5 left-1.5 bg-brand-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow">
-                          PRIMARY
+                          PROFILE PIC
                         </div>
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-2 gap-2">
                         {!p.isPrimary && (
                           <button
                             onClick={() => setPrimary(p.id)}
-                            title="Set as primary"
-                            className="p-1.5 bg-white/95 rounded-full shadow hover:scale-110 transition-transform"
+                            title="Set as profile pic"
+                            className="px-2 py-1 text-[9px] font-bold bg-white/95 rounded-full shadow hover:scale-105 transition-transform text-gray-800"
                           >
-                            <Star className="w-3.5 h-3.5 text-amber-500" />
+                            Set Profile Pic
                           </button>
                         )}
                         <button

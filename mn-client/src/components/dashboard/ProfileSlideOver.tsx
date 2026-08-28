@@ -143,9 +143,11 @@ export default function ProfileSlideOver({
   const isMutual = interests.mutual.includes(profile.id);
   const isSent = interests.sent.includes(profile.id);
   const isReceived = interests.received.includes(profile.id);
-  const genderVal = profile.gender || fullUser?.gender || "";
-  const isMaleProfile = genderVal.toLowerCase() === "male";
-  const canViewProfile = isMutual || isMaleProfile;
+  const isMaleProfile = profile.gender?.toLowerCase() === "male";
+  let canViewProfile = isMutual || isMaleProfile;
+  if ((profile as any).isPhotoBlurred) {
+    canViewProfile = false;
+  }
 
   let modalBtnText = "Send Interest";
   let modalBtnStyle = "bg-brand-600 text-white hover:bg-brand-700 shadow-sm";

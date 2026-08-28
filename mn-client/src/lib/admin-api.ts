@@ -116,6 +116,11 @@ export const adminApi = {
       body: JSON.stringify({ action }),
     }),
 
+  deleteUser: (id: number) =>
+    adminFetch<{ success: true; message: string }>(`/user/admin/users/${id}`, {
+      method: "DELETE",
+    }),
+
   updateCallLog: (
     id: number,
     data: { call_status?: string; called_date?: string | null; call_response?: string | null }

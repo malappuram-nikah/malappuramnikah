@@ -361,8 +361,9 @@ export default function SearchPage() {
                 const isSent = interests.sent.includes(p.id);
                 const isMutual = interests.mutual.includes(p.id);
                 const isMale = (p.gender || "").toLowerCase() === "male";
-                const canViewPhoto = isMutual || isMale;
-                const shouldBlurPhoto = !canViewPhoto || (p.isBlurred && !isMale);
+                let canViewPhoto = isMutual || isMale;
+                if (p.isPhotoBlurred) canViewPhoto = false;
+                const shouldBlurPhoto = !canViewPhoto;
                 
                 // Format full name without asterisks
                 const displayName = `${p.first_name || ""} ${p.last_name || ""}`.trim() || p.name || "Member";

@@ -56,6 +56,13 @@ export class SearchRepository {
     // Active profiles only
     conditions.push(Prisma.sql`u.status = 'active'`);
 
+    // Privacy Settings Filters
+    conditions.push(Prisma.sql`(u.profile_details->'privacy_settings'->>'hide_profile' IS NULL OR u.profile_details->'privacy_settings'->>'hide_profile' != 'true')`);
+    
+    if (!filters.isPremiumUser) {
+      conditions.push(Prisma.sql`(u.profile_details->'privacy_settings'->>'premium_only' IS NULL OR u.profile_details->'privacy_settings'->>'premium_only' != 'true')`);
+    }
+
     // Filter opposite gender
     if (filters.gender) {
       conditions.push(Prisma.sql`LOWER(u.gender) = LOWER(${filters.gender})`);

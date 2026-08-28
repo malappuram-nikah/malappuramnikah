@@ -638,6 +638,46 @@ admin_route.post("/users/:id/call-log", adminGuard, async (req: Request, res: Re
   }
 });
 
+// 2e. DELETE User (DELETE /user/admin/users/:id)
+admin_route.delete("/users/:id", adminGuard, async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ success: false, message: "Invalid user ID" });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
+    }
+
+    // Delete child records that do not have cascade delete
+    await prisma.verify.deleteMany({ where: { user_id: id } });
+
+    // Delete the user
+    await prisma.user.delete({ where: { id } });
+
+    // Write audit log
+    const store = getAdminStore();
+    const adminUser = await prisma.user.findUnique({ where: { id: getUserIdFromRequest(req) || 2 } });
+    const adminName = adminUser ? `${adminUser.first_name} ${adminUser.last_name}` : "Super Admin";
+    store.activity_logs.unshift({
+      id: Date.now(),
+      admin: adminName,
+      action: `Deleted matrimony profile of ${user.first_name} ${user.last_name} (ID: ${id})`,
+      time: new Date().toISOString().replace("T", " ").substring(0, 19)
+    });
+    saveAdminStore(store);
+
+    res.status(200).json({ success: true, message: "User deleted successfully." });
+  } catch (err: any) {
+    console.error("Delete user error:", err);
+    res.status(500).json({ success: false, message: err.message || "Failed to delete user." });
+  }
+});
+
 // 3. User verification / Profile approval (POST /user/admin/users/:id/verify)
 admin_route.post("/users/:id/verify", adminGuard, async (req: Request, res: Response) => {
   try {
@@ -1105,7 +1145,8 @@ admin_route.post("/kyc/:id/approve", adminGuard, async (req: Request, res: Respo
       data: {
         kyc_status: "VERIFIED",
         kyc_verified_at: new Date(),
-        kyc_rejected_reason: null
+        kyc_rejected_reason: null,
+        is_premium: true
       }
     });
 
