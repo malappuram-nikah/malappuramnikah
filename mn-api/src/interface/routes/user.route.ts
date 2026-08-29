@@ -942,102 +942,73 @@ user_route.post('/feedback', async (req: Request, res: Response) => {
 // Password Reset - Step 1: Send OTP to Mobile Number or Email
 user_route.post("/forgot-password", async (req: Request, res: Response) => {
   try {
-    const { email, identifier, mobile_number } = req.body;
+    const { email, identifier, mobile_number, channel: inputChannel } = req.body;
     const input = (identifier || email || mobile_number || "").toString().trim();
     if (!input) {
       res.status(400).json({ success: false, message: "Please provide your mobile number or email address." });
       return;
     }
 
-    const cleanInput = input.toLowerCase();
-    const digitsOnly = input.replace(/[^0-9]/g, "");
-    const rawDigits10 = digitsOnly.length >= 10 ? digitsOnly.slice(-10) : digitsOnly;
+    const { OtpService } = require("../../applications/services/OtpService");
+    const channel = inputChannel === "WHATSAPP" ? "WHATSAPP" : "EMAIL";
 
-    // Find user by mobile_number (exact, formatted with +91 or raw) OR email
-    const user = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: { equals: cleanInput, mode: "insensitive" } },
-          { mobile_number: { equals: input } },
-          { mobile_number: { equals: `+91${rawDigits10}` } },
-          { mobile_number: { equals: `+${digitsOnly}` } },
-          { mobile_number: { equals: rawDigits10 } },
-          { mobile_number: { equals: `0${rawDigits10}` } },
-          ...(rawDigits10 && rawDigits10.length >= 10 ? [{ mobile_number: { endsWith: rawDigits10 } }] : []),
-          {
-            profile_details: {
-              path: ["mn_basic_details_draft", "email"],
-              equals: cleanInput
-            }
-          }
-        ]
-      }
+    const result = await OtpService.requestOtp({
+      targetIdentifier: input,
+      channel,
+      purpose: "PASSWORD_RESET",
     });
 
-    if (!user) {
-      res.status(404).json({
+    if (!result.success || !result.user) {
+      res.status(result.message?.includes("wait") ? 429 : 404).json({
         success: false,
-        message: "No account found matching this mobile number or email address."
+        message: result.message || "No account found matching this mobile number or email address."
       });
       return;
     }
 
-    // Generate 6-digit OTP
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 mins expiry
-
-    // Clear previous verification records for user
-    await prisma.verify.deleteMany({ where: { user_id: user.id } });
-
-    // Create new verify record
-    await prisma.verify.create({
-      data: {
-        user_id: user.id,
-        otp_code: otpCode,
-        expires_at: expiresAt,
-        is_verified: false
-      }
-    });
-
+    const user = result.user;
+    const otpCode = result.otpCode;
+    const cleanInput = input.toLowerCase();
     const providedEmail = cleanInput.includes("@") ? cleanInput : (email || "").toString().trim().toLowerCase();
     const targetEmail = cleanInput.includes("@")
       ? cleanInput
       : (user.email && user.email.includes("@") ? user.email : (providedEmail.includes("@") ? providedEmail : undefined));
 
-    if (targetEmail) {
-      // Auto-save missing email to user profile if user currently has no email in DB
-      if (targetEmail.includes("@") && (!user.email || user.email.trim() === "")) {
-        const existingAccountWithEmail = await prisma.user.findFirst({
-          where: {
-            email: { equals: targetEmail, mode: "insensitive" },
-            id: { not: user.id }
-          }
-        });
-        if (!existingAccountWithEmail) {
-          await prisma.user.update({
-            where: { id: user.id },
-            data: { email: targetEmail }
+    if (channel === "EMAIL") {
+      if (targetEmail) {
+        if (targetEmail.includes("@") && (!user.email || user.email.trim() === "")) {
+          const existingAccountWithEmail = await prisma.user.findFirst({
+            where: {
+              email: { equals: targetEmail, mode: "insensitive" },
+              id: { not: user.id }
+            }
           });
-          console.log(`[FORGOT PASSWORD] Saved missing email ${targetEmail} for user #${user.id}`);
+          if (!existingAccountWithEmail) {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { email: targetEmail }
+            });
+            console.log(`[FORGOT PASSWORD] Saved missing email ${targetEmail} for user #${user.id}`);
+          }
         }
-      }
 
-      const { EmailOtpService } = require("../../infrastructure/service/EmailOtpService");
-      const emailResult = await EmailOtpService.sendOtp(targetEmail, otpCode, `${user.first_name || ""} ${user.last_name || ""}`);
-      if (!emailResult.success) {
-        console.warn(`[FORGOT PASSWORD WARN] Email delivery failed: ${emailResult.message}`);
+        const { EmailOtpService } = require("../../infrastructure/service/EmailOtpService");
+        const emailResult = await EmailOtpService.sendOtp(targetEmail, otpCode, `${user.first_name || ""} ${user.last_name || ""}`);
+        if (!emailResult.success) {
+          console.warn(`[FORGOT PASSWORD WARN] Email delivery failed: ${emailResult.message}`);
+        }
+      } else {
+        res.status(400).json({
+          success: false,
+          message: "No email address found for this account. Please enter your email address to receive your password reset code."
+        });
+        return;
       }
-    } else {
-      res.status(400).json({
-        success: false,
-        message: "No email address found for this account. Please enter your email address to receive your password reset code."
-      });
-      return;
     }
 
     res.status(200).json({
       success: true,
-      message: `Password reset verification code sent to your email address (${targetEmail}).`,
+      message: `Password reset verification code sent.`,
       email: targetEmail,
       identifier: input,
       devOtp: process.env.NODE_ENV !== "production" ? otpCode : undefined
@@ -1051,7 +1022,7 @@ user_route.post("/forgot-password", async (req: Request, res: Response) => {
 // Password Reset - Step 2: Verify Reset Code
 user_route.post("/verify-reset-code", async (req: Request, res: Response) => {
   try {
-    const { email, identifier, mobile_number, otp } = req.body;
+    const { email, identifier, mobile_number, otp, channel: inputChannel } = req.body;
     const input = (identifier || email || mobile_number || "").toString().trim();
     if (!input) {
       res.status(400).json({ success: false, message: "Mobile number or email address is required." });
@@ -1063,6 +1034,10 @@ user_route.post("/verify-reset-code", async (req: Request, res: Response) => {
       return;
     }
 
+    const { OtpService } = require("../../applications/services/OtpService");
+    const channel = inputChannel === "WHATSAPP" ? "WHATSAPP" : "EMAIL";
+
+    // Non-consuming check or check user matching
     const cleanInput = input.toLowerCase();
     const digitsOnly = input.replace(/[^0-9]/g, "");
     const rawDigits10 = digitsOnly.length >= 10 ? digitsOnly.slice(-10) : digitsOnly;
@@ -1077,12 +1052,6 @@ user_route.post("/verify-reset-code", async (req: Request, res: Response) => {
           { mobile_number: { equals: rawDigits10 } },
           { mobile_number: { equals: `0${rawDigits10}` } },
           ...(rawDigits10 && rawDigits10.length >= 10 ? [{ mobile_number: { endsWith: rawDigits10 } }] : []),
-          {
-            profile_details: {
-              path: ["mn_basic_details_draft", "email"],
-              equals: cleanInput
-            }
-          }
         ]
       }
     });
@@ -1092,17 +1061,15 @@ user_route.post("/verify-reset-code", async (req: Request, res: Response) => {
       return;
     }
 
-    const verifyRecord = await prisma.verify.findFirst({
-      where: {
-        user_id: user.id,
-        otp_code: otp.trim(),
-        is_verified: false,
-        expires_at: { gte: new Date() }
-      }
+    const verifyResult = await OtpService.verifyOtp({
+      targetIdentifier: input,
+      otpCode: otp,
+      channel,
+      purpose: "PASSWORD_RESET",
     });
 
-    if (!verifyRecord) {
-      res.status(400).json({ success: false, message: "Invalid or expired verification code. Please check and try again." });
+    if (!verifyResult.valid) {
+      res.status(400).json({ success: false, message: verifyResult.message || "Invalid or expired verification code. Please check and try again." });
       return;
     }
 
@@ -1141,7 +1108,6 @@ user_route.post("/reset-password", async (req: Request, res: Response) => {
     const digitsOnly = input.replace(/[^0-9]/g, "");
     const rawDigits10 = digitsOnly.length >= 10 ? digitsOnly.slice(-10) : digitsOnly;
 
-    // Find user
     const user = await prisma.user.findFirst({
       where: {
         OR: [
@@ -1152,12 +1118,6 @@ user_route.post("/reset-password", async (req: Request, res: Response) => {
           { mobile_number: { equals: rawDigits10 } },
           { mobile_number: { equals: `0${rawDigits10}` } },
           ...(rawDigits10 && rawDigits10.length >= 10 ? [{ mobile_number: { endsWith: rawDigits10 } }] : []),
-          {
-            profile_details: {
-              path: ["mn_basic_details_draft", "email"],
-              equals: cleanInput
-            }
-          }
         ]
       }
     });
@@ -1167,25 +1127,9 @@ user_route.post("/reset-password", async (req: Request, res: Response) => {
       return;
     }
 
-    // Verify OTP record
-    const verifyRecord = await prisma.verify.findFirst({
-      where: {
-        user_id: user.id,
-        otp_code: otp.trim(),
-        is_verified: false,
-        expires_at: { gte: new Date() }
-      }
-    });
-
-    if (!verifyRecord) {
-      res.status(400).json({ success: false, message: "Invalid or expired verification code." });
-      return;
-    }
-
     // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword.trim(), 10);
 
-    // Update user password and ensure verified email is saved if not already
     const updatePayload: any = { password: hashedPassword };
     if (cleanInput.includes("@") && (!user.email || user.email.trim() === "")) {
       updatePayload.email = cleanInput;
@@ -1196,7 +1140,7 @@ user_route.post("/reset-password", async (req: Request, res: Response) => {
       data: updatePayload
     });
 
-    // Clear verification records
+    // Clear any remaining verification records for user
     await prisma.verify.deleteMany({ where: { user_id: user.id } });
 
     res.status(200).json({

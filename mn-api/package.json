@@ -20,7 +20,7 @@
     "build": "npx prisma generate && tsc",
     "start": "node dist/index.js",
     "purge-verified-kyc": "npx ts-node src/scripts/purge-verified-kyc.ts",
-    "test": "npx ts-node src/infrastructure/config/__tests__/whatsapp.config.test.ts && npx ts-node src/infrastructure/service/__tests__/WhatsAppApiClient.test.ts && npx ts-node src/interface/routes/__tests__/whatsapp-webhook.test.ts"
+    "test": "npx ts-node src/infrastructure/config/__tests__/whatsapp.config.test.ts && npx ts-node src/infrastructure/service/__tests__/WhatsAppApiClient.test.ts && npx ts-node src/interface/routes/__tests__/whatsapp-webhook.test.ts && npx ts-node src/applications/services/__tests__/OtpService.test.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

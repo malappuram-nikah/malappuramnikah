@@ -5,6 +5,7 @@ import { AuthService } from "../../infrastructure/service/AuthService.service";
 import { accessTokenConfig } from "../../infrastructure/config/jwt.config";
 import { getAccountBlockForUser } from "../../infrastructure/helpers/accountStatus.helpers";
 import prisma from "../../infrastructure/prisma/prisamClient";
+import { OtpChannel, OtpPurpose } from "../../domain/entities/otp-core.interface";
 
 export class OtpController {
   constructor(
@@ -14,8 +15,10 @@ export class OtpController {
 
   async resendOtp(req: Request, res: Response) {
     try {
-      const { phoneNumber, email } = req.body;
+      const { phoneNumber, email, channel: inputChannel, purpose: inputPurpose } = req.body;
       const targetInput = (phoneNumber || email || "").toString().trim();
+      const channel: OtpChannel = inputChannel === "WHATSAPP" ? "WHATSAPP" : "EMAIL";
+      const purpose: OtpPurpose = inputPurpose || "VERIFICATION";
 
       if (!targetInput) {
         return res.status(400).json({ success: false, message: "Mobile number or email address is required" });
@@ -51,7 +54,7 @@ export class OtpController {
         });
       }
 
-      // If user account is missing an email address, save the provided email to their profile
+      // Save missing email if provided
       if (providedEmail && (!user.email || user.email.trim() === "")) {
         const existingEmailAccount = await prisma.user.findFirst({
           where: {
@@ -77,39 +80,52 @@ export class OtpController {
       const targetEmail = isEmailInput && providedEmail
         ? providedEmail
         : (user.email && user.email.includes("@") ? user.email : (providedEmail ? providedEmail : undefined));
-      if (!targetEmail) {
+
+      if (channel === "EMAIL" && !targetEmail) {
         return res.status(400).json({
           success: false,
           message: "Please enter your email address to receive your verification code."
         });
       }
 
-      const generatedOtp = await this.sendOtpUseCase.execute(
-        user.mobile_number,
-        targetEmail,
-        `${user.first_name || ""} ${user.last_name || ""}`
-      );
+      let generatedOtp: string;
+      try {
+        generatedOtp = await this.sendOtpUseCase.execute(
+          user.mobile_number,
+          targetEmail,
+          `${user.first_name || ""} ${user.last_name || ""}`,
+          channel,
+          purpose
+        );
+      } catch (useCaseError: any) {
+        return res.status(429).json({
+          success: false,
+          message: useCaseError.message || "Please wait before requesting another verification code.",
+        });
+      }
 
       const responseBody: Record<string, unknown> = {
         success: true,
-        message: `Verification code sent successfully to your email (${targetEmail}).`,
+        message: `Verification code sent successfully.`,
       };
       if (process.env.NODE_ENV !== "production") {
         responseBody.otp = generatedOtp;
       }
       return res.status(200).json(responseBody);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Resend OTP error:", error);
       return res
         .status(500)
-        .json({ success: false, message: "Error sending OTP" });
+        .json({ success: false, message: error?.message || "Error sending OTP" });
     }
   }
 
   async verifyOtp(req: Request, res: Response) {
     try {
-      const { phoneNumber, email, otpCode, userId } = req.body;
+      const { phoneNumber, email, otpCode, userId, channel: inputChannel, purpose: inputPurpose } = req.body;
       const targetInput = (phoneNumber || email || "").toString().trim();
+      const channel: OtpChannel = inputChannel === "WHATSAPP" ? "WHATSAPP" : "EMAIL";
+      const purpose: OtpPurpose = inputPurpose || "VERIFICATION";
 
       if (!targetInput || !otpCode) {
         return res.status(400).json({ success: false, message: "Phone number or email and OTP are required" });
@@ -132,8 +148,8 @@ export class OtpController {
       }
 
       const lookupKey = user.mobile_number || targetInput;
-      const isValid = await this.verifyOtpUseCase.execute(lookupKey, codeString)
-        || await this.verifyOtpUseCase.execute(targetInput, codeString);
+      const isValid = await this.verifyOtpUseCase.execute(lookupKey, codeString, channel, purpose)
+        || await this.verifyOtpUseCase.execute(targetInput, codeString, channel, purpose);
 
       if (!isValid) {
         return res.status(400).json({ success: false, message: "Invalid verification code. Please check and try again." });
