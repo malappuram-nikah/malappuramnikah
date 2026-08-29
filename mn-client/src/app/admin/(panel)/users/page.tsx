@@ -20,6 +20,8 @@ import {
   ExternalLink,
   Calendar,
   MessageSquare,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import AdminAlert from "@/components/admin/AdminAlert";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
@@ -172,12 +174,31 @@ export default function AdminUsersPage() {
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [downloadingCsv, setDownloadingCsv] = useState(false);
 
+  // User Deletion state
+  const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
+  const [isDeletingUser, setIsDeletingUser] = useState(false);
+
   // Call Log Modal state
   const [callModalUser, setCallModalUser] = useState<AdminUser | null>(null);
   const [callStatusInput, setCallStatusInput] = useState<string>("NOT_CALLED");
   const [calledDateInput, setCalledDateInput] = useState<string>("");
   const [callResponseInput, setCallResponseInput] = useState<string>("");
   const [savingCallLog, setSavingCallLog] = useState(false);
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+    setIsDeletingUser(true);
+    try {
+      await adminApi.deleteUser(userToDelete.id);
+      triggerAlert(`Profile ${userToDelete.profileId || `MN-${100000 + userToDelete.id}`} deleted permanently.`);
+      setUserToDelete(null);
+      await loadUsers();
+    } catch (err: any) {
+      triggerAlert(err?.message || "Failed to delete user profile.", "error");
+    } finally {
+      setIsDeletingUser(false);
+    }
+  };
 
   const openCallModal = (user: AdminUser) => {
     setCallModalUser(user);
@@ -596,6 +617,14 @@ export default function AdminUsersPage() {
                           >
                             {user.is_premium ? "Premium" : "Free"}
                           </button>
+                          <button
+                            type="button"
+                            onClick={() => setUserToDelete(user)}
+                            className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors"
+                            title="Delete User Permanently"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -797,6 +826,59 @@ export default function AdminUsersPage() {
                 className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete User Confirmation Modal */}
+      {userToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-md space-y-4 border border-gray-150 shadow-2xl">
+            <div className="flex items-center gap-3 text-red-650">
+              <div className="w-10 h-10 rounded-2xl bg-red-50 flex items-center justify-center text-red-600 shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-950 text-sm">Delete Member Profile Permanently?</h3>
+                <p className="text-xs text-gray-400">Profile ID: {userToDelete.profileId || `MN-${100000 + userToDelete.id}`}</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-600 leading-relaxed">
+              Are you sure you want to permanently delete <strong className="text-gray-900">{userToDelete.first_name} {userToDelete.last_name}</strong>?
+              This action will completely delete all associated matrimonial data, KYC files, message logs, and match histories.
+            </p>
+
+            <div className="p-3 bg-red-50/70 border border-red-200 rounded-xl text-[11px] text-red-800 font-medium">
+              ⚠️ Warning: This administrative action is irreversible.
+            </div>
+
+            <div className="pt-2 flex gap-2">
+              <button
+                type="button"
+                disabled={isDeletingUser}
+                onClick={handleDeleteUser}
+                className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl text-center transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+              >
+                {isDeletingUser ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" /> Delete Permanently
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingUser}
+                onClick={() => setUserToDelete(null)}
+                className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+              >
+                Cancel
               </button>
             </div>
           </div>

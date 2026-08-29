@@ -683,6 +683,96 @@ admin_route.post("/users/:id/call-log", adminGuard, async (req: Request, res: Re
   }
 });
 
+// 2dd. DELETE User Profile by Admin (DELETE /user/admin/users/:id)
+admin_route.delete("/users/:id", adminGuard, async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ success: false, message: "Invalid user ID" });
+      return;
+    }
+
+    const userToDelete = await prisma.user.findUnique({ where: { id } });
+    if (!userToDelete) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
+    }
+
+    // Clean up file uploads (KYC, etc.)
+    await deleteKycFile(userToDelete.kyc_front_url);
+    await deleteKycFile(userToDelete.kyc_back_url);
+
+    // Delete child records manually inside a database transaction to satisfy foreign keys
+    await prisma.$transaction([
+      prisma.verify.deleteMany({ where: { user_id: id } }),
+      prisma.interest.deleteMany({
+        where: {
+          OR: [
+            { sender_id: id },
+            { receiver_id: id }
+          ]
+        }
+      }),
+      prisma.message.deleteMany({
+        where: {
+          OR: [
+            { sender_id: id },
+            { receiver_id: id }
+          ]
+        }
+      }),
+      prisma.notification.deleteMany({
+        where: {
+          OR: [
+            { user_id: id },
+            { sender_id: id }
+          ]
+        }
+      }),
+      prisma.referralTransaction.deleteMany({ where: { user_id: id } }),
+      prisma.referral.deleteMany({
+        where: {
+          OR: [
+            { referrer_id: id },
+            { referred_user_id: id }
+          ]
+        }
+      }),
+      prisma.block.deleteMany({
+        where: {
+          OR: [
+            { blocker_id: id },
+            { blocked_id: id }
+          ]
+        }
+      }),
+      prisma.favourite.deleteMany({
+        where: {
+          OR: [
+            { favouriter_id: id },
+            { favourited_id: id }
+          ]
+        }
+      }),
+      prisma.feedback.deleteMany({ where: { user_id: id } }),
+      prisma.profileView.deleteMany({
+        where: {
+          OR: [
+            { viewer_id: id },
+            { viewed_id: id }
+          ]
+        }
+      }),
+      prisma.user.delete({ where: { id } })
+    ]);
+
+    res.status(200).json({ success: true, message: `Profile MN-${100000 + id} deleted permanently.` });
+  } catch (error: any) {
+    console.error("Admin user delete error:", error);
+    res.status(500).json({ success: false, message: error.message || "Failed to delete user profile." });
+  }
+});
+
 // 2e. POST Manual Direct KYC Verification (POST /user/admin/users/:id/manual-verify-kyc)
 admin_route.post("/users/:id/manual-verify-kyc", adminGuard, async (req: Request, res: Response) => {
   try {

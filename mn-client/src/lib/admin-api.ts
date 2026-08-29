@@ -131,6 +131,11 @@ export const adminApi = {
       { method: "POST" }
     ),
 
+  deleteUser: (id: number) =>
+    adminFetch<{ success: true; message: string }>(`/user/admin/users/${id}`, {
+      method: "DELETE",
+    }),
+
   getKycRequests: (params?: { search?: string; status?: string; gender?: string }) => {
     const qs = new URLSearchParams();
     if (params?.search) qs.set("search", params.search);

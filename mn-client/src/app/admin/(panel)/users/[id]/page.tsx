@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -16,6 +16,8 @@ import {
   Loader2,
   ShieldCheck,
   CheckCircle2,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import AdminAlert from "@/components/admin/AdminAlert";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
@@ -134,18 +136,39 @@ function callBadgeClass(status?: string | null) {
 }
 
 export default function AdminUserDetailPage() {
-  const params = useParams();
-  const userId = parseInt(params.id as string, 10);
-  const [user, setUser] = useState<AdminUser | null>(null);
+  const router = useRouter();
+  const params = useParams<{ id: string }>();
+  const userId = parseInt(params.id, 10);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<AdminUser | null>(null);
   const [alert, setAlert] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Call Modal State
+  // Call Tracking Modal State
   const [callModalOpen, setCallModalOpen] = useState(false);
-  const [callStatusInput, setCallStatusInput] = useState("NOT_CALLED");
-  const [calledDateInput, setCalledDateInput] = useState("");
-  const [callResponseInput, setCallResponseInput] = useState("");
+  const [callStatusInput, setCallStatusInput] = useState<string>("NOT_CALLED");
+  const [calledDateInput, setCalledDateInput] = useState<string>("");
+  const [callResponseInput, setCallResponseInput] = useState<string>("");
   const [savingCallLog, setSavingCallLog] = useState(false);
+
+  // Delete Modal State
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteProfile = async () => {
+    if (!user) return;
+    setIsDeleting(true);
+    try {
+      await adminApi.deleteUser(user.id);
+      triggerAlert(`Profile ${user.profileId || `MN-${100000 + user.id}`} deleted permanently.`);
+      setTimeout(() => {
+        router.push("/admin/users");
+      }, 1200);
+    } catch (err: any) {
+      triggerAlert(err?.message || "Failed to delete user.", "error");
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
 
   const triggerAlert = (text: string, type: "success" | "error" = "success") => {
     setAlert({ text, type });
@@ -419,6 +442,13 @@ export default function AdminUserDetailPage() {
           }`}
         >
           {user.is_premium ? "Remove Premium" : "Grant Premium"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowDeleteModal(true)}
+          className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-bold rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+        >
+          <Trash2 className="w-3.5 h-3.5" /> Delete Profile
         </button>
       </div>
 
@@ -721,6 +751,59 @@ export default function AdminUserDetailPage() {
                 type="button"
                 onClick={() => setCallModalOpen(false)}
                 className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete User Confirmation Modal */}
+      {showDeleteModal && user && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-md space-y-4 border border-gray-150 shadow-2xl">
+            <div className="flex items-center gap-3 text-red-650">
+              <div className="w-10 h-10 rounded-2xl bg-red-50 flex items-center justify-center text-red-600 shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-950 text-sm">Delete Member Profile Permanently?</h3>
+                <p className="text-xs text-gray-400">Profile ID: {user.profileId || `MN-${100000 + user.id}`}</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-600 leading-relaxed">
+              Are you sure you want to permanently delete <strong className="text-gray-900">{user.first_name} {user.last_name}</strong>?
+              This action will completely remove all their profile details, KYC documents, messages, chats, interests, and matching records.
+            </p>
+
+            <div className="p-3 bg-red-50/70 border border-red-200 rounded-xl text-[11px] text-red-800 font-medium">
+              ⚠️ Warning: This administrative action is irreversible.
+            </div>
+
+            <div className="pt-2 flex gap-2">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={handleDeleteProfile}
+                className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl text-center transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" /> Delete Permanently
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setShowDeleteModal(false)}
+                className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
               >
                 Cancel
               </button>
