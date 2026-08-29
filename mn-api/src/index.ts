@@ -8,6 +8,7 @@ import notification_route from "./interface/routes/notification.route";
 import admin_route from "./interface/routes/admin.route";
 import referral_route from "./interface/routes/referral.route";
 import search_route from "./interface/routes/search.route";
+import whatsapp_webhook_route from "./interface/routes/whatsapp-webhook.route";
 import cors from "cors";
 import path from "path";
 
@@ -102,7 +103,14 @@ app.use((req, res, next) => {
 // Global General Rate Limiter (Skipping static assets & OPTIONS)
 app.use(generalLimiter);
 
-app.use(express.json({ limit: '50mb' }));
+app.use(
+  express.json({
+    limit: "50mb",
+    verify: (req: any, _res, buf) => {
+      req.rawBody = buf;
+    },
+  })
+);
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 app.use((req, res, next) => {
@@ -125,6 +133,7 @@ app.use("/user/reset-password", authLimiter);
 app.use("/user/verify-reset-code", authLimiter);
 app.use("/user/forgot-password", otpLimiter);
 
+app.use("/api/webhooks/whatsapp", whatsapp_webhook_route);
 app.use("/user/interest", interest_route);
 app.use("/user/chat", chat_route);
 app.use("/user/notifications", notification_route);
