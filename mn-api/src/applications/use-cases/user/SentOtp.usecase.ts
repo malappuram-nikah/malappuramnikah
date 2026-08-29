@@ -1,6 +1,6 @@
 import { IOtpRepository } from "../../../domain/interfaces/IOtpRepository";
 import { OtpService } from "../../services/OtpService";
-import { EmailOtpService } from "../../../infrastructure/service/EmailOtpService";
+import { OtpDeliveryResolver } from "../../../infrastructure/service/OtpDeliveryResolver";
 import { OtpChannel, OtpPurpose } from "../../../domain/entities/otp-core.interface";
 
 export class SendOtpUseCase {
@@ -24,14 +24,20 @@ export class SendOtpUseCase {
     }
 
     const otpCode = result.otpCode;
-    const emailToUse = targetIdentifier.includes("@") ? targetIdentifier : recipientEmail;
+    const recipient = channel === "EMAIL"
+      ? (targetIdentifier.includes("@") ? targetIdentifier : (recipientEmail || targetIdentifier))
+      : targetIdentifier;
 
-    if (emailToUse && channel === "EMAIL") {
-      try {
-        await EmailOtpService.sendOtp(emailToUse, otpCode, recipientName);
-      } catch (err) {
-        console.error(`[EMAIL OTP ERROR] Failed to send to ${emailToUse}:`, err);
-      }
+    const provider = OtpDeliveryResolver.resolveProvider(channel);
+    try {
+      await provider.sendOtp({
+        recipient,
+        otpCode,
+        name: recipientName,
+        purpose,
+      });
+    } catch (err) {
+      console.error(`[OTP DELIVERY ERROR] Channel ${channel} delivery failed:`, err);
     }
 
     return otpCode;
