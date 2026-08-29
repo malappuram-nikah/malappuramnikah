@@ -78,12 +78,12 @@ export default function VerificationWall({ children }: { children: React.ReactNo
           </div>
 
           <a
-            href="https://wa.me/919447868443?text=Hello%20MalappuramNikah%20Support%2C%20I%20have%20submitted%20my%20ID.%20Please%20approve%20my%20verification."
+            href="https://wa.me/919946341443?text=Hello%20MalappuramNikah%20Support%2C%20I%20have%20submitted%20my%20ID.%20Please%20approve%20my%20verification."
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 text-xs font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-4 py-2.5 rounded-full transition-all border border-emerald-100"
           >
-            💬 Request Instant Approval (+91 9447868443)
+            💬 Request Instant Approval via WhatsApp (+91 99463 41443)
           </a>
         </div>
       );
@@ -148,12 +148,12 @@ export default function VerificationWall({ children }: { children: React.ReactNo
         </div>
 
         <a
-          href="https://wa.me/919447868443?text=Hello%20MalappuramNikah%20Support%2C%20I%20need%20help%20with%20ID%20verification."
+          href="https://wa.me/919946341443?text=Hello%20MalappuramNikah%20Support%2C%20I%20need%20help%20with%20ID%20verification."
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 text-xs font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-4 py-2.5 rounded-full transition-all border border-emerald-100"
         >
-          💬 Verify via WhatsApp Support (+91 9447868443)
+          💬 Verify via WhatsApp Support (+91 99463 41443)
         </a>
       </div>
     );

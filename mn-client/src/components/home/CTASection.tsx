@@ -75,7 +75,7 @@ export default function CTASection({ onRegisterOpen }: CTASectionProps) {
               <span>📞 Need help registering? Call Support:</span>
               <a href="tel:+919447868443" className="text-white hover:underline font-bold">+91 94478 68443</a>
               <span className="hidden sm:inline text-brand-300/40">•</span>
-              <a href="https://wa.me/919447868443?text=Hello%20Malappuram%20Nikah%2C%20I%20need%20assistance." target="_blank" rel="noopener noreferrer" className="text-white hover:underline font-bold flex items-center gap-1">
+              <a href="https://wa.me/919946341443?text=Hello%20Malappuram%20Nikah%2C%20I%20need%20assistance." target="_blank" rel="noopener noreferrer" className="text-white hover:underline font-bold flex items-center gap-1">
                 💬 WhatsApp Chat Support
               </a>
             </motion.p>
