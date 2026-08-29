@@ -1,5 +1,6 @@
 import { IOtpDeliveryProvider } from "../../domain/interfaces/IOtpDeliveryProvider.interface";
 import { EmailOtpProvider } from "./EmailOtpProvider";
+import { WhatsAppOtpProvider } from "./WhatsAppOtpProvider";
 
 export class OtpDeliveryError extends Error {
   constructor(message: string, public readonly statusCode: number = 400) {
@@ -12,8 +13,9 @@ export class OtpDeliveryResolver {
   private static providers: Map<string, IOtpDeliveryProvider> = new Map();
 
   static {
-    // Register default Email provider
+    // Register default Email and WhatsApp providers
     this.registerProvider(new EmailOtpProvider());
+    this.registerProvider(new WhatsAppOtpProvider());
   }
 
   public static registerProvider(provider: IOtpDeliveryProvider): void {
@@ -28,13 +30,6 @@ export class OtpDeliveryResolver {
     const provider = this.providers.get(normalizedChannel);
     if (provider) {
       return provider;
-    }
-
-    if (normalizedChannel === "WHATSAPP") {
-      throw new OtpDeliveryError(
-        "WhatsApp OTP delivery provider is not configured yet (Module 4.3). Please try again later or select Email delivery.",
-        503
-      );
     }
 
     throw new OtpDeliveryError(`Unsupported OTP delivery channel: ${channel}`, 400);

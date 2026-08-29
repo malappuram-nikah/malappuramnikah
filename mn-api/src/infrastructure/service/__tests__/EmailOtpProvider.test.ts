@@ -46,15 +46,18 @@ async function runTests() {
     assert.strictEqual(provider.channel, "EMAIL");
   });
 
-  await test("4. OtpDeliveryResolver: Returns clear unconfigured error for WHATSAPP (Module 4.3 placeholder)", async () => {
+  await test("4. OtpDeliveryResolver: Resolves WHATSAPP to WhatsAppOtpProvider & throws error for unknown channels", async () => {
+    const waProvider = OtpDeliveryResolver.resolveProvider("WHATSAPP");
+    assert.ok(waProvider);
+    assert.strictEqual(waProvider.channel, "WHATSAPP");
+
     assert.throws(
       () => {
-        OtpDeliveryResolver.resolveProvider("WHATSAPP");
+        OtpDeliveryResolver.resolveProvider("UNSUPPORTED_CHANNEL");
       },
       (err: any) => {
         assert.ok(err instanceof OtpDeliveryError);
-        assert.strictEqual(err.statusCode, 503);
-        assert.ok(err.message.includes("Module 4.3"));
+        assert.strictEqual(err.statusCode, 400);
         return true;
       }
     );
