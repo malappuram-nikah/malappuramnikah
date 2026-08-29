@@ -110,6 +110,48 @@ if (typeof window !== "undefined") {
       clearTimeout(id);
     };
   }
+
+  // 10. Image decode() fallback for older WebKit engines
+  if (typeof HTMLImageElement !== "undefined" && !HTMLImageElement.prototype.decode) {
+    HTMLImageElement.prototype.decode = function () {
+      return new Promise<void>((resolve) => {
+        if (this.complete) {
+          resolve();
+        } else {
+          this.onload = () => resolve();
+          this.onerror = () => resolve();
+        }
+      });
+    };
+  }
+
+  // 11. iOS Safari 100vh dynamic viewport fix
+  const setVh = () => {
+    try {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty("--vh", `${vh}px`);
+    } catch {}
+  };
+  setVh();
+  window.addEventListener("resize", setVh, { passive: true });
+  window.addEventListener("orientationchange", setVh, { passive: true });
+
+  // 12. AudioContext auto-unlock on first user gesture (iOS Safari requirement)
+  const unlockAudio = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtx) {
+        const dummyCtx = new AudioCtx();
+        if (dummyCtx.state === "suspended") {
+          dummyCtx.resume().catch(() => {});
+        }
+      }
+    } catch {}
+    window.removeEventListener("touchstart", unlockAudio);
+    window.removeEventListener("click", unlockAudio);
+  };
+  window.addEventListener("touchstart", unlockAudio, { passive: true });
+  window.addEventListener("click", unlockAudio, { passive: true });
 }
 
 export {};

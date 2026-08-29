@@ -653,6 +653,40 @@ user_route.delete('/:id', async (req: Request, res: Response) => {
           ]
         }
       }),
+      prisma.referralTransaction.deleteMany({ where: { user_id: id } }),
+      prisma.referral.deleteMany({
+        where: {
+          OR: [
+            { referrer_id: id },
+            { referred_user_id: id }
+          ]
+        }
+      }),
+      prisma.block.deleteMany({
+        where: {
+          OR: [
+            { blocker_id: id },
+            { blocked_id: id }
+          ]
+        }
+      }),
+      prisma.favourite.deleteMany({
+        where: {
+          OR: [
+            { favouriter_id: id },
+            { favourited_id: id }
+          ]
+        }
+      }),
+      prisma.feedback.deleteMany({ where: { user_id: id } }),
+      prisma.profileView.deleteMany({
+        where: {
+          OR: [
+            { viewer_id: id },
+            { viewed_id: id }
+          ]
+        }
+      }),
       prisma.user.delete({ where: { id } })
     ]);
 
@@ -779,6 +813,54 @@ user_route.get('/favourite', async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || "Failed to fetch favourites" });
+  }
+});
+
+// Get my favourite member profiles list: GET /user/favourite/profiles
+user_route.get('/favourite/profiles', async (req: Request, res: Response) => {
+  try {
+    const requesterId = getUserIdFromRequest(req);
+    if (!requesterId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+    const favourites = await prisma.favourite.findMany({
+      where: { favouriter_id: requesterId },
+      include: {
+        favourited: {
+          select: {
+            id: true,
+            uuid: true,
+            first_name: true,
+            last_name: true,
+            gender: true,
+            cast: true,
+            dob: true,
+            location: true,
+            status: true,
+            is_premium: true,
+            kyc_status: true,
+            profile_details: true,
+            created_at: true,
+          }
+        }
+      },
+      orderBy: { created_at: "desc" }
+    });
+
+    const profiles = favourites.map(f => ({
+      ...f.favourited,
+      favourite_id: f.id,
+      favourited_at: f.created_at,
+      profileId: `MN-${100000 + f.favourited.id}`
+    }));
+
+    res.status(200).json({
+      success: true,
+      profiles
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || "Failed to fetch favourite profiles" });
   }
 });
 

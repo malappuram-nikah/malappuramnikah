@@ -51,6 +51,12 @@ const KYC_STATUS_OPTIONS = [
   { id: "REJECTED", label: "Rejected" },
 ];
 
+const PREMIUM_STATUS_OPTIONS = [
+  { id: "", label: "All Members" },
+  { id: "true", label: "👑 Premium Only" },
+  { id: "false", label: "Free / Basic" },
+];
+
 const CALL_STATUS_OPTIONS = [
   { id: "NOT_CALLED", label: "Not Called" },
   { id: "CALLED", label: "Called (General)" },
@@ -154,6 +160,7 @@ export default function AdminUsersPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [genderFilter, setGenderFilter] = useState(searchParams.get("gender") || "");
   const [kycFilter, setKycFilter] = useState("");
+  const [premiumFilter, setPremiumFilter] = useState(searchParams.get("is_premium") || "");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
@@ -210,12 +217,14 @@ export default function AdminUsersPage() {
       if (statusFilter) params.status = statusFilter;
       if (genderFilter) params.gender = genderFilter;
       if (kycFilter) params.kyc_status = kycFilter;
+      if (premiumFilter) params.is_premium = premiumFilter;
       if (dateFrom) params.date_from = dateFrom;
       if (dateTo) params.date_to = dateTo;
 
       const res = await adminApi.getUsers(params);
       const filterObj = ACCOUNT_STATUS_OPTIONS.find((o) => o.id === statusFilter);
-      const filterTitle = filterObj?.label || (statusFilter ? statusFilter : "All Accounts");
+      const premiumObj = PREMIUM_STATUS_OPTIONS.find((o) => o.id === premiumFilter);
+      const filterTitle = `${filterObj?.label || "All Accounts"}${premiumFilter ? ` - ${premiumObj?.label}` : ""}`;
 
       exportUsersToPdf(res.users, `${filterTitle} (${res.users.length})`);
       triggerAlert(`PDF Export complete for ${res.users.length} members! 📄`);
@@ -235,12 +244,14 @@ export default function AdminUsersPage() {
       if (statusFilter) params.status = statusFilter;
       if (genderFilter) params.gender = genderFilter;
       if (kycFilter) params.kyc_status = kycFilter;
+      if (premiumFilter) params.is_premium = premiumFilter;
       if (dateFrom) params.date_from = dateFrom;
       if (dateTo) params.date_to = dateTo;
 
       const res = await adminApi.getUsers(params);
       const filterObj = ACCOUNT_STATUS_OPTIONS.find((o) => o.id === statusFilter);
-      const filterTitle = filterObj?.label || (statusFilter ? statusFilter : "All Members");
+      const premiumObj = PREMIUM_STATUS_OPTIONS.find((o) => o.id === premiumFilter);
+      const filterTitle = `${filterObj?.label || "All Members"}${premiumFilter ? ` - ${premiumObj?.label}` : ""}`;
 
       exportUsersToCsv(res.users, `${filterTitle} (${res.users.length})`);
       triggerAlert(`CSV Sheet Export complete for ${res.users.length} members! 📊`);
@@ -255,6 +266,7 @@ export default function AdminUsersPage() {
   useEffect(() => {
     setStatusFilter(searchParams.get("status") || "");
     setGenderFilter(searchParams.get("gender") || "");
+    setPremiumFilter(searchParams.get("is_premium") || "");
   }, [searchParams]);
 
   const triggerAlert = (text: string, type: "success" | "error" = "success") => {
@@ -270,6 +282,7 @@ export default function AdminUsersPage() {
       if (statusFilter) params.status = statusFilter;
       if (genderFilter) params.gender = genderFilter;
       if (kycFilter) params.kyc_status = kycFilter;
+      if (premiumFilter) params.is_premium = premiumFilter;
       if (dateFrom) params.date_from = dateFrom;
       if (dateTo) params.date_to = dateTo;
 
@@ -283,7 +296,7 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, statusFilter, genderFilter, kycFilter, dateFrom, dateTo]);
+  }, [page, search, statusFilter, genderFilter, kycFilter, premiumFilter, dateFrom, dateTo]);
 
   useEffect(() => {
     loadUsers();
@@ -336,7 +349,7 @@ export default function AdminUsersPage() {
               className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 bg-gray-50"
             />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-2">Account status</p>
               <FilterBoxes
@@ -359,6 +372,14 @@ export default function AdminUsersPage() {
                 options={KYC_STATUS_OPTIONS}
                 value={kycFilter}
                 onChange={(v) => { setKycFilter(v); setPage(1); }}
+              />
+            </div>
+            <div>
+              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-2">Membership Plan</p>
+              <FilterBoxes
+                options={PREMIUM_STATUS_OPTIONS}
+                value={premiumFilter}
+                onChange={(v) => { setPremiumFilter(v); setPage(1); }}
               />
             </div>
           </div>

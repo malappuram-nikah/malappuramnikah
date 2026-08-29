@@ -13,33 +13,51 @@ import {
 const businessServices = [
   {
     category: "RENTAL VENDOR",
+    badge: "COMING SOON",
     title: "Wedding Dress Rentals",
-    description: "Showcase bridal gowns, groom sherwanis, designer abayas & traditional wedding attire for rental.",
+    description: "Showcase bridal lehengas, groom sherwanis, designer abayas & traditional wedding attire for rental.",
+  },
+  {
+    category: "JEWELLERY PARTNER",
+    badge: "COMING SOON",
+    title: "Bridal Jewellery & Ornaments",
+    description: "Exquisite antique gold, diamond sets, bridal ornaments & traditional Malabar wedding jewellery rentals.",
   },
   {
     category: "MEDIA PARTNER",
+    badge: "COMING SOON",
     title: "Photography & Videography",
-    description: "Get booked for wedding photo shoots, drone coverage, and cinematic Nikah films.",
+    description: "Get booked for wedding photo shoots, drone coverage, and cinematic Nikah wedding films.",
+  },
+  {
+    category: "BRIDAL MAKEOVER",
+    badge: "COMING SOON",
+    title: "Mehndi & Bridal Makeup Artists",
+    description: "Professional bridal makeup artists, hair stylists, and bridal henna mehndi creators across Kerala.",
   },
   {
     category: "CATERING",
-    title: "Wedding Catering & Services",
-    description: "Connect with families looking for traditional Malabar feasts, live counters & wedding catering.",
+    badge: "COMING SOON",
+    title: "Wedding Catering & Feasts",
+    description: "Connect with families looking for traditional Malabar Dum Biryani, live food counters & wedding catering.",
   },
   {
     category: "EVENT DECOR",
-    title: "Service Providers & Decor",
-    description: "Offer stage decoration, Oppana performance teams, sound setups, and event management.",
+    badge: "COMING SOON",
+    title: "Stage & Floral Decoration",
+    description: "Offer bespoke Nikah stage decor, floral arches, entrance pavilions, and aesthetic ambience setups.",
   },
   {
-    category: "DIRECT LEADS",
-    title: "Direct Business Bookings",
-    description: "Receive verified client enquiries, manage calendar availability, and confirm bookings directly.",
+    category: "LUXURY FLEET",
+    badge: "COMING SOON",
+    title: "Wedding Car Rentals",
+    description: "Luxury sedan fleets, vintage wedding cars, and VIP bridal chauffeur transport services.",
   },
   {
-    category: "GROWTH ENGINE",
-    title: "Reviews & Commissions",
-    description: "Build business reputation with genuine client reviews, transparent commissions & fast payouts.",
+    category: "CULTURAL EVENTS",
+    badge: "COMING SOON",
+    title: "Oppana & Cultural Performance",
+    description: "Traditional Malabar Oppana teams, Duff Muttu groups, sound reinforcement, and cultural programs.",
   },
 ];
 
@@ -79,7 +97,7 @@ export default function UpcomingBusinessSection() {
 
         {/* Brand Theme Filled Grid Cards Container */}
         <div className="border border-[#026d77]/20 rounded-3xl overflow-hidden bg-[#026d77] shadow-2xl">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 divide-y md:divide-y-0 lg:divide-x divide-white/15">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 gap-[1px] bg-white/10">
             {businessServices.map((service, index) => {
               return (
                 <motion.div
@@ -87,33 +105,36 @@ export default function UpcomingBusinessSection() {
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.08 }}
+                  transition={{ duration: 0.5, delay: index * 0.06 }}
                   onClick={() => setModalOpen(true)}
-                  className={`p-8 sm:p-10 flex flex-col justify-between transition-all duration-300 cursor-pointer group relative bg-gradient-to-br from-[#026d77] via-[#025f68] to-[#01474d] hover:from-[#03828e] hover:to-[#025f68] text-white ${
-                    index < 3 ? "border-b border-white/15" : ""
-                  }`}
+                  className="p-6 sm:p-7 flex flex-col justify-between transition-all duration-300 cursor-pointer group relative bg-gradient-to-br from-[#026d77] via-[#025f68] to-[#01474d] hover:from-[#03828e] hover:to-[#025f68] text-white"
                 >
                   <div>
-                    {/* Category Label */}
-                    <p className="text-[10px] sm:text-xs font-bold text-brand-200 tracking-[0.2em] uppercase mb-3 group-hover:text-white transition-colors">
-                      {service.category}
-                    </p>
+                    {/* Top Row: Category + Coming Soon Badge */}
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <p className="text-[10px] font-bold text-brand-200 tracking-[0.15em] uppercase group-hover:text-white transition-colors truncate">
+                        {service.category}
+                      </p>
+                      <span className="inline-block bg-amber-400/20 text-amber-300 border border-amber-400/40 text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 shadow-xs">
+                        {service.badge}
+                      </span>
+                    </div>
 
                     {/* Bold Title */}
-                    <h3 className="text-xl sm:text-2xl font-bold font-sans text-white mb-3 tracking-tight group-hover:text-brand-50 transition-colors">
+                    <h3 className="text-lg sm:text-xl font-bold font-sans text-white mb-2.5 tracking-tight group-hover:text-brand-50 transition-colors line-clamp-2">
                       {service.title}
                     </h3>
 
                     {/* Subtext Description */}
-                    <p className="text-brand-100/90 text-xs sm:text-sm leading-relaxed font-normal">
+                    <p className="text-brand-100/90 text-xs leading-relaxed font-normal line-clamp-3">
                       {service.description}
                     </p>
                   </div>
 
                   {/* Bottom Work & Bookings Link */}
-                  <div className="mt-8 pt-4 flex items-center justify-between text-xs font-semibold text-brand-200 group-hover:text-white transition-colors border-t border-white/15">
-                    <span>Work & Bookings</span>
-                    <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1.5 transition-transform" />
+                  <div className="mt-6 pt-3.5 flex items-center justify-between text-xs font-semibold text-brand-200 group-hover:text-white transition-colors border-t border-white/15">
+                    <span>Vendor Partner Access</span>
+                    <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1.5 transition-transform text-amber-300" />
                   </div>
                 </motion.div>
               );

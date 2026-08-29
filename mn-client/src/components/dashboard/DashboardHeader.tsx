@@ -83,6 +83,66 @@ export default function DashboardHeader() {
     setMounted(true);
   }, []);
 
+  // Sync localPhotos whenever user profile details load or photos modal opens
+  useEffect(() => {
+    const rawPhotos = (user?.profile_details as any)?.mn_profile_photos_draft?.photos;
+    if (Array.isArray(rawPhotos) && rawPhotos.length > 0) {
+      setLocalPhotos(rawPhotos);
+    } else {
+      try {
+        const stored = localStorage.getItem("mn_profile_photos_draft");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed?.photos) && parsed.photos.length > 0) {
+            setLocalPhotos(parsed.photos);
+          }
+        }
+      } catch {}
+    }
+  }, [user, showPhotosModal]);
+
+  const savePhotoGallery = async (photosToSave: Photo[]) => {
+    if (!user) return false;
+    setIsSavingPhotos(true);
+    try {
+      const updatedDetails = {
+        ...(user.profile_details || {}),
+        mn_profile_photos_draft: {
+          photos: photosToSave,
+        },
+      };
+
+      const activeToken = localStorage.getItem("mn_token") || token;
+      const res = await fetch(`${API_URL}/user/${user.id}/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${activeToken}`,
+        },
+        body: JSON.stringify({ profile_details: updatedDetails }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        localStorage.setItem(
+          "mn_profile_photos_draft",
+          JSON.stringify({ photos: photosToSave }),
+        );
+        await refreshUser();
+        return true;
+      } else {
+        toast.error(data.message || "Failed to save photos");
+        return false;
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save photos.");
+      return false;
+    } finally {
+      setIsSavingPhotos(false);
+    }
+  };
+
 
   // Initialize Auth & Real-Time Socket
   useEffect(() => {
@@ -762,16 +822,17 @@ export default function DashboardHeader() {
                               ) : (
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    setLocalPhotos(
-                                      localPhotos.map((p) => ({
-                                        ...p,
-                                        isPrimary: p.id === photo.id,
-                                      })),
-                                    );
+                                  onClick={async () => {
+                                    const updated = localPhotos.map((p) => ({
+                                      ...p,
+                                      isPrimary: p.id === photo.id,
+                                    }));
+                                    setLocalPhotos(updated);
+                                    await savePhotoGallery(updated);
+                                    toast.success("Main profile photo updated!");
                                   }}
                                   className="bg-black/40 hover:bg-black/60 text-white w-5 h-5 rounded-full text-[11px] font-bold shadow-sm opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center"
-                                  title="Make Primary"
+                                  title="Make Primary Profile Photo"
                                 >
                                   ☆
                                 </button>
@@ -790,7 +851,7 @@ export default function DashboardHeader() {
                               </button>
                               <button
                                 type="button"
-                                onClick={() => {
+                                onClick={async () => {
                                   const filtered = localPhotos.filter(
                                     (p) => p.id !== photo.id,
                                   );
@@ -801,6 +862,8 @@ export default function DashboardHeader() {
                                     filtered[0].isPrimary = true;
                                   }
                                   setLocalPhotos(filtered);
+                                  await savePhotoGallery(filtered);
+                                  toast.success("Photo removed from gallery");
                                 }}
                                 className="bg-red-500 hover:bg-red-600 text-white p-1 rounded-full shadow-md transition-all active:scale-90 cursor-pointer"
                                 title="Delete Photo"
@@ -859,8 +922,8 @@ export default function DashboardHeader() {
                         </span>
                         <p className="leading-relaxed">
                           Please upload high quality vertical portrait
-                          photographs (standard matrimonial size). Photos are automatically
-                          protected with the official <strong>Malappuram Nikah</strong> watermark. Click the crop icon on any image to adjust positioning and zoom.
+                          photographs (standard matrimonial size). Click the <strong>star (☆)</strong> on any photo to set it as your main profile picture. Photos are automatically
+                          watermarked for privacy.
                         </p>
                       </div>
                     </div>
@@ -872,58 +935,16 @@ export default function DashboardHeader() {
                         onClick={() => setShowPhotosModal(false)}
                         className="px-4 py-2 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 text-xs font-bold transition-colors cursor-pointer"
                       >
-                        Cancel
+                        Close
                       </button>
                       <button
                         type="button"
                         disabled={isSavingPhotos}
                         onClick={async () => {
-                          if (!user) return;
-                          setIsSavingPhotos(true);
-                          try {
-                            const updatedDetails = {
-                              ...(user.profile_details || {}),
-                              mn_profile_photos_draft: {
-                                photos: localPhotos,
-                              },
-                            };
-
-                            const token = localStorage.getItem("mn_token");
-                            const res = await fetch(
-                              `${API_URL}/user/${user.id}/profile`,
-                              {
-                                method: "PUT",
-                                headers: {
-                                  "Content-Type": "application/json",
-                                  Authorization: `Bearer ${token}`,
-                                },
-                                body: JSON.stringify({
-                                  profile_details: updatedDetails,
-                                }),
-                              },
-                            );
-
-                            const data = await res.json();
-                            if (data.success) {
-                              localStorage.setItem(
-                                "mn_profile_photos_draft",
-                                JSON.stringify({ photos: localPhotos }),
-                              );
-                              await refreshUser();
-                              setShowPhotosModal(false);
-                              toast.success("Photos saved successfully!");
-                            } else {
-                              toast.error(
-                                data.message || "Failed to save photos",
-                              );
-                            }
-                          } catch (err) {
-                            console.error(err);
-                            toast.error(
-                              "An error occurred while saving photos.",
-                            );
-                          } finally {
-                            setIsSavingPhotos(false);
+                          const ok = await savePhotoGallery(localPhotos);
+                          if (ok) {
+                            setShowPhotosModal(false);
+                            toast.success("Photo gallery saved successfully!");
                           }
                         }}
                         className="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm shrink-0 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
@@ -951,9 +972,10 @@ export default function DashboardHeader() {
           imageSrc={cropTarget.url}
           onCancel={() => setCropTarget(null)}
           onCropComplete={async (watermarkedDataUrl) => {
+            let nextPhotos: Photo[];
             if (cropTarget.id) {
-              setLocalPhotos((prev) =>
-                prev.map((p) => (p.id === cropTarget.id ? { ...p, dataUrl: watermarkedDataUrl } : p))
+              nextPhotos = localPhotos.map((p) =>
+                p.id === cropTarget.id ? { ...p, dataUrl: watermarkedDataUrl } : p
               );
             } else {
               const newPhoto: Photo = {
@@ -961,9 +983,12 @@ export default function DashboardHeader() {
                 dataUrl: watermarkedDataUrl,
                 isPrimary: localPhotos.length === 0,
               };
-              setLocalPhotos((prev) => [...prev, newPhoto]);
+              nextPhotos = [...localPhotos, newPhoto];
             }
+            setLocalPhotos(nextPhotos);
             setCropTarget(null);
+            await savePhotoGallery(nextPhotos);
+            toast.success("Photo cropped & saved!");
           }}
         />
       )}

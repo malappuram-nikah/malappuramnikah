@@ -495,7 +495,7 @@ admin_route.get("/users", adminGuard, async (req: Request, res: Response) => {
     const dateTo = (req.query.date_to as string || "").trim();
     const skip = (page - 1) * limit;
 
-    const isPremium = req.query.is_premium === "true";
+    const isPremium = req.query.is_premium;
     const where: any = {};
     if (status) {
       if (status === "new") {
@@ -504,7 +504,8 @@ admin_route.get("/users", adminGuard, async (req: Request, res: Response) => {
         where.status = status;
       }
     }
-    if (isPremium) where.is_premium = true;
+    if (isPremium === "true") where.is_premium = true;
+    if (isPremium === "false") where.is_premium = false;
     if (kycStatus) where.kyc_status = kycStatus;
     if (gender) where.gender = { equals: gender, mode: "insensitive" };
     if (dateFrom || dateTo) {
@@ -686,9 +687,10 @@ admin_route.post("/users/:id/call-log", adminGuard, async (req: Request, res: Re
 admin_route.post("/users/:id/manual-verify-kyc", adminGuard, async (req: Request, res: Response) => {
   try {
     const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
-    const { document_type, notes } = req.body as {
+    const { document_type, notes, grant_premium } = req.body as {
       document_type?: string;
       notes?: string;
+      grant_premium?: boolean;
     };
 
     if (isNaN(id)) {
@@ -745,6 +747,7 @@ admin_route.post("/users/:id/manual-verify-kyc", adminGuard, async (req: Request
         kyc_front_url: null,
         kyc_back_url: null,
         profile_details: updatedProfileDetails,
+        ...(grant_premium === true ? { is_premium: true } : {}),
       },
       select: ADMIN_USER_SELECT,
     });
@@ -1274,6 +1277,8 @@ admin_route.post("/kyc/:id/review", adminGuard, async (req: Request, res: Respon
 admin_route.post("/kyc/:id/approve", adminGuard, async (req: Request, res: Response) => {
   try {
     const id = parseInt(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id, 10);
+    const { grant_premium } = req.body as { grant_premium?: boolean };
+
     if (isNaN(id)) {
       res.status(400).json({ success: false, message: "Invalid user ID" });
       return;
@@ -1297,6 +1302,7 @@ admin_route.post("/kyc/:id/approve", adminGuard, async (req: Request, res: Respo
         kyc_rejected_reason: null,
         kyc_front_url: null,
         kyc_back_url: null,
+        ...(grant_premium === true ? { is_premium: true } : {}),
       }
     });
 

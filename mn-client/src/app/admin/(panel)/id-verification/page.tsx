@@ -246,10 +246,10 @@ export default function AdminIdVerificationPage() {
     }
   };
 
-  const approve = async (id: number) => {
+  const approve = async (id: number, grantPremium: boolean = false) => {
     try {
-      await adminApi.kycApprove(id);
-      triggerAlert("Identity verification approved.");
+      await adminApi.kycApprove(id, grantPremium);
+      triggerAlert(grantPremium ? "Identity verification approved & Premium activated!" : "Identity verification approved.");
       setSelected(null);
       await loadRequests();
     } catch (err: unknown) {
@@ -507,18 +507,25 @@ export default function AdminIdVerificationPage() {
                 </div>
 
                 {selected.kyc_status !== "VERIFIED" && selected.kyc_status !== "REJECTED" && (
-                  <div className="flex gap-3 pt-2">
+                  <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
                     <button
                       type="button"
-                      onClick={() => approve(selected.id)}
-                      className="flex-1 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1"
+                      onClick={() => approve(selected.id, false)}
+                      className="flex-1 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
                     >
-                      <Check className="w-3.5 h-3.5" /> Approve
+                      <Check className="w-3.5 h-3.5" /> Approve ID
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => approve(selected.id, true)}
+                      className="flex-1 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" /> Approve & Enable Premium ⭐
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowRejectModal(true)}
-                      className="flex-1 py-2 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold rounded-xl border border-red-200"
+                      className="py-2.5 px-4 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold rounded-xl border border-red-200 transition-colors cursor-pointer"
                     >
                       Reject
                     </button>

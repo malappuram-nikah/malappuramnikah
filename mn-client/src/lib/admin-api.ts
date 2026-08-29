@@ -145,8 +145,11 @@ export const adminApi = {
   kycReview: (id: number) =>
     adminFetch(`/user/admin/kyc/${id}/review`, { method: "POST" }),
 
-  kycApprove: (id: number) =>
-    adminFetch(`/user/admin/kyc/${id}/approve`, { method: "POST" }),
+  kycApprove: (id: number, grant_premium?: boolean) =>
+    adminFetch(`/user/admin/kyc/${id}/approve`, {
+      method: "POST",
+      body: JSON.stringify({ grant_premium: !!grant_premium }),
+    }),
 
   kycReject: (id: number, reason: string) =>
     adminFetch(`/user/admin/kyc/${id}/reject`, {
@@ -156,7 +159,7 @@ export const adminApi = {
 
   manualVerifyKyc: (
     id: number,
-    data: { document_type?: string; notes?: string } = {}
+    data: { document_type?: string; notes?: string; grant_premium?: boolean } = {}
   ) =>
     adminFetch<{ success: true; message: string; user: AdminUser }>(
       `/user/admin/users/${id}/manual-verify-kyc`,

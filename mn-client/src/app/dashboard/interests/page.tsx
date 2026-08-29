@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, MessageCircle, ArrowRight, Loader2, Sparkles, X, Check, Unlock, Inbox, Send } from "lucide-react";
+import { Heart, MessageCircle, ArrowRight, Loader2, Sparkles, X, Check, Unlock, Inbox, Send, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { API_URL } from "@/lib/config";
 
@@ -22,11 +22,11 @@ interface Profile {
 export default function InterestsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"mutual" | "received" | "sent" | "viewed_me" | "visited">((() => {
+  const [activeTab, setActiveTab] = useState<"mutual" | "received" | "sent" | "favorites" | "viewed_me" | "visited">((() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const tab = params.get("tab");
-      if (tab === "mutual" || tab === "received" || tab === "sent" || tab === "viewed_me" || tab === "visited") {
+      if (tab === "mutual" || tab === "received" || tab === "sent" || tab === "favorites" || tab === "viewed_me" || tab === "visited") {
         return tab;
       }
     }
@@ -36,18 +36,21 @@ export default function InterestsPage() {
   const [mutualList, setMutualList] = useState<any[]>([]);
   const [receivedList, setReceivedList] = useState<any[]>([]);
   const [sentList, setSentList] = useState<any[]>([]);
+  const [favoritesList, setFavoritesList] = useState<any[]>([]);
   const [viewedMeList, setViewedMeList] = useState<any[]>([]);
   const [visitedList, setVisitedList] = useState<any[]>([]);
   
   const [mutualPage, setMutualPage] = useState(1);
   const [receivedPage, setReceivedPage] = useState(1);
   const [sentPage, setSentPage] = useState(1);
+  const [favoritesPage, setFavoritesPage] = useState(1);
   const [viewedMePage, setViewedMePage] = useState(1);
   const [visitedPage, setVisitedPage] = useState(1);
   
   const [mutualHasMore, setMutualHasMore] = useState(true);
   const [receivedHasMore, setReceivedHasMore] = useState(true);
   const [sentHasMore, setSentHasMore] = useState(true);
+  const [favoritesHasMore, setFavoritesHasMore] = useState(true);
   const [viewedMeHasMore, setViewedMeHasMore] = useState(true);
   const [visitedHasMore, setVisitedHasMore] = useState(true);
   
@@ -87,7 +90,7 @@ export default function InterestsPage() {
     };
   };
 
-  const fetchTab = async (tab: "mutual" | "received" | "sent" | "viewed_me" | "visited", page: number, isLoadMore = false) => {
+  const fetchTab = async (tab: "mutual" | "received" | "sent" | "favorites" | "viewed_me" | "visited", page: number, isLoadMore = false) => {
     if (fetching) return;
     try {
       const storedToken = localStorage.getItem("mn_token");
@@ -99,13 +102,18 @@ export default function InterestsPage() {
       setFetching(true);
       if (!isLoadMore) setLoading(true);
 
-      const res = await fetch(`${API_URL}/user/interest?type=${tab}&page=${page}&limit=20`, {
+      const endpoint = tab === "favorites"
+        ? `${API_URL}/user/favourite/profiles`
+        : `${API_URL}/user/interest?type=${tab}&page=${page}&limit=20`;
+
+      const res = await fetch(endpoint, {
         headers: { "Authorization": `Bearer ${storedToken}` }
       });
       const data = await res.json();
       
       if (data.success) {
-        const mapped = (data.users || []).map((u: any, i: number) => mapUser(u, i)).filter(Boolean);
+        const rawUsers = tab === "favorites" ? data.profiles : data.users;
+        const mapped = (rawUsers || []).map((u: any, i: number) => mapUser(u, i)).filter(Boolean);
         const hasMore = data.hasMore || false;
         
         const dedupe = (prev: any[], next: any[]) => {
@@ -123,6 +131,9 @@ export default function InterestsPage() {
         } else if (tab === "sent") {
           setSentList(prev => isLoadMore ? dedupe(prev, mapped) : dedupe([], mapped));
           setSentHasMore(hasMore);
+        } else if (tab === "favorites") {
+          setFavoritesList(prev => isLoadMore ? dedupe(prev, mapped) : dedupe([], mapped));
+          setFavoritesHasMore(hasMore);
         } else if (tab === "viewed_me") {
           setViewedMeList(prev => isLoadMore ? dedupe(prev, mapped) : dedupe([], mapped));
           setViewedMeHasMore(hasMore);
@@ -157,6 +168,10 @@ export default function InterestsPage() {
       const next = sentPage + 1;
       setSentPage(next);
       fetchTab("sent", next, true);
+    } else if (activeTab === "favorites" && favoritesHasMore && !fetching) {
+      const next = favoritesPage + 1;
+      setFavoritesPage(next);
+      fetchTab("favorites", next, true);
     } else if (activeTab === "viewed_me" && viewedMeHasMore && !fetching) {
       const next = viewedMePage + 1;
       setViewedMePage(next);
@@ -183,7 +198,7 @@ export default function InterestsPage() {
     return () => {
       if (target) observer.unobserve(target);
     };
-  }, [activeTab, mutualHasMore, receivedHasMore, sentHasMore, viewedMeHasMore, visitedHasMore, fetching, mutualPage, receivedPage, sentPage, viewedMePage, visitedPage]);
+  }, [activeTab, mutualHasMore, receivedHasMore, sentHasMore, favoritesHasMore, viewedMeHasMore, visitedHasMore, fetching, mutualPage, receivedPage, sentPage, favoritesPage, viewedMePage, visitedPage]);
 
 
   // Handle express/accept/withdraw interest toggling
@@ -230,6 +245,8 @@ export default function InterestsPage() {
       ? sentList
       : activeTab === "received"
       ? receivedList
+      : activeTab === "favorites"
+      ? favoritesList
       : activeTab === "viewed_me"
       ? viewedMeList
       : visitedList;
@@ -253,19 +270,20 @@ export default function InterestsPage() {
       <div>
         <h1 className="text-2xl font-bold font-playfair text-gray-900 flex items-center gap-2">
           <Heart className="w-6 h-6 text-brand-600 fill-brand-600" />
-          Interests & Profile Views
+          Interests & Profile Connections
         </h1>
         <p className="text-sm text-gray-500 mt-1">
-          Manage your connections. Discover accepted interests, incoming requests, profile views, and visited profiles.
+          Manage your connections. Discover accepted interests, incoming requests, shortlisted favorites, and profile views.
         </p>
       </div>
 
       {/* Modern Scrollable Tabs */}
-      <div className="flex bg-gray-100/80 p-1.5 rounded-2xl w-full max-w-2xl border border-gray-200/50 overflow-x-auto gap-1">
+      <div className="flex bg-gray-100/80 p-1.5 rounded-2xl w-full max-w-3xl border border-gray-200/50 overflow-x-auto gap-1">
         {[
           { id: "mutual", label: "Accepted", count: mutualList.length, icon: Check },
           { id: "received", label: "Received", count: receivedList.length, icon: Inbox },
           { id: "sent", label: "Sent", count: sentList.length, icon: Send },
+          { id: "favorites", label: "Shortlisted", count: favoritesList.length, icon: Star },
           { id: "viewed_me", label: "Who Viewed Me", count: viewedMeList.length, icon: Sparkles },
           { id: "visited", label: "Profiles Visited", count: visitedList.length, icon: ArrowRight },
         ].map((tab) => {
@@ -275,7 +293,7 @@ export default function InterestsPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex-1 min-w-[110px] flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold rounded-xl transition-all relative shrink-0 cursor-pointer ${
+              className={`flex-1 min-w-[105px] flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold rounded-xl transition-all relative shrink-0 cursor-pointer ${
                 isActive
                   ? "bg-white text-brand-700 shadow-sm border border-gray-200/40"
                   : "text-gray-500 hover:text-gray-700"
@@ -305,6 +323,8 @@ export default function InterestsPage() {
               <Sparkles className="w-8 h-8" />
             ) : activeTab === "sent" ? (
               <Send className="w-7 h-7" />
+            ) : activeTab === "favorites" ? (
+              <Star className="w-8 h-8 text-amber-500 fill-amber-400" />
             ) : (
               <Inbox className="w-8 h-8" />
             )}
@@ -316,6 +336,8 @@ export default function InterestsPage() {
               ? "No Sent Interests"
               : activeTab === "received"
               ? "No Interests Received"
+              : activeTab === "favorites"
+              ? "No Shortlisted Profiles Yet"
               : activeTab === "viewed_me"
               ? "No Profile Visitors Yet"
               : "No Visited Profiles Yet"}
@@ -325,11 +347,11 @@ export default function InterestsPage() {
               ? "Interests become mutual when both of you express interest in each other. Keep exploring profiles!"
               : activeTab === "sent"
               ? "When you find profiles you like in Search, press the Interest button to send a request."
+              : activeTab === "favorites"
+              ? "Click the star or shortlist button on any profile while searching to save them here for quick access."
               : activeTab === "received"
-              ? "Incoming interest requests will appear here."
-              : activeTab === "viewed_me"
-              ? "Members who view your profile will appear here. Keep your profile updated to get noticed!"
-              : "Profiles you visit will be listed here for quick access."}
+              ? "When other members send you an interest, they will appear here so you can accept or decline."
+              : "Keep searching and connecting with suitable matrimonial matches."}
           </p>
           <button
             onClick={() => router.push("/dashboard/search")}

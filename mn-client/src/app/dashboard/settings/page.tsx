@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { User, Lock, Bell, Shield, ChevronRight, Sparkles, AlertCircle, ArrowRight, Save, CheckCircle2, Phone, Loader2, MessageSquarePlus, Star, Check, UserCog, Download, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { toast } from "sonner";
 import { LOCATIONS } from "@/lib/constants";
 import { useUser } from "@/context/UserContext";
 import { API_URL } from "@/lib/config";
@@ -28,6 +29,13 @@ export default function SettingsPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [userId, setUserId] = useState<number | null>(null);
+
+  // Privacy states
+  const [hideFromSearch, setHideFromSearch] = useState(false);
+  const [premiumOnlyView, setPremiumOnlyView] = useState(false);
+  const [hideLastSeen, setHideLastSeen] = useState(false);
+  const [blurPhotos, setBlurPhotos] = useState(false);
+  const [savingPrivacy, setSavingPrivacy] = useState(false);
   
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -185,6 +193,13 @@ export default function SettingsPage() {
             const religiousDraft = currentUser.profile_details?.mn_religious_info_draft || {};
             setNamaz(religiousDraft.namaz || "");
             setQuranReading(religiousDraft.quranReading || "");
+
+            // Sync privacy settings
+            const privacySettings = (currentUser.profile_details as any)?.privacy_settings || {};
+            setHideFromSearch(!!privacySettings.hide_from_search);
+            setPremiumOnlyView(!!privacySettings.premium_only_view);
+            setHideLastSeen(!!privacySettings.hide_last_seen);
+            setBlurPhotos(!!privacySettings.blur_photos);
 
             userFetched = true;
         }
@@ -576,6 +591,53 @@ export default function SettingsPage() {
     }
   };
 
+  const handleTogglePrivacy = async (key: string, value: boolean) => {
+    const updated = {
+      hide_from_search: key === "hide_from_search" ? value : hideFromSearch,
+      premium_only_view: key === "premium_only_view" ? value : premiumOnlyView,
+      hide_last_seen: key === "hide_last_seen" ? value : hideLastSeen,
+      blur_photos: key === "blur_photos" ? value : blurPhotos,
+    };
+
+    if (key === "hide_from_search") setHideFromSearch(value);
+    if (key === "premium_only_view") setPremiumOnlyView(value);
+    if (key === "hide_last_seen") setHideLastSeen(value);
+    if (key === "blur_photos") setBlurPhotos(value);
+
+    setSavingPrivacy(true);
+    try {
+      const updatedDetails = {
+        ...(currentUser?.profile_details || {}),
+        privacy_settings: updated,
+      };
+      const token = localStorage.getItem("mn_token");
+      const activeUserId = userId || currentUser?.id;
+      if (activeUserId && token) {
+        const res = await fetch(`${API_URL}/user/${activeUserId}/profile`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ profile_details: updatedDetails }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          localStorage.setItem("mn_privacy_settings", JSON.stringify(updated));
+          await refreshUser();
+          toast.success("Privacy preference updated!");
+        } else {
+          toast.error(data.message || "Failed to update privacy preference.");
+        }
+      }
+    } catch (e) {
+      console.error("Privacy update error:", e);
+      toast.error("Network error while updating privacy preference.");
+    } finally {
+      setSavingPrivacy(false);
+    }
+  };
+
 
 
   if (isLoading) {
@@ -906,18 +968,44 @@ export default function SettingsPage() {
 
                 <div className="space-y-4">
                   {[
-                    { label: "Hide my profile from search", desc: "Your profile won't appear in search results" },
-                    { label: "Show profile to premium only", desc: "Only premium members can view your profile"  },
-                    { label: "Hide last seen",               desc: "Others can't see when you were last active"  },
-                    { label: "Blur my photo",                desc: "Photos are blurred until interest is accepted"},
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center justify-between py-3 border-b border-gray-50">
+                    {
+                      id: "hide_from_search",
+                      label: "Hide my profile from search",
+                      desc: "Your profile won't appear in public search results",
+                      checked: hideFromSearch,
+                    },
+                    {
+                      id: "premium_only_view",
+                      label: "Show profile to premium only",
+                      desc: "Only verified premium members can view your full details",
+                      checked: premiumOnlyView,
+                    },
+                    {
+                      id: "hide_last_seen",
+                      label: "Hide last active status",
+                      desc: "Others can't see when you were last active or logged in",
+                      checked: hideLastSeen,
+                    },
+                    {
+                      id: "blur_photos",
+                      label: "Blur my photos for privacy",
+                      desc: "Photos are blurred until an interest request is accepted",
+                      checked: blurPhotos,
+                    },
+                  ].map((item) => (
+                    <div key={item.id} className="flex items-center justify-between py-3 border-b border-gray-50">
                       <div>
                         <p className="text-sm font-medium text-gray-900">{item.label}</p>
                         <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" className="sr-only peer" />
+                        <input
+                          type="checkbox"
+                          checked={item.checked}
+                          disabled={savingPrivacy}
+                          onChange={(e) => handleTogglePrivacy(item.id, e.target.checked)}
+                          className="sr-only peer"
+                        />
                         <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-brand-600 peer-focus:ring-2 peer-focus:ring-brand-500/20 transition-all after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" />
                       </label>
                     </div>
