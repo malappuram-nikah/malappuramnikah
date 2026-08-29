@@ -55,6 +55,18 @@ io.on("connection", (socket: any) => {
 
 export { io };
 
+import {
+  securityHeaders,
+  generalLimiter,
+  authLimiter,
+  otpLimiter,
+  sanitizePayload,
+} from "./infrastructure/middleware/security.middleware";
+
+// 1. Security Headers (Helmet) & Payload Sanitization
+app.use(securityHeaders);
+app.use(sanitizePayload);
+
 const corsOptions = {
   origin: function (origin: string | undefined, callback: (err: Error | null, allow?: any) => void) {
     if (!origin) {
@@ -87,11 +99,14 @@ app.use((req, res, next) => {
   next();
 });
 
+// Global General Rate Limiter (Skipping static assets & OPTIONS)
+app.use(generalLimiter);
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 app.use((req, res, next) => {
-  const sensitivePaths = ["/user/register", "/user/login", "/user/reset-password"];
+  const sensitivePaths = ["/user/register", "/user/login", "/user/reset-password", "/user/verify-reset-code"];
   if (sensitivePaths.some((p) => req.path.endsWith(p.split("/").pop()!))) {
     console.log(`${req.method} ${req.path}`);
   } else {
@@ -103,16 +118,34 @@ app.use((req, res, next) => {
 // Serve local media uploads statically
 app.use("/uploads", express.static(path.join(process.cwd(), "public", "uploads")));
 
+// Targeted Rate-Limiting for Sensitive Authentication & OTP Routes
+app.use("/user/login", authLimiter);
+app.use("/user/register", authLimiter);
+app.use("/user/reset-password", authLimiter);
+app.use("/user/verify-reset-code", authLimiter);
+app.use("/user/forgot-password", otpLimiter);
+
 app.use("/user/interest", interest_route);
 app.use("/user/chat", chat_route);
 app.use("/user/notifications", notification_route);
 app.use("/user/admin", admin_route);
 app.use("/referral", referral_route);
 app.use("/user", user_route);
-app.use("/otp", otp_route);
+app.use("/otp", otpLimiter, otp_route);
 app.use("/search", search_route);
+
+// Safe Unhandled Error-Masking Middleware
+app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error("Unhandled API Error:", err);
+  const isProd = process.env.NODE_ENV === "production";
+  res.status(err?.status || 500).json({
+    success: false,
+    message: isProd ? "An unexpected error occurred. Please try again later." : (err?.message || "Internal Server Error"),
+  });
+});
 
 const PORT = process.env.PORT || 3333;
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
