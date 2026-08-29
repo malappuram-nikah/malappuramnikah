@@ -78,11 +78,11 @@ export default function AiMatchesPage() {
             </button>
 
             <button
-              onClick={() => router.push("/dashboard/favourites")}
+              onClick={() => router.push("/dashboard/interests?tab=favorites")}
               className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-gray-50 text-gray-700 font-bold text-xs rounded-xl border border-gray-200 shadow-xs transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
             >
               <Heart className="w-4 h-4 text-brand-600" />
-              View Favourites
+              View Shortlisted Favourites
             </button>
           </div>
         </div>
