@@ -34,7 +34,7 @@ export const generalLimiter = rateLimit({
     success: false,
     message: "Too many requests from this device. Please slow down and try again shortly.",
   },
-  skip: (req) => req.method === "OPTIONS" || req.path.startsWith("/uploads/"),
+  skip: (req: Request) => req.method === "OPTIONS" || req.path.startsWith("/uploads/"),
 });
 
 /**
@@ -50,7 +50,7 @@ export const authLimiter = rateLimit({
     success: false,
     message: "Too many login or authentication attempts. Please try again after 15 minutes.",
   },
-  skip: (req) => req.method === "OPTIONS",
+  skip: (req: Request) => req.method === "OPTIONS",
 });
 
 /**
@@ -66,7 +66,7 @@ export const otpLimiter = rateLimit({
     success: false,
     message: "OTP request limit reached. Please wait a few minutes before requesting another verification code.",
   },
-  skip: (req) => req.method === "OPTIONS",
+  skip: (req: Request) => req.method === "OPTIONS",
 });
 
 /**
