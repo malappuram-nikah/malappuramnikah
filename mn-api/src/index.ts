@@ -16,6 +16,7 @@ import http from "http";
 import { Server as SocketServer } from "socket.io";
 
 const app = express();
+app.set("trust proxy", 1);
 const server = new http.Server(app);
 
 // Initialize Socket.io Server
