@@ -457,20 +457,60 @@ admin_route.post("/extract-id", adminGuard, async (req: Request, res: Response) 
 const instantRegistrationUseCase = new InstantRegistrationUseCase();
 admin_route.post("/instant-registration", adminGuard, async (req: Request, res: Response) => {
   try {
-    const { base64File, fullName, dateOfBirth, gender, mobileNumber, address, caste } = req.body;
-    if (!base64File || !fullName || !mobileNumber) {
-      return res.status(400).json({ success: false, message: "File, Full Name, and Mobile Number are required." });
-    }
-
-    const result = await instantRegistrationUseCase.execute(
+    const {
       base64File,
       fullName,
       dateOfBirth,
       gender,
       mobileNumber,
+      maritalStatus,
+      height,
+      location,
       address,
-      caste
-    );
+      highestEducation,
+      professionType,
+      workplace,
+      religion,
+      caste,
+      religiousness,
+      familyType,
+      financialStatus,
+      familyValues,
+      eatingHabits,
+      smokingHabits,
+      drinkingHabits,
+      interestedActivities,
+      personalDescription
+    } = req.body;
+
+    if (!base64File || !fullName || !mobileNumber) {
+      return res.status(400).json({ success: false, message: "File, Full Name, and Mobile Number are required." });
+    }
+
+    const result = await instantRegistrationUseCase.execute({
+      base64File,
+      fullName,
+      dob: dateOfBirth,
+      gender,
+      mobileNumber,
+      maritalStatus,
+      height,
+      location: location || address,
+      highestEducation,
+      professionType,
+      workplace,
+      religion,
+      caste,
+      religiousness,
+      familyType,
+      financialStatus,
+      familyValues,
+      eatingHabits,
+      smokingHabits,
+      drinkingHabits,
+      interestedActivities,
+      personalDescription
+    });
     return res.status(200).json({
       success: true,
       message: "Member registered instantly successfully!",

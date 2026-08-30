@@ -223,24 +223,56 @@ export const adminApi = {
         fullName: string;
         dateOfBirth: string;
         gender: string;
+        maritalStatus?: string;
+        height?: string;
+        location?: string;
+        address?: string;
         mobileNumber: string;
-        address: string;
-        caste: string;
+        highestEducation?: string;
+        professionType?: string;
+        workplace?: string;
+        religion?: string;
+        caste?: string;
+        religiousness?: string;
+        familyType?: string;
+        financialStatus?: string;
+        familyValues?: string;
+        eatingHabits?: string;
+        smokingHabits?: string;
+        drinkingHabits?: string;
+        interestedActivities?: string;
+        personalDescription?: string;
       };
     }>("/user/admin/extract-id", {
       method: "POST",
       body: JSON.stringify({ base64File, mimeType }),
     }),
 
-  instantRegistration: (
-    base64File: string,
-    fullName: string,
-    dateOfBirth: string,
-    gender: string,
-    mobileNumber: string,
-    address: string,
-    caste: string
-  ) =>
+  instantRegistration: (payload: {
+    base64File: string;
+    fullName: string;
+    dateOfBirth?: string;
+    gender?: string;
+    mobileNumber: string;
+    maritalStatus?: string;
+    height?: string;
+    location?: string;
+    address?: string;
+    highestEducation?: string;
+    professionType?: string;
+    workplace?: string;
+    religion?: string;
+    caste?: string;
+    religiousness?: string;
+    familyType?: string;
+    financialStatus?: string;
+    familyValues?: string;
+    eatingHabits?: string;
+    smokingHabits?: string;
+    drinkingHabits?: string;
+    interestedActivities?: string;
+    personalDescription?: string;
+  }) =>
     adminFetch<{
       success: true;
       message: string;
@@ -258,14 +290,6 @@ export const adminApi = {
       };
     }>("/user/admin/instant-registration", {
       method: "POST",
-      body: JSON.stringify({
-        base64File,
-        fullName,
-        dateOfBirth,
-        gender,
-        mobileNumber,
-        address,
-        caste,
-      }),
+      body: JSON.stringify(payload),
     }),
 };

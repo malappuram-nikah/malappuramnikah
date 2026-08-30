@@ -2,6 +2,31 @@ import prisma from "../../../infrastructure/prisma/prisamClient";
 import bcrypt from "bcryptjs";
 import { MediaStorageService } from "../../../infrastructure/service/MediaStorageService";
 
+export interface InstantRegistrationData {
+  base64File: string;
+  fullName: string;
+  dob?: string;
+  gender?: string;
+  mobileNumber: string;
+  maritalStatus?: string;
+  height?: string;
+  location?: string;
+  highestEducation?: string;
+  professionType?: string;
+  workplace?: string;
+  religion?: string;
+  caste?: string;
+  religiousness?: string;
+  familyType?: string;
+  financialStatus?: string;
+  familyValues?: string;
+  eatingHabits?: string;
+  smokingHabits?: string;
+  drinkingHabits?: string;
+  interestedActivities?: string;
+  personalDescription?: string;
+}
+
 export class InstantRegistrationUseCase {
   private calculateAge(dobString: string): number {
     if (!dobString) return 25;
@@ -24,15 +49,32 @@ export class InstantRegistrationUseCase {
     return password;
   }
 
-  async execute(
-    base64File: string,
-    fullName: string,
-    dob: string,
-    gender: string,
-    mobileNumber: string,
-    location: string,
-    caste: string
-  ): Promise<any> {
+  async execute(params: InstantRegistrationData): Promise<any> {
+    const {
+      base64File,
+      fullName,
+      dob = "",
+      gender = "Male",
+      mobileNumber,
+      maritalStatus = "Never Married",
+      height = "",
+      location = "",
+      highestEducation = "",
+      professionType = "",
+      workplace = "",
+      religion = "Muslim",
+      caste = "Sunni",
+      religiousness = "Religious",
+      familyType = "Nuclear",
+      financialStatus = "Middle-class",
+      familyValues = "Orthodox / Traditional",
+      eatingHabits = "Any",
+      smokingHabits = "No",
+      drinkingHabits = "No",
+      interestedActivities = "",
+      personalDescription = ""
+    } = params;
+
     if (!base64File) {
       throw new Error("No identity document file provided.");
     }
@@ -74,20 +116,55 @@ export class InstantRegistrationUseCase {
       sanitizedGender = "Male";
     }
 
-    // 5. Build the profile details draft objects
+    // Parse activities into array if comma-separated
+    const activitiesList = interestedActivities
+      ? interestedActivities.split(/[,،]+/).map(s => s.trim()).filter(Boolean)
+      : [];
+
+    const bioText = personalDescription && personalDescription.toLowerCase() !== "not specified"
+      ? personalDescription
+      : "";
+
+    // 5. Build the complete profile details draft objects
     const profileDetails = {
       mn_basic_details_draft: {
         fullName,
+        name: fullName,
         dob,
-        age,
+        age: age.toString(),
         gender: sanitizedGender,
         location,
-        maritalStatus: "Never Married",
+        presentLocation: location,
+        maritalStatus: maritalStatus || "Never Married",
+        height: height || "",
+        aboutMe: bioText,
         profileCreatedBy: "Admin Support (Instant Campaign)"
       },
       mn_religious_info_draft: {
-        religion: "Muslim",
-        caste: caste || "Other"
+        religion: religion || "Muslim",
+        community: caste || "Sunni",
+        caste: caste || "Sunni",
+        religiousness: religiousness || "Religious"
+      },
+      mn_professional_info_draft: {
+        education: highestEducation || "",
+        profession: professionType || "",
+        professionType: professionType || "",
+        companyName: workplace || ""
+      },
+      mn_family_details_draft: {
+        familyType: familyType || "Nuclear",
+        financialStatus: financialStatus || "Middle-class",
+        familyValues: familyValues || "Orthodox / Traditional"
+      },
+      mn_habits_draft: {
+        eatingHabits: eatingHabits || "Any",
+        smokingHabits: smokingHabits || "No",
+        drinkingHabits: drinkingHabits || "No"
+      },
+      mn_interests_draft: {
+        interests: activitiesList,
+        aboutMe: bioText
       },
       mn_profile_photos_draft: {
         photos: []
@@ -104,7 +181,7 @@ export class InstantRegistrationUseCase {
         dob,
         gender: sanitizedGender,
         location,
-        cast: caste || "Other",
+        cast: caste || "Sunni",
         profile_for: "Myself",
         status: "active", // Mark active immediately
         kyc_status: "VERIFIED", // Mark KYC Verified instantly since verified by Admin physically
@@ -124,7 +201,7 @@ export class InstantRegistrationUseCase {
       rawPassword,
       gender: sanitizedGender,
       location,
-      caste: caste || "Other",
+      caste: caste || "Sunni",
       documentUrl,
       dateOfBirth: dob
     };
