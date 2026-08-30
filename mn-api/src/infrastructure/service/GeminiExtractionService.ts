@@ -23,7 +23,7 @@ export class GeminiExtractionService {
     }
 
     const model = this.genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
+      model: "gemini-3.6-flash",
       generationConfig: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -95,7 +95,18 @@ Return the exact JSON schema requested. If any field is not found or not mention
     const text = response.text();
 
     try {
-      return JSON.parse(text);
+      const parsed = JSON.parse(text);
+      // Normalize dateOfBirth to YYYY-MM-DD if DD-MM-YYYY or DD/MM/YYYY was returned
+      if (parsed.dateOfBirth) {
+        const dmyMatch = parsed.dateOfBirth.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+        if (dmyMatch) {
+          const day = dmyMatch[1].padStart(2, "0");
+          const month = dmyMatch[2].padStart(2, "0");
+          const year = dmyMatch[3];
+          parsed.dateOfBirth = `${year}-${month}-${day}`;
+        }
+      }
+      return parsed;
     } catch (e) {
       console.error("Failed to parse Gemini response:", text, e);
       throw new Error("Failed to parse extracted identity data.");
