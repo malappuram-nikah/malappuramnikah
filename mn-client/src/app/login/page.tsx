@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, EyeOff, Phone, Lock, ArrowRight, KeyRound, MessageSquare, ShieldCheck, RefreshCw, Mail } from "lucide-react";
+import { Eye, EyeOff, Phone, Lock, ArrowRight, KeyRound, MessageSquare, ShieldCheck, RefreshCw, Mail, CheckCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { API_URL } from "@/lib/config";
 import { getPostLoginRedirect, setToken } from "@/lib/auth-session";
@@ -27,20 +27,35 @@ export default function LoginPage() {
   // Login Mode: "password" or "otp"
   const [loginMode, setLoginMode] = useState<"password" | "otp">("password");
 
-  // Form Inputs
+  // OTP Channel: "WHATSAPP" or "EMAIL"
+  const [otpChannel, setOtpChannel] = useState<"WHATSAPP" | "EMAIL">("WHATSAPP");
+
+  // Password Login Inputs
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
-  const [emailOtpInput, setEmailOtpInput] = useState("");
-  const [otp, setOtp] = useState("");
   const [countryCode, setCountryCode] = useState("+91");
 
-  // State
+  // OTP Login Inputs
+  const [mobileOtpInput, setMobileOtpInput] = useState("");
+  const [otpCountryCode, setOtpCountryCode] = useState("+91");
+  const [emailOtpInput, setEmailOtpInput] = useState("");
+  const [otp, setOtp] = useState("");
+
+  // State Flags
   const [otpSent, setOtpSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [devOtpHint, setDevOtpHint] = useState<string | null>(null);
+
+  // Helper to format phone identifier
+  const getFormattedMobileOtpTarget = () => {
+    const trimmed = mobileOtpInput.trim();
+    if (trimmed.startsWith("+")) return trimmed;
+    const cleanDigits = trimmed.replace(/\D/g, "").replace(/^0+/, "");
+    return `${otpCountryCode}${cleanDigits}`;
+  };
 
   // Password Login Handler
   const handlePasswordSubmit = async (e: React.FormEvent) => {
@@ -55,7 +70,7 @@ export default function LoginPage() {
         ? trimmed
         : trimmed.startsWith("+")
         ? trimmed
-        : `${countryCode}${trimmed.replace(/^0+/, "")}`;
+        : `${countryCode}${trimmed.replace(/\D/g, "").replace(/^0+/, "")}`;
 
       const response = await fetch(`${API_URL}/user/login`, {
         method: "POST",
@@ -86,32 +101,51 @@ export default function LoginPage() {
   // OTP Send Handler (Step 1 of OTP Login)
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    const target = emailOtpInput.trim();
-    if (!target) {
-      setError("Please enter your registered email address.");
-      return;
-    }
-
-    setIsLoading(true);
     setError(null);
     setSuccessMsg(null);
     setDevOtpHint(null);
 
+    let target = "";
+    if (otpChannel === "WHATSAPP") {
+      target = getFormattedMobileOtpTarget();
+      if (!mobileOtpInput.trim() || mobileOtpInput.replace(/\D/g, "").length < 8) {
+        setError("Please enter a valid mobile number.");
+        return;
+      }
+    } else {
+      target = emailOtpInput.trim().toLowerCase();
+      if (!target || !target.includes("@")) {
+        setError("Please enter a valid registered email address.");
+        return;
+      }
+    }
+
+    setIsLoading(true);
+
     try {
-      const res = await fetch(`${API_URL}/otp/resend-otp`, {
+      const res = await fetch(`${API_URL}/otp/send-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phoneNumber: target }),
+        body: JSON.stringify({
+          phoneNumber: target,
+          channel: otpChannel,
+          purpose: "LOGIN",
+        }),
       });
 
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        throw new Error(data.message || "Failed to send OTP. Please check your email address.");
+        throw new Error(data.message || `Failed to send OTP to your ${otpChannel === "WHATSAPP" ? "WhatsApp number" : "email"}.`);
       }
 
       setOtpSent(true);
-      setSuccessMsg(data.message || "Verification code sent to your email inbox.");
+      setSuccessMsg(
+        data.message ||
+          (otpChannel === "WHATSAPP"
+            ? `Verification code sent to your WhatsApp number (${target}).`
+            : `Verification code sent to your email (${target}).`)
+      );
       if (data.otp) setDevOtpHint(String(data.otp));
     } catch (err: any) {
       setError(err.message || "Failed to send OTP.");
@@ -132,13 +166,17 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const target = emailOtpInput.trim();
+      const target = otpChannel === "WHATSAPP" ? getFormattedMobileOtpTarget() : emailOtpInput.trim().toLowerCase();
+
       const res = await fetch(`${API_URL}/otp/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           phoneNumber: target,
           otpCode: otp.trim(),
+          channel: otpChannel,
+          purpose: "LOGIN",
         }),
       });
 
@@ -195,6 +233,7 @@ export default function LoginPage() {
                 setLoginMode("password");
                 setError(null);
                 setSuccessMsg(null);
+                setOtpSent(false);
               }}
               className={`flex-1 py-2.5 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
                 loginMode === "password"
@@ -217,7 +256,7 @@ export default function LoginPage() {
                   : "text-gray-500 hover:text-gray-800"
               }`}
             >
-              <Mail className="w-3.5 h-3.5 text-brand-600" /> Email OTP
+              <MessageSquare className="w-3.5 h-3.5 text-emerald-600" /> OTP Login
             </button>
           </div>
 
@@ -260,7 +299,7 @@ export default function LoginPage() {
             <form onSubmit={handlePasswordSubmit} className="space-y-5">
               {/* Mobile field */}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Mobile Number</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Mobile Number or Email</label>
                 <div className="flex gap-2">
                   <select
                     value={countryCode}
@@ -270,13 +309,17 @@ export default function LoginPage() {
                     <option value="+91">+91 (IN)</option>
                     <option value="+971">+971 (UAE)</option>
                     <option value="+966">+966 (KSA)</option>
+                    <option value="+968">+968 (OM)</option>
+                    <option value="+974">+974 (QA)</option>
+                    <option value="+965">+965 (KW)</option>
+                    <option value="+973">+973 (BH)</option>
                   </select>
                   <div className="relative flex-1">
                     <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
                       <Phone className="h-5 w-5 text-gray-400" />
                     </div>
                     <input
-                      type="tel"
+                      type="text"
                       value={mobile}
                       onChange={(e) => setMobile(e.target.value)}
                       placeholder="Enter mobile number"
@@ -335,35 +378,118 @@ export default function LoginPage() {
             </form>
           )}
 
-          {/* ─── EMAIL OTP LOGIN FORM ─── */}
+          {/* ─── OTP LOGIN FORM (WHATSAPP OR EMAIL) ─── */}
           {loginMode === "otp" && (
             <div className="space-y-5">
+              {/* Channel Selector: WhatsApp vs Email */}
+              {!otpSent && (
+                <div className="flex border border-gray-200 rounded-xl p-1 bg-gray-50 gap-1 text-xs font-semibold mb-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOtpChannel("WHATSAPP");
+                      setError(null);
+                    }}
+                    className={`flex-1 py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                      otpChannel === "WHATSAPP"
+                        ? "bg-emerald-600 text-white shadow-sm font-bold"
+                        : "text-gray-600 hover:text-gray-900 hover:bg-white/50"
+                    }`}
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" /> WhatsApp OTP
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOtpChannel("EMAIL");
+                      setError(null);
+                    }}
+                    className={`flex-1 py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                      otpChannel === "EMAIL"
+                        ? "bg-brand-600 text-white shadow-sm font-bold"
+                        : "text-gray-600 hover:text-gray-900 hover:bg-white/50"
+                    }`}
+                  >
+                    <Mail className="w-3.5 h-3.5" /> Email OTP
+                  </button>
+                </div>
+              )}
+
               {!otpSent ? (
                 <form onSubmit={handleSendOtp} className="space-y-5">
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Registered Email Address</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
-                        <Mail className="h-5 w-5" />
+                  {/* WhatsApp Mobile Input */}
+                  {otpChannel === "WHATSAPP" ? (
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">WhatsApp Mobile Number</label>
+                      <div className="flex gap-2">
+                        <select
+                          value={otpCountryCode}
+                          onChange={(e) => setOtpCountryCode(e.target.value)}
+                          className="w-28 px-3 py-3.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm appearance-none bg-gray-50 text-center font-medium"
+                        >
+                          <option value="+91">+91 (IN)</option>
+                          <option value="+971">+971 (UAE)</option>
+                          <option value="+966">+966 (KSA)</option>
+                          <option value="+968">+968 (OM)</option>
+                          <option value="+974">+974 (QA)</option>
+                          <option value="+965">+965 (KW)</option>
+                          <option value="+973">+973 (BH)</option>
+                        </select>
+                        <div className="relative flex-1">
+                          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-emerald-600">
+                            <Phone className="h-5 w-5" />
+                          </div>
+                          <input
+                            type="tel"
+                            value={mobileOtpInput}
+                            onChange={(e) => setMobileOtpInput(e.target.value.replace(/\D/g, ""))}
+                            placeholder="Enter WhatsApp mobile number"
+                            required
+                            className="w-full pl-10 pr-4 py-3.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-medium"
+                          />
+                        </div>
                       </div>
-                      <input
-                        type="email"
-                        value={emailOtpInput}
-                        onChange={(e) => setEmailOtpInput(e.target.value)}
-                        placeholder="name@example.com"
-                        required
-                        className="w-full pl-10 pr-4 py-3.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
-                      />
+                      <p className="text-[11px] text-gray-400 mt-1.5 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500" /> OTP will be delivered instantly to your WhatsApp application.
+                      </p>
                     </div>
-                  </div>
+                  ) : (
+                    /* Email Input */
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Registered Email Address</label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-brand-600">
+                          <Mail className="h-5 w-5" />
+                        </div>
+                        <input
+                          type="email"
+                          value={emailOtpInput}
+                          onChange={(e) => setEmailOtpInput(e.target.value)}
+                          placeholder="name@example.com"
+                          required
+                          className="w-full pl-10 pr-4 py-3.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   <button
                     type="submit"
-                    disabled={isLoading || !emailOtpInput.trim()}
-                    className="w-full bg-brand-600 text-white font-semibold py-3.5 px-4 rounded-xl hover:bg-brand-700 active:scale-[0.99] transition-all disabled:opacity-50 disabled:pointer-events-none shadow-sm hover:shadow flex items-center justify-center gap-2 text-sm"
+                    disabled={
+                      isLoading ||
+                      (otpChannel === "WHATSAPP" ? !mobileOtpInput.trim() : !emailOtpInput.trim())
+                    }
+                    className={`w-full text-white font-semibold py-3.5 px-4 rounded-xl active:scale-[0.99] transition-all disabled:opacity-50 disabled:pointer-events-none shadow-sm hover:shadow flex items-center justify-center gap-2 text-sm ${
+                      otpChannel === "WHATSAPP" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-brand-600 hover:bg-brand-700"
+                    }`}
                   >
                     {isLoading ? (
                       <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : otpChannel === "WHATSAPP" ? (
+                      <>
+                        <MessageSquare className="w-4 h-4" />
+                        Send WhatsApp OTP
+                      </>
                     ) : (
                       <>
                         <Mail className="w-4 h-4" />
@@ -373,6 +499,7 @@ export default function LoginPage() {
                   </button>
                 </form>
               ) : (
+                /* Step 2: Enter Verification Code */
                 <form onSubmit={handleVerifyOtp} className="space-y-5">
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">6-Digit Verification Code</label>
@@ -417,7 +544,7 @@ export default function LoginPage() {
                       }}
                       className="text-gray-500 hover:text-gray-700 font-medium"
                     >
-                      Change Number
+                      Change Number / Method
                     </button>
                     <button
                       type="button"

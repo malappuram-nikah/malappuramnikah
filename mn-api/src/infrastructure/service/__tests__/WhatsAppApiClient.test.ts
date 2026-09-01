@@ -10,7 +10,7 @@ const mockConfig: WhatsAppConfig = {
   appSecret: "SUPER_SECRET_APP_SECRET_HASH",
   webhookVerifyToken: "SUPER_SECRET_WEBHOOK_VERIFY_TOKEN",
   otpTemplateName: "otp_verification",
-  otpTemplateLanguage: "en_US",
+  otpTemplateLanguage: "en",
 };
 
 const originalFetch = globalThis.fetch;

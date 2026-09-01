@@ -132,7 +132,11 @@ if (typeof window !== "undefined") {
       document.documentElement.style.setProperty("--vh", `${vh}px`);
     } catch {}
   };
-  setVh();
+  if (typeof requestAnimationFrame !== "undefined") {
+    requestAnimationFrame(setVh);
+  } else {
+    setTimeout(setVh, 0);
+  }
   window.addEventListener("resize", setVh, { passive: true });
   window.addEventListener("orientationchange", setVh, { passive: true });
 

@@ -61,7 +61,7 @@ function runTests() {
     const config = getWhatsAppConfig(minimalEnv);
     assert.strictEqual(config.apiVersion, "v21.0");
     assert.strictEqual(config.otpTemplateName, "otp_verification");
-    assert.strictEqual(config.otpTemplateLanguage, "en_US");
+    assert.strictEqual(config.otpTemplateLanguage, "en");
   });
 
   test("Missing required values fail safely with WhatsAppConfigError", () => {
