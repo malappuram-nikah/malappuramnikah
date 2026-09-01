@@ -235,7 +235,7 @@ export default function DashboardPage() {
             </a>
           </div>
           <span className="text-gray-300 hidden md:inline">|</span>
-          <a href="https://wa.me/919946341443?text=Hello%20Malappuram%20Nikah%2C%20I%20need%20assistance." target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-[#026d77] hover:underline flex items-center gap-1 shrink-0">
+          <a href="https://wa.me/919961341443?text=Hello%20Malappuram%20Nikah%2C%20I%20need%20assistance." target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-[#026d77] hover:underline flex items-center gap-1 shrink-0">
             💬 WhatsApp
           </a>
         </div>

@@ -87,8 +87,8 @@ export default function HeroSection({ onJoinNow }: HeroSectionProps) {
             <span className="hidden sm:inline text-gray-300">•</span>
             <span className="flex items-center gap-1">
               💬 WhatsApp Support:{" "}
-              <a href="https://wa.me/919946341443?text=Hello%20Malappuram%20Nikah%2C%20I%20need%20assistance." target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:text-brand-700 hover:underline">
-                +91 99463 41443
+              <a href="https://wa.me/919961341443?text=Hello%20Malappuram%20Nikah%2C%20I%20need%20assistance." target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:text-brand-700 hover:underline">
+                +91 99613 41443
               </a>
             </span>
           </motion.div>

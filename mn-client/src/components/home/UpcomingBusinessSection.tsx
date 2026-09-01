@@ -179,13 +179,13 @@ export default function UpcomingBusinessSection() {
 
               <div className="flex flex-col gap-3">
                 <a
-                  href="https://wa.me/919946341443?text=Hi%2C%20I%20want%20to%20register%20my%20wedding%20business%20on%20Malappuram%20Nikah"
+                  href="https://wa.me/919961341443?text=Hi%2C%20I%20want%20to%20register%20my%20wedding%20business%20on%20Malappuram%20Nikah"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full py-3.5 px-6 bg-[#026d77] hover:bg-[#03828e] text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
                 >
                   <MessageCircle className="w-4 h-4" />
-                  <span>WhatsApp: +91 99463 41443</span>
+                  <span>WhatsApp: +91 99613 41443</span>
                 </a>
 
                 <a

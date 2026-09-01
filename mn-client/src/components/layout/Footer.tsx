@@ -50,7 +50,7 @@ export default function Footer() {
 
               {/* WhatsApp */}
               <a
-                href="https://wa.me/919946341443"
+                href="https://wa.me/919961341443"
                 target="_blank"
                 rel="noopener noreferrer"
                 title="WhatsApp"
@@ -95,7 +95,7 @@ export default function Footer() {
               </li>
               <li className="flex items-start">
                 <span className="block mt-0.5 mr-3 w-1.5 h-1.5 rounded-full bg-brand-300 shrink-0" />
-                <span>WhatsApp: <a href="https://wa.me/919946341443" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">+91 99463 41443</a></span>
+                <span>WhatsApp: <a href="https://wa.me/919961341443" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">+91 99613 41443</a></span>
               </li>
             </ul>
           </div>

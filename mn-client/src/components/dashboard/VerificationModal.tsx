@@ -96,12 +96,12 @@ export default function VerificationModal({
                 </div>
 
                 <a
-                  href="https://wa.me/919946341443?text=Hello%20MalappuramNikah%20Support%2C%20I%20need%20help%20verifying%20my%20profile."
+                  href="https://wa.me/919961341443?text=Hello%20MalappuramNikah%20Support%2C%20I%20need%20help%20verifying%20my%20profile."
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <span>💬 WhatsApp Support Team (+91 99463 41443)</span>
+                  <span>💬 WhatsApp Support Team (+91 99613 41443)</span>
                 </a>
               </>
             )}

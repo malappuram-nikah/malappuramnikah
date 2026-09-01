@@ -144,7 +144,7 @@ export default function FAQSection() {
 
           <div className="flex flex-wrap items-center justify-center gap-3">
             <a
-              href="https://wa.me/919946341443?text=Hello%20Malappuram%20Nikah%2C%20I%20have%20a%20question."
+              href="https://wa.me/919961341443?text=Hello%20Malappuram%20Nikah%2C%20I%20have%20a%20question."
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs sm:text-sm font-semibold bg-[#026d77] hover:bg-[#03828e] text-white transition-all shadow-xs"
