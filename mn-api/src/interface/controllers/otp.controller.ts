@@ -6,8 +6,11 @@ import { accessTokenConfig, refreshTokenConfig } from "../../infrastructure/conf
 import { getAccountBlockForUser } from "../../infrastructure/helpers/accountStatus.helpers";
 import prisma from "../../infrastructure/prisma/prisamClient";
 import { OtpChannel, OtpPurpose } from "../../domain/entities/otp-core.interface";
+import { OtpRepository } from "../../infrastructure/repositories/OtpRepository";
 
 export class OtpController {
+  private otpRepository = new OtpRepository();
+
   constructor(
     private sendOtpUseCase: SendOtpUseCase,
     private verifyOtpUseCase: VerifyOtpUseCase
@@ -27,19 +30,11 @@ export class OtpController {
       const isEmailInput = targetInput.includes("@");
       const providedEmail = isEmailInput ? targetInput.toLowerCase() : (email || "").toString().trim().toLowerCase();
 
-      const orConditions: any[] = [
-        { mobile_number: targetInput },
-        { mobile_number: `+91${targetInput.replace(/\D/g, "").slice(-10)}` },
-        { email: { equals: targetInput.toLowerCase(), mode: "insensitive" } }
-      ];
-      if (providedEmail) {
-        orConditions.push({ email: { equals: providedEmail, mode: "insensitive" } });
+      // Find user by mobile_number OR email address across all international country formats
+      let user = await this.otpRepository.findUserByIdentifier(targetInput);
+      if (!user && providedEmail) {
+        user = await this.otpRepository.findUserByIdentifier(providedEmail);
       }
-
-      // Find user by mobile_number OR email address
-      let user = await prisma.user.findFirst({
-        where: { OR: orConditions }
-      });
 
       if (!user) {
         return res.status(404).json({ success: false, message: "No account found matching this mobile number or email address." });
@@ -133,15 +128,7 @@ export class OtpController {
 
       const codeString = Array.isArray(otpCode) ? otpCode.join("") : String(otpCode);
 
-      let user = await prisma.user.findFirst({
-        where: {
-          OR: [
-            { mobile_number: targetInput },
-            { mobile_number: `+91${targetInput.replace(/\D/g, "").slice(-10)}` },
-            { email: { equals: targetInput.toLowerCase(), mode: "insensitive" } }
-          ]
-        }
-      });
+      let user = await this.otpRepository.findUserByIdentifier(targetInput);
 
       if (!user) {
         return res.status(404).json({ success: false, message: "User account not found" });
