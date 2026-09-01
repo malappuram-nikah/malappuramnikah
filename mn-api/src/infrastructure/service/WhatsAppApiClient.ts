@@ -66,7 +66,7 @@ export class WhatsAppApiClient {
   public static async sendTemplateMessage(
     to: string,
     templateName: string,
-    languageCode: string = "en_US",
+    languageCode: string = "en",
     components: WhatsAppTemplateComponent[] = [],
     options?: WhatsAppSendOptions
   ): Promise<WhatsAppApiResponse> {

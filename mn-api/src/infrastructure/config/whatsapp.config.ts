@@ -19,7 +19,7 @@ export interface ValidationResult {
 
 const DEFAULT_API_VERSION = "v21.0";
 const DEFAULT_OTP_TEMPLATE_NAME = "otp_verification";
-const DEFAULT_OTP_TEMPLATE_LANGUAGE = "en_US";
+const DEFAULT_OTP_TEMPLATE_LANGUAGE = "en";
 
 /**
  * Validates the WhatsApp environment variables and returns a validation result.

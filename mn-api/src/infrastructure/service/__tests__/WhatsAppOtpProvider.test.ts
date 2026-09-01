@@ -73,7 +73,7 @@ async function runTests() {
 
       assert.strictEqual(capturedTo, "+919876543210");
       assert.strictEqual(capturedTemplate, getWhatsAppConfig().otpTemplateName);
-      assert.strictEqual(capturedLang, "en_US");
+      assert.strictEqual(capturedLang, "en");
       assert.strictEqual(capturedComponents[0].parameters[0].text, "987654");
     });
 
