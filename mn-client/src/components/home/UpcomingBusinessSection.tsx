@@ -189,11 +189,11 @@ export default function UpcomingBusinessSection() {
                 </a>
 
                 <a
-                  href="tel:+919447868443"
+                  href="tel:+919961341443"
                   className="w-full py-3 px-6 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold text-sm rounded-xl transition-all flex items-center justify-center gap-2 border border-gray-200"
                 >
                   <Phone className="w-4 h-4 text-[#026d77]" />
-                  <span>Call Us: +91 94478 68443</span>
+                  <span>Call Us: +91 99613 41443</span>
                 </a>
               </div>
             </motion.div>

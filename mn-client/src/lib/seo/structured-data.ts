@@ -41,7 +41,7 @@ export const HOMEPAGE_FAQS = [
   {
     question: "How can I contact customer support if I need assistance?",
     answer:
-      "You can call our dedicated support team directly at +91 94478 68443, chat with us on WhatsApp, or email us at support@malappuramnikah.com for registration and matchmaking guidance.",
+      "You can call our dedicated support team directly at +91 99613 41443, chat with us on WhatsApp, or email us at support@malappuramnikah.com for registration and matchmaking guidance.",
   },
 ];
 
@@ -67,7 +67,7 @@ export const ORGANIZATION_SCHEMA = {
   contactPoint: [
     {
       "@type": "ContactPoint",
-      telephone: "+91 94478 68443",
+      telephone: "+91 99613 41443",
       contactType: "customer support",
       email: "support@malappuramnikah.com",
       areaServed: "IN",

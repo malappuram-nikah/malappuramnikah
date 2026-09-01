@@ -73,7 +73,7 @@ export default function VerificationModal({
           <div className="pt-2 space-y-2.5">
             {isUnderReview ? (
               <div className="p-3.5 bg-amber-50 text-amber-900 text-xs font-bold rounded-xl border border-amber-200 shadow-xs">
-                ⏳ Your ID document is under review by Admin. You will be verified shortly! Need urgent help? Call Support: <a href="tel:+919447868443" className="underline font-extrabold text-amber-950">+91 9447868443</a>
+                ⏳ Your ID document is under review by Admin. You will be verified shortly! Need urgent help? Call Support: <a href="tel:+919961341443" className="underline font-extrabold text-amber-950">+91 99613 41443</a>
               </div>
             ) : (
               <>

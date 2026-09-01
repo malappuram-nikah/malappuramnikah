@@ -91,7 +91,7 @@ export default function Footer() {
               </li>
               <li className="flex items-start">
                 <span className="block mt-0.5 mr-3 w-1.5 h-1.5 rounded-full bg-brand-300 shrink-0" />
-                <span>Call: <a href="tel:+919447868443" className="hover:text-white transition-colors">+91 94478 68443</a></span>
+                <span>Call: <a href="tel:+919961341443" className="hover:text-white transition-colors">+91 99613 41443</a></span>
               </li>
               <li className="flex items-start">
                 <span className="block mt-0.5 mr-3 w-1.5 h-1.5 rounded-full bg-brand-300 shrink-0" />

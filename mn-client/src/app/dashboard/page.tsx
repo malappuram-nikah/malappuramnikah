@@ -230,8 +230,8 @@ export default function DashboardPage() {
           <div className="flex items-center gap-1.5">
             <span className="text-xs">📞</span>
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Support:</span>
-            <a href="tel:+919447868443" className="text-xs font-bold text-[#026d77] hover:underline">
-              +91 94478 68443
+            <a href="tel:+919961341443" className="text-xs font-bold text-[#026d77] hover:underline">
+              +91 99613 41443
             </a>
           </div>
           <span className="text-gray-300 hidden md:inline">|</span>

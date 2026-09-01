@@ -153,11 +153,11 @@ export default function FAQSection() {
               <span>WhatsApp Support</span>
             </a>
             <a
-              href="tel:+919447868443"
+              href="tel:+919961341443"
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs sm:text-sm font-semibold bg-gray-100 hover:bg-gray-200 text-gray-800 transition-all"
             >
               <Phone className="w-4 h-4 text-[#026d77]" />
-              <span>+91 94478 68443</span>
+              <span>+91 99613 41443</span>
             </a>
           </div>
         </motion.div>

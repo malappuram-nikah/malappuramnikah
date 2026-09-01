@@ -80,8 +80,8 @@ export default function HeroSection({ onJoinNow }: HeroSectionProps) {
           >
             <span className="flex items-center gap-1">
               📞 Call Support:{" "}
-              <a href="tel:+919447868443" className="text-brand-600 hover:text-brand-700 hover:underline">
-                +91 94478 68443
+              <a href="tel:+919961341443" className="text-brand-600 hover:text-brand-700 hover:underline">
+                +91 99613 41443
               </a>
             </span>
             <span className="hidden sm:inline text-gray-300">•</span>

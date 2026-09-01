@@ -60,11 +60,11 @@ export default function BusinessRegisterPage() {
           </a>
 
           <a
-            href="tel:+919447868443"
+            href="tel:+919961341443"
             className="w-full py-3 px-6 bg-gray-800 hover:bg-gray-700 text-white font-semibold text-sm rounded-xl transition-all flex items-center justify-center gap-2 border border-gray-700"
           >
             <Phone className="w-4 h-4 text-[#81c4bd]" />
-            <span>Call Us: +91 94478 68443</span>
+            <span>Call Us: +91 99613 41443</span>
           </a>
         </div>
 

@@ -25,7 +25,7 @@ export default function RefundPage() {
           <h2 className="text-sm font-bold text-gray-900">1. Membership & Subscription Plans</h2>
           <p>All premium membership and subscription fees are non-refundable once the plan is activated and matchmaking features have been accessed.</p>
           <h2 className="text-sm font-bold text-gray-900">2. Duplicate Charges & Billing Inquiries</h2>
-          <p>In the event of accidental duplicate payments or payment gateway processing errors, please contact our support team at support@malappuramnikah.com or +91 94478 68443 within 7 days for verification and refund processing.</p>
+          <p>In the event of accidental duplicate payments or payment gateway processing errors, please contact our support team at support@malappuramnikah.com or +91 99613 41443 within 7 days for verification and refund processing.</p>
           <h2 className="text-sm font-bold text-gray-900">3. Account Cancellation</h2>
           <p>Members may deactivate their profile at any time. Voluntary deactivation before plan expiration does not entitle the user to a partial refund.</p>
         </div>
