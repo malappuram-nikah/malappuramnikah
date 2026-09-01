@@ -43,9 +43,17 @@ updateProfileDetails,
 generateGuestReferral
 );
 
+import { VerifyOtpUseCase } from "../../applications/use-cases/user/VerifyOtp.usecase";
+import { OtpController } from "../controllers/otp.controller";
+
+const otpControllerForUser = new OtpController(sendOtp, new VerifyOtpUseCase(otpRepository));
+
 user_route.post('/register', async (req: Request, res: Response) => { await userController.register(req, res)});
 user_route.post('/generate-referral-code', async (req: Request, res: Response) => { await userController.generateReferral(req, res)});
-user_route.post('/login',async (req:Request,res:Response) => {await userController.login(req,res)})
+user_route.post('/login', async (req: Request, res: Response) => { await userController.login(req, res)});
+user_route.post('/send-otp', async (req: Request, res: Response) => { await otpControllerForUser.resendOtp(req, res); });
+user_route.post('/verify-otp', async (req: Request, res: Response) => { await otpControllerForUser.verifyOtp(req, res); });
+user_route.post('/login-otp', async (req: Request, res: Response) => { await otpControllerForUser.verifyOtp(req, res); });
 
 // Public stats endpoint for home page counters
 user_route.get('/public-stats', async (req: Request, res: Response) => {

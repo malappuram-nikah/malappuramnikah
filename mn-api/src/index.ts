@@ -133,6 +133,9 @@ app.use("/user/register", authLimiter);
 app.use("/user/reset-password", authLimiter);
 app.use("/user/verify-reset-code", authLimiter);
 app.use("/user/forgot-password", otpLimiter);
+app.use("/user/send-otp", otpLimiter);
+app.use("/user/verify-otp", otpLimiter);
+app.use("/user/login-otp", otpLimiter);
 
 app.use("/api/webhooks/whatsapp", whatsapp_webhook_route);
 app.use("/user/interest", interest_route);
