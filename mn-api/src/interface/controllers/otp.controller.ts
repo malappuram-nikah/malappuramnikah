@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { SendOtpUseCase } from "../../applications/use-cases/user/SentOtp.usecase";
 import { VerifyOtpUseCase } from "../../applications/use-cases/user/VerifyOtp.usecase";
 import { AuthService } from "../../infrastructure/service/AuthService.service";
-import { accessTokenConfig } from "../../infrastructure/config/jwt.config";
+import { accessTokenConfig, refreshTokenConfig } from "../../infrastructure/config/jwt.config";
 import { getAccountBlockForUser } from "../../infrastructure/helpers/accountStatus.helpers";
 import prisma from "../../infrastructure/prisma/prisamClient";
 import { OtpChannel, OtpPurpose } from "../../domain/entities/otp-core.interface";
@@ -184,7 +184,7 @@ export class OtpController {
       }
 
       if (user.status === "in_active") {
-        await prisma.user.update({
+        user = await prisma.user.update({
           where: { id: user.id },
           data: { status: "active" },
         });
@@ -195,10 +195,34 @@ export class OtpController {
         accessTokenConfig
       );
 
+      const refreshToken = AuthService.generateToken(
+        { userId: user.id },
+        refreshTokenConfig
+      );
+
+      // Asynchronously update last login timestamp in DB
+      prisma.user.update({
+        where: { id: user.id },
+        data: { last_login: new Date() }
+      }).catch(err => console.error("Last login update failed:", err));
+
+      const isProd = process.env.NODE_ENV === "production";
+      res.cookie("refresh_token", refreshToken, {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: isProd ? "none" : "lax",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      const { password: _password, ...safeUser } = user as any;
+
       return res.status(200).json({
         accessToken,
+        token: accessToken,
+        refreshToken,
         success: true,
         message: "OTP verified successfully",
+        user: safeUser,
       });
     } catch (error) {
       console.error("Verify OTP error:", error);

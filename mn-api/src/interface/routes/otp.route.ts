@@ -17,6 +17,7 @@ const verifyOtpUseCase = new VerifyOtpUseCase(otpRepository);
 const otpController = new OtpController(sendOtpUseCase, verifyOtpUseCase);
 
 otp_route.post("/resend-otp", async (req: Request, res: Response) => { await otpController.resendOtp(req, res) });
+otp_route.post("/send-otp", async (req: Request, res: Response) => { await otpController.resendOtp(req, res) });
 otp_route.post("/verify-otp", async (req: Request, res: Response) => { await otpController.verifyOtp(req, res) });
 
 
