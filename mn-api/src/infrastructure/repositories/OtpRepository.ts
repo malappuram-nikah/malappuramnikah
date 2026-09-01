@@ -11,24 +11,30 @@ export class OtpRepository implements IOtpRepository {
     if (isEmail) {
       return prisma.user.findFirst({
         where: { email: { equals: clean.toLowerCase(), mode: "insensitive" } },
-        select: { id: true, mobile_number: true, email: true, first_name: true, last_name: true },
+        select: { id: true, mobile_number: true, email: true, first_name: true, last_name: true, status: true, profile_details: true },
       });
     }
 
     const digits = clean.replace(/\D/g, "");
-    const rawDigits10 = digits.length >= 10 ? digits.slice(-10) : digits;
+    const rawDigits = digits.replace(/^0+/, "");
+    const last8 = rawDigits.length >= 8 ? rawDigits.slice(-8) : rawDigits;
+    const last10 = rawDigits.length >= 10 ? rawDigits.slice(-10) : rawDigits;
 
     return prisma.user.findFirst({
       where: {
         OR: [
           { mobile_number: clean },
-          { mobile_number: `+91${rawDigits10}` },
-          { mobile_number: rawDigits10 },
-          { mobile_number: `0${rawDigits10}` },
+          { mobile_number: `+${digits}` },
+          { mobile_number: digits },
+          { mobile_number: rawDigits },
+          { mobile_number: last8 },
+          { mobile_number: last10 },
+          { mobile_number: `+91${last10}` },
+          { mobile_number: { endsWith: last8 } },
           { email: { equals: clean.toLowerCase(), mode: "insensitive" } },
         ],
       },
-      select: { id: true, mobile_number: true, email: true, first_name: true, last_name: true },
+      select: { id: true, mobile_number: true, email: true, first_name: true, last_name: true, status: true, profile_details: true },
     });
   }
 
