@@ -50,7 +50,14 @@ export class UserController {
       const user = await this.registerUser.execute(req.body);
       console.log("User from use case:", user);
 
-      const generatedOtp = await this.sendOtp.execute(phoneNumber, req.body.email, `${req.body.first_name || ""} ${req.body.last_name || ""}`);
+      const channel = req.body.channel === "EMAIL" ? "EMAIL" : "WHATSAPP";
+      const generatedOtp = await this.sendOtp.execute(
+        phoneNumber,
+        req.body.email,
+        `${req.body.first_name || ""} ${req.body.last_name || ""}`.trim(),
+        channel,
+        "VERIFICATION"
+      );
       const { password: _password, ...safeUser } = user as any;
 
       if (isUnverified) {

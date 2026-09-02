@@ -491,7 +491,8 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
         cast: formData.caste,
         marital_status: formData.maritalStatus,
         email: formData.email || undefined,
-        referred_by_code: formData.referralCode || undefined
+        referred_by_code: formData.referralCode || undefined,
+        channel: "WHATSAPP",
       };
 
       const response = await fetch(`${API_URL}/user/register`, {
@@ -598,6 +599,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
           phoneNumber: formData.countryCode + formData.mobile,
           otpCode: otpDigits,
           userId: registeredUserId,
+          channel: "WHATSAPP",
         })
       });
 
