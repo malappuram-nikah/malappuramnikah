@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ArrowLeft, CheckCircle2, ShieldCheck } from "lucide-react";
 
-import { LOCATIONS } from "@/lib/constants";
+import { LOCATIONS, COUNTRY_CODES } from "@/lib/constants";
 import { API_URL } from "@/lib/config";
 import {
   getMobileMaxLength,
@@ -355,7 +355,9 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
             className="space-y-5"
           >
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Mobile Number</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Mobile Number <span className="text-red-500">*</span>
+              </label>
               <div className="flex gap-2">
                 <select
                   value={formData.countryCode}
@@ -368,11 +370,13 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
                     }));
                     setFieldErrors((prev) => ({ ...prev, mobile: undefined }));
                   }}
-                  className="w-24 px-3 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm appearance-none bg-white text-center"
+                  className="w-24 px-2.5 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-xs font-semibold appearance-none bg-white text-center"
                 >
-                  <option value="+91">+91 (IN)</option>
-                  <option value="+971">+971 (UAE)</option>
-                  <option value="+966">+966 (KSA)</option>
+                  {COUNTRY_CODES.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.label}
+                    </option>
+                  ))}
                 </select>
                 <input
                   type="tel"
@@ -394,14 +398,15 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email Address <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Email Address <span className="text-xs text-gray-400 font-normal">(Optional)</span>
+              </label>
               <input
                 type="email"
-                required
                 value={formData.email}
                 onChange={(e) => updateForm("email", e.target.value)}
                 onBlur={() => touchField("email")}
-                placeholder="Enter your email to receive OTP"
+                placeholder="name@example.com (optional)"
                 className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 transition-all text-sm ${
                   fieldErrors.email
                     ? "border-red-300 focus:border-red-500 focus:ring-red-500/20"
@@ -413,7 +418,9 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Password <span className="text-red-500">*</span>
+              </label>
               <input
                 type="password"
                 value={formData.password}
@@ -454,7 +461,8 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
       case 3: return formData.location && formData.caste;
       case 4:
         return (
-          formData.email.trim().length > 0 &&
+          formData.mobile.trim().length > 0 &&
+          formData.password.trim().length >= 6 &&
           !validateMobile(formData.countryCode, formData.mobile) &&
           !validatePassword(formData.password) &&
           !validateEmail(formData.email)
@@ -632,6 +640,8 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           phoneNumber: formData.countryCode + formData.mobile,
+          channel: "WHATSAPP",
+          purpose: "VERIFICATION",
         })
       });
       const data = await response.json();
@@ -666,7 +676,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
+          className="absolute inset-0 bg-gray-900/50 backdrop-blur-sm"
         />
 
         <motion.div
@@ -675,51 +685,57 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
           exit={{ opacity: 0, scale: 0.95, y: 10 }}
           className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
         >
-          {/* ── Verified success screen ── */}
-          {verified ? (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="p-8 text-center flex flex-col items-center justify-center min-h-[340px]"
-            >
+          {/* Success splash */}
+          {success ? (
+            <div className="p-8 text-center flex flex-col items-center justify-center min-h-[400px]">
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.1 }}
-                className="w-20 h-20 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center mb-5"
+                className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mb-6"
               >
-                <ShieldCheck className="w-10 h-10" />
+                <CheckCircle2 className="w-10 h-10 text-emerald-600" />
               </motion.div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Account Verified!</h2>
-              <p className="text-gray-500 text-sm">Your mobile number has been verified successfully. Redirecting to your dashboard...</p>
-              <div className="mt-6">
-                <span className="w-6 h-6 border-2 border-brand-200 border-t-brand-600 rounded-full animate-spin inline-block" />
-              </div>
+              <h2 className="text-2xl font-bold font-playfair text-gray-900 mb-2">Account Created!</h2>
+              <p className="text-gray-500 text-sm max-w-xs mx-auto">
+                Please enter the 6-digit verification code sent to your WhatsApp.
+              </p>
+            </div>
+          ) : verified ? (
+          <div className="p-8 text-center flex flex-col items-center justify-center min-h-[400px]">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mb-6"
+            >
+              <CheckCircle2 className="w-10 h-10 text-emerald-600" />
             </motion.div>
+            <h2 className="text-2xl font-bold font-playfair text-gray-900 mb-2">Account Verified!</h2>
+            <p className="text-gray-500 text-sm max-w-xs mx-auto">
+              Redirecting you to your dashboard...
+            </p>
+          </div>
+        ) : showOtpScreen ? (
+          <>
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Verify WhatsApp OTP</h2>
+                <p className="text-xs font-medium text-emerald-700">Enter code sent to {formData.countryCode} {maskedPhone()}</p>
+              </div>
+              <button onClick={onClose} className="p-2 -mr-2 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-            /* ── OTP entry screen ── */
-          ) : showOtpScreen ? (
-            <>
-              {/* Header */}
-              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
-                <div>
-                  <h2 className="text-lg font-bold text-gray-900">Verify OTP</h2>
-                  <p className="text-xs font-medium text-brand-600">Enter the code sent to {formData.countryCode} {maskedPhone()}</p>
-                </div>
-                <button onClick={onClose} className="p-2 -mr-2 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
+            {/* OTP Body */}
+            <div className="p-6 flex flex-col items-center">
+              <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center mb-6">
+                <ShieldCheck className="w-7 h-7 text-emerald-600" />
               </div>
 
-              {/* OTP Body */}
-              <div className="p-6 flex flex-col items-center">
-                <div className="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center mb-6">
-                  <ShieldCheck className="w-7 h-7 text-brand-600" />
-                </div>
-
-                <p className="text-sm text-gray-500 text-center mb-6">
-                  We&apos;ve sent a 6-digit verification code to your <strong className="text-gray-900 font-semibold">Email Inbox ({formData.email})</strong>. Enter it below to verify your account.
-                </p>
+              <p className="text-sm text-gray-500 text-center mb-6">
+                We&apos;ve sent a 6-digit verification code to your WhatsApp at <strong className="text-gray-900 font-semibold">{formData.countryCode} {maskedPhone()}</strong>. Enter it below to verify your account.
+              </p>
 
                 {otpInfo && (
                   <div className="w-full mb-5 p-3 bg-blue-50 text-blue-700 text-sm rounded-xl border border-blue-100 text-center">
