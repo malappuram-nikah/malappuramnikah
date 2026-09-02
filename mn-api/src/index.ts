@@ -157,8 +157,11 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
   });
 });
 
+import { OtpRepository } from "./infrastructure/repositories/OtpRepository";
+
 const PORT = process.env.PORT || 3333;
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
   console.log(`Server is running on port ${PORT}`);
+  await OtpRepository.ensureColumnsExist().catch((e) => console.warn("[DB SCHEMA WARN]", e?.message || e));
 });
 

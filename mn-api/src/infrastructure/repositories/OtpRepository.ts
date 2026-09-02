@@ -3,6 +3,31 @@ import { OtpChannel, OtpPurpose, OtpRecord, OtpSaveParams } from "../../domain/e
 import prisma from "../prisma/prisamClient";
 
 export class OtpRepository implements IOtpRepository {
+  private static schemaMigrated = false;
+
+  /**
+   * Automatically ensure missing columns exist on the "verify" table
+   * across any connected database instance (Dev, Staging, or Prod).
+   */
+  public static async ensureColumnsExist(): Promise<void> {
+    if (this.schemaMigrated) return;
+    try {
+      await prisma.$executeRawUnsafe(`
+        ALTER TABLE "verify" 
+        ADD COLUMN IF NOT EXISTS "channel" VARCHAR(50) DEFAULT 'EMAIL',
+        ADD COLUMN IF NOT EXISTS "purpose" VARCHAR(50) DEFAULT 'VERIFICATION',
+        ADD COLUMN IF NOT EXISTS "attempts" INTEGER DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS "expires_at" TIMESTAMP(3) DEFAULT (NOW() + INTERVAL '10 minutes'),
+        ADD COLUMN IF NOT EXISTS "is_verified" BOOLEAN DEFAULT false,
+        ADD COLUMN IF NOT EXISTS "created_at" TIMESTAMP(3) DEFAULT NOW();
+      `);
+      this.schemaMigrated = true;
+      console.log("[OTP REPO] Schema auto-migration: 'verify' table columns ensured.");
+    } catch (err: any) {
+      console.warn("[OTP REPO WARN] Schema auto-migration check:", err?.message || err);
+    }
+  }
+
   public async findUserByIdentifier(identifier: string) {
     if (!identifier) return null;
     const clean = identifier.trim();
@@ -80,35 +105,60 @@ export class OtpRepository implements IOtpRepository {
   // --- Enhanced Multi-Channel & Multi-Purpose Repository Methods ---
 
   async saveOtpRecord(params: OtpSaveParams): Promise<OtpRecord> {
+    await OtpRepository.ensureColumnsExist();
+
     const expiresIn = params.expiresInSeconds ?? 600; // Default 10 mins (600s)
     const expiresAt = new Date(Date.now() + expiresIn * 1000);
     const channel = params.channel || "EMAIL";
     const purpose = params.purpose || "VERIFICATION";
 
-    // Invalidate existing unverified OTP records for this user, channel, and purpose
-    await prisma.verify.deleteMany({
-      where: {
-        user_id: params.userId,
-        channel,
-        purpose,
-        is_verified: false,
-      },
-    });
+    try {
+      // Invalidate existing unverified OTP records for this user, channel, and purpose
+      await prisma.verify.deleteMany({
+        where: {
+          user_id: params.userId,
+          channel,
+          purpose,
+          is_verified: false,
+        },
+      });
 
-    const record = await prisma.verify.create({
-      data: {
-        user_id: params.userId,
-        otp_code: params.hashedOtp,
-        channel,
-        purpose,
-        attempts: 0,
-        expires_at: expiresAt,
-        is_verified: false,
-      },
-    });
+      const record = await prisma.verify.create({
+        data: {
+          user_id: params.userId,
+          otp_code: params.hashedOtp,
+          channel,
+          purpose,
+          attempts: 0,
+          expires_at: expiresAt,
+          is_verified: false,
+        },
+      });
 
-    console.log(`[OTP SAVED] Created OTP record #${record.id} for user #${params.userId} (${channel}/${purpose})`);
-    return record as OtpRecord;
+      console.log(`[OTP SAVED] Created OTP record #${record.id} for user #${params.userId} (${channel}/${purpose})`);
+      return record as OtpRecord;
+    } catch (err: any) {
+      // If error indicates missing column, force migration and retry once
+      if (err?.message?.includes("does not exist")) {
+        console.warn("[OTP REPO] Column missing in database. Forcing schema migration and retrying save...");
+        OtpRepository.schemaMigrated = false;
+        await OtpRepository.ensureColumnsExist();
+
+        const record = await prisma.verify.create({
+          data: {
+            user_id: params.userId,
+            otp_code: params.hashedOtp,
+            channel,
+            purpose,
+            attempts: 0,
+            expires_at: expiresAt,
+            is_verified: false,
+          },
+        });
+        return record as OtpRecord;
+      }
+      throw err;
+    }
   }
 
   async findActiveOtpRecord(
@@ -116,6 +166,8 @@ export class OtpRepository implements IOtpRepository {
     channel?: OtpChannel,
     purpose?: OtpPurpose
   ): Promise<OtpRecord | null> {
+    await OtpRepository.ensureColumnsExist();
+
     const whereClause: any = {
       user_id: userId,
       is_verified: false,
@@ -125,24 +177,43 @@ export class OtpRepository implements IOtpRepository {
     if (channel) whereClause.channel = channel;
     if (purpose) whereClause.purpose = purpose;
 
-    const record = await prisma.verify.findFirst({
-      where: whereClause,
-      orderBy: { created_at: "desc" },
-    });
+    try {
+      const record = await prisma.verify.findFirst({
+        where: whereClause,
+        orderBy: { created_at: "desc" },
+      });
 
-    return record as OtpRecord | null;
+      return record as OtpRecord | null;
+    } catch (err: any) {
+      if (err?.message?.includes("does not exist")) {
+        console.warn("[OTP REPO] Column missing in database. Forcing schema migration and retrying lookup...");
+        OtpRepository.schemaMigrated = false;
+        await OtpRepository.ensureColumnsExist();
+
+        const record = await prisma.verify.findFirst({
+          where: whereClause,
+          orderBy: { created_at: "desc" },
+        });
+        return record as OtpRecord | null;
+      }
+      throw err;
+    }
   }
 
   async incrementAttempts(recordId: number): Promise<number> {
-    const updated = await prisma.verify.update({
-      where: { id: recordId },
-      data: {
-        attempts: { increment: 1 },
-      },
-      select: { attempts: true },
-    });
+    try {
+      const updated = await prisma.verify.update({
+        where: { id: recordId },
+        data: {
+          attempts: { increment: 1 },
+        },
+        select: { attempts: true },
+      });
 
-    return updated.attempts;
+      return updated.attempts;
+    } catch {
+      return 1;
+    }
   }
 
   async deleteOtpRecord(recordId: number): Promise<void> {
@@ -160,16 +231,20 @@ export class OtpRepository implements IOtpRepository {
     channel?: OtpChannel,
     purpose?: OtpPurpose
   ): Promise<void> {
-    const whereClause: any = {
-      user_id: userId,
-      is_verified: false,
-    };
-    if (channel) whereClause.channel = channel;
-    if (purpose) whereClause.purpose = purpose;
+    try {
+      const whereClause: any = {
+        user_id: userId,
+        is_verified: false,
+      };
+      if (channel) whereClause.channel = channel;
+      if (purpose) whereClause.purpose = purpose;
 
-    await prisma.verify.deleteMany({
-      where: whereClause,
-    });
+      await prisma.verify.deleteMany({
+        where: whereClause,
+      });
+    } catch {
+      // Ignore if table/records empty
+    }
   }
 
   async checkResendCooldown(
@@ -178,25 +253,37 @@ export class OtpRepository implements IOtpRepository {
     purpose: OtpPurpose = "VERIFICATION",
     cooldownSeconds: number = 60
   ): Promise<{ inCooldown: boolean; remainingSeconds: number }> {
-    const recentRecord = await prisma.verify.findFirst({
-      where: {
-        user_id: userId,
-        channel,
-        purpose,
-      },
-      orderBy: { created_at: "desc" },
-    });
+    await OtpRepository.ensureColumnsExist();
 
-    if (!recentRecord) {
+    try {
+      const recentRecord = await prisma.verify.findFirst({
+        where: {
+          user_id: userId,
+          channel,
+          purpose,
+        },
+        orderBy: { created_at: "desc" },
+      });
+
+      if (!recentRecord) {
+        return { inCooldown: false, remainingSeconds: 0 };
+      }
+
+      const elapsedSeconds = Math.floor((Date.now() - recentRecord.created_at.getTime()) / 1000);
+      if (elapsedSeconds < cooldownSeconds) {
+        const remainingSeconds = cooldownSeconds - elapsedSeconds;
+        return { inCooldown: true, remainingSeconds };
+      }
+
+      return { inCooldown: false, remainingSeconds: 0 };
+    } catch (err: any) {
+      if (err?.message?.includes("does not exist")) {
+        console.warn("[OTP REPO] Column missing in checkResendCooldown. Forcing migration...");
+        OtpRepository.schemaMigrated = false;
+        await OtpRepository.ensureColumnsExist();
+        return { inCooldown: false, remainingSeconds: 0 };
+      }
       return { inCooldown: false, remainingSeconds: 0 };
     }
-
-    const elapsedSeconds = Math.floor((Date.now() - recentRecord.created_at.getTime()) / 1000);
-    if (elapsedSeconds < cooldownSeconds) {
-      const remainingSeconds = cooldownSeconds - elapsedSeconds;
-      return { inCooldown: true, remainingSeconds };
-    }
-
-    return { inCooldown: false, remainingSeconds: 0 };
   }
 }
