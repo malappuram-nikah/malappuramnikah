@@ -192,7 +192,7 @@ export class RegisterUser {
                 }
             }
 
-            const { referred_by_code, marital_status, maritalStatus, ...restData } = data as any;
+            const { referred_by_code, marital_status, maritalStatus, channel, ...restData } = data as any;
             const initialMaritalStatus = marital_status || maritalStatus || "Never Married";
             const initialDetails = restData.profile_details || {
                 basicDetails: { maritalStatus: initialMaritalStatus },
@@ -316,11 +316,14 @@ export class RegisterUser {
     }
 
     private validateMobileNumber(mobileNumber: string): void {
-        const knownCodes = ["+966", "+971", "+91"];
+        const knownCodes = ["+971", "+966", "+974", "+968", "+965", "+973", "+91", "+44", "+1"];
         const countryCode = knownCodes.find((code) => mobileNumber.startsWith(code));
 
         if (!countryCode) {
-            throw new Error("Enter a valid mobile number with country code");
+            if (!mobileNumber.startsWith("+") || mobileNumber.replace(/\D/g, "").length < 8) {
+                throw new Error("Enter a valid mobile number with country code");
+            }
+            return;
         }
 
         const digits = mobileNumber.slice(countryCode.length).replace(/\D/g, "");
@@ -352,7 +355,49 @@ export class RegisterUser {
             return;
         }
 
-        if (digits.length < 8 || digits.length > 15) {
+        if (countryCode === "+968") {
+            if (digits.length !== 8) {
+                throw new Error("Oman mobile number must be exactly 8 digits");
+            }
+            return;
+        }
+
+        if (countryCode === "+974") {
+            if (digits.length !== 8) {
+                throw new Error("Qatar mobile number must be exactly 8 digits");
+            }
+            return;
+        }
+
+        if (countryCode === "+965") {
+            if (digits.length !== 8) {
+                throw new Error("Kuwait mobile number must be exactly 8 digits");
+            }
+            return;
+        }
+
+        if (countryCode === "+973") {
+            if (digits.length !== 8) {
+                throw new Error("Bahrain mobile number must be exactly 8 digits");
+            }
+            return;
+        }
+
+        if (countryCode === "+44") {
+            if (digits.length !== 10 && digits.length !== 11) {
+                throw new Error("UK mobile number must be 10 or 11 digits");
+            }
+            return;
+        }
+
+        if (countryCode === "+1") {
+            if (digits.length !== 10) {
+                throw new Error("US/Canada mobile number must be exactly 10 digits");
+            }
+            return;
+        }
+
+        if (digits.length < 7 || digits.length > 15) {
             throw new Error("Enter a valid mobile number");
         }
     }

@@ -47,10 +47,11 @@ export class UserController {
       });
       const isUnverified = existingUser && existingUser.status === "in_active";
 
-      const user = await this.registerUser.execute(req.body);
+      const { channel: reqChannel, ...userData } = req.body;
+      const user = await this.registerUser.execute(userData);
       console.log("User from use case:", user);
 
-      const channel = req.body.channel === "EMAIL" ? "EMAIL" : "WHATSAPP";
+      const channel = reqChannel === "EMAIL" ? "EMAIL" : "WHATSAPP";
       const generatedOtp = await this.sendOtp.execute(
         phoneNumber,
         req.body.email,
