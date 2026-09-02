@@ -37,10 +37,13 @@ export default function LoginPage() {
     }
   }, [status, isAdmin, router]);
 
-  // Login Mode: "password" | "whatsapp" | "email"
-  const [loginMode, setLoginMode] = useState<"password" | "whatsapp" | "email">("password");
+  // Main Mode: "password" | "otp"
+  const [loginMode, setLoginMode] = useState<"password" | "otp">("password");
 
-  // Form Inputs
+  // OTP Channel: "WHATSAPP" | "EMAIL"
+  const [otpChannel, setOtpChannel] = useState<"WHATSAPP" | "EMAIL">("WHATSAPP");
+
+  // Inputs
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
   const [countryCode, setCountryCode] = useState("+91");
@@ -199,7 +202,7 @@ export default function LoginPage() {
 
     try {
       const target =
-        loginMode === "whatsapp"
+        otpChannel === "WHATSAPP"
           ? `${countryCode}${mobile.replace(/\D/g, "").replace(/^0+/, "")}`
           : emailOtpInput.trim();
 
@@ -209,7 +212,7 @@ export default function LoginPage() {
         body: JSON.stringify({
           phoneNumber: target,
           otpCode: otp.trim(),
-          channel: loginMode === "whatsapp" ? "WHATSAPP" : "EMAIL",
+          channel: otpChannel,
         }),
       });
 
@@ -231,7 +234,7 @@ export default function LoginPage() {
   };
 
   const getMaskedRecipient = () => {
-    if (loginMode === "whatsapp") {
+    if (otpChannel === "WHATSAPP") {
       const num = mobile.replace(/\D/g, "");
       if (num.length <= 4) return `${countryCode} ${num}`;
       return `${countryCode} ${num.slice(0, 2)}****${num.slice(-2)}`;
@@ -242,8 +245,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex bg-gray-50 items-center justify-center p-6 sm:p-10">
-      <div className="w-full max-w-md bg-white rounded-2xl border border-gray-150 shadow-xl p-8 sm:p-10">
+    <div className="min-h-screen flex bg-gray-50 items-center justify-center p-4 sm:p-6">
+      <div className="w-full max-w-md bg-white rounded-3xl border border-gray-150 shadow-xl p-6 sm:p-8">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -251,26 +254,26 @@ export default function LoginPage() {
           className="w-full"
         >
           {/* Logo */}
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mb-5">
             <Image
               src="/logoMain-01.svg"
               alt="Malappuram Nikah"
               width={140}
               height={70}
-              className="h-14 w-auto object-contain"
+              className="h-12 w-auto object-contain"
             />
           </div>
 
-          <h1 className="text-3xl font-bold font-playfair text-gray-900 mb-1">Sign In</h1>
-          <p className="text-gray-500 mb-6 text-sm">
+          <h1 className="text-2xl sm:text-3xl font-bold font-playfair text-gray-900 mb-1 text-center">Sign In</h1>
+          <p className="text-gray-500 mb-6 text-xs sm:text-sm text-center">
             New here?{" "}
             <Link href="/" className="text-brand-600 font-medium hover:underline">
               Create a free account
             </Link>
           </p>
 
-          {/* Mode Switcher Tabs */}
-          <div className="flex rounded-xl bg-gray-100 p-1 mb-6 text-xs font-semibold">
+          {/* Top 2-Tab Segmented Control (Clean & Uncrowded) */}
+          <div className="flex rounded-2xl bg-gray-100 p-1 mb-6 text-xs font-semibold">
             <button
               type="button"
               onClick={() => {
@@ -281,49 +284,31 @@ export default function LoginPage() {
                 setSuccessMsg(null);
                 setDevOtpHint(null);
               }}
-              className={`flex-1 py-2.5 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-3 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
                 loginMode === "password"
                   ? "bg-white text-brand-700 shadow-sm font-bold"
                   : "text-gray-500 hover:text-gray-800"
               }`}
             >
-              <Lock className="w-3.5 h-3.5" /> Password
+              <Lock className="w-4 h-4" /> Password
             </button>
             <button
               type="button"
               onClick={() => {
-                setLoginMode("whatsapp");
+                setLoginMode("otp");
                 setOtpSent(false);
                 setOtp("");
                 setError(null);
                 setSuccessMsg(null);
                 setDevOtpHint(null);
               }}
-              className={`flex-1 py-2.5 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
-                loginMode === "whatsapp"
-                  ? "bg-emerald-600 text-white shadow-sm font-bold"
+              className={`flex-1 py-3 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                loginMode === "otp"
+                  ? "bg-white text-emerald-700 shadow-sm font-bold"
                   : "text-gray-500 hover:text-gray-800"
               }`}
             >
-              <MessageSquare className="w-3.5 h-3.5" /> WhatsApp OTP
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setLoginMode("email");
-                setOtpSent(false);
-                setOtp("");
-                setError(null);
-                setSuccessMsg(null);
-                setDevOtpHint(null);
-              }}
-              className={`flex-1 py-2.5 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
-                loginMode === "email"
-                  ? "bg-white text-brand-700 shadow-sm font-bold"
-                  : "text-gray-500 hover:text-gray-800"
-              }`}
-            >
-              <Mail className="w-3.5 h-3.5" /> Email OTP
+              <KeyRound className="w-4 h-4 text-emerald-600" /> OTP Sign In
             </button>
           </div>
 
@@ -333,7 +318,7 @@ export default function LoginPage() {
               <motion.div
                 initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mb-6 p-3.5 bg-red-50 text-red-700 text-xs font-semibold rounded-xl border border-red-150"
+                className="mb-5 p-3.5 bg-red-50 text-red-700 text-xs font-semibold rounded-xl border border-red-150"
               >
                 {error}
               </motion.div>
@@ -343,7 +328,7 @@ export default function LoginPage() {
               <motion.div
                 initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mb-6 p-3.5 bg-emerald-50 text-emerald-800 text-xs font-semibold rounded-xl border border-emerald-200"
+                className="mb-5 p-3.5 bg-emerald-50 text-emerald-800 text-xs font-semibold rounded-xl border border-emerald-200"
               >
                 {successMsg}
               </motion.div>
@@ -353,7 +338,7 @@ export default function LoginPage() {
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="mb-6 p-3 bg-amber-50 text-amber-900 text-xs rounded-xl border border-amber-200 flex items-center justify-between font-mono"
+                className="mb-5 p-3 bg-amber-50 text-amber-900 text-xs rounded-xl border border-amber-200 flex items-center justify-between font-mono"
               >
                 <span>🔑 Dev Mode OTP:</span>
                 <span className="font-bold tracking-wider text-sm bg-amber-200/80 px-2 py-0.5 rounded">{devOtpHint}</span>
@@ -363,15 +348,14 @@ export default function LoginPage() {
 
           {/* ─── 1. PASSWORD LOGIN FORM ─── */}
           {loginMode === "password" && (
-            <form onSubmit={handlePasswordSubmit} className="space-y-5">
-              {/* Mobile field */}
+            <form onSubmit={handlePasswordSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Mobile Number</label>
                 <div className="flex gap-2">
                   <select
                     value={countryCode}
                     onChange={(e) => setCountryCode(e.target.value)}
-                    className="w-28 px-2.5 py-3.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-xs font-semibold appearance-none bg-gray-50 text-center"
+                    className="w-28 px-2 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-xs font-semibold appearance-none bg-gray-50 text-center"
                   >
                     {COUNTRY_CODES.map((c) => (
                       <option key={c.code} value={c.code}>
@@ -381,7 +365,7 @@ export default function LoginPage() {
                   </select>
                   <div className="relative flex-1">
                     <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                      <Phone className="h-5 w-5 text-gray-400" />
+                      <Phone className="h-4 w-4 text-gray-400" />
                     </div>
                     <input
                       type="tel"
@@ -389,13 +373,12 @@ export default function LoginPage() {
                       onChange={(e) => setMobile(e.target.value)}
                       placeholder="Enter mobile number"
                       required
-                      className="w-full pl-10 pr-4 py-3.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                      className="w-full pl-9 pr-3 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Password field */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-xs font-bold uppercase tracking-wider text-gray-600">Password</label>
@@ -405,7 +388,7 @@ export default function LoginPage() {
                 </div>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
+                    <Lock className="h-4 w-4 text-gray-400" />
                   </div>
                   <input
                     type={showPassword ? "text" : "password"}
@@ -413,23 +396,22 @@ export default function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
                     required
-                    className="w-full pl-10 pr-12 py-3.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                    className="w-full pl-9 pr-10 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    {showPassword ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
+                    {showPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
 
-              {/* Submit */}
               <button
                 type="submit"
                 disabled={isLoading || !mobile || !password}
-                className="w-full bg-brand-600 text-white font-semibold py-3.5 px-4 rounded-xl hover:bg-brand-700 active:scale-[0.99] transition-all disabled:opacity-50 disabled:pointer-events-none shadow-sm hover:shadow flex items-center justify-center gap-2 text-sm mt-2"
+                className="w-full bg-brand-600 text-white font-semibold py-3.5 px-4 rounded-xl hover:bg-brand-700 active:scale-[0.99] transition-all disabled:opacity-50 disabled:pointer-events-none shadow-sm hover:shadow flex items-center justify-center gap-2 text-sm mt-3"
               >
                 {isLoading ? (
                   <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -443,171 +425,150 @@ export default function LoginPage() {
             </form>
           )}
 
-          {/* ─── 2. WHATSAPP OTP LOGIN FORM ─── */}
-          {loginMode === "whatsapp" && (
-            <div className="space-y-5">
+          {/* ─── 2. OTP SIGN IN FORM (With WhatsApp / Email Channel Switcher) ─── */}
+          {loginMode === "otp" && (
+            <div className="space-y-4">
               {!otpSent ? (
-                <form onSubmit={handleSendWhatsAppOtp} className="space-y-5">
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Registered Mobile Number</label>
-                    <div className="flex gap-2">
-                      <select
-                        value={countryCode}
-                        onChange={(e) => {
-                          const newCode = e.target.value;
-                          setCountryCode(newCode);
-                          setMobile((prev) => prev.slice(0, getMobileMaxLength(newCode)));
+                <div>
+                  {/* Channel Switcher Dropdown / Pills */}
+                  <div className="mb-4">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Send Verification Code Via</label>
+                    <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100 rounded-xl">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOtpChannel("WHATSAPP");
+                          setError(null);
+                          setSuccessMsg(null);
+                          setDevOtpHint(null);
                         }}
-                        className="w-28 px-2.5 py-3.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-xs font-semibold appearance-none bg-gray-50 text-center"
+                        className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                          otpChannel === "WHATSAPP"
+                            ? "bg-emerald-600 text-white shadow-sm font-bold"
+                            : "text-gray-600 hover:text-gray-900"
+                        }`}
                       >
-                        {COUNTRY_CODES.map((c) => (
-                          <option key={c.code} value={c.code}>
-                            {c.label}
-                          </option>
-                        ))}
-                      </select>
-                      <div className="relative flex-1">
-                        <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                          <Phone className="h-5 w-5 text-gray-400" />
+                        <MessageSquare className="w-3.5 h-3.5" /> WhatsApp
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOtpChannel("EMAIL");
+                          setError(null);
+                          setSuccessMsg(null);
+                          setDevOtpHint(null);
+                        }}
+                        className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                          otpChannel === "EMAIL"
+                            ? "bg-brand-600 text-white shadow-sm font-bold"
+                            : "text-gray-600 hover:text-gray-900"
+                        }`}
+                      >
+                        <Mail className="w-3.5 h-3.5" /> Email
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* WhatsApp Channel Form */}
+                  {otpChannel === "WHATSAPP" ? (
+                    <form onSubmit={handleSendWhatsAppOtp} className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Registered Mobile Number</label>
+                        <div className="flex gap-2">
+                          <select
+                            value={countryCode}
+                            onChange={(e) => {
+                              const newCode = e.target.value;
+                              setCountryCode(newCode);
+                              setMobile((prev) => prev.slice(0, getMobileMaxLength(newCode)));
+                            }}
+                            className="w-28 px-2 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-xs font-semibold appearance-none bg-gray-50 text-center"
+                          >
+                            {COUNTRY_CODES.map((c) => (
+                              <option key={c.code} value={c.code}>
+                                {c.label}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="relative flex-1">
+                            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                              <Phone className="h-4 w-4 text-gray-400" />
+                            </div>
+                            <input
+                              type="tel"
+                              value={mobile}
+                              maxLength={getMobileMaxLength(countryCode)}
+                              onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, getMobileMaxLength(countryCode)))}
+                              placeholder={countryCode === "+91" ? "10 digit number" : "Mobile number"}
+                              required
+                              className="w-full pl-9 pr-3 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-medium"
+                            />
+                          </div>
                         </div>
-                        <input
-                          type="tel"
-                          value={mobile}
-                          maxLength={getMobileMaxLength(countryCode)}
-                          onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, getMobileMaxLength(countryCode)))}
-                          placeholder={countryCode === "+91" ? "10 digit mobile number" : "9 digit mobile number"}
-                          required
-                          className="w-full pl-10 pr-4 py-3.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-medium"
-                        />
                       </div>
-                    </div>
-                  </div>
 
-                  <button
-                    type="submit"
-                    disabled={isLoading || !mobile.trim()}
-                    className="w-full bg-emerald-600 text-white font-semibold py-3.5 px-4 rounded-xl hover:bg-emerald-700 active:scale-[0.99] transition-all disabled:opacity-50 disabled:pointer-events-none shadow-sm hover:shadow flex items-center justify-center gap-2 text-sm"
-                  >
-                    {isLoading ? (
-                      <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        <MessageSquare className="w-4 h-4" />
-                        Send WhatsApp OTP
-                      </>
-                    )}
-                  </button>
-                </form>
+                      <button
+                        type="submit"
+                        disabled={isLoading || !mobile.trim()}
+                        className="w-full bg-emerald-600 text-white font-semibold py-3.5 px-4 rounded-xl hover:bg-emerald-700 active:scale-[0.99] transition-all disabled:opacity-50 disabled:pointer-events-none shadow-sm hover:shadow flex items-center justify-center gap-2 text-sm mt-3"
+                      >
+                        {isLoading ? (
+                          <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                          <>
+                            <MessageSquare className="w-4 h-4" />
+                            Send WhatsApp OTP
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  ) : (
+                    /* Email Channel Form */
+                    <form onSubmit={handleSendEmailOtp} className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Registered Email Address</label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                            <Mail className="h-4 w-4" />
+                          </div>
+                          <input
+                            type="email"
+                            value={emailOtpInput}
+                            onChange={(e) => setEmailOtpInput(e.target.value)}
+                            placeholder="name@example.com"
+                            required
+                            className="w-full pl-9 pr-3 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={isLoading || !emailOtpInput.trim()}
+                        className="w-full bg-brand-600 text-white font-semibold py-3.5 px-4 rounded-xl hover:bg-brand-700 active:scale-[0.99] transition-all disabled:opacity-50 disabled:pointer-events-none shadow-sm hover:shadow flex items-center justify-center gap-2 text-sm mt-3"
+                      >
+                        {isLoading ? (
+                          <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                          <>
+                            <Mail className="w-4 h-4" />
+                            Send Email OTP
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  )}
+                </div>
               ) : (
-                <form onSubmit={handleVerifyOtp} className="space-y-5">
-                  <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-center">
-                    <p className="text-xs text-emerald-800 font-medium">
-                      Code sent to WhatsApp at <span className="font-bold">{getMaskedRecipient()}</span>
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">6-Digit WhatsApp OTP Code</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
-                        <KeyRound className="h-5 w-5" />
-                      </div>
-                      <input
-                        type="text"
-                        maxLength={6}
-                        value={otp}
-                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                        placeholder="Enter 6-digit OTP"
-                        required
-                        className="w-full pl-10 pr-4 py-3.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-mono tracking-widest text-center text-lg font-bold text-gray-800"
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isLoading || otp.length < 4}
-                    className="w-full bg-emerald-600 text-white font-semibold py-3.5 px-4 rounded-xl hover:bg-emerald-700 active:scale-[0.99] transition-all disabled:opacity-50 disabled:pointer-events-none shadow-sm hover:shadow flex items-center justify-center gap-2 text-sm"
-                  >
-                    {isLoading ? (
-                      <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        <ShieldCheck className="w-4 h-4" />
-                        Verify & Sign In
-                      </>
-                    )}
-                  </button>
-
-                  <div className="flex items-center justify-between text-xs pt-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setOtpSent(false);
-                        setOtp("");
-                        setError(null);
-                        setDevOtpHint(null);
-                      }}
-                      className="text-gray-500 hover:text-gray-700 font-medium"
-                    >
-                      Change Number
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleSendWhatsAppOtp}
-                      disabled={isLoading}
-                      className="text-emerald-600 font-bold hover:underline flex items-center gap-1"
-                    >
-                      <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin" : ""}`} /> Resend OTP
-                    </button>
-                  </div>
-                </form>
-              )}
-            </div>
-          )}
-
-          {/* ─── 3. EMAIL OTP LOGIN FORM ─── */}
-          {loginMode === "email" && (
-            <div className="space-y-5">
-              {!otpSent ? (
-                <form onSubmit={handleSendEmailOtp} className="space-y-5">
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Registered Email Address</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
-                        <Mail className="h-5 w-5" />
-                      </div>
-                      <input
-                        type="email"
-                        value={emailOtpInput}
-                        onChange={(e) => setEmailOtpInput(e.target.value)}
-                        placeholder="name@example.com"
-                        required
-                        className="w-full pl-10 pr-4 py-3.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isLoading || !emailOtpInput.trim()}
-                    className="w-full bg-brand-600 text-white font-semibold py-3.5 px-4 rounded-xl hover:bg-brand-700 active:scale-[0.99] transition-all disabled:opacity-50 disabled:pointer-events-none shadow-sm hover:shadow flex items-center justify-center gap-2 text-sm"
-                  >
-                    {isLoading ? (
-                      <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        <Mail className="w-4 h-4" />
-                        Send Email OTP
-                      </>
-                    )}
-                  </button>
-                </form>
-              ) : (
-                <form onSubmit={handleVerifyOtp} className="space-y-5">
-                  <div className="p-3 bg-brand-50 rounded-xl border border-brand-200 text-center">
-                    <p className="text-xs text-brand-800 font-medium">
-                      Code sent to email at <span className="font-bold">{getMaskedRecipient()}</span>
+                /* Step 2: Verify OTP Code */
+                <form onSubmit={handleVerifyOtp} className="space-y-4">
+                  <div className={`p-3 rounded-xl text-center border ${
+                    otpChannel === "WHATSAPP"
+                      ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                      : "bg-brand-50 border-brand-200 text-brand-800"
+                  }`}>
+                    <p className="text-xs font-medium">
+                      Code sent via {otpChannel === "WHATSAPP" ? "WhatsApp" : "Email"} to <span className="font-bold">{getMaskedRecipient()}</span>
                     </p>
                   </div>
 
@@ -615,7 +576,7 @@ export default function LoginPage() {
                     <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">6-Digit Verification Code</label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
-                        <KeyRound className="h-5 w-5" />
+                        <KeyRound className="h-4 w-4" />
                       </div>
                       <input
                         type="text"
@@ -624,7 +585,7 @@ export default function LoginPage() {
                         onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
                         placeholder="Enter 6-digit OTP"
                         required
-                        className="w-full pl-10 pr-4 py-3.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-mono tracking-widest text-center text-lg font-bold text-gray-800"
+                        className="w-full pl-9 pr-3 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-mono tracking-widest text-center text-lg font-bold text-gray-800"
                       />
                     </div>
                   </div>
@@ -632,7 +593,11 @@ export default function LoginPage() {
                   <button
                     type="submit"
                     disabled={isLoading || otp.length < 4}
-                    className="w-full bg-brand-600 text-white font-semibold py-3.5 px-4 rounded-xl hover:bg-brand-700 active:scale-[0.99] transition-all disabled:opacity-50 disabled:pointer-events-none shadow-sm hover:shadow flex items-center justify-center gap-2 text-sm"
+                    className={`w-full text-white font-semibold py-3.5 px-4 rounded-xl active:scale-[0.99] transition-all disabled:opacity-50 disabled:pointer-events-none shadow-sm hover:shadow flex items-center justify-center gap-2 text-sm mt-3 ${
+                      otpChannel === "WHATSAPP"
+                        ? "bg-emerald-600 hover:bg-emerald-700"
+                        : "bg-brand-600 hover:bg-brand-700"
+                    }`}
                   >
                     {isLoading ? (
                       <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -655,13 +620,15 @@ export default function LoginPage() {
                       }}
                       className="text-gray-500 hover:text-gray-700 font-medium"
                     >
-                      Change Email
+                      Change {otpChannel === "WHATSAPP" ? "Number" : "Email"}
                     </button>
                     <button
                       type="button"
-                      onClick={handleSendEmailOtp}
+                      onClick={otpChannel === "WHATSAPP" ? handleSendWhatsAppOtp : handleSendEmailOtp}
                       disabled={isLoading}
-                      className="text-brand-600 font-bold hover:underline flex items-center gap-1"
+                      className={`font-bold hover:underline flex items-center gap-1 ${
+                        otpChannel === "WHATSAPP" ? "text-emerald-600" : "text-brand-600"
+                      }`}
                     >
                       <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin" : ""}`} /> Resend OTP
                     </button>
@@ -671,7 +638,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          <p className="mt-8 text-center text-xs text-gray-400">
+          <p className="mt-6 text-center text-xs text-gray-400">
             By signing in, you agree to our{" "}
             <Link href="/terms" className="underline hover:text-brand-600">Terms</Link>
             {" "}and{" "}
