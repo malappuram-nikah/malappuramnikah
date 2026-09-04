@@ -7,6 +7,13 @@ export class RegisterUser {
     constructor(private userRepository: IUserRepository) {}
 
     async execute(data: Partial<User>): Promise<User> {
+        if (!data.first_name || data.first_name.trim() === "") {
+            data.first_name = "Later";
+        }
+        if (!data.last_name || data.last_name.trim() === "") {
+            data.last_name = "Later";
+        }
+
         this.validateInput(data);
         console.log('Validated data:', data);
 

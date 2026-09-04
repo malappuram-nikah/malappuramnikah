@@ -100,21 +100,71 @@ export class SearchRepository {
       )`);
     }
 
-    // JSON Filters (profile_details)
-    // Age
+    // JSON Filters & Core Fields
+    // Age: Dynamically calculated from u.dob, with fallback to JSON age fields
     if (filters.ageMin !== undefined) {
-      conditions.push(Prisma.sql`CAST(u.profile_details->'mn_basic_details_draft'->>'age' AS INTEGER) >= ${filters.ageMin}`);
+      conditions.push(Prisma.sql`
+        COALESCE(
+          CASE
+            WHEN u.dob ~ '^\\d{4}-\\d{2}-\\d{2}' THEN EXTRACT(YEAR FROM age(CURRENT_DATE, TO_DATE(SUBSTRING(u.dob FROM 1 FOR 10), 'YYYY-MM-DD')))
+            WHEN u.dob ~ '^\\d{2}[/-]\\d{2}[/-]\\d{4}' THEN EXTRACT(YEAR FROM age(CURRENT_DATE, TO_DATE(SUBSTRING(u.dob FROM 1 FOR 10), 'DD-MM-YYYY')))
+            WHEN u.dob ~ '^\\d{4}' THEN EXTRACT(YEAR FROM CURRENT_DATE) - SUBSTRING(u.dob FROM '^\\d{4}')::INTEGER
+            ELSE NULL
+          END,
+          CASE
+            WHEN (u.profile_details->'mn_basic_details_draft'->>'age') ~ '^\\d+$'
+            THEN (u.profile_details->'mn_basic_details_draft'->>'age')::INTEGER
+            ELSE NULL
+          END,
+          CASE
+            WHEN (u.profile_details->'basicDetails'->>'age') ~ '^\\d+$'
+            THEN (u.profile_details->'basicDetails'->>'age')::INTEGER
+            ELSE NULL
+          END
+        ) >= ${filters.ageMin}
+      `);
     }
     if (filters.ageMax !== undefined) {
-      conditions.push(Prisma.sql`CAST(u.profile_details->'mn_basic_details_draft'->>'age' AS INTEGER) <= ${filters.ageMax}`);
+      conditions.push(Prisma.sql`
+        COALESCE(
+          CASE
+            WHEN u.dob ~ '^\\d{4}-\\d{2}-\\d{2}' THEN EXTRACT(YEAR FROM age(CURRENT_DATE, TO_DATE(SUBSTRING(u.dob FROM 1 FOR 10), 'YYYY-MM-DD')))
+            WHEN u.dob ~ '^\\d{2}[/-]\\d{2}[/-]\\d{4}' THEN EXTRACT(YEAR FROM age(CURRENT_DATE, TO_DATE(SUBSTRING(u.dob FROM 1 FOR 10), 'DD-MM-YYYY')))
+            WHEN u.dob ~ '^\\d{4}' THEN EXTRACT(YEAR FROM CURRENT_DATE) - SUBSTRING(u.dob FROM '^\\d{4}')::INTEGER
+            ELSE NULL
+          END,
+          CASE
+            WHEN (u.profile_details->'mn_basic_details_draft'->>'age') ~ '^\\d+$'
+            THEN (u.profile_details->'mn_basic_details_draft'->>'age')::INTEGER
+            ELSE NULL
+          END,
+          CASE
+            WHEN (u.profile_details->'basicDetails'->>'age') ~ '^\\d+$'
+            THEN (u.profile_details->'basicDetails'->>'age')::INTEGER
+            ELSE NULL
+          END
+        ) <= ${filters.ageMax}
+      `);
     }
 
     // Height
     if (filters.heightMin !== undefined) {
-      conditions.push(Prisma.sql`CAST(u.profile_details->'mn_basic_details_draft'->>'height' AS INTEGER) >= ${filters.heightMin}`);
+      conditions.push(Prisma.sql`
+        CASE 
+          WHEN (u.profile_details->'mn_basic_details_draft'->>'height') ~ '^\\d+' 
+          THEN CAST(SUBSTRING(u.profile_details->'mn_basic_details_draft'->>'height' FROM '^\\d+') AS INTEGER)
+          ELSE NULL 
+        END >= ${filters.heightMin}
+      `);
     }
     if (filters.heightMax !== undefined) {
-      conditions.push(Prisma.sql`CAST(u.profile_details->'mn_basic_details_draft'->>'height' AS INTEGER) <= ${filters.heightMax}`);
+      conditions.push(Prisma.sql`
+        CASE 
+          WHEN (u.profile_details->'mn_basic_details_draft'->>'height') ~ '^\\d+' 
+          THEN CAST(SUBSTRING(u.profile_details->'mn_basic_details_draft'->>'height' FROM '^\\d+') AS INTEGER)
+          ELSE NULL 
+        END <= ${filters.heightMax}
+      `);
     }
 
     // Marital Status
@@ -184,7 +234,33 @@ export class SearchRepository {
     } else if (filters.sortBy === "premium_first") {
       orderByClause = Prisma.sql`ORDER BY u.is_premium DESC, u.created_at DESC`;
     } else if (filters.sortBy === "age_asc") {
-      orderByClause = Prisma.sql`ORDER BY CAST(u.profile_details->'mn_basic_details_draft'->>'age' AS INTEGER) ASC NULLS LAST`;
+      orderByClause = Prisma.sql`ORDER BY COALESCE(
+        CASE
+          WHEN u.dob ~ '^\\d{4}-\\d{2}-\\d{2}' THEN EXTRACT(YEAR FROM age(CURRENT_DATE, TO_DATE(SUBSTRING(u.dob FROM 1 FOR 10), 'YYYY-MM-DD')))
+          WHEN u.dob ~ '^\\d{2}[/-]\\d{2}[/-]\\d{4}' THEN EXTRACT(YEAR FROM age(CURRENT_DATE, TO_DATE(SUBSTRING(u.dob FROM 1 FOR 10), 'DD-MM-YYYY')))
+          WHEN u.dob ~ '^\\d{4}' THEN EXTRACT(YEAR FROM CURRENT_DATE) - SUBSTRING(u.dob FROM '^\\d{4}')::INTEGER
+          ELSE NULL
+        END,
+        CASE
+          WHEN (u.profile_details->'mn_basic_details_draft'->>'age') ~ '^\\d+$'
+          THEN (u.profile_details->'mn_basic_details_draft'->>'age')::INTEGER
+          ELSE NULL
+        END
+      ) ASC NULLS LAST`;
+    } else if (filters.sortBy === "age_desc") {
+      orderByClause = Prisma.sql`ORDER BY COALESCE(
+        CASE
+          WHEN u.dob ~ '^\\d{4}-\\d{2}-\\d{2}' THEN EXTRACT(YEAR FROM age(CURRENT_DATE, TO_DATE(SUBSTRING(u.dob FROM 1 FOR 10), 'YYYY-MM-DD')))
+          WHEN u.dob ~ '^\\d{2}[/-]\\d{2}[/-]\\d{4}' THEN EXTRACT(YEAR FROM age(CURRENT_DATE, TO_DATE(SUBSTRING(u.dob FROM 1 FOR 10), 'DD-MM-YYYY')))
+          WHEN u.dob ~ '^\\d{4}' THEN EXTRACT(YEAR FROM CURRENT_DATE) - SUBSTRING(u.dob FROM '^\\d{4}')::INTEGER
+          ELSE NULL
+        END,
+        CASE
+          WHEN (u.profile_details->'mn_basic_details_draft'->>'age') ~ '^\\d+$'
+          THEN (u.profile_details->'mn_basic_details_draft'->>'age')::INTEGER
+          ELSE NULL
+        END
+      ) DESC NULLS LAST`;
     }
 
     let profileDetailsSelect = Prisma.sql`u.profile_details`;

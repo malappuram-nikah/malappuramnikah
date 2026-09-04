@@ -180,7 +180,9 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
 
   const validate = () => {
     const newErrors: Partial<Record<keyof BasicDetailsData, string>> = {};
-    if (!formData.name.trim()) newErrors.name = "Name is required";
+    if (!formData.name.trim()) {
+      formData.name = "Later";
+    }
     if (!formData.age || isNaN(Number(formData.age)) || Number(formData.age) < 18) {
       newErrors.age = "Valid age (18+) is required";
     }
@@ -201,9 +203,10 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (validate()) {
-      await saveProfileSection(DRAFT_KEY, formData);
+      const finalData = { ...formData, name: formData.name.trim() || "Later" };
+      await saveProfileSection(DRAFT_KEY, finalData);
       try { await refreshUser(); } catch {}
-      if (onComplete) onComplete(formData);
+      if (onComplete) onComplete(finalData);
     }
   };
 
@@ -299,14 +302,24 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name <span className="text-red-500">*</span></label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                <button
+                  type="button"
+                  onClick={() => updateForm("name", "Later")}
+                  className="text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline cursor-pointer"
+                >
+                  Keep Name Private (&quot;Later&quot;)
+                </button>
+              </div>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => updateForm("name", e.target.value)}
-                placeholder="Enter full name"
+                placeholder="Enter full name or leave blank for 'Later'"
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
               />
+              <p className="text-[11px] text-gray-400 mt-1">Leave blank or enter &quot;Later&quot; to keep your name hidden from public search.</p>
               {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
             </div>
 

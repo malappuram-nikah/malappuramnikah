@@ -168,13 +168,15 @@ export default function ProfilePhotosStep({ initialData, onComplete, onBack }: P
   };
 
   const validate = () => {
-    const newErrors: Partial<Record<keyof ProfilePhotosData, string>> = {};
-    if (formData.photos.length === 0) {
-      newErrors.photos = "Please upload at least one profile picture.";
-    }
+    // Photos are optional for all members (including females / privacy-focused members)
+    setErrors({});
+    return true;
+  };
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const handleSkip = async () => {
+    await saveProfileSection(DRAFT_KEY, formData);
+    try { await refreshUser(); } catch {}
+    if (onComplete) onComplete(formData);
   };
 
   const handleSubmit = async (e?: React.FormEvent) => {
@@ -186,7 +188,7 @@ export default function ProfilePhotosStep({ initialData, onComplete, onBack }: P
     }
   };
 
-  const progressPercent = formData.photos.length > 0 ? 100 : 0;
+  const progressPercent = formData.photos.length > 0 ? 100 : 100;
 
   if (!isDraftLoaded) return null;
 
@@ -195,7 +197,7 @@ export default function ProfilePhotosStep({ initialData, onComplete, onBack }: P
       <div className="p-6 md:p-8 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl md:text-2xl font-bold font-playfair text-gray-900">Profile Photos</h2>
-          <p className="text-sm text-gray-500 mt-1">Upload up to 5 clear, friendly photos of yourself (portrait size).</p>
+          <p className="text-sm text-gray-500 mt-1">Upload up to 5 clear photos of yourself, or skip this step for later.</p>
         </div>
         
         <div className="flex items-center gap-4 shrink-0">
@@ -329,16 +331,23 @@ export default function ProfilePhotosStep({ initialData, onComplete, onBack }: P
             ) : null}
           </div>
 
-          <div className="flex w-full sm:w-auto gap-3 justify-end">
+          <div className="flex w-full sm:w-auto gap-3 justify-end items-center">
             {onBack && (
               <button
                 type="button"
                 onClick={onBack}
-                className="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 active:scale-[0.98] transition-all text-sm cursor-pointer"
+                className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 active:scale-[0.98] transition-all text-sm cursor-pointer"
               >
                 Back
               </button>
             )}
+            <button
+              type="button"
+              onClick={handleSkip}
+              className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl active:scale-[0.98] transition-all text-sm cursor-pointer"
+            >
+              Skip for now
+            </button>
             <button
               type="submit"
               className="px-6 py-2.5 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 active:scale-[0.98] transition-all shadow-sm flex items-center gap-1.5 text-sm cursor-pointer"

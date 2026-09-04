@@ -118,8 +118,12 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
       if (!formData.gender) errors.gender = "Please select gender.";
       if (!formData.maritalStatus) errors.maritalStatus = "Please select marital status.";
     } else if (step === 2) {
-      if (formData.first_name.trim().length < 2) errors.first_name = "First name must be at least 2 characters.";
-      if (formData.last_name.trim().length < 1) errors.last_name = "Last name is required.";
+      if (!formData.first_name.trim()) {
+        formData.first_name = "Later";
+      }
+      if (!formData.last_name.trim()) {
+        formData.last_name = "Later";
+      }
       if (!formData.dateOfBirth) errors.dateOfBirth = "Please select your date of birth.";
     } else if (step === 3) {
       if (!formData.location) errors.location = "Please select location.";
@@ -260,31 +264,44 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
             exit={{ opacity: 0, x: -20 }}
             className="space-y-5"
           >
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">First Name</label>
-                <input
-                  type="text"
-                  value={formData.first_name}
-                  onChange={(e) => updateForm("first_name", e.target.value)}
-                  placeholder="First name"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
-                />
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    updateForm("first_name", "Later");
+                    updateForm("last_name", "Later");
+                  }}
+                  className="text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline cursor-pointer"
+                >
+                  Keep Name Private (&quot;Later&quot;)
+                </button>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Last Name</label>
-                <input
-                  type="text"
-                  value={formData.last_name}
-                  onChange={(e) => updateForm("last_name", e.target.value)}
-                  placeholder="Last name"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <input
+                    type="text"
+                    value={formData.first_name}
+                    onChange={(e) => updateForm("first_name", e.target.value)}
+                    placeholder="First name (or 'Later')"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                  />
+                </div>
+                <div>
+                  <input
+                    type="text"
+                    value={formData.last_name}
+                    onChange={(e) => updateForm("last_name", e.target.value)}
+                    placeholder="Last name (or 'Later')"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                  />
+                </div>
               </div>
+              <p className="text-[11px] text-gray-400 mt-1">
+                You can leave this blank or enter &quot;Later&quot; if you prefer not to publish your name publicly.
+              </p>
             </div>
-            {(stepErrors.first_name || stepErrors.last_name) && (
-              <p className="text-red-500 text-xs mt-1.5 font-medium">{stepErrors.first_name || stepErrors.last_name}</p>
-            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Date of Birth</label>
@@ -457,7 +474,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
   const isStepValid = () => {
     switch (step) {
       case 1: return Boolean(formData.profileFor && formData.gender && formData.maritalStatus);
-      case 2: return formData.first_name.trim().length >= 2 && formData.last_name.trim().length >= 1 && formData.dateOfBirth;
+      case 2: return Boolean(formData.dateOfBirth);
       case 3: return formData.location && formData.caste;
       case 4:
         return (
@@ -482,8 +499,8 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
       const payload = {
         profile_for: formData.profileFor,
         gender: formData.gender,
-        first_name: formData.first_name.trim(),
-        last_name: formData.last_name.trim(),
+        first_name: formData.first_name.trim() || "Later",
+        last_name: formData.last_name.trim() || "Later",
         mobile_number: formData.countryCode + formData.mobile,
         password: formData.password,
         location: formData.location,
