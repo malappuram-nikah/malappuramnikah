@@ -31,7 +31,9 @@ export interface SearchFilters {
   financialStatus?: string[];
   professionType?: string[];
   bodyType?: string[];
+  appearance?: string[];
   ethnicity?: string[];
+  marriageGoalPlan?: string[];
   eatingHabits?: string[];
   drinkingHabits?: string[];
   religiousness?: string[];
@@ -202,8 +204,14 @@ export class SearchRepository {
       if (filters.bodyType && filters.bodyType.length > 0) {
         conditions.push(Prisma.sql`u.profile_details->'mn_basic_details_draft'->>'bodyType' IN (${Prisma.join(filters.bodyType)})`);
       }
+      if (filters.appearance && filters.appearance.length > 0) {
+        conditions.push(Prisma.sql`(u.profile_details->'mn_basic_details_draft'->>'appearance' IN (${Prisma.join(filters.appearance)}) OR u.profile_details->'basicDetails'->>'appearance' IN (${Prisma.join(filters.appearance)}))`);
+      }
       if (filters.ethnicity && filters.ethnicity.length > 0) {
         conditions.push(Prisma.sql`u.profile_details->'mn_religious_info_draft'->>'ethnicity' IN (${Prisma.join(filters.ethnicity)})`);
+      }
+      if (filters.marriageGoalPlan && filters.marriageGoalPlan.length > 0) {
+        conditions.push(Prisma.sql`(u.profile_details->'mn_basic_details_draft'->>'marriageGoalPlan' IN (${Prisma.join(filters.marriageGoalPlan)}) OR u.profile_details->'basicDetails'->>'marriageGoalPlan' IN (${Prisma.join(filters.marriageGoalPlan)}))`);
       }
       if (filters.eatingHabits && filters.eatingHabits.length > 0) {
         conditions.push(Prisma.sql`u.profile_details->'mn_basic_details_draft'->>'eatingHabits' IN (${Prisma.join(filters.eatingHabits)})`);

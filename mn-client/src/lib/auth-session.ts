@@ -1,4 +1,4 @@
-/** Shared auth session helpers — single source of truth for mn_token. */
+import { safeLocalStorage, safeSessionStorage } from "@/lib/safe-storage";
 
 export const TOKEN_KEY = "mn_token";
 export const RETURN_URL_KEY = "mn_return_url";
@@ -12,22 +12,44 @@ export interface TokenPayload {
 
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
+  try {
+    const local = safeLocalStorage.getItem(TOKEN_KEY);
+    if (local && local.trim()) return local.trim();
+  } catch {}
+  try {
+    const match = document.cookie.match(new RegExp(`(?:^|; )${TOKEN_KEY}=([^;]*)`));
+    if (match && match[1]) return decodeURIComponent(match[1]).trim();
+  } catch {}
+  return null;
 }
 
 export function setToken(token: string): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(TOKEN_KEY, token);
-  window.dispatchEvent(new Event("mn-auth-change"));
+  if (typeof window === "undefined" || !token) return;
+  const clean = token.trim();
+  try {
+    safeLocalStorage.setItem(TOKEN_KEY, clean);
+  } catch {}
+  try {
+    document.cookie = `${TOKEN_KEY}=${encodeURIComponent(clean)}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
+  } catch {}
+  try {
+    window.dispatchEvent(new Event("mn-auth-change"));
+  } catch {}
 }
 
 export function clearSession(): void {
   if (typeof window === "undefined") return;
-  localStorage.clear();
-  sessionStorage.clear();
-  document.cookie = "refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0";
-  document.cookie = "mn_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0";
-  window.dispatchEvent(new Event("mn-auth-change"));
+  try {
+    safeLocalStorage.clear();
+    safeSessionStorage.clear();
+  } catch {}
+  try {
+    document.cookie = "refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0; SameSite=Lax";
+    document.cookie = `${TOKEN_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0; SameSite=Lax`;
+  } catch {}
+  try {
+    window.dispatchEvent(new Event("mn-auth-change"));
+  } catch {}
 }
 
 export function decodeTokenPayload(token: string): TokenPayload | null {
@@ -71,17 +93,23 @@ export function getUserIdFromToken(): number | null {
 
 export function setReturnUrl(url: string): void {
   if (typeof window === "undefined") return;
-  sessionStorage.setItem(RETURN_URL_KEY, url);
+  try {
+    safeSessionStorage.setItem(RETURN_URL_KEY, url);
+  } catch {}
 }
 
 export function consumeReturnUrl(fallback = "/dashboard"): string {
   if (typeof window === "undefined") return fallback;
-  const url = sessionStorage.getItem(RETURN_URL_KEY);
-  sessionStorage.removeItem(RETURN_URL_KEY);
-  if (!url || url.startsWith("/login") || url.startsWith("/admin/login")) {
+  try {
+    const url = safeSessionStorage.getItem(RETURN_URL_KEY);
+    safeSessionStorage.removeItem(RETURN_URL_KEY);
+    if (!url || url.startsWith("/login") || url.startsWith("/admin/login")) {
+      return fallback;
+    }
+    return url;
+  } catch {
     return fallback;
   }
-  return url;
 }
 
 export function getPostLoginRedirect(): string {
@@ -94,16 +122,20 @@ export function getPostLoginRedirect(): string {
 
 export function getPostAdminLoginRedirect(): string {
   if (typeof window === "undefined") return "/admin";
-  const url = sessionStorage.getItem(RETURN_URL_KEY);
-  sessionStorage.removeItem(RETURN_URL_KEY);
-  if (!url || url.startsWith("/login") || url.startsWith("/admin/login")) {
+  try {
+    const url = safeSessionStorage.getItem(RETURN_URL_KEY);
+    safeSessionStorage.removeItem(RETURN_URL_KEY);
+    if (!url || url.startsWith("/login") || url.startsWith("/admin/login")) {
+      return "/admin";
+    }
+    const normalized = url.replace(/^\/dashboard\/admin/, "/admin");
+    if (normalized.startsWith("/admin")) {
+      return normalized;
+    }
+    return "/admin";
+  } catch {
     return "/admin";
   }
-  const normalized = url.replace(/^\/dashboard\/admin/, "/admin");
-  if (normalized.startsWith("/admin")) {
-    return normalized;
-  }
-  return "/admin";
 }
 
 /** Paths that require normal user authentication */

@@ -15,16 +15,26 @@ export function getMaritalStatus(user: AdminUser): string {
   return basic.maritalStatus || basic.marital_status || "—";
 }
 
-function getInactiveReasonText(user: AdminUser): string {
-  if (user.status === "active") return "Active Member";
-  if (user.status === "suspended") return "Suspended by Admin";
-  if (user.last_login) {
-    const days = Math.floor((Date.now() - new Date(user.last_login).getTime()) / (1000 * 60 * 60 * 24));
-    if (days >= 30) return `Inactive (${days}d offline)`;
+export function getUserAge(user: AdminUser): string {
+  const details = (user.profile_details || {}) as Record<string, any>;
+  const basic = (details.basicDetails || details.mn_basic_details_draft || details) as Record<string, any>;
+  if (basic.age && !isNaN(Number(basic.age)) && Number(basic.age) > 0) {
+    return String(basic.age);
   }
-  const completion = user.profileCompletion?.percentage ?? 0;
-  if (completion < 50) return `Incomplete (${completion}%)`;
-  return "Deactivated / Inactive";
+  if (user.dob) {
+    const raw = String(user.dob).trim();
+    let birthYear = NaN;
+    if (/^\d{4}/.test(raw)) {
+      birthYear = parseInt(raw.substring(0, 4), 10);
+    } else if (/\d{4}$/.test(raw)) {
+      birthYear = parseInt(raw.slice(-4), 10);
+    }
+    if (!isNaN(birthYear) && birthYear > 1900 && birthYear <= new Date().getFullYear()) {
+      const calculated = new Date().getFullYear() - birthYear;
+      if (calculated >= 18 && calculated <= 100) return `${calculated}`;
+    }
+  }
+  return "—";
 }
 
 export function exportUsersToPdf(users: AdminUser[], filterTitle: string = "Users List") {
@@ -50,7 +60,7 @@ export function exportUsersToPdf(users: AdminUser[], filterTitle: string = "User
   const dateStr = new Date().toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
   doc.text(`Generated On: ${dateStr}  |  Total Members: ${users.length}`, 14, 30);
 
-  // Table Data Mapping including Place, Marriage Status, Register Date, Call Status, Called Date, Customer Response
+  // Table Data Mapping including Place, Marriage Status, Age, Plan, KYC, Register Date, Call Status, Called Date, Customer Response
   const tableHead = [
     [
       "#",
@@ -59,8 +69,11 @@ export function exportUsersToPdf(users: AdminUser[], filterTitle: string = "User
       "Mobile",
       "Email ID",
       "Gender",
+      "Age",
       "Place",
       "Marriage Status",
+      "Plan",
+      "KYC Status",
       "Register Date",
       "Call Status",
       "Called Date",
@@ -75,8 +88,11 @@ export function exportUsersToPdf(users: AdminUser[], filterTitle: string = "User
     user.mobile_number || "—",
     user.email || "—",
     user.gender || "Male",
+    getUserAge(user),
     getUserPlace(user),
     getMaritalStatus(user),
+    user.is_premium ? "Premium" : "Free",
+    user.kyc_status || "NOT_SUBMITTED",
     user.created_at ? new Date(user.created_at).toLocaleDateString("en-IN") : "—",
     (user.call_status || "NOT_CALLED").replace("_", " ").toUpperCase(),
     user.called_date ? new Date(user.called_date).toLocaleDateString("en-IN") : "—",
@@ -100,18 +116,21 @@ export function exportUsersToPdf(users: AdminUser[], filterTitle: string = "User
       textColor: [40, 40, 40],
     },
     columnStyles: {
-      0: { cellWidth: 8 },
-      1: { cellWidth: 18, fontStyle: "bold" },
-      2: { cellWidth: 28, fontStyle: "bold" },
-      3: { cellWidth: 24 },
-      4: { cellWidth: 26 }, // Email ID
-      5: { cellWidth: 12 }, // Gender
-      6: { cellWidth: 22 }, // Place
-      7: { cellWidth: 20 }, // Marriage Status
-      8: { cellWidth: 20 }, // Register Date
-      9: { cellWidth: 20 }, // Call Status
-      10: { cellWidth: 20 }, // Called Date
-      11: { cellWidth: 42 }, // Customer Response
+      0: { cellWidth: 7 },
+      1: { cellWidth: 16, fontStyle: "bold" },
+      2: { cellWidth: 24, fontStyle: "bold" },
+      3: { cellWidth: 22 },
+      4: { cellWidth: 24 }, // Email ID
+      5: { cellWidth: 11 }, // Gender
+      6: { cellWidth: 10 }, // Age
+      7: { cellWidth: 18 }, // Place
+      8: { cellWidth: 18 }, // Marriage Status
+      9: { cellWidth: 13, fontStyle: "bold" }, // Plan (Premium / Free)
+      10: { cellWidth: 16 }, // KYC Status
+      11: { cellWidth: 16 }, // Register Date
+      12: { cellWidth: 18 }, // Call Status
+      13: { cellWidth: 16 }, // Called Date
+      14: { cellWidth: 35 }, // Customer Response
     },
     didDrawPage: (data) => {
       const pageStr = `Page ${data.pageNumber} of ${doc.getNumberOfPages()}`;
@@ -134,11 +153,13 @@ export function exportUsersToCsv(users: AdminUser[], filterTitle: string = "User
     "Mobile Number",
     "Email",
     "Gender",
+    "Age",
     "Place (Location)",
     "Marriage Status",
+    "Membership Plan",
+    "KYC Status",
     "Register Date",
     "Account Status",
-    "KYC Status",
     "Call Status",
     "Called Date",
     "Customer Response (Last Remarks)",
@@ -158,11 +179,13 @@ export function exportUsersToCsv(users: AdminUser[], filterTitle: string = "User
     u.mobile_number || "",
     u.email || "",
     u.gender || "Male",
+    getUserAge(u),
     getUserPlace(u),
     getMaritalStatus(u),
+    u.is_premium ? "Premium" : "Free",
+    u.kyc_status || "NOT_SUBMITTED",
     u.created_at ? new Date(u.created_at).toISOString().split("T")[0] : "",
     (u.status || "active").toUpperCase(),
-    u.kyc_status || "NOT_SUBMITTED",
     (u.call_status || "NOT_CALLED").replace("_", " ").toUpperCase(),
     u.called_date ? new Date(u.called_date).toISOString().split("T")[0] : "",
     u.call_response || "",

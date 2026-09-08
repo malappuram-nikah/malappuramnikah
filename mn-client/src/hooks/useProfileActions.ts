@@ -2,12 +2,9 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { API_URL } from "@/lib/config";
+import { getToken } from "@/lib/auth-session";
 
 const API = `${API_URL}/user`;
-
-function getToken(): string | null {
-  return typeof window !== "undefined" ? localStorage.getItem("mn_token") : null;
-}
 
 export interface ProfileActionsState {
   favouriteIds: Set<number>;

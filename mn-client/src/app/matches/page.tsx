@@ -4,13 +4,14 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { getToken } from "@/lib/auth-session";
 
 export default function MatchesPage() {
   const router = useRouter();
 
   useEffect(() => {
     // Check if user is already logged in
-    const token = localStorage.getItem("mn_token");
+    const token = getToken();
     if (token) {
       router.replace("/dashboard/matches");
     }

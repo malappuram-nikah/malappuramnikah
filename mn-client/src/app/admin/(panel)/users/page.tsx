@@ -26,7 +26,7 @@ import {
 import AdminAlert from "@/components/admin/AdminAlert";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import { adminApi, AdminUser } from "@/lib/admin-api";
-import { exportUsersToPdf, exportUsersToCsv, getUserPlace, getMaritalStatus } from "@/lib/pdf-export";
+import { exportUsersToPdf, exportUsersToCsv, getUserPlace, getMaritalStatus, getUserAge } from "@/lib/pdf-export";
 import { cn } from "@/lib/utils";
 import { API_URL } from "@/lib/config";
 
@@ -56,6 +56,7 @@ const KYC_STATUS_OPTIONS = [
 const PREMIUM_STATUS_OPTIONS = [
   { id: "", label: "All Members" },
   { id: "true", label: "👑 Premium Only" },
+  { id: "verified_premium", label: "👑 Verified Premium" },
   { id: "false", label: "Free / Basic" },
 ];
 
@@ -238,7 +239,12 @@ export default function AdminUsersPage() {
       if (statusFilter) params.status = statusFilter;
       if (genderFilter) params.gender = genderFilter;
       if (kycFilter) params.kyc_status = kycFilter;
-      if (premiumFilter) params.is_premium = premiumFilter;
+      if (premiumFilter === "verified_premium") {
+        params.is_premium = "true";
+        params.kyc_status = "VERIFIED";
+      } else if (premiumFilter) {
+        params.is_premium = premiumFilter;
+      }
       if (dateFrom) params.date_from = dateFrom;
       if (dateTo) params.date_to = dateTo;
 
@@ -265,7 +271,12 @@ export default function AdminUsersPage() {
       if (statusFilter) params.status = statusFilter;
       if (genderFilter) params.gender = genderFilter;
       if (kycFilter) params.kyc_status = kycFilter;
-      if (premiumFilter) params.is_premium = premiumFilter;
+      if (premiumFilter === "verified_premium") {
+        params.is_premium = "true";
+        params.kyc_status = "VERIFIED";
+      } else if (premiumFilter) {
+        params.is_premium = premiumFilter;
+      }
       if (dateFrom) params.date_from = dateFrom;
       if (dateTo) params.date_to = dateTo;
 
@@ -303,7 +314,12 @@ export default function AdminUsersPage() {
       if (statusFilter) params.status = statusFilter;
       if (genderFilter) params.gender = genderFilter;
       if (kycFilter) params.kyc_status = kycFilter;
-      if (premiumFilter) params.is_premium = premiumFilter;
+      if (premiumFilter === "verified_premium") {
+        params.is_premium = "true";
+        params.kyc_status = "VERIFIED";
+      } else if (premiumFilter) {
+        params.is_premium = premiumFilter;
+      }
       if (dateFrom) params.date_from = dateFrom;
       if (dateTo) params.date_to = dateTo;
 
@@ -493,6 +509,7 @@ export default function AdminUsersPage() {
                     <th className="p-3.5 w-10">#</th>
                     <th className="p-3.5">Member Name</th>
                     <th className="p-3.5">Mobile</th>
+                    <th className="p-3.5">Age</th>
                     <th className="p-3.5">Place</th>
                     <th className="p-3.5">Marriage Status</th>
                     <th className="p-3.5">Gender</th>
@@ -515,6 +532,9 @@ export default function AdminUsersPage() {
                       </td>
                       <td className="p-3.5 font-mono font-bold text-emerald-800 text-xs whitespace-nowrap">
                         📞 {user.mobile_number || "—"}
+                      </td>
+                      <td className="p-3.5 text-gray-900 font-semibold text-xs whitespace-nowrap">
+                        {getUserAge(user)} Yrs
                       </td>
                       <td className="p-3.5 text-gray-700 font-medium">{getUserPlace(user)}</td>
                       <td className="p-3.5 text-gray-700 font-medium">

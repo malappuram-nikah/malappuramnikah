@@ -1,5 +1,6 @@
 import { ApiResponse } from "@/types";
 import { API_URL } from "@/lib/config";
+import { getToken } from "@/lib/auth-session";
 
 const BASE_URL = `${API_URL}`;
 
@@ -19,7 +20,7 @@ async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("mn_token") : null;
+  const token = getToken();
   const headers = new Headers(options.headers || {});
 
   if (token && !headers.has("Authorization")) {

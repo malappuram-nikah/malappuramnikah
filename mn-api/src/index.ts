@@ -69,37 +69,32 @@ import {
 app.use(securityHeaders);
 app.use(sanitizePayload);
 
-const corsOptions = {
-  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: any) => void) {
+const corsOptions: cors.CorsOptions = {
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+    // Allow requests with no origin (like mobile apps, curl, server-to-server)
     if (!origin) {
       return callback(null, true);
     }
-    return callback(null, origin);
+    // Allow any origin dynamically while supporting credentials
+    return callback(null, true);
   },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-  allowedHeaders: ["Content-Type", "Authorization", "Accept", "X-Requested-With", "Origin", "Access-Control-Request-Headers", "Access-Control-Allow-Origin"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "Accept",
+    "X-Requested-With",
+    "Origin",
+    "Access-Control-Request-Headers",
+    "Access-Control-Request-Method"
+  ],
+  exposedHeaders: ["Authorization"],
   credentials: true,
   optionsSuccessStatus: 200,
 };
 
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
-
-// Explicit Header Fallback Middleware for Bulletproof CORS across Mobile & Web Browsers
-app.use((req, res, next) => {
-  const reqOrigin = req.headers.origin;
-  if (reqOrigin) {
-    res.setHeader("Access-Control-Allow-Origin", reqOrigin);
-  }
-  res.setHeader("Access-Control-Allow-Credentials", "true");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, Accept, X-Requested-With, Origin, Access-Control-Request-Headers");
-
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
-  next();
-});
 
 // Global General Rate Limiter (Skipping static assets & OPTIONS)
 app.use(generalLimiter);

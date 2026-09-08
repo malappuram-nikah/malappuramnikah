@@ -17,8 +17,8 @@ import { API_URL } from "@/lib/config";
 
 export default function SearchPage() {
   const router = useRouter();
+  const { currentUser, refreshUser } = useUser();
   const { alertMsg: globalAlert, setAlertMsg: setGlobalAlert, isCompared, addToCompare, removeFromCompare } = useCompare();
-  const { currentUser } = useUser();
   const [mounted, setMounted] = useState(false);
 
   const [profiles, setProfiles] = useState<any[]>([]);
@@ -57,9 +57,21 @@ export default function SearchPage() {
     }
   }, [alertMsg]);
 
-  // Load Saved Preferences on Mount
+  // Load Saved Preferences or Session Filters on Mount
   useEffect(() => {
-    if (currentUser?.search_preferences) {
+    try {
+      const sessionFilters = sessionStorage.getItem("mn_active_search_filters");
+      if (sessionFilters) {
+        const parsed = JSON.parse(sessionFilters);
+        if (parsed && typeof parsed === "object" && Object.keys(parsed).length > 0) {
+          setFilters(parsed);
+          setAppliedFilters(parsed);
+          return;
+        }
+      }
+    } catch {}
+
+    if (currentUser?.search_preferences && Object.keys(currentUser.search_preferences).length > 0) {
       try {
         setFilters(currentUser.search_preferences);
         setAppliedFilters(currentUser.search_preferences);
@@ -172,9 +184,17 @@ export default function SearchPage() {
     }
   }, [hasNext, loadingMore, loading, loadProfilesPage]);
 
-  // Save Preferences to API
+  // Save Preferences to API & Session
   const savePreferences = async (newFilters: any) => {
     try {
+      try {
+        if (!newFilters || Object.keys(newFilters).length === 0) {
+          sessionStorage.removeItem("mn_active_search_filters");
+        } else {
+          sessionStorage.setItem("mn_active_search_filters", JSON.stringify(newFilters));
+        }
+      } catch {}
+
       const storedToken = localStorage.getItem("mn_token");
       if (!storedToken) return;
       await fetch(`${API_URL}/search/preferences`, {
@@ -182,6 +202,7 @@ export default function SearchPage() {
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${storedToken}` },
         body: JSON.stringify({ preferences: newFilters })
       });
+      refreshUser().catch(() => {});
     } catch (e) {
       console.error("Failed to save preferences", e);
     }
@@ -208,6 +229,9 @@ export default function SearchPage() {
   }, [hasNext, loadNextPage]); // Fetch automatically runs only when appliedFilters or appliedKeyword changes
 
   const handleApplyFilters = () => {
+    try {
+      sessionStorage.setItem("mn_active_search_filters", JSON.stringify(filters));
+    } catch {}
     savePreferences(filters);
     setAppliedFilters(filters);
   };

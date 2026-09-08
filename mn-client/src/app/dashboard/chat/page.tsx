@@ -2,13 +2,14 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { Send, Search, Phone, Video, MessageSquare, AlertCircle, ArrowLeft, ExternalLink, CheckCheck, User, Sparkles } from "lucide-react";
+import { Send, Search, Phone, Video, MessageSquare, AlertCircle, ArrowLeft, ExternalLink, CheckCheck, User, Sparkles, ShieldCheck, Lock } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { API_URL } from "@/lib/config";
 import { soundEffects } from "@/lib/sound-effects";
+import { encryptMessage, decryptMessage } from "@/lib/e2ee";
 
 interface PeerProfile {
   id: number;
@@ -79,20 +80,26 @@ export default function ChatPage() {
           socket.emit("join", payload.userId);
 
           // Handle real-time private messages
-          socket.on("private_message", (msg: Message) => {
+          socket.on("private_message", async (msg: Message) => {
             if (msg.sender_id !== payload.userId) {
               soundEffects.playMessageSound();
             }
 
+            const decryptedContent = await decryptMessage(msg.content, msg.sender_id, msg.receiver_id);
+            const decryptedMsg: Message = { ...msg, content: decryptedContent };
+
             setMessages((prev) => {
+              // Avoid duplicates
+              if (prev.some(m => m.id === decryptedMsg.id)) return prev;
+
               // Append only if the message belongs to current selected peer session
               const currentPeer = selectedPeerRef.current;
               const isCurrentChat =
-                (msg.sender_id === payload.userId && msg.receiver_id === currentPeer?.id) ||
-                (msg.sender_id === currentPeer?.id && msg.receiver_id === payload.userId);
+                (decryptedMsg.sender_id === payload.userId && decryptedMsg.receiver_id === currentPeer?.id) ||
+                (decryptedMsg.sender_id === currentPeer?.id && decryptedMsg.receiver_id === payload.userId);
               
               if (isCurrentChat) {
-                return [...prev, msg];
+                return [...prev, decryptedMsg];
               }
               return prev;
             });
@@ -163,7 +170,13 @@ export default function ChatPage() {
         });
         const data = await res.json();
         if (data.success && data.messages) {
-          setMessages(data.messages);
+          const decryptedList = await Promise.all(
+            data.messages.map(async (msg: Message) => ({
+              ...msg,
+              content: await decryptMessage(msg.content, msg.sender_id, msg.receiver_id),
+            }))
+          );
+          setMessages(decryptedList);
           
           // Reset unread count for this peer
           setUnreadCounts((prev) => ({
@@ -186,15 +199,17 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, mobileView]);
 
-  // 5. Send Message REST handler
+  // 5. Send Message REST handler (with End-to-End Encryption)
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!token || !selectedPeer || !newMessage.trim()) return;
+    if (!token || !selectedPeer || !newMessage.trim() || !userId) return;
 
-    const content = newMessage.trim();
+    const plaintext = newMessage.trim();
     setNewMessage("");
 
     try {
+      const encryptedContent = await encryptMessage(plaintext, userId, selectedPeer.id);
+
       const res = await fetch(`${API_URL}/user/chat/message`, {
         method: "POST",
         headers: {
@@ -203,7 +218,7 @@ export default function ChatPage() {
         },
         body: JSON.stringify({
           receiver_id: selectedPeer.id,
-          content
+          content: encryptedContent
         })
       });
       
@@ -401,9 +416,15 @@ export default function ChatPage() {
                   </div>
                 )}
                 <div className="min-w-0">
-                  <p className="font-semibold text-gray-900 text-xs sm:text-sm truncate">
-                    {selectedPeer.first_name} {selectedPeer.last_name}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-gray-900 text-xs sm:text-sm truncate">
+                      {selectedPeer.first_name} {selectedPeer.last_name}
+                    </p>
+                    <span className="hidden sm:inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                      E2EE
+                    </span>
+                  </div>
                   <p className="text-[10px] sm:text-xs text-emerald-600 font-medium flex items-center gap-1">
                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                     Online & Active
@@ -443,6 +464,13 @@ export default function ChatPage() {
 
             {/* Messages display */}
             <div className="flex-1 min-h-0 overflow-y-auto px-3.5 py-4 sm:px-6 sm:py-5 space-y-3 sm:space-y-4">
+              <div className="flex justify-center my-1">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50/90 border border-amber-200/80 text-[10px] font-semibold text-amber-900 shadow-2xs">
+                  <Lock className="w-3 h-3 text-amber-600 shrink-0" />
+                  <span>Messages are end-to-end encrypted. No one else can read them.</span>
+                </div>
+              </div>
+
               {isLoadingHistory ? (
                 <div className="h-full flex items-center justify-center">
                   <span className="w-6 h-6 border-2 border-brand-200 border-t-brand-500 rounded-full animate-spin" />

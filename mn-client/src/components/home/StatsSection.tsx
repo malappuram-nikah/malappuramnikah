@@ -59,11 +59,6 @@ export default function StatsSection() {
       label: "Registered Members",
     },
     {
-      numericValue: statsData.happyMarriages,
-      suffix: "+",
-      label: "Happy Marriages",
-    },
-    {
       numericValue: statsData.verifiedPercentage,
       suffix: "%",
       label: "Verified Profiles",
@@ -81,7 +76,7 @@ export default function StatsSection() {
       <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] bg-[size:32px_32px] pointer-events-none" />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl relative z-10">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-4 text-center">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 lg:gap-6 text-center">
           {statsList.map((stat, index) => (
             <StatCard key={`${index}-${stat.numericValue}`} stat={stat} index={index} />
           ))}

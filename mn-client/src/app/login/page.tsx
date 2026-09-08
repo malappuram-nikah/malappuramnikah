@@ -67,23 +67,40 @@ export default function LoginPage() {
     try {
       const trimmed = mobile.trim();
       const isEmail = trimmed.includes("@");
-      const formattedIdentifier = isEmail
-        ? trimmed
-        : trimmed.startsWith("+")
-        ? trimmed
-        : `${countryCode}${trimmed.replace(/\D/g, "").replace(/^0+/, "")}`;
+      let formattedIdentifier = trimmed;
+
+      if (!isEmail) {
+        let cleanDigits = trimmed.replace(/\D/g, "");
+        if (cleanDigits.startsWith("0")) {
+          cleanDigits = cleanDigits.replace(/^0+/, "");
+        }
+        if (trimmed.startsWith("+")) {
+          formattedIdentifier = `+${cleanDigits}`;
+        } else {
+          const rawCode = countryCode.replace(/\D/g, "");
+          if (cleanDigits.startsWith(rawCode) && cleanDigits.length > rawCode.length + 7) {
+            formattedIdentifier = `+${cleanDigits}`;
+          } else {
+            formattedIdentifier = `${countryCode}${cleanDigits}`;
+          }
+        }
+      }
 
       const response = await fetch(`${API_URL}/user/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
           mobile_number: formattedIdentifier,
           password,
         }),
       });
 
-      const data = await response.json();
+      let data: any = {};
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error("Unable to reach the server. Please check your internet connection.");
+      }
 
       if (!response.ok || !data.token) {
         throw new Error(data.message || "Invalid mobile number or password");
@@ -91,7 +108,8 @@ export default function LoginPage() {
 
       setToken(data.token);
       refreshAuth();
-      router.replace(getPostLoginRedirect());
+      const redirectUrl = getPostLoginRedirect();
+      router.replace(redirectUrl);
     } catch (err: any) {
       setError(err.message || "Login failed");
     } finally {
@@ -132,7 +150,12 @@ export default function LoginPage() {
         }),
       });
 
-      const data = await res.json();
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error("Unable to reach the server. Please try again.");
+      }
 
       if (!res.ok || !data.success) {
         throw new Error(data.message || "Failed to send WhatsApp OTP. Please check your mobile number.");
@@ -173,7 +196,12 @@ export default function LoginPage() {
         }),
       });
 
-      const data = await res.json();
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error("Unable to reach the server. Please try again.");
+      }
 
       if (!res.ok || !data.success) {
         throw new Error(data.message || "Failed to send OTP. Please check your email address.");
@@ -216,7 +244,12 @@ export default function LoginPage() {
         }),
       });
 
-      const data = await res.json();
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error("Unable to verify code. Please try again.");
+      }
 
       if (!res.ok || (!data.accessToken && !data.token)) {
         throw new Error(data.message || "Invalid or expired OTP code.");
