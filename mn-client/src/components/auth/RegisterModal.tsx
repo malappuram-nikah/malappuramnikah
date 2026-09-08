@@ -242,7 +242,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
                 type="date"
                 value={formData.dateOfBirth}
                 onChange={(e) => updateForm("dateOfBirth", e.target.value)}
-                max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split("T")[0]}
+                max={new Date(new Date().setFullYear(new Date().getFullYear() - (formData.gender === "Male" ? 21 : 18))).toISOString().split("T")[0]}
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
               />
             </div>
@@ -391,7 +391,16 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
   const isStepValid = () => {
     switch (step) {
       case 1: return Boolean(formData.profileFor && formData.gender && formData.maritalStatus);
-      case 2: return formData.first_name.trim().length >= 2 && formData.last_name.trim().length >= 1 && formData.dateOfBirth;
+      case 2: {
+        const isValidDate = Boolean(formData.dateOfBirth);
+        if (!isValidDate) return false;
+        const dob = new Date(formData.dateOfBirth);
+        const ageDifMs = Date.now() - dob.getTime();
+        const ageDate = new Date(ageDifMs);
+        const age = Math.abs(ageDate.getUTCFullYear() - 1970);
+        const minAge = formData.gender === "Male" ? 21 : 18;
+        return formData.first_name.trim().length >= 2 && formData.last_name.trim().length >= 1 && age >= minAge;
+      }
       case 3: return formData.location && formData.caste;
       case 4:
         return (

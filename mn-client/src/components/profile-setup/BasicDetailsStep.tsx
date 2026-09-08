@@ -181,8 +181,17 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
   const validate = () => {
     const newErrors: Partial<Record<keyof BasicDetailsData, string>> = {};
     if (!formData.name.trim()) newErrors.name = "Name is required";
-    if (!formData.age || isNaN(Number(formData.age)) || Number(formData.age) < 18) {
-      newErrors.age = "Valid age (18+) is required";
+    if (!formData.age || isNaN(Number(formData.age))) {
+      newErrors.age = "Valid age is required";
+    } else {
+      const ageNum = Number(formData.age);
+      if (formData.gender === "Male" && ageNum < 21) {
+        newErrors.age = "Men must be at least 21 years old";
+      } else if (formData.gender === "Female" && ageNum < 18) {
+        newErrors.age = "Women must be at least 18 years old";
+      } else if (!formData.gender && ageNum < 18) {
+        newErrors.age = "Valid age (18+) is required";
+      }
     }
     if (!formData.profileFor) newErrors.profileFor = "Profile created for is required";
     if (!formData.gender) newErrors.gender = "Gender is required";
@@ -317,7 +326,7 @@ export default function BasicDetailsStep({ initialData, onComplete }: BasicDetai
                 value={formData.age}
                 onChange={(e) => updateForm("age", e.target.value)}
                 placeholder="e.g. 25"
-                min="18"
+                min={formData.gender === "Male" ? "21" : "18"}
                 max="100"
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
               />

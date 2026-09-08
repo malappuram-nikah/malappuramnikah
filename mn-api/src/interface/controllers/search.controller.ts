@@ -58,8 +58,8 @@ export class SearchController {
       if (req.query.familyStatus) filters.familyStatus = (req.query.familyStatus as string).split(",");
       if (req.query.financialStatus) filters.financialStatus = (req.query.financialStatus as string).split(",");
       if (req.query.professionType) filters.professionType = (req.query.professionType as string).split(",");
-      if (req.query.bodyType) filters.bodyType = (req.query.bodyType as string).split(",");
-      if (req.query.ethnicity) filters.ethnicity = (req.query.ethnicity as string).split(",");
+      if (req.query.appearance) filters.appearance = (req.query.appearance as string).split(",");
+      if (req.query.marriageGoalPlan) filters.marriageGoalPlan = (req.query.marriageGoalPlan as string).split(",");
       if (req.query.eatingHabits) filters.eatingHabits = (req.query.eatingHabits as string).split(",");
       if (req.query.drinkingHabits) filters.drinkingHabits = (req.query.drinkingHabits as string).split(",");
       if (req.query.religiousness) filters.religiousness = (req.query.religiousness as string).split(",");

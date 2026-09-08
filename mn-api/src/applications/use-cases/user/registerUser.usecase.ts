@@ -313,6 +313,19 @@ export class RegisterUser {
                 throw new Error("Enter a valid email address");
             }
         }
+
+        if (data.dob && data.gender) {
+            const dob = new Date(data.dob);
+            const ageDifMs = Date.now() - dob.getTime();
+            const ageDate = new Date(ageDifMs);
+            const age = Math.abs(ageDate.getUTCFullYear() - 1970);
+            
+            if (data.gender === "Male" && age < 21) {
+                throw new Error("Men must be at least 21 years old to register.");
+            } else if (data.gender === "Female" && age < 18) {
+                throw new Error("Women must be at least 18 years old to register.");
+            }
+        }
     }
 
     private validateMobileNumber(mobileNumber: string): void {

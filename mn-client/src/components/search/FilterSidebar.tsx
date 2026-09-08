@@ -162,16 +162,16 @@ export default function FilterSidebar({
 
             <MultiSelect 
               isPremium isUserPremium={isUserPremium}
-              title="Body Type" placeholder="Any Body Type"
-              options={["Slim", "Athletic", "Average", "Heavy"]}
-              selected={filters.bodyType || []} onChange={v => updateFilter("bodyType", v)}
+              title="Appearance" placeholder="Any Appearance"
+              options={["Fair", "Very Fair", "Wheatish", "Dark"]}
+              selected={filters.appearance || []} onChange={v => updateFilter("appearance", v)}
             />
 
             <MultiSelect 
               isPremium isUserPremium={isUserPremium}
-              title="Ethnicity" placeholder="Any Ethnicity"
-              options={["Indian", "Middle Eastern", "African", "Caucasian", "Asian", "Other"]}
-              selected={filters.ethnicity || []} onChange={v => updateFilter("ethnicity", v)}
+              title="Marriage Goal Plan" placeholder="Any Goal"
+              options={["Immediate (Within 6 months)", "Short term (Within 1 year)", "Medium term (Within 2 years)", "Flexible / No rush"]}
+              selected={filters.marriageGoalPlan || []} onChange={v => updateFilter("marriageGoalPlan", v)}
             />
 
             <MultiSelect 

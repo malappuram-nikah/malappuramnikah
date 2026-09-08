@@ -14,8 +14,8 @@ export class SearchService {
       delete safeFilters.familyStatus;
       delete safeFilters.financialStatus;
       delete safeFilters.professionType;
-      delete safeFilters.bodyType;
-      delete safeFilters.ethnicity;
+      delete safeFilters.appearance;
+      delete safeFilters.marriageGoalPlan;
       delete safeFilters.eatingHabits;
       delete safeFilters.drinkingHabits;
       delete safeFilters.religiousness;
