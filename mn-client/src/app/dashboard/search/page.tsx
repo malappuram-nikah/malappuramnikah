@@ -245,7 +245,8 @@ export default function SearchPage() {
   const [showKycModal, setShowKycModal] = useState(false);
 
   const handleToggleInterest = async (receiverId: number) => {
-    if (currentUser?.kyc_status !== "VERIFIED") {
+    const isFemaleUser = currentUser?.gender?.toLowerCase() === "female";
+    if (!isFemaleUser && currentUser?.kyc_status !== "VERIFIED") {
       setShowKycModal(true);
       return;
     }
@@ -384,11 +385,9 @@ export default function SearchPage() {
               {profiles.map((p) => {
                 const isSent = interests.sent.includes(p.id);
                 const isMutual = interests.mutual.includes(p.id);
-                const isReceived = interests.received.includes(p.id);
-                const isVerified = p.kyc_status === "VERIFIED" || (p as any).is_verified === true;
-                const isMale = (p.gender || "").toLowerCase() === "male";
-                const canViewPhoto = isVerified && (isMutual || isMale);
-                const shouldBlurPhoto = !isVerified || !canViewPhoto || (p.isBlurred && !isMale);
+                const isSelf = currentUser && currentUser.id === p.id;
+                const isUserBlurred = p.isBlurred || (p as any).profile_details?.mn_profile_photos_draft?.isBlurred;
+                const shouldBlurPhoto = !isSelf && !isMutual && isUserBlurred;
                 
                 // Format full name without asterisks
                 const displayName = `${p.first_name || ""} ${p.last_name || ""}`.trim() || p.name || "Member";

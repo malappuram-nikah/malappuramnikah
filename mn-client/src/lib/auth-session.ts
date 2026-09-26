@@ -17,6 +17,10 @@ export function getToken(): string | null {
     if (local && local.trim()) return local.trim();
   } catch {}
   try {
+    const session = safeSessionStorage.getItem(TOKEN_KEY);
+    if (session && session.trim()) return session.trim();
+  } catch {}
+  try {
     const match = document.cookie.match(new RegExp(`(?:^|; )${TOKEN_KEY}=([^;]*)`));
     if (match && match[1]) return decodeURIComponent(match[1]).trim();
   } catch {}
@@ -28,9 +32,11 @@ export function setToken(token: string): void {
   const clean = token.trim();
   try {
     safeLocalStorage.setItem(TOKEN_KEY, clean);
+    safeSessionStorage.setItem(TOKEN_KEY, clean);
   } catch {}
   try {
-    document.cookie = `${TOKEN_KEY}=${encodeURIComponent(clean)}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
+    const isHttps = window.location.protocol === "https:";
+    document.cookie = `${TOKEN_KEY}=${encodeURIComponent(clean)}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax${isHttps ? "; Secure" : ""}`;
   } catch {}
   try {
     window.dispatchEvent(new Event("mn-auth-change"));

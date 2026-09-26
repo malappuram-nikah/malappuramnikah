@@ -72,3 +72,17 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* iOS Safe Area & Mobile Responsiveness (iPhone 13 Pro Max & all modern devices) */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+}
+
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+  -webkit-text-size-adjust: 100%;
+}

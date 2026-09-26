@@ -126,7 +126,8 @@ export default function ProfileDetailPage({ params }: PageProps) {
 
   const handleToggleInterest = async () => {
     if (!profile) return;
-    if (currentUser?.kyc_status !== "VERIFIED") {
+    const isFemaleViewer = currentUser?.gender?.toLowerCase() === "female";
+    if (!isFemaleViewer && currentUser?.kyc_status !== "VERIFIED") {
       setShowKycModal(true);
       return;
     }
@@ -203,7 +204,9 @@ export default function ProfileDetailPage({ params }: PageProps) {
   const isReceived = interests.received.includes(profile.id);
   const isMaleProfile = profile.gender?.toLowerCase() === "male";
   const isViewerVerified = currentUser?.kyc_status === "VERIFIED";
-  const canViewProfile = isSelf || isMutual || isMaleProfile || isViewerVerified;
+  const isProfileBlurred = profile.isBlurred || (profile as any).blur_photos || (profile as any).profile_details?.mn_profile_photos_draft?.isBlurred;
+  const canViewPhoto = isSelf || isMutual || (!isProfileBlurred && (isMaleProfile || isViewerVerified));
+  const canViewProfile = true;
 
   let interestBtnText = "Express Interest";
   let interestBtnStyle = "bg-brand-600 hover:bg-brand-700 text-white shadow-brand-600/10";
@@ -254,18 +257,18 @@ export default function ProfileDetailPage({ params }: PageProps) {
           <div className="bg-white rounded-xl border border-gray-150/85 overflow-hidden shadow-sm">
             <div 
               onClick={() => {
-                if (canViewProfile && (activePhoto || profile.img)) setLightboxOpen(true);
+                if (canViewPhoto && (activePhoto || profile.img)) setLightboxOpen(true);
               }}
               className={`h-72 bg-gray-100 relative overflow-hidden flex items-center justify-center ${
-                canViewProfile && (activePhoto || profile.img) ? "cursor-pointer group" : ""
+                canViewPhoto && (activePhoto || profile.img) ? "cursor-pointer group" : ""
               }`}
-              title={canViewProfile ? "Click to view full photo & zoom" : ""}
+              title={canViewPhoto ? "Click to view full photo & zoom" : ""}
             >
               {activePhoto || profile.img ? (
                 <img 
                   src={activePhoto || profile.img} 
                   alt={profile.name} 
-                  className={`w-full h-full object-cover object-[center_20%] group-hover:scale-105 transition-transform duration-700 ${!canViewProfile ? "filter blur-[18px] select-none" : ""}`} 
+                  className={`w-full h-full object-cover object-[center_20%] group-hover:scale-105 transition-transform duration-700 ${!canViewPhoto ? "filter blur-[18px] select-none" : ""}`} 
                 />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-[#026d77]/10 via-[#026d77]/20 to-[#026d77]/35 flex flex-col items-center justify-center p-6 text-center">
@@ -274,7 +277,7 @@ export default function ProfileDetailPage({ params }: PageProps) {
                 </div>
               )}
 
-              {!canViewProfile && (
+              {!canViewPhoto && (
                 <div className="absolute inset-0 bg-black/15 flex items-center justify-center z-10">
                   <div className="bg-white/95 backdrop-blur-xs px-3.5 py-2 rounded-full shadow-md border border-white/20 flex items-center gap-1.5">
                     <Lock className="w-4 h-4 text-brand-600" />
@@ -284,7 +287,7 @@ export default function ProfileDetailPage({ params }: PageProps) {
               )}
 
               {/* Zoom hint on hover */}
-              {canViewProfile && (activePhoto || profile.img) && (
+              {canViewPhoto && (activePhoto || profile.img) && (
                 <div className="absolute top-3 right-3 z-20 opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow">
                   <ZoomIn className="w-3.5 h-3.5" />
                   <span>Zoom</span>

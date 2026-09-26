@@ -84,6 +84,14 @@ export default function SettingsPage() {
   const [mobileOtpSent, setMobileOtpSent] = useState(false);
   const [showMobileOtpBanner, setShowMobileOtpBanner] = useState(false);
 
+  // Security / Change Password States
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordChangeLoading, setPasswordChangeLoading] = useState(false);
+  const [passwordChangeSuccess, setPasswordChangeSuccess] = useState<string | null>(null);
+  const [passwordChangeError, setPasswordChangeError] = useState<string | null>(null);
+
 
 
   const loadProfileData = async () => {
@@ -911,16 +919,142 @@ export default function SettingsPage() {
 
             {activeTab === "security" && (
               <>
-                <h2 className="text-lg font-bold text-gray-900">Security</h2>
-                <div className="space-y-5 max-w-sm">
-                  {["Current Password", "New Password", "Confirm New Password"].map((label, i) => (
-                    <div key={i}>
-                      <label className="block text-xs font-medium text-gray-600 mb-1.5">{label}</label>
-                      <input type="password" placeholder="••••••••"
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all" />
-                    </div>
-                  ))}
+                <div className="border-b border-gray-100 pb-4 mb-6">
+                  <h2 className="text-lg font-bold text-gray-900">Security & Password</h2>
+                  <p className="text-xs text-gray-500 mt-0.5">Update your account password to keep your profile secure.</p>
                 </div>
+
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setPasswordChangeError(null);
+                    setPasswordChangeSuccess(null);
+
+                    if (!currentPassword) {
+                      setPasswordChangeError("Please enter your current password.");
+                      return;
+                    }
+                    if (!newPassword || newPassword.length < 6) {
+                      setPasswordChangeError("New password must be at least 6 characters long.");
+                      return;
+                    }
+                    if (newPassword !== confirmPassword) {
+                      setPasswordChangeError("New password and confirm password do not match.");
+                      return;
+                    }
+
+                    try {
+                      setPasswordChangeLoading(true);
+                      const token = getToken() || localStorage.getItem("mn_token");
+                      if (!token) {
+                        setPasswordChangeError("Please log in to change your password.");
+                        return;
+                      }
+
+                      const res = await fetch(`${API_URL}/user/change-password`, {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                          Authorization: `Bearer ${token}`,
+                        },
+                        body: JSON.stringify({
+                          currentPassword,
+                          newPassword,
+                          confirmPassword,
+                        }),
+                      });
+
+                      const data = await res.json();
+                      if (!res.ok || !data.success) {
+                        throw new Error(data.message || "Failed to update password.");
+                      }
+
+                      setPasswordChangeSuccess("Password updated successfully! 🎉");
+                      toast.success("Password updated successfully!");
+                      setCurrentPassword("");
+                      setNewPassword("");
+                      setConfirmPassword("");
+                    } catch (err: any) {
+                      setPasswordChangeError(err.message || "Failed to change password.");
+                      toast.error(err.message || "Failed to change password.");
+                    } finally {
+                      setPasswordChangeLoading(false);
+                    }
+                  }}
+                  className="space-y-5 max-w-md"
+                >
+                  {passwordChangeSuccess && (
+                    <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>{passwordChangeSuccess}</span>
+                    </div>
+                  )}
+
+                  {passwordChangeError && (
+                    <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-semibold flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                      <span>{passwordChangeError}</span>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                      Current Password <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="Enter current password"
+                      required
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                      New Password <span className="text-red-500">*</span> <span className="text-gray-400 font-normal">(Min 6 characters)</span>
+                    </label>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Enter new password"
+                      required
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                      Confirm New Password <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm new password"
+                      required
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={passwordChangeLoading}
+                    className="w-full py-3 bg-[#026d77] hover:bg-[#03828e] text-white text-sm font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {passwordChangeLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" /> Updating Password...
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-4 h-4" /> Update Password
+                      </>
+                    )}
+                  </button>
+                </form>
               </>
             )}
 

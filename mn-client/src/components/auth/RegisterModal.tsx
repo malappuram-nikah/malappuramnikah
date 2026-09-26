@@ -111,6 +111,19 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
     }
   };
 
+  const calculateAge = (dobString: string): number => {
+    if (!dobString) return 0;
+    const birth = new Date(dobString);
+    if (isNaN(birth.getTime())) return 0;
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
   const nextStep = () => {
     const errors: { [key: string]: string } = {};
     if (step === 1) {
@@ -118,13 +131,33 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
       if (!formData.gender) errors.gender = "Please select gender.";
       if (!formData.maritalStatus) errors.maritalStatus = "Please select marital status.";
     } else if (step === 2) {
-      if (!formData.first_name.trim()) {
-        formData.first_name = "Later";
+      const isMale = formData.gender === "Male";
+      if (isMale) {
+        if (!formData.first_name.trim() || formData.first_name.trim().toLowerCase() === "later") {
+          errors.first_name = "First name is compulsory for male profiles.";
+        }
+        if (!formData.last_name.trim() || formData.last_name.trim().toLowerCase() === "later") {
+          errors.last_name = "Last name is compulsory for male profiles.";
+        }
+      } else {
+        if (!formData.first_name.trim()) {
+          formData.first_name = "Later";
+        }
+        if (!formData.last_name.trim()) {
+          formData.last_name = "Later";
+        }
       }
-      if (!formData.last_name.trim()) {
-        formData.last_name = "Later";
+
+      if (!formData.dateOfBirth) {
+        errors.dateOfBirth = "Please select your date of birth.";
+      } else {
+        const age = calculateAge(formData.dateOfBirth);
+        if (isMale && age < 21) {
+          errors.dateOfBirth = "Groom must be at least 21 years old to create an account.";
+        } else if (!isMale && age < 18) {
+          errors.dateOfBirth = "Bride must be at least 18 years old to create an account.";
+        }
       }
-      if (!formData.dateOfBirth) errors.dateOfBirth = "Please select your date of birth.";
     } else if (step === 3) {
       if (!formData.location) errors.location = "Please select location.";
       if (!formData.caste) errors.caste = "Please select community.";
@@ -257,6 +290,10 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
         );
 
       case 2:
+        const isMale = formData.gender === "Male";
+        const minAgeYears = isMale ? 21 : 18;
+        const maxDobDate = new Date(new Date().setFullYear(new Date().getFullYear() - minAgeYears)).toISOString().split("T")[0];
+
         return (
           <motion.div
             initial={{ opacity: 0, x: 20 }}
@@ -266,51 +303,69 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
           >
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-sm font-medium text-gray-700">Full Name</label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    updateForm("first_name", "Later");
-                    updateForm("last_name", "Later");
-                  }}
-                  className="text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline cursor-pointer"
-                >
-                  Keep Name Private (&quot;Later&quot;)
-                </button>
+                <label className="block text-sm font-medium text-gray-700">
+                  Full Name {isMale ? <span className="text-red-500">*</span> : <span className="text-xs text-gray-400 font-normal">(Optional for Female)</span>}
+                </label>
+                {!isMale && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      updateForm("first_name", "Later");
+                      updateForm("last_name", "Later");
+                    }}
+                    className="text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline cursor-pointer"
+                  >
+                    Keep Name Private (&quot;Later&quot;)
+                  </button>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <input
                     type="text"
-                    value={formData.first_name}
+                    value={formData.first_name === "Later" && isMale ? "" : formData.first_name}
                     onChange={(e) => updateForm("first_name", e.target.value)}
-                    placeholder="First name (or 'Later')"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                    placeholder={isMale ? "First name *" : "First name (or 'Later')"}
+                    className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 transition-all text-sm ${
+                      stepErrors.first_name ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : "border-gray-200 focus:ring-brand-500/20 focus:border-brand-500"
+                    }`}
                   />
+                  {stepErrors.first_name && (
+                    <p className="text-red-500 text-xs mt-1 font-medium">{stepErrors.first_name}</p>
+                  )}
                 </div>
                 <div>
                   <input
                     type="text"
-                    value={formData.last_name}
+                    value={formData.last_name === "Later" && isMale ? "" : formData.last_name}
                     onChange={(e) => updateForm("last_name", e.target.value)}
-                    placeholder="Last name (or 'Later')"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                    placeholder={isMale ? "Last name *" : "Last name (or 'Later')"}
+                    className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 transition-all text-sm ${
+                      stepErrors.last_name ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : "border-gray-200 focus:ring-brand-500/20 focus:border-brand-500"
+                    }`}
                   />
+                  {stepErrors.last_name && (
+                    <p className="text-red-500 text-xs mt-1 font-medium">{stepErrors.last_name}</p>
+                  )}
                 </div>
               </div>
               <p className="text-[11px] text-gray-400 mt-1">
-                You can leave this blank or enter &quot;Later&quot; if you prefer not to publish your name publicly.
+                {isMale ? "Male profiles require genuine first and last names." : "Female members can leave name blank or enter 'Later' to add it later."}
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Date of Birth</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Date of Birth <span className="text-red-500">*</span> <span className="text-xs text-gray-400 font-normal">({isMale ? "Minimum age 21" : "Minimum age 18"})</span>
+              </label>
               <input
                 type="date"
                 value={formData.dateOfBirth}
                 onChange={(e) => updateForm("dateOfBirth", e.target.value)}
-                max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split("T")[0]}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-sm"
+                max={maxDobDate}
+                className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 transition-all text-sm ${
+                  stepErrors.dateOfBirth ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : "border-gray-200 focus:ring-brand-500/20 focus:border-brand-500"
+                }`}
               />
               {stepErrors.dateOfBirth && (
                 <p className="text-red-500 text-xs mt-1.5 font-medium">{stepErrors.dateOfBirth}</p>

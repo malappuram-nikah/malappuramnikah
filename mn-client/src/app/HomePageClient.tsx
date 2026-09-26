@@ -10,14 +10,9 @@ import FAQSection from "@/components/home/FAQSection";
 import CTASection from "@/components/home/CTASection";
 import Footer from "@/components/layout/Footer";
 
-const UpcomingBusinessSection = dynamic(
-  () => import("@/components/home/UpcomingBusinessSection"),
-  { ssr: true }
-);
-const RegisterModal = dynamic(
-  () => import("@/components/auth/RegisterModal"),
-  { ssr: false }
-);
+import UpcomingBusinessSection from "@/components/home/UpcomingBusinessSection";
+import GoogleReviewsSection from "@/components/home/GoogleReviewsSection";
+import RegisterModal from "@/components/auth/RegisterModal";
 
 export default function Home() {
   const [registerOpen, setRegisterOpen] = useState(false);
@@ -38,6 +33,7 @@ export default function Home() {
         <HeroSection onJoinNow={() => setRegisterOpen(true)} />
         <StatsSection />
         <FeaturesSection />
+        <GoogleReviewsSection />
         <UpcomingBusinessSection />
         <FAQSection />
         <CTASection onRegisterOpen={() => setRegisterOpen(true)} />

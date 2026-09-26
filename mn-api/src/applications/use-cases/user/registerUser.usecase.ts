@@ -7,11 +7,21 @@ export class RegisterUser {
     constructor(private userRepository: IUserRepository) {}
 
     async execute(data: Partial<User>): Promise<User> {
-        if (!data.first_name || data.first_name.trim() === "") {
-            data.first_name = "Later";
-        }
-        if (!data.last_name || data.last_name.trim() === "") {
-            data.last_name = "Later";
+        const isMale = (data.gender || "").toLowerCase() === "male";
+        if (isMale) {
+            if (!data.first_name || data.first_name.trim() === "" || data.first_name.trim().toLowerCase() === "later") {
+                throw new Error("First name is compulsory for male profiles");
+            }
+            if (!data.last_name || data.last_name.trim() === "" || data.last_name.trim().toLowerCase() === "later") {
+                throw new Error("Last name is compulsory for male profiles");
+            }
+        } else {
+            if (!data.first_name || data.first_name.trim() === "") {
+                data.first_name = "Later";
+            }
+            if (!data.last_name || data.last_name.trim() === "") {
+                data.last_name = "Later";
+            }
         }
 
         this.validateInput(data);
@@ -309,6 +319,25 @@ export class RegisterUser {
         for (const field of requiredFields) {
             if (!data[field]) {
                 throw new Error(`Missing required field: ${field}`);
+            }
+        }
+
+        if (data.dob) {
+            const birth = new Date(data.dob);
+            if (isNaN(birth.getTime())) {
+                throw new Error("Invalid date of birth provided");
+            }
+            const today = new Date();
+            let age = today.getFullYear() - birth.getFullYear();
+            const m = today.getMonth() - birth.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+                age--;
+            }
+            const isMale = (data.gender || "").toLowerCase() === "male";
+            if (isMale && age < 21) {
+                throw new Error("Groom must be at least 21 years old to register");
+            } else if (!isMale && age < 18) {
+                throw new Error("Bride must be at least 18 years old to register");
             }
         }
 

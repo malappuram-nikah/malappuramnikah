@@ -1161,6 +1161,75 @@ user_route.post("/reset-password", async (req: Request, res: Response) => {
   }
 });
 
+/* ─── AUTHENTICATED USER CHANGE PASSWORD ────────────────────────── */
+user_route.post("/change-password", async (req: Request, res: Response) => {
+  try {
+    const userId = getUserIdFromRequest(req);
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized. Please log in." });
+      return;
+    }
+
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    if (!currentPassword) {
+      res.status(400).json({ success: false, message: "Current password is required." });
+      return;
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      res.status(400).json({ success: false, message: "New password must be at least 6 characters long." });
+      return;
+    }
+
+    if (newPassword.length > 64) {
+      res.status(400).json({ success: false, message: "New password must be 64 characters or fewer." });
+      return;
+    }
+
+    if (/\s/.test(newPassword)) {
+      res.status(400).json({ success: false, message: "Password cannot contain spaces." });
+      return;
+    }
+
+    if (confirmPassword !== undefined && newPassword !== confirmPassword) {
+      res.status(400).json({ success: false, message: "New password and confirm password do not match." });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, password: true }
+    });
+
+    if (!user) {
+      res.status(404).json({ success: false, message: "User account not found." });
+      return;
+    }
+
+    const isMatch = await bcrypt.compare(String(currentPassword), user.password);
+    if (!isMatch) {
+      res.status(400).json({ success: false, message: "Incorrect current password. Please verify and try again." });
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(String(newPassword), 10);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Password updated successfully!"
+    });
+  } catch (err: any) {
+    console.error("Change password error:", err);
+    res.status(500).json({ success: false, message: err.message || "Failed to update password." });
+  }
+});
+
 // ==========================================
 // BIODATA ACCESS CONTROL & DOWNLOAD ENDPOINTS
 // ==========================================

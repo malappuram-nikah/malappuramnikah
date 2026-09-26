@@ -28,6 +28,7 @@ async function request<T>(
   }
 
   const config: RequestInit = {
+    credentials: "include",
     ...options,
     headers,
   };
