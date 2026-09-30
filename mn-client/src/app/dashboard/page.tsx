@@ -292,9 +292,13 @@ export default function DashboardPage() {
               const isMutual = interests.mutual.includes(match.id);
               const isSent = interests.sent.includes(match.id);
               const isReceived = interests.received.includes(match.id);
-              const isVerified = match.kyc_status === "VERIFIED" || (match as any).is_verified === true;
-              const isMale = (match.gender || "").toLowerCase() === "male";
-              const canViewProfile = isVerified && (isMutual || isMale);
+              const isSelf = currentUser && currentUser.id === match.id;
+              const isProfileBlurred = Boolean(
+                (match as any).isBlurred ||
+                match.profile_details?.privacy_settings?.blur_photos ||
+                match.profile_details?.mn_profile_photos_draft?.isBlurred
+              );
+              const canViewPhoto = isSelf || isMutual || !isProfileBlurred;
 
               let interestText = "Connect";
               let interestStyle = "bg-[#026d77]/10 text-[#026d77] hover:bg-[#026d77] hover:text-white hover:shadow-xs";
@@ -331,7 +335,7 @@ export default function DashboardPage() {
                     <img 
                       src={match.img} 
                       alt={match.name} 
-                      className={`absolute inset-0 w-full h-full object-cover object-[center_20%] group-hover:scale-105 transition-transform duration-700 z-0 ${!canViewProfile ? "filter blur-[16px] select-none" : ""}`} 
+                      className={`absolute inset-0 w-full h-full object-cover object-[center_20%] group-hover:scale-105 transition-transform duration-700 z-0 ${!canViewPhoto ? "filter blur-[16px] select-none" : ""}`} 
                     />
                   ) : (
                     <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#026d77]/10 via-[#026d77]/20 to-[#026d77]/35 flex flex-col items-center justify-center p-6 text-center z-0">
@@ -340,8 +344,8 @@ export default function DashboardPage() {
                     </div>
                   )}
 
-                  {/* Lock Screen for Not Interested */}
-                  {!canViewProfile && (
+                  {/* Lock Screen for Blurred Photo */}
+                  {!canViewPhoto && (
                     <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-[6px] flex items-center justify-center transition-all duration-300 group-hover:bg-slate-950/50 z-10">
                       <div className="bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-md border border-[#d4af37]/30 flex items-center gap-1.5 hover:scale-105 transition-all">
                         <Lock className="w-3.5 h-3.5 text-[#d4af37] animate-pulse" />

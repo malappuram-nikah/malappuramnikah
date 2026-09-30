@@ -155,7 +155,12 @@ export default function SearchPage() {
             is_online: u.is_online,
             is_new_user: u.is_new_user,
             created_at: u.created_at,
-            isBlurred: u.profile_details?.mn_profile_photos_draft?.isBlurred || false,
+            isBlurred: Boolean(
+              u.profile_details?.privacy_settings?.blur_photos ||
+              u.profile_details?.mn_profile_photos_draft?.isBlurred ||
+              (u as any).isBlurred ||
+              (u as any).blur_photos
+            ),
           };
         });
 

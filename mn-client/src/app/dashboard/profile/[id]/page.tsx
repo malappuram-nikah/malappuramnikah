@@ -83,6 +83,13 @@ export default function ProfileDetailPage({ params }: PageProps) {
         }
 
         const enriched = getEnrichedProfile(data.user);
+        const privacySettings = data.user.profile_details?.privacy_settings || {};
+        const isPhotoBlurred = 
+          Boolean(privacySettings.blur_photos) ||
+          Boolean(data.user.profile_details?.mn_profile_photos_draft?.isBlurred) ||
+          Boolean((data.user as any).isBlurred) ||
+          Boolean((data.user as any).blur_photos);
+
         // Map any extra fields we need
         const mapped = {
           ...enriched,
@@ -98,7 +105,9 @@ export default function ProfileDetailPage({ params }: PageProps) {
           conversationStarter: "I would love to learn more about your values and partner goals!",
           kyc_status: data.user.kyc_status,
           mobile_number: data.user.mobile_number,
-          email: data.user.email
+          email: data.user.email,
+          isBlurred: isPhotoBlurred,
+          profile_details: data.user.profile_details,
         };
         setProfile(mapped);
         setActivePhoto(mapped.img || null);
@@ -202,10 +211,13 @@ export default function ProfileDetailPage({ params }: PageProps) {
   const isMutual = interests.mutual.includes(profile.id);
   const isSent = interests.sent.includes(profile.id);
   const isReceived = interests.received.includes(profile.id);
-  const isMaleProfile = profile.gender?.toLowerCase() === "male";
-  const isViewerVerified = currentUser?.kyc_status === "VERIFIED";
-  const isProfileBlurred = profile.isBlurred || (profile as any).blur_photos || (profile as any).profile_details?.mn_profile_photos_draft?.isBlurred;
-  const canViewPhoto = isSelf || isMutual || (!isProfileBlurred && (isMaleProfile || isViewerVerified));
+  const isProfileBlurred = Boolean(
+    profile.isBlurred ||
+    (profile as any).profile_details?.privacy_settings?.blur_photos ||
+    (profile as any).profile_details?.mn_profile_photos_draft?.isBlurred
+  );
+  // Strictly enforce photo blur: if user enabled blur, ONLY self and accepted mutual match can view
+  const canViewPhoto = isSelf || isMutual || !isProfileBlurred;
   const canViewProfile = true;
 
   let interestBtnText = "Express Interest";
@@ -316,14 +328,16 @@ export default function ProfileDetailPage({ params }: PageProps) {
                   {profile.photos.map((p: any, idx: number) => (
                     <button
                       key={p.id || idx}
-                      onClick={() => setActivePhoto(p.dataUrl)}
+                      onClick={() => {
+                        if (canViewPhoto) setActivePhoto(p.dataUrl);
+                      }}
                       className={`w-12 h-12 rounded-xl overflow-hidden border-2 shrink-0 transition-all ${
                         activePhoto === p.dataUrl ? "border-brand-600 scale-95" : "border-gray-200 opacity-80 hover:opacity-100"
-                      }`}
+                      } ${!canViewPhoto ? "cursor-not-allowed" : ""}`}
                     >
                       <img 
                         src={p.dataUrl} 
-                        className={`w-full h-full object-cover ${!canViewProfile ? "filter blur-[8px] select-none" : ""}`} 
+                        className={`w-full h-full object-cover ${!canViewPhoto ? "filter blur-[8px] select-none" : ""}`} 
                         alt="" 
                       />
                     </button>
